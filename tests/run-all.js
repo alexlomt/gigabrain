@@ -57,6 +57,7 @@ const TEST_FILES = [
   'integration-bridge-contract-routes-test.js',
   'integration-codex-mcp-test.js',
   'regression-memory-behavior-test.js',
+  'regression-native-promotion-reconcile-test.js',
   'performance-nightly-test.js',
 ];
 
