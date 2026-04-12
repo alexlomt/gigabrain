@@ -179,6 +179,42 @@
                 "default": 0.25
               }
             }
+          },
+          "semanticRerankEnabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "semanticRerankAlpha": {
+            "type": "number",
+            "default": 0.7
+          },
+          "embeddingProvider": {
+            "type": "string",
+            "enum": [
+              "ollama",
+              "openai_compatible"
+            ],
+            "default": "ollama"
+          },
+          "embeddingBaseUrl": {
+            "type": "string",
+            "default": ""
+          },
+          "embeddingApiKey": {
+            "type": "string",
+            "default": ""
+          },
+          "ollamaUrl": {
+            "type": "string",
+            "default": "http://127.0.0.1:11434"
+          },
+          "embeddingModel": {
+            "type": "string",
+            "default": "bge-m3"
+          },
+          "embeddingTimeoutMs": {
+            "type": "number",
+            "default": 5000
           }
         }
       },
