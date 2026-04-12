@@ -31,6 +31,7 @@ DB_PATH = os.getenv("GB_REGISTRY_PATH", os.path.join(_home, ".openclaw", "gigabr
 TOKEN = os.getenv("GB_UI_TOKEN", "")
 OPENCLAW_CONFIG_PATH = os.getenv("GB_OPENCLAW_CONFIG", os.path.join(_home, ".openclaw", "openclaw.json"))
 DOCS_DIR = os.getenv("GB_DOCS_PATH", os.path.join(_home, ".openclaw", "gigabrain", "memory", "docs"))
+LEGACY_DOCS_DIR = os.path.join(_home, ".openclaw", "gigabrain", "memory", "docs")
 OPENCLAW_BIN = os.getenv("GB_OPENCLAW_BIN", os.path.join(_home, ".openclaw", "bin", "openclaw"))
 DOC_INDEX_AGENT = os.getenv("GB_DOC_INDEX_AGENT", "main")
 DOC_INDEX_DEBOUNCE_SECONDS = int(os.getenv("GB_DOC_INDEX_DEBOUNCE", "10"))
@@ -38,6 +39,7 @@ DOC_INDEX_TIMEOUT_SECONDS = int(os.getenv("GB_DOC_INDEX_TIMEOUT", "900"))
 DOC_INDEX_LOCK_PATH = os.getenv("GB_DOC_INDEX_LOCK", os.path.join(_home, ".openclaw", "gigabrain", "memory", ".doc-index.lock"))
 GRAPH_PATH = os.getenv("GB_GRAPH_PATH", os.path.join(_home, ".openclaw", "gigabrain", "memory", "graph.json"))
 OUTPUT_DIR = os.getenv("GB_OUTPUT_DIR", os.path.realpath(os.path.join(os.path.dirname(DB_PATH), "..", "output")))
+RAW_DOCS_DIR = os.getenv("GB_RAW_DOCS_DIR", os.path.join(OUTPUT_DIR, "docs-raw"))
 SURFACE_SUMMARY_PATH = os.getenv("GB_SURFACE_SUMMARY_PATH", os.path.join(OUTPUT_DIR, "memory-surface-summary.json"))
 GB_RECALL_EXPLAIN_URL = os.getenv("GB_RECALL_EXPLAIN_URL", "http://127.0.0.1:18789/gb/recall/explain")
 ALLOW_PRIVATE_URLS = os.getenv("GB_ALLOW_PRIVATE_URLS", "").lower() in ("1", "true", "yes")
@@ -317,6 +319,43 @@ def _validate_doc_index_config() -> Optional[str]:
         f"OpenClaw config must include {docs_root} in agents.defaults.memorySearch.extraPaths "
         f"or agent {DOC_INDEX_AGENT!r} memorySearch.extraPaths before docs can be indexed"
     )
+
+
+def _directory_is_empty(path: str) -> Optional[bool]:
+    if not os.path.isdir(path):
+        return None
+    try:
+        with os.scandir(path) as entries:
+            for _ in entries:
+                return False
+        return True
+    except Exception:
+        return None
+
+
+def _collect_doc_index_status() -> dict[str, Any]:
+    config = _load_openclaw_config()
+    docs_root = os.path.realpath(DOCS_DIR)
+    legacy_root = os.path.realpath(LEGACY_DOCS_DIR)
+    extra_paths = _memory_search_extra_paths(config, DOC_INDEX_AGENT)
+    config_error = _validate_doc_index_config()
+    records = _load_doc_index_records()
+    docs_root_records = sum(1 for record in records if _path_covers_target(docs_root, record["path"]))
+    legacy_root_records = sum(1 for record in records if _path_covers_target(legacy_root, record["path"]))
+    return {
+        "agent_id": DOC_INDEX_AGENT,
+        "docs_root": docs_root,
+        "docs_root_exists": os.path.isdir(docs_root),
+        "extra_paths": extra_paths,
+        "aligned": config_error is None,
+        "config_error": config_error,
+        "document_records": len(records),
+        "document_records_in_docs_root": docs_root_records,
+        "document_records_in_legacy_root": legacy_root_records,
+        "legacy_docs_root": legacy_root,
+        "legacy_docs_root_exists": os.path.isdir(legacy_root),
+        "legacy_docs_root_empty": _directory_is_empty(legacy_root),
+    }
 
 
 def _run_doc_index_with_cli() -> subprocess.CompletedProcess[str]:
@@ -756,7 +795,7 @@ def _is_expired(row: dict, now: datetime) -> bool:
 
 def ensure_docs_dir():
     os.makedirs(DOCS_DIR, exist_ok=True)
-    os.makedirs(os.path.join(DOCS_DIR, "raw"), exist_ok=True)
+    os.makedirs(RAW_DOCS_DIR, exist_ok=True)
 
 
 def sanitize_title(title: str) -> str:
@@ -1539,7 +1578,7 @@ async def create_doc_from_file(file: UploadFile = File(...), auth: dict = Depend
     file_path = write_doc_file(doc_id, title, source, "", tags, content, now)
 
     ensure_docs_dir()
-    raw_path = os.path.join(DOCS_DIR, "raw", f"{doc_id.split(':',1)[-1]}{ext}")
+    raw_path = os.path.join(RAW_DOCS_DIR, f"{doc_id.split(':',1)[-1]}{ext}")
     try:
         with open(raw_path, "wb") as f:
             f.write(data)
@@ -2344,9 +2383,23 @@ def metrics(auth: dict = Depends(require_token)):
     if _is_admin(auth):
         docs = conn.execute("SELECT COUNT(*) as c FROM documents").fetchone()[0]
         docs_active = conn.execute("SELECT COUNT(*) as c FROM documents WHERE status = 'active'").fetchone()[0]
+        docs_indexed = conn.execute(
+            "SELECT COUNT(*) as c FROM documents WHERE status != 'deleted' AND last_indexed_at IS NOT NULL AND TRIM(last_indexed_at) != ''"
+        ).fetchone()[0]
+        docs_pending_index = conn.execute(
+            "SELECT COUNT(*) as c FROM documents WHERE status = 'active' AND (last_indexed_at IS NULL OR TRIM(last_indexed_at) = '')"
+        ).fetchone()[0]
+        docs_last_indexed_at = conn.execute(
+            "SELECT MAX(last_indexed_at) FROM documents WHERE last_indexed_at IS NOT NULL AND TRIM(last_indexed_at) != ''"
+        ).fetchone()[0]
+        doc_index = _collect_doc_index_status()
     else:
         docs = 0
         docs_active = 0
+        docs_indexed = 0
+        docs_pending_index = 0
+        docs_last_indexed_at = None
+        doc_index = None
     conn.close()
     return {
         "total": total,
@@ -2355,4 +2408,8 @@ def metrics(auth: dict = Depends(require_token)):
         "rejected": rejected,
         "docs_total": docs,
         "docs_active": docs_active,
+        "docs_indexed": docs_indexed,
+        "docs_pending_index": docs_pending_index,
+        "docs_last_indexed_at": docs_last_indexed_at,
+        "doc_index": doc_index,
     }
