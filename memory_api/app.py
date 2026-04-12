@@ -41,7 +41,7 @@ DOC_INDEX_LOCK_PATH = os.getenv("GB_DOC_INDEX_LOCK", os.path.join(_home, ".openc
 GRAPH_PATH = os.getenv("GB_GRAPH_PATH", os.path.join(_home, ".openclaw", "gigabrain", "memory", "graph.json"))
 OUTPUT_DIR = os.getenv("GB_OUTPUT_DIR", os.path.realpath(os.path.join(os.path.dirname(DB_PATH), "..", "output")))
 DOC_INDEX_WORKSPACE = os.path.realpath(os.path.join(OUTPUT_DIR, ".doc-index-workspace"))
-DOC_INDEX_STORE_PATH = os.path.realpath(os.path.join(os.path.dirname(DB_PATH), f"{DOC_INDEX_AGENT}.sqlite"))
+DOC_INDEX_STORE_PATH = os.path.realpath(os.getenv("GB_DOC_INDEX_STORE_PATH", os.path.join(_home, ".openclaw", "memory", f"{DOC_INDEX_AGENT}.sqlite")))
 SURFACE_SUMMARY_PATH = os.getenv("GB_SURFACE_SUMMARY_PATH", os.path.join(OUTPUT_DIR, "memory-surface-summary.json"))
 GB_RECALL_EXPLAIN_URL = os.getenv("GB_RECALL_EXPLAIN_URL", "http://127.0.0.1:18789/gb/recall/explain")
 ALLOW_PRIVATE_URLS = os.getenv("GB_ALLOW_PRIVATE_URLS", "").lower() in ("1", "true", "yes")
@@ -271,13 +271,21 @@ def _build_doc_index_memory_search_config(doc_paths: list[str]) -> dict[str, Any
     if not isinstance(default_memory_search, dict):
         default_memory_search = {}
     memory_search = json.loads(json.dumps(default_memory_search))
-    for key in ("provider", "model", "fallback", "remote", "local", "outputDimensionality"):
-        memory_search.pop(key, None)
+    provider = str(memory_search.get("provider") or "").strip().lower()
+    supported_providers = {"openai", "gemini", "voyage", "mistral", "bedrock", "ollama", "local"}
+    if provider and provider not in supported_providers:
+        for key in ("provider", "model", "fallback", "remote", "local", "outputDimensionality"):
+            memory_search.pop(key, None)
+    elif provider:
+        memory_search["provider"] = provider
     memory_search["enabled"] = True
     memory_search["extraPaths"] = doc_paths
     store_cfg = memory_search.get("store") or {}
     if not isinstance(store_cfg, dict):
         store_cfg = {}
+    store_dir = os.path.dirname(DOC_INDEX_STORE_PATH)
+    if store_dir:
+        os.makedirs(store_dir, exist_ok=True)
     store_cfg["path"] = DOC_INDEX_STORE_PATH
     memory_search["store"] = store_cfg
     defaults_cfg["memorySearch"] = memory_search
