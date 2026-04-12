@@ -22,6 +22,7 @@ const TEST_FILES = [
   'unit-llm-router-test.js',
   'unit-review-queue-test.js',
   'unit-http-routes-test.js',
+  'unit-package-metadata-test.js',
   'unit-embedding-service-test.js',
   'unit-native-sync-query-test.js',
   'unit-codex-service-test.js',

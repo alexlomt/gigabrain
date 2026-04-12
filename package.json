@@ -2,7 +2,7 @@
     "name": "@legendaryvibecoder/gigabrain",
     "version": "0.6.1",
     "type": "module",
-    "description": "Local-first memory layer for OpenClaw, Codex, and Claude — capture, recall, dedupe, audit, native sync",
+    "description": "Local-first memory layer for OpenClaw, Codex, and Claude \u2014 capture, recall, dedupe, audit, native sync",
     "author": "Legendary Vibecoder",
     "homepage": "https://github.com/legendaryvibecoder/gigabrain#readme",
     "bugs": {
@@ -88,6 +88,10 @@
     "files": [
         "index.ts",
         "lib/",
+        "memory_api/app.py",
+        "memory_api/README.md",
+        "memory_api/requirements.txt",
+        "memory_api/static/",
         "scripts/",
         "eval/*.js",
         "eval/deep-recall-summary-2026-03-11.md",

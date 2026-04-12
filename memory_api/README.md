@@ -2,6 +2,8 @@
 
 Local-only FastAPI dashboard for browsing, editing, and managing the Gigabrain memory registry.
 
+This is an optional manual companion to the core Gigabrain plugin/MCP runtime. It is shipped with the package source, but setup scripts and `gigabrainctl doctor` do not provision or validate it automatically.
+
 In `v0.5`, this is the operational companion to the Obsidian memory surface and world-model layer:
 
 - Use Obsidian for the human-readable curated memory view (`00 Home`, `30 Views`, `50 Briefings`, `10 Native`)
