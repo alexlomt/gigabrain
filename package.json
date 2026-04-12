@@ -98,6 +98,10 @@
     "files": [
         "index.ts",
         "lib/",
+        "memory_api/app.py",
+        "memory_api/README.md",
+        "memory_api/requirements.txt",
+        "memory_api/static/",
         "scripts/",
         "docs/",
         "site/",

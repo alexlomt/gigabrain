@@ -205,19 +205,32 @@ All commands accept `--config <path>` and are also available as `npm run` script
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
+| `GET` | `/gb` | No | Basic Gigabrain service info |
 | `GET` | `/gb/health` | No | Health check |
+| `POST` | `/gb/control/apply` | Token | Apply supported memory control actions |
+| `GET` | `/gb/entities` | Token | List entities |
+| `GET` | `/gb/entities/{entity_id}` | Token | Fetch entity detail |
+| `GET` | `/gb/beliefs` | Token | List belief rows |
+| `GET` | `/gb/episodes` | Token | List episodic rows |
+| `GET` | `/gb/open-loops` | Token | List open loops |
+| `GET` | `/gb/contradictions` | Token | List contradiction rows |
+| `GET` | `/gb/memory/{id}/timeline` | Token | Event timeline for a memory |
 | `POST` | `/gb/recall` | Token | Memory recall for a query |
+| `POST` | `/gb/recall/explain` | Token | Recall with debug payload for a query |
 | `POST` | `/gb/suggestions` | Token | Structured suggestion ingest |
 | `POST` | `/gb/bench/recall` | Token | Recall benchmark endpoint |
-| `GET` | `/gb/memory/:id/timeline` | Token | Event timeline for a memory |
-| `GET` | `/gb/evolution` | Token | Entity evolution timeline by claim slot |
-| `GET` | `/gb/relationships` | Token | Relationship graph with counterpart metadata |
+| `GET` | `/gb/evolution` | Token | Entity evolution timeline grouped by claim slot |
+| `GET` | `/gb/relationships` | Token | Stored relationship graph rows with counterpart metadata |
 
 Auth uses the `X-GB-Token` header. Fail-closed: no token configured = all requests rejected.
 
-## Web console
+Dynamic entity and timeline endpoints are exposed through the `/gb/entities/` and `/gb/memory/` route prefixes when Gigabrain registers routes with OpenClaw.
 
-Optional FastAPI dashboard for browsing and managing memories. See [`memory_api/README.md`](memory_api/README.md).
+## Web console (memory_api)
+
+An optional FastAPI dashboard for browsing and managing memories. The `memory_api/` companion directory is shipped with the package, but it remains a manual sidecar: setup scripts and `gigabrainctl doctor` do not provision or validate it automatically, and the core plugin/MCP runtime does not depend on it. See [`memory_api/README.md`](memory_api/README.md) for manual setup.
+
+Features: dual-surface landing view with vault freshness and review/archive summaries, memory browser with search/filter, concept deduplication view, audit queue, document store, profile viewer, and knowledge graph visualization.
 
 ## Testing
 
@@ -277,7 +290,11 @@ gigabrain/
 │   └── vault-export.js         # Direct vault surface build
 │
 ├── docs/                       # Detailed documentation
-├── memory_api/                 # Optional web console (FastAPI)
+├── memory_api/                 # Optional manual web console companion (FastAPI)
+│   ├── app.py
+│   ├── requirements.txt
+│   └── static/index.html
+│
 ├── tests/                      # Test suite
 ├── bench/memorybench/          # Benchmark harness
 └── eval/                       # Evaluation cases
