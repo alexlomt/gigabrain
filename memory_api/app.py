@@ -9,6 +9,9 @@ import json
 import subprocess
 import threading
 import time
+import hashlib
+import glob
+import tempfile
 from io import BytesIO
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Any
@@ -30,12 +33,15 @@ DB_PATH = os.getenv("GB_REGISTRY_PATH", os.path.join(_home, ".openclaw", "gigabr
 TOKEN = os.getenv("GB_UI_TOKEN", "")
 OPENCLAW_CONFIG_PATH = os.getenv("GB_OPENCLAW_CONFIG", os.path.join(_home, ".openclaw", "openclaw.json"))
 DOCS_DIR = os.getenv("GB_DOCS_PATH", os.path.join(_home, ".openclaw", "gigabrain", "memory", "docs"))
+OPENCLAW_BIN = os.getenv("GB_OPENCLAW_BIN", os.path.join(_home, ".openclaw", "bin", "openclaw"))
 DOC_INDEX_AGENT = os.getenv("GB_DOC_INDEX_AGENT", "shared-docs")
 DOC_INDEX_DEBOUNCE_SECONDS = int(os.getenv("GB_DOC_INDEX_DEBOUNCE", "10"))
 DOC_INDEX_TIMEOUT_SECONDS = int(os.getenv("GB_DOC_INDEX_TIMEOUT", "900"))
 DOC_INDEX_LOCK_PATH = os.getenv("GB_DOC_INDEX_LOCK", os.path.join(_home, ".openclaw", "gigabrain", "memory", ".doc-index.lock"))
 GRAPH_PATH = os.getenv("GB_GRAPH_PATH", os.path.join(_home, ".openclaw", "gigabrain", "memory", "graph.json"))
 OUTPUT_DIR = os.getenv("GB_OUTPUT_DIR", os.path.realpath(os.path.join(os.path.dirname(DB_PATH), "..", "output")))
+DOC_INDEX_WORKSPACE = os.path.realpath(os.path.join(OUTPUT_DIR, ".doc-index-workspace"))
+DOC_INDEX_STORE_PATH = os.path.realpath(os.path.join(os.path.dirname(DB_PATH), f"{DOC_INDEX_AGENT}.sqlite"))
 SURFACE_SUMMARY_PATH = os.getenv("GB_SURFACE_SUMMARY_PATH", os.path.join(OUTPUT_DIR, "memory-surface-summary.json"))
 GB_RECALL_EXPLAIN_URL = os.getenv("GB_RECALL_EXPLAIN_URL", "http://127.0.0.1:18789/gb/recall/explain")
 ALLOW_PRIVATE_URLS = os.getenv("GB_ALLOW_PRIVATE_URLS", "").lower() in ("1", "true", "yes")
@@ -69,7 +75,8 @@ def _load_gateway_token() -> str:
         return ""
 
 
-PLUGIN_PROXY_TOKEN = str(TOKEN or _load_gateway_token()).strip()
+GATEWAY_PROXY_TOKEN = _load_gateway_token()
+PLUGIN_PROXY_TOKEN = str(GATEWAY_PROXY_TOKEN or "").strip()
 
 SCOPE_TOKENS = {}
 _raw_scope_tokens = os.getenv("GB_UI_SCOPE_TOKENS", "").strip()
@@ -163,6 +170,174 @@ def get_db():
     conn.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_MS}")
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat() + "Z"
+
+
+def _row_value(row: sqlite3.Row, key: str, default: Any = None) -> Any:
+    try:
+        if key in row.keys():
+            value = row[key]
+            return default if value is None and default is not None else value
+    except Exception:
+        pass
+    return default
+
+
+def _canonical_status(value: Optional[str]) -> str:
+    normalized = str(value or "active").strip().lower()
+    if normalized in {"active", "archived", "rejected", "superseded", "pending"}:
+        return normalized
+    return "active"
+
+
+def _normalized_hash(value: str) -> str:
+    normalized = normalize_content(value)
+    if not normalized:
+        return ""
+    return hashlib.sha1(normalized.encode("utf-8")).hexdigest()
+
+
+def _resolve_openclaw_cli() -> str:
+    candidate = str(OPENCLAW_BIN or "").strip()
+    if candidate and os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+        return candidate
+    bundled = os.path.join(_home, ".openclaw", "bin", "openclaw")
+    if os.path.isfile(bundled) and os.access(bundled, os.X_OK):
+        return bundled
+    return "openclaw"
+
+
+def _resolve_openclaw_runtime_module() -> str:
+    dist_dir = os.path.join(_home, ".openclaw", "lib", "node_modules", "openclaw", "dist")
+    matches = sorted(glob.glob(os.path.join(dist_dir, "cli.runtime-*.js")))
+    for candidate in matches:
+        try:
+            with open(candidate, "r", encoding="utf-8") as fh:
+                content = fh.read()
+            if "runMemoryIndex" in content:
+                return candidate
+        except Exception:
+            continue
+    fallback = os.path.join(dist_dir, "cli.runtime.js")
+    if os.path.isfile(fallback):
+        return fallback
+    raise FileNotFoundError(f"OpenClaw runtime module not found in {dist_dir}")
+
+
+def _load_doc_index_records() -> list[dict[str, str]]:
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            """
+            SELECT id, path
+            FROM documents
+            WHERE status != 'deleted'
+              AND path IS NOT NULL
+              AND TRIM(path) != ''
+            ORDER BY id
+            """
+        ).fetchall()
+    finally:
+        conn.close()
+    seen_paths = set()
+    records = []
+    for row in rows or []:
+        doc_id = str(row["id"] or "").strip()
+        path = str(row["path"] or "").strip()
+        if not doc_id or not path:
+            continue
+        real_path = os.path.realpath(path)
+        if not os.path.isfile(real_path) or real_path in seen_paths:
+            continue
+        seen_paths.add(real_path)
+        records.append({"id": doc_id, "path": real_path})
+    return records
+
+
+def _build_doc_index_memory_search_config(doc_paths: list[str]) -> dict[str, Any]:
+    try:
+        with open(OPENCLAW_CONFIG_PATH, "r", encoding="utf-8") as fh:
+            base_config = json.load(fh)
+    except Exception:
+        base_config = {}
+    if not isinstance(base_config, dict):
+        base_config = {}
+    agents_cfg = base_config.setdefault("agents", {})
+    defaults_cfg = agents_cfg.setdefault("defaults", {})
+    default_memory_search = defaults_cfg.get("memorySearch") or {}
+    if not isinstance(default_memory_search, dict):
+        default_memory_search = {}
+    memory_search = json.loads(json.dumps(default_memory_search))
+    for key in ("provider", "model", "fallback", "remote", "local", "outputDimensionality"):
+        memory_search.pop(key, None)
+    memory_search["enabled"] = True
+    memory_search["extraPaths"] = doc_paths
+    store_cfg = memory_search.get("store") or {}
+    if not isinstance(store_cfg, dict):
+        store_cfg = {}
+    store_cfg["path"] = DOC_INDEX_STORE_PATH
+    memory_search["store"] = store_cfg
+    defaults_cfg["memorySearch"] = memory_search
+
+    existing_agents = agents_cfg.get("list") or []
+    if not isinstance(existing_agents, list):
+        existing_agents = []
+    os.makedirs(os.path.join(DOC_INDEX_WORKSPACE, "memory"), exist_ok=True)
+    agent_entry = None
+    for entry in existing_agents:
+        if isinstance(entry, dict) and entry.get("id") == DOC_INDEX_AGENT:
+            agent_entry = dict(entry)
+            break
+    if agent_entry is None:
+        agent_entry = {"id": DOC_INDEX_AGENT}
+    agent_entry["workspace"] = DOC_INDEX_WORKSPACE
+    agent_entry["memorySearch"] = json.loads(json.dumps(memory_search))
+    agents_cfg["list"] = [
+        *(entry for entry in existing_agents if not (isinstance(entry, dict) and entry.get("id") == DOC_INDEX_AGENT)),
+        agent_entry,
+    ]
+    return base_config
+
+
+def _run_doc_index_with_runtime(doc_paths: list[str]) -> subprocess.CompletedProcess[str]:
+    runtime_module = _resolve_openclaw_runtime_module()
+    config = _build_doc_index_memory_search_config(doc_paths)
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False) as fh:
+            json.dump(config, fh, indent=2)
+            fh.write("\n")
+            temp_path = fh.name
+        js = (
+            f"import {{ runMemoryIndex }} from {json.dumps(runtime_module)};"
+            f"await runMemoryIndex({{ agent: {json.dumps(DOC_INDEX_AGENT)}, force: true, verbose: false }});"
+        )
+        env = os.environ.copy()
+        env["OPENCLAW_CONFIG_PATH"] = temp_path
+        return subprocess.run(
+            ["node", "--input-type=module", "--eval", js],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=DOC_INDEX_TIMEOUT_SECONDS,
+            env=env,
+        )
+    finally:
+        if temp_path:
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+
+
+def _short_subprocess_output(value: str, limit: int = 1000) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1] + "…"
 
 
 def _is_admin(auth: dict) -> bool:
@@ -309,6 +484,92 @@ def _has_table(conn: sqlite3.Connection, table_name: str) -> bool:
         (str(table_name or ""),),
     ).fetchone()
     return bool(row and row["name"])
+
+
+def _sync_memory_current_row(conn: sqlite3.Connection, memory_id: str) -> None:
+    if not _has_table(conn, "memory_current"):
+        return
+    row = conn.execute("SELECT * FROM memories WHERE id = ?", (str(memory_id),)).fetchone()
+    if not row:
+        conn.execute("DELETE FROM memory_current WHERE memory_id = ?", (str(memory_id),))
+        return
+
+    content = str(_row_value(row, "content", "") or "")
+    normalized = str(_row_value(row, "normalized", "") or normalize_content(content))
+    now_iso = _now_iso()
+    created_at = str(_row_value(row, "created_at", now_iso) or now_iso)
+    updated_at = str(_row_value(row, "updated_at", created_at) or created_at)
+    status = _canonical_status(_row_value(row, "status", "active"))
+    archived_at = None
+    if status == "archived":
+        archived_at = str(_row_value(row, "archived_at", updated_at) or updated_at)
+
+    conn.execute(
+        """
+        INSERT INTO memory_current (
+            memory_id, type, content, normalized, normalized_hash, source, source_agent, source_session,
+            source_layer, source_path, source_line, confidence, scope, status, value_score, value_label,
+            created_at, updated_at, archived_at, last_reviewed_at, tags, superseded_by, content_time, valid_until
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(memory_id) DO UPDATE SET
+            type = excluded.type,
+            content = excluded.content,
+            normalized = excluded.normalized,
+            normalized_hash = excluded.normalized_hash,
+            source = excluded.source,
+            source_agent = excluded.source_agent,
+            source_session = excluded.source_session,
+            source_layer = excluded.source_layer,
+            source_path = excluded.source_path,
+            source_line = excluded.source_line,
+            confidence = excluded.confidence,
+            scope = excluded.scope,
+            status = excluded.status,
+            value_score = excluded.value_score,
+            value_label = excluded.value_label,
+            created_at = excluded.created_at,
+            updated_at = excluded.updated_at,
+            archived_at = excluded.archived_at,
+            last_reviewed_at = excluded.last_reviewed_at,
+            tags = excluded.tags,
+            superseded_by = excluded.superseded_by,
+            content_time = excluded.content_time,
+            valid_until = excluded.valid_until
+        """,
+        (
+            str(_row_value(row, "id", memory_id) or memory_id),
+            str(_row_value(row, "type", "CONTEXT") or "CONTEXT").strip().upper() or "CONTEXT",
+            content,
+            normalized,
+            _normalized_hash(normalized),
+            str(_row_value(row, "source", "user") or "user"),
+            _row_value(row, "source_agent"),
+            _row_value(row, "source_session"),
+            str(_row_value(row, "source_layer", "registry") or "registry"),
+            _row_value(row, "source_path"),
+            _row_value(row, "source_line"),
+            float(_row_value(row, "confidence", 0.6) or 0.6),
+            str(_row_value(row, "scope", "shared") or "shared"),
+            status,
+            _row_value(row, "value_score"),
+            _row_value(row, "value_label"),
+            created_at,
+            updated_at,
+            archived_at,
+            _row_value(row, "last_reviewed_at"),
+            str(_row_value(row, "tags", "[]") or "[]"),
+            _row_value(row, "superseded_by"),
+            _row_value(row, "content_time"),
+            _row_value(row, "valid_until"),
+        ),
+    )
+
+
+def _sync_memory_current_rows(conn: sqlite3.Connection, memory_ids: list[str]) -> None:
+    if not memory_ids:
+        return
+    for memory_id in {str(mid) for mid in memory_ids if str(mid).strip()}:
+        _sync_memory_current_row(conn, memory_id)
 
 
 def _require_admin_world(auth: dict) -> None:
@@ -620,16 +881,37 @@ def run_doc_index():
     if _doc_index_lock_recent():
         return
     try:
+        lock_dir = os.path.dirname(DOC_INDEX_LOCK_PATH)
+        if lock_dir:
+            os.makedirs(lock_dir, exist_ok=True)
         with open(DOC_INDEX_LOCK_PATH, "w", encoding="utf-8") as f:
             f.write(str(time.time()))
-        cmd = ["openclaw", "memory", "index", "--agent", DOC_INDEX_AGENT, "--force"]
-        result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=DOC_INDEX_TIMEOUT_SECONDS)
+        records = _load_doc_index_records()
+        if not records:
+            return
+        result = _run_doc_index_with_runtime([record["path"] for record in records])
         if result.returncode == 0:
             conn = get_db()
-            now = datetime.now(timezone.utc).isoformat() + "Z"
-            conn.execute("UPDATE documents SET last_indexed_at = ? WHERE status != 'deleted'", (now,))
-            conn.commit()
-            conn.close()
+            try:
+                now = _now_iso()
+                doc_ids = [record["id"] for record in records]
+                placeholders = ",".join("?" for _ in doc_ids)
+                conn.execute(
+                    f"UPDATE documents SET last_indexed_at = ? WHERE id IN ({placeholders})",
+                    (now, *doc_ids),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+        else:
+            _logging.warning(
+                "doc index command failed: rc=%s stdout=%s stderr=%s",
+                result.returncode,
+                _short_subprocess_output(result.stdout),
+                _short_subprocess_output(result.stderr),
+            )
+    except Exception as exc:
+        _logging.warning("doc index run failed: %s", exc)
     finally:
         try:
             os.remove(DOC_INDEX_LOCK_PATH)
@@ -1050,6 +1332,7 @@ def create_memory(payload: MemoryCreatePayload, auth: dict = Depends(require_tok
             payload.superseded_by,
         ),
     )
+    _sync_memory_current_rows(conn, [mem_id])
     conn.commit()
     conn.close()
     return {"id": mem_id}
@@ -1088,6 +1371,7 @@ def update_memory(memory_id: str, payload: MemoryUpdatePayload, auth: dict = Dep
     params.append(memory_id)
 
     conn.execute(f"UPDATE memories SET {', '.join(fields)} WHERE id = ?", params)
+    _sync_memory_current_rows(conn, [memory_id])
     conn.commit()
     conn.close()
     return {"ok": True}
@@ -1538,16 +1822,24 @@ def confirm_memory(memory_id: str, auth: dict = Depends(require_token)):
     concept = row["concept"] or row["normalized"]
     scope = row["scope"]
     _ensure_scope_allowed(str(scope or "shared"), auth)
-    now = datetime.now(timezone.utc).isoformat() + "Z"
+    affected_ids = [
+        str(r["id"])
+        for r in conn.execute(
+            "SELECT id FROM memories WHERE scope = ? AND (concept = ? OR (concept IS NULL AND normalized = ?))",
+            (scope, concept, row["normalized"]),
+        ).fetchall()
+    ]
+    now = _now_iso()
     # Confirming a memory should make the concept canonical and supersede duplicates.
     conn.execute(
-        "UPDATE memories SET status = 'active', last_confirmed_at = ?, updated_at = ? WHERE id = ?",
+        "UPDATE memories SET status = 'active', last_confirmed_at = ?, superseded_by = NULL, updated_at = ? WHERE id = ?",
         (now, now, memory_id),
     )
     conn.execute(
         "UPDATE memories SET status = 'superseded', superseded_by = ?, updated_at = ? WHERE id != ? AND scope = ? AND (concept = ? OR (concept IS NULL AND normalized = ?))",
         (memory_id, now, memory_id, scope, concept, row["normalized"]),
     )
+    _sync_memory_current_rows(conn, affected_ids)
     conn.commit()
     conn.close()
     return {"ok": True}
@@ -1563,12 +1855,20 @@ def reject_memory(memory_id: str, auth: dict = Depends(require_token)):
     concept = row["concept"] or row["normalized"]
     scope = row["scope"]
     _ensure_scope_allowed(str(scope or "shared"), auth)
-    now = datetime.now(timezone.utc).isoformat() + "Z"
+    affected_ids = [
+        str(r["id"])
+        for r in conn.execute(
+            "SELECT id FROM memories WHERE scope = ? AND (concept = ? OR (concept IS NULL AND normalized = ?))",
+            (scope, concept, row["normalized"]),
+        ).fetchall()
+    ]
+    now = _now_iso()
     # Rejecting should stick concept-wide so it doesn't "come back" as a new row with a different type.
     conn.execute(
         "UPDATE memories SET status = 'rejected', superseded_by = NULL, updated_at = ? WHERE scope = ? AND (concept = ? OR (concept IS NULL AND normalized = ?))",
         (now, scope, concept, row["normalized"]),
     )
+    _sync_memory_current_rows(conn, affected_ids)
     conn.commit()
     conn.close()
     return {"ok": True}
@@ -1587,7 +1887,11 @@ def merge_memories(payload: MergeMemoriesPayload, auth: dict = Depends(require_t
         if scope != primary_scope:
             conn.close()
             raise HTTPException(status_code=400, detail="all memories must share scope")
-    now = datetime.now(timezone.utc).isoformat() + "Z"
+    now = _now_iso()
+    conn.execute(
+        "UPDATE memories SET status = 'active', superseded_by = NULL, updated_at = ? WHERE id = ?",
+        (now, primary),
+    )
     for mid in ids[1:]:
         conn.execute(
             "UPDATE memories SET status = 'superseded', superseded_by = ?, updated_at = ? WHERE id = ?",
@@ -1604,6 +1908,7 @@ def merge_memories(payload: MergeMemoriesPayload, auth: dict = Depends(require_t
             )
         except Exception:
             pass
+    _sync_memory_current_rows(conn, ids)
     conn.commit()
     conn.close()
     return {"ok": True, "primary": primary}
