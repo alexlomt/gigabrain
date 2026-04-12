@@ -205,24 +205,24 @@ All commands accept `--config <path>` and are also available as `npm run` script
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `GET` | `/gb` | No | Basic Gigabrain service info |
-| `GET` | `/gb/health` | No | Health check |
-| `POST` | `/gb/control/apply` | Token | Apply supported memory control actions |
-| `GET` | `/gb/entities` | Token | List entities |
-| `GET` | `/gb/entities/{entity_id}` | Token | Fetch entity detail |
-| `GET` | `/gb/beliefs` | Token | List belief rows |
-| `GET` | `/gb/episodes` | Token | List episodic rows |
-| `GET` | `/gb/open-loops` | Token | List open loops |
-| `GET` | `/gb/contradictions` | Token | List contradiction rows |
-| `GET` | `/gb/memory/{id}/timeline` | Token | Event timeline for a memory |
-| `POST` | `/gb/recall` | Token | Memory recall for a query |
-| `POST` | `/gb/recall/explain` | Token | Recall with debug payload for a query |
-| `POST` | `/gb/suggestions` | Token | Structured suggestion ingest |
-| `POST` | `/gb/bench/recall` | Token | Recall benchmark endpoint |
-| `GET` | `/gb/evolution` | Token | Entity evolution timeline grouped by claim slot |
-| `GET` | `/gb/relationships` | Token | Stored relationship graph rows with counterpart metadata |
+| `GET` | `/gb` | Gateway | Basic Gigabrain service info |
+| `GET` | `/gb/health` | Gateway | Health check |
+| `POST` | `/gb/control/apply` | Gateway token | Apply supported memory control actions |
+| `GET` | `/gb/entities` | Gateway token | List entities |
+| `GET` | `/gb/entities/{entity_id}` | Gateway token | Fetch entity detail |
+| `GET` | `/gb/beliefs` | Gateway token | List belief rows |
+| `GET` | `/gb/episodes` | Gateway token | List episodic rows |
+| `GET` | `/gb/open-loops` | Gateway token | List open loops |
+| `GET` | `/gb/contradictions` | Gateway token | List contradiction rows |
+| `GET` | `/gb/memory/{id}/timeline` | Gateway token | Event timeline for a memory |
+| `POST` | `/gb/recall` | Gateway token | Memory recall for a query |
+| `POST` | `/gb/recall/explain` | Gateway token | Recall with debug payload for a query |
+| `POST` | `/gb/suggestions` | Gateway token | Structured suggestion ingest |
+| `POST` | `/gb/bench/recall` | Gateway token | Recall benchmark endpoint |
+| `GET` | `/gb/evolution` | Gateway token | Entity evolution timeline grouped by claim slot |
+| `GET` | `/gb/relationships` | Gateway token | Stored relationship graph rows with counterpart metadata |
 
-Auth uses the `X-GB-Token` header. Fail-closed: no token configured = all requests rejected.
+In real OpenClaw deployments, gateway auth applies first. The most reliable client auth for `/gb/*` routes is `Authorization: Bearer <gateway-token>`. Direct handler tests may also use `X-GB-Token` or `X-OpenClaw-Token` when they bypass the full gateway auth layer.
 
 Dynamic entity and timeline endpoints are exposed through the `/gb/entities/` and `/gb/memory/` route prefixes when Gigabrain registers routes with OpenClaw.
 
@@ -302,11 +302,12 @@ gigabrain/
 
 ## Security
 
-- All HTTP endpoints require token auth (`X-GB-Token`)
-- Auth is fail-closed: no token = all requests rejected
-- Web console escapes all user content (XSS prevention)
-- `memory_api` binds to `127.0.0.1` only
-- Dependencies audited with `pip-audit` and `npm audit`
+- OpenClaw gateway `/gb/*` routes are typically accessed with the gateway auth token, most reliably via `Authorization: Bearer <gateway-token>`
+- The optional `memory_api` sidecar uses `X-GB-Token` for its own local auth layer
+- Auth is **fail-closed**: if no token is configured, all requests are rejected
+- The web console escapes all user content to prevent XSS
+- The memory_api binds to `127.0.0.1` only — use Tailscale or SSH tunneling for remote access
+- Dependencies are audited with `pip-audit` and `npm audit`. Transitive dependency alerts (e.g. from peer dependencies) are tracked via Dependabot
 
 Do not open public issues for vulnerabilities. Use the private reporting flow in [SECURITY.md](SECURITY.md).
 

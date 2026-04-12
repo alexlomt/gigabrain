@@ -2012,6 +2012,56 @@ def graph(auth: dict = Depends(require_token)):
     if not os.path.exists(GRAPH_PATH):
         return {"generated_at": None, "nodes": [], "edges": []}
     try:
+        if GRAPH_PATH.lower().endswith(".db"):
+            conn = sqlite3.connect(GRAPH_PATH)
+            conn.row_factory = sqlite3.Row
+            try:
+                meta_rows = conn.execute("SELECT key, value FROM meta").fetchall()
+                node_rows = conn.execute(
+                    """
+                    SELECT id, entity_key, display, role, mentions, cluster_id
+                    FROM nodes
+                    ORDER BY mentions DESC, id ASC
+                    """
+                ).fetchall()
+                edge_rows = conn.execute(
+                    """
+                    SELECT id, from_entity, to_entity, edge_type, weight, memory_ids
+                    FROM edges
+                    ORDER BY weight DESC, id ASC
+                    """
+                ).fetchall()
+            finally:
+                conn.close()
+
+            meta = {str(row["key"]): row["value"] for row in meta_rows or []}
+            return {
+                "generated_at": meta.get("built_at"),
+                "source": "graph.db",
+                "nodes": [
+                    {
+                        "id": row["entity_key"] or row["id"],
+                        "label": row["display"] or row["entity_key"] or str(row["id"]),
+                        "entity_key": row["entity_key"],
+                        "role": row["role"],
+                        "mentions": row["mentions"],
+                        "cluster_id": row["cluster_id"],
+                    }
+                    for row in node_rows or []
+                ],
+                "edges": [
+                    {
+                        "id": row["id"],
+                        "source": row["from_entity"],
+                        "target": row["to_entity"],
+                        "type": row["edge_type"],
+                        "weight": row["weight"],
+                        "memory_ids": row["memory_ids"],
+                    }
+                    for row in edge_rows or []
+                ],
+            }
+
         with open(GRAPH_PATH, "r", encoding="utf-8") as f:
             data = json.load(f)
         if "nodes" not in data or "edges" not in data:

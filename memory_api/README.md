@@ -50,8 +50,13 @@ The UI is served at `http://127.0.0.1:7077/`.
 | `GB_REGISTRY_PATH` | Yes | Path to the Gigabrain SQLite database |
 | `GB_OUTPUT_DIR` | No | Output directory for nightly/vault artifacts (default: sibling `output/` next to the registry) |
 | `GB_SURFACE_SUMMARY_PATH` | No | Path to `memory-surface-summary.json` if you want to override auto-discovery |
+| `GB_OPENCLAW_CONFIG` | No | Path to `openclaw.json`, used to auto-load the gateway auth token for `/recall/explain` proxying |
+| `GB_OPENCLAW_BIN` | No | Path to the OpenClaw CLI used for document indexing |
 | `GB_DOCS_PATH` | No | Directory for document store files |
+| `GB_RAW_DOCS_DIR` | No | Directory for raw fetched/uploaded document artifacts |
 | `GB_DOC_INDEX_AGENT` | No | Agent ID for doc indexing (default: `main`). The target agent must have `memorySearch.extraPaths` covering `GB_DOCS_PATH`. |
+| `GB_GRAPH_PATH` | No | Path to `graph.db` or a graph JSON export |
+| `GB_ENABLE_API_DOCS` | No | Set to `true` to enable `/_docs` and `/_redoc` |
 | `GB_UI_TOKEN` | Yes | Auth token — all API requests must include `X-GB-Token: <token>` |
 
 ## Auth
@@ -60,6 +65,7 @@ All endpoints require the `X-GB-Token` header.
 
 - `GB_UI_TOKEN` grants admin access.
 - `GB_UI_SCOPE_TOKENS` can provide scoped read/write access for specific memory scopes.
+- UI auth is local to the sidecar. For `POST /recall/explain`, the sidecar proxies to OpenClaw's `/gb/recall/explain` using the gateway auth token loaded from `GB_OPENCLAW_CONFIG` or the `GB_GATEWAY_TOKEN` / `OPENCLAW_GATEWAY_TOKEN` environment variables.
 
 If `GB_UI_TOKEN` is not set, **all requests are rejected** (fail-closed). The UI prompts for the token on first load and keeps it in memory for the current page session.
 
