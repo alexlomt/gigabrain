@@ -10,8 +10,6 @@ import subprocess
 import threading
 import time
 import hashlib
-import glob
-import tempfile
 from io import BytesIO
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Any
@@ -34,14 +32,12 @@ TOKEN = os.getenv("GB_UI_TOKEN", "")
 OPENCLAW_CONFIG_PATH = os.getenv("GB_OPENCLAW_CONFIG", os.path.join(_home, ".openclaw", "openclaw.json"))
 DOCS_DIR = os.getenv("GB_DOCS_PATH", os.path.join(_home, ".openclaw", "gigabrain", "memory", "docs"))
 OPENCLAW_BIN = os.getenv("GB_OPENCLAW_BIN", os.path.join(_home, ".openclaw", "bin", "openclaw"))
-DOC_INDEX_AGENT = os.getenv("GB_DOC_INDEX_AGENT", "shared-docs")
+DOC_INDEX_AGENT = os.getenv("GB_DOC_INDEX_AGENT", "main")
 DOC_INDEX_DEBOUNCE_SECONDS = int(os.getenv("GB_DOC_INDEX_DEBOUNCE", "10"))
 DOC_INDEX_TIMEOUT_SECONDS = int(os.getenv("GB_DOC_INDEX_TIMEOUT", "900"))
 DOC_INDEX_LOCK_PATH = os.getenv("GB_DOC_INDEX_LOCK", os.path.join(_home, ".openclaw", "gigabrain", "memory", ".doc-index.lock"))
 GRAPH_PATH = os.getenv("GB_GRAPH_PATH", os.path.join(_home, ".openclaw", "gigabrain", "memory", "graph.json"))
 OUTPUT_DIR = os.getenv("GB_OUTPUT_DIR", os.path.realpath(os.path.join(os.path.dirname(DB_PATH), "..", "output")))
-DOC_INDEX_WORKSPACE = os.path.realpath(os.path.join(OUTPUT_DIR, ".doc-index-workspace"))
-DOC_INDEX_STORE_PATH = os.path.realpath(os.getenv("GB_DOC_INDEX_STORE_PATH", os.path.join(_home, ".openclaw", "memory", f"{DOC_INDEX_AGENT}.sqlite")))
 SURFACE_SUMMARY_PATH = os.getenv("GB_SURFACE_SUMMARY_PATH", os.path.join(OUTPUT_DIR, "memory-surface-summary.json"))
 GB_RECALL_EXPLAIN_URL = os.getenv("GB_RECALL_EXPLAIN_URL", "http://127.0.0.1:18789/gb/recall/explain")
 ALLOW_PRIVATE_URLS = os.getenv("GB_ALLOW_PRIVATE_URLS", "").lower() in ("1", "true", "yes")
@@ -210,21 +206,15 @@ def _resolve_openclaw_cli() -> str:
     return "openclaw"
 
 
-def _resolve_openclaw_runtime_module() -> str:
-    dist_dir = os.path.join(_home, ".openclaw", "lib", "node_modules", "openclaw", "dist")
-    matches = sorted(glob.glob(os.path.join(dist_dir, "cli.runtime-*.js")))
-    for candidate in matches:
-        try:
-            with open(candidate, "r", encoding="utf-8") as fh:
-                content = fh.read()
-            if "runMemoryIndex" in content:
-                return candidate
-        except Exception:
-            continue
-    fallback = os.path.join(dist_dir, "cli.runtime.js")
-    if os.path.isfile(fallback):
-        return fallback
-    raise FileNotFoundError(f"OpenClaw runtime module not found in {dist_dir}")
+def _load_openclaw_config() -> dict[str, Any]:
+    try:
+        with open(OPENCLAW_CONFIG_PATH, "r", encoding="utf-8") as fh:
+            config = json.load(fh)
+        if isinstance(config, dict):
+            return config
+    except Exception:
+        pass
+    return {}
 
 
 def _load_doc_index_records() -> list[dict[str, str]]:
@@ -257,88 +247,98 @@ def _load_doc_index_records() -> list[dict[str, str]]:
     return records
 
 
-def _build_doc_index_memory_search_config(doc_paths: list[str]) -> dict[str, Any]:
-    try:
-        with open(OPENCLAW_CONFIG_PATH, "r", encoding="utf-8") as fh:
-            base_config = json.load(fh)
-    except Exception:
-        base_config = {}
-    if not isinstance(base_config, dict):
-        base_config = {}
-    agents_cfg = base_config.setdefault("agents", {})
-    defaults_cfg = agents_cfg.setdefault("defaults", {})
-    default_memory_search = defaults_cfg.get("memorySearch") or {}
-    if not isinstance(default_memory_search, dict):
-        default_memory_search = {}
-    memory_search = json.loads(json.dumps(default_memory_search))
-    provider = str(memory_search.get("provider") or "").strip().lower()
-    supported_providers = {"openai", "gemini", "voyage", "mistral", "bedrock", "ollama", "local"}
-    if provider and provider not in supported_providers:
-        for key in ("provider", "model", "fallback", "remote", "local", "outputDimensionality"):
-            memory_search.pop(key, None)
-    elif provider:
-        memory_search["provider"] = provider
-    memory_search["enabled"] = True
-    memory_search["extraPaths"] = doc_paths
-    store_cfg = memory_search.get("store") or {}
-    if not isinstance(store_cfg, dict):
-        store_cfg = {}
-    store_dir = os.path.dirname(DOC_INDEX_STORE_PATH)
-    if store_dir:
-        os.makedirs(store_dir, exist_ok=True)
-    store_cfg["path"] = DOC_INDEX_STORE_PATH
-    memory_search["store"] = store_cfg
-    defaults_cfg["memorySearch"] = memory_search
+def _normalize_extra_paths(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    output = []
+    seen = set()
+    for item in value:
+        path_value = str(item or "").strip()
+        if not path_value:
+            continue
+        real_path = os.path.realpath(os.path.expanduser(path_value))
+        if real_path in seen:
+            continue
+        seen.add(real_path)
+        output.append(real_path)
+    return output
 
-    existing_agents = agents_cfg.get("list") or []
-    if not isinstance(existing_agents, list):
-        existing_agents = []
-    os.makedirs(os.path.join(DOC_INDEX_WORKSPACE, "memory"), exist_ok=True)
-    agent_entry = None
-    for entry in existing_agents:
-        if isinstance(entry, dict) and entry.get("id") == DOC_INDEX_AGENT:
-            agent_entry = dict(entry)
+
+def _memory_search_extra_paths(config: dict[str, Any], agent_id: str) -> list[str]:
+    agents_cfg = config.get("agents") or {}
+    if not isinstance(agents_cfg, dict):
+        return []
+
+    output = []
+    seen = set()
+
+    defaults_cfg = agents_cfg.get("defaults") or {}
+    if isinstance(defaults_cfg, dict):
+        memory_search = defaults_cfg.get("memorySearch") or {}
+        if isinstance(memory_search, dict):
+            for entry in _normalize_extra_paths(memory_search.get("extraPaths")):
+                if entry not in seen:
+                    seen.add(entry)
+                    output.append(entry)
+
+    for entry in agents_cfg.get("list") or []:
+        if not isinstance(entry, dict):
+            continue
+        if str(entry.get("id") or "").strip() != agent_id:
+            continue
+        memory_search = entry.get("memorySearch") or {}
+        if not isinstance(memory_search, dict):
             break
-    if agent_entry is None:
-        agent_entry = {"id": DOC_INDEX_AGENT}
-    agent_entry["workspace"] = DOC_INDEX_WORKSPACE
-    agent_entry["memorySearch"] = json.loads(json.dumps(memory_search))
-    agents_cfg["list"] = [
-        *(entry for entry in existing_agents if not (isinstance(entry, dict) and entry.get("id") == DOC_INDEX_AGENT)),
-        agent_entry,
-    ]
-    return base_config
+        for extra_path in _normalize_extra_paths(memory_search.get("extraPaths")):
+            if extra_path not in seen:
+                seen.add(extra_path)
+                output.append(extra_path)
+        break
+
+    return output
 
 
-def _run_doc_index_with_runtime(doc_paths: list[str]) -> subprocess.CompletedProcess[str]:
-    runtime_module = _resolve_openclaw_runtime_module()
-    config = _build_doc_index_memory_search_config(doc_paths)
-    temp_path = None
+def _path_covers_target(candidate_path: str, target_path: str) -> bool:
     try:
-        with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False) as fh:
-            json.dump(config, fh, indent=2)
-            fh.write("\n")
-            temp_path = fh.name
-        js = (
-            f"import {{ runMemoryIndex }} from {json.dumps(runtime_module)};"
-            f"await runMemoryIndex({{ agent: {json.dumps(DOC_INDEX_AGENT)}, force: true, verbose: false }});"
+        candidate = os.path.realpath(os.path.expanduser(candidate_path))
+        target = os.path.realpath(os.path.expanduser(target_path))
+        return os.path.commonpath([candidate, target]) == candidate
+    except Exception:
+        return False
+
+
+def _validate_doc_index_config() -> Optional[str]:
+    config = _load_openclaw_config()
+    docs_root = os.path.realpath(DOCS_DIR)
+    extra_paths = _memory_search_extra_paths(config, DOC_INDEX_AGENT)
+    if any(_path_covers_target(extra_path, docs_root) for extra_path in extra_paths):
+        return None
+    return (
+        f"OpenClaw config must include {docs_root} in agents.defaults.memorySearch.extraPaths "
+        f"or agent {DOC_INDEX_AGENT!r} memorySearch.extraPaths before docs can be indexed"
+    )
+
+
+def _run_doc_index_with_cli() -> subprocess.CompletedProcess[str]:
+    config_error = _validate_doc_index_config()
+    if config_error:
+        return subprocess.CompletedProcess(
+            args=[_resolve_openclaw_cli(), "memory", "index", "--agent", DOC_INDEX_AGENT, "--force"],
+            returncode=2,
+            stdout="",
+            stderr=config_error,
         )
-        env = os.environ.copy()
-        env["OPENCLAW_CONFIG_PATH"] = temp_path
-        return subprocess.run(
-            ["node", "--input-type=module", "--eval", js],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            timeout=DOC_INDEX_TIMEOUT_SECONDS,
-            env=env,
-        )
-    finally:
-        if temp_path:
-            try:
-                os.remove(temp_path)
-            except Exception:
-                pass
+
+    env = os.environ.copy()
+    env["OPENCLAW_CONFIG_PATH"] = OPENCLAW_CONFIG_PATH
+    return subprocess.run(
+        [_resolve_openclaw_cli(), "memory", "index", "--agent", DOC_INDEX_AGENT, "--force"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=DOC_INDEX_TIMEOUT_SECONDS,
+        env=env,
+    )
 
 
 def _short_subprocess_output(value: str, limit: int = 1000) -> str:
@@ -897,7 +897,7 @@ def run_doc_index():
         records = _load_doc_index_records()
         if not records:
             return
-        result = _run_doc_index_with_runtime([record["path"] for record in records])
+        result = _run_doc_index_with_cli()
         if result.returncode == 0:
             conn = get_db()
             try:

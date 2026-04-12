@@ -49,7 +49,7 @@ The UI is served at `http://127.0.0.1:7077/`.
 | `GB_OUTPUT_DIR` | No | Output directory for nightly/vault artifacts (default: sibling `output/` next to the registry) |
 | `GB_SURFACE_SUMMARY_PATH` | No | Path to `memory-surface-summary.json` if you want to override auto-discovery |
 | `GB_DOCS_PATH` | No | Directory for document store files |
-| `GB_DOC_INDEX_AGENT` | No | Agent ID for doc indexing (default: `shared-docs`) |
+| `GB_DOC_INDEX_AGENT` | No | Agent ID for doc indexing (default: `main`). The target agent must have `memorySearch.extraPaths` covering `GB_DOCS_PATH`. |
 | `GB_UI_TOKEN` | Yes | Auth token — all API requests must include `X-GB-Token: <token>` |
 
 ## Auth

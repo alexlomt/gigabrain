@@ -57,10 +57,10 @@ const run = async () => {
   const workspaceOnlyDir = path.join(ws.root, 'Agent Workspace', 'CPTO Ops');
   const workspaceOnlyScope = deriveScopeFromWorkspaceDir(workspaceOnlyDir);
   const { handlers, logs } = registerPlugin(ws.workspace);
-  const beforeAgentStart = handlers.get('before_agent_start');
+  const beforePromptBuild = handlers.get('before_prompt_build');
   const agentEnd = handlers.get('agent_end');
 
-  assert.equal(typeof beforeAgentStart, 'function', 'plugin should register before_agent_start');
+  assert.equal(typeof beforePromptBuild, 'function', 'plugin should register before_prompt_build');
   assert.equal(typeof agentEnd, 'function', 'plugin should register agent_end');
 
   const db = openDb(ws.dbPath);
@@ -91,7 +91,7 @@ const run = async () => {
     db.close();
   }
 
-  const recallResult = await beforeAgentStart(
+  const recallResult = await beforePromptBuild(
     {
       messages: [
         { role: 'user', content: 'Who owns roadmap planning?' },
@@ -113,7 +113,7 @@ const run = async () => {
   );
   assert.equal('messages' in (recallResult || {}), false, 'hook should not rely on returning a rewritten messages array');
 
-  const workspaceRecall = await beforeAgentStart(
+  const workspaceRecall = await beforePromptBuild(
     {
       messages: [
         { role: 'user', content: 'Where are the workspace runbooks stored?' },
@@ -127,7 +127,7 @@ const run = async () => {
   assert.equal(
     String(workspaceRecall?.appendSystemContext || '').includes('/ops/runbooks/cpto'),
     true,
-    'before_agent_start should derive scope from ctx.workspaceDir when agent identity is missing',
+    'before_prompt_build should derive scope from ctx.workspaceDir when agent identity is missing',
   );
 
   await agentEnd(

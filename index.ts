@@ -486,7 +486,7 @@ const gigabrainPlugin = {
       }
     }
 
-    api.on('before_agent_start', async (event: any, ctx: any) => {
+    api.on('before_prompt_build', async (event: any, ctx: any) => {
       try {
         const resolvedEvent = mergeEventWithCtx(event, ctx);
         const baseQuery = extractUserQuery(resolvedEvent);
