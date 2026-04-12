@@ -56,6 +56,7 @@ The UI is served at `http://127.0.0.1:7077/`.
 | `GB_RAW_DOCS_DIR` | No | Directory for raw fetched/uploaded document artifacts |
 | `GB_DOC_INDEX_AGENT` | No | Agent ID for doc indexing (default: `main`). The target agent must have `memorySearch.extraPaths` covering `GB_DOCS_PATH`. |
 | `GB_GRAPH_PATH` | No | Path to `graph.db` or a graph JSON export |
+| `GB_RECALL_EXPLAIN_TIMEOUT_SECONDS` | No | Read timeout for proxying `/recall/explain` to the gateway (default: `30`) |
 | `GB_ENABLE_API_DOCS` | No | Set to `true` to enable `/_docs` and `/_redoc` |
 | `GB_UI_TOKEN` | Yes | Auth token — all API requests must include `X-GB-Token: <token>` |
 

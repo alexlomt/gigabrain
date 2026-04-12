@@ -42,6 +42,7 @@ OUTPUT_DIR = os.getenv("GB_OUTPUT_DIR", os.path.realpath(os.path.join(os.path.di
 RAW_DOCS_DIR = os.getenv("GB_RAW_DOCS_DIR", os.path.join(OUTPUT_DIR, "docs-raw"))
 SURFACE_SUMMARY_PATH = os.getenv("GB_SURFACE_SUMMARY_PATH", os.path.join(OUTPUT_DIR, "memory-surface-summary.json"))
 GB_RECALL_EXPLAIN_URL = os.getenv("GB_RECALL_EXPLAIN_URL", "http://127.0.0.1:18789/gb/recall/explain")
+RECALL_EXPLAIN_TIMEOUT_SECONDS = max(1.0, float(os.getenv("GB_RECALL_EXPLAIN_TIMEOUT_SECONDS", "30")))
 ALLOW_PRIVATE_URLS = os.getenv("GB_ALLOW_PRIVATE_URLS", "").lower() in ("1", "true", "yes")
 ENABLE_API_DOCS = os.getenv("GB_ENABLE_API_DOCS", "").lower() in ("1", "true", "yes")
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
@@ -1970,7 +1971,8 @@ def recall_explain(payload: RecallExplainPayload, auth: dict = Depends(require_t
 
     try:
         headers = {"Authorization": f"Bearer {PLUGIN_PROXY_TOKEN}"} if PLUGIN_PROXY_TOKEN else {}
-        with httpx.Client(timeout=4.0) as client:
+        timeout = httpx.Timeout(connect=2.0, write=10.0, read=RECALL_EXPLAIN_TIMEOUT_SECONDS, pool=5.0)
+        with httpx.Client(timeout=timeout) as client:
             response = client.post(
                 GB_RECALL_EXPLAIN_URL,
                 headers=headers,
@@ -1978,8 +1980,9 @@ def recall_explain(payload: RecallExplainPayload, auth: dict = Depends(require_t
             )
             if response.status_code == 200:
                 return response.json()
-    except Exception:
-        pass
+            _logging.warning("Recall explain proxy returned non-200 status=%s body=%s", response.status_code, response.text[:400])
+    except Exception as exc:
+        _logging.warning("Recall explain proxy failed: %s", str(exc))
 
     tokens = normalize_content(query).split()
     if not tokens:
