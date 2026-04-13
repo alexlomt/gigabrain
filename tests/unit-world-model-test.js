@@ -419,6 +419,32 @@ const run = async () => {
   } finally {
     db.close();
   }
+
+  const compoundWs = makeTempWorkspace('gb-v5-world-model-compound-');
+  const compoundConfig = normalizeConfig(makeConfigObject(compoundWs.workspace).plugins.entries.gigabrain.config);
+  const compoundDb = openDb(compoundWs.dbPath);
+  try {
+    seedMemoryCurrent(compoundDb, [
+      {
+        memory_id: 'compound-1',
+        type: 'ENTITY',
+        content: 'Project Narwhal Ledger ships weekly reporting packs.',
+        scope: 'shared',
+        confidence: 0.88,
+        created_at: '2026-03-08T11:00:00.000Z',
+        updated_at: '2026-03-08T11:00:00.000Z',
+      },
+    ]);
+    ensureNativeStore(compoundDb);
+    rebuildEntityMentions(compoundDb);
+    rebuildWorldModel({ db: compoundDb, config: compoundConfig, now: '2026-03-08T12:00:00.000Z' });
+
+    const compoundEntities = listEntities(compoundDb, { limit: 20 });
+    assert.equal(compoundEntities.some((entity) => entity.entity_id === 'project:narwhal-ledger'), true, 'compound project names should surface as one project entity');
+    assert.equal(compoundEntities.some((entity) => ['project:narwhal', 'project:ledger'].includes(entity.entity_id)), false, 'compound project names should not fragment into multiple project entities');
+  } finally {
+    compoundDb.close();
+  }
 };
 
 export { run };
