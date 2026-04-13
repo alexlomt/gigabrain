@@ -77,6 +77,61 @@ const run = async () => {
     fs.rmSync(ws.root, { recursive: true, force: true });
   }
 
+  const dailyWs = makeTempWorkspace('gb-v4-native-promotion-daily-');
+  try {
+    const dailyPath = path.join(dailyWs.memoryRoot, '2026-04-13.md');
+    fs.writeFileSync(dailyPath, [
+      '# 2026-04-13',
+      '',
+      '## Preferences',
+      '',
+      '- Avery prefers weekly reporting cadence. <!-- gigabrain:scope=profile:main -->',
+      '',
+      '## Remembered Today',
+      '',
+      '- Avery prefers quiet Fridays. <!-- gigabrain:scope=profile:main type=PREFERENCE -->',
+      '- Avery is tired today. <!-- gigabrain:scope=profile:main -->',
+      '',
+    ].join('\n'), 'utf8');
+
+    const config = normalizeConfig(makeConfigObject(dailyWs.workspace).plugins.entries.gigabrain.config);
+    const db = openDb(dailyWs.dbPath);
+    try {
+      const { promotion } = runNativeCycle({ db, config });
+      assert.equal(promotion.promoted_inserted, 2, 'daily notes should preserve scope and explicit type metadata for durable promotions');
+
+      const weekly = db.prepare(`
+        SELECT type, scope, source_path
+        FROM memory_current
+        WHERE content = 'Avery prefers weekly reporting cadence.'
+        LIMIT 1
+      `).get();
+      assert.equal(String(weekly?.type || ''), 'PREFERENCE', 'daily preference section should promote as preference');
+      assert.equal(String(weekly?.scope || ''), 'profile:main', 'daily preference section should preserve profile scope');
+      assert.equal(String(weekly?.source_path || ''), dailyPath, 'daily preference promotion should point back to the daily note');
+
+      const remembered = db.prepare(`
+        SELECT type, scope
+        FROM memory_current
+        WHERE content = 'Avery prefers quiet Fridays.'
+        LIMIT 1
+      `).get();
+      assert.equal(String(remembered?.type || ''), 'PREFERENCE', 'Remembered Today metadata should preserve semantic type on promotion');
+      assert.equal(String(remembered?.scope || ''), 'profile:main', 'Remembered Today metadata should preserve profile scope on promotion');
+
+      const situational = db.prepare(`
+        SELECT COUNT(*) AS c
+        FROM memory_current
+        WHERE content = 'Avery is tired today.'
+      `).get();
+      assert.equal(Number(situational?.c || 0), 0, 'situational daily note should still stay out of durable memory');
+    } finally {
+      db.close();
+    }
+  } finally {
+    fs.rmSync(dailyWs.root, { recursive: true, force: true });
+  }
+
   const legacyWs = makeTempWorkspace('gb-v4-native-promotion-legacy-');
   try {
     const memoryPath = path.join(legacyWs.workspace, 'MEMORY.md');
@@ -134,6 +189,60 @@ const run = async () => {
     }
   } finally {
     fs.rmSync(legacyWs.root, { recursive: true, force: true });
+  }
+
+  const legacyRepairWs = makeTempWorkspace('gb-v4-native-promotion-repair-');
+  try {
+    const dailyPath = path.join(legacyRepairWs.memoryRoot, '2026-04-13.md');
+    fs.writeFileSync(dailyPath, [
+      '# 2026-04-13',
+      '',
+      '## Remembered Today',
+      '',
+      '- Avery prefers quiet Fridays. <!-- gigabrain:scope=profile:main type=PREFERENCE -->',
+      '',
+    ].join('\n'), 'utf8');
+
+    const config = normalizeConfig(makeConfigObject(legacyRepairWs.workspace).plugins.entries.gigabrain.config);
+    const db = openDb(legacyRepairWs.dbPath);
+    try {
+      syncNativeMemory({ db, config, dryRun: false });
+      seedMemoryCurrent(db, [
+        {
+          memory_id: 'legacy-promoted-wrong-metadata',
+          type: 'USER_FACT',
+          content: 'Avery prefers quiet Fridays.',
+          source: 'promoted_native',
+          source_layer: 'promoted_native',
+          source_path: dailyPath,
+          source_line: 5,
+          scope: 'shared',
+          confidence: 0.72,
+          value_score: 0.82,
+          value_label: 'core',
+        },
+      ]);
+
+      const reconciliation = reconcilePromotedNativeRows({
+        db,
+        dryRun: false,
+      });
+      assert.equal(reconciliation.relinked_rows, 1, 'reconciliation should relink legacy promoted rows with matching daily chunks');
+      assert.equal(reconciliation.metadata_repaired, 1, 'reconciliation should repair wrong scope/type from linked native metadata');
+
+      const repaired = db.prepare(`
+        SELECT type, scope, status
+        FROM memory_current
+        WHERE memory_id = 'legacy-promoted-wrong-metadata'
+      `).get();
+      assert.equal(String(repaired?.type || ''), 'PREFERENCE', 'reconciliation should repair legacy promoted type from native metadata');
+      assert.equal(String(repaired?.scope || ''), 'profile:main', 'reconciliation should repair legacy promoted scope from native metadata');
+      assert.equal(String(repaired?.status || ''), 'active', 'repaired legacy promoted row should stay active');
+    } finally {
+      db.close();
+    }
+  } finally {
+    fs.rmSync(legacyRepairWs.root, { recursive: true, force: true });
   }
 };
 
