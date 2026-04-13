@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import { normalizeConfig } from '../lib/core/config.js';
 import { parseMemoryNotes, captureFromEvent } from '../lib/core/capture-service.js';
+import { syncNativeMemory } from '../lib/core/native-sync.js';
 import { makeTempWorkspace, makeConfigObject, openDb } from './helpers.js';
 
 const run = async () => {
@@ -135,6 +136,87 @@ const run = async () => {
     assert.equal(fs.existsSync(queuePath), true, 'missing remember note should create a review queue row');
     const queueText = fs.readFileSync(queuePath, 'utf8');
     assert.match(queueText, /remember_intent_missing_note/, 'review queue should record the explicit remember failure reason');
+
+    const duplicateWs = makeTempWorkspace('gb-v3-unit-capture-dup-');
+    const duplicateConfig = normalizeConfig(makeConfigObject(duplicateWs.workspace).plugins.entries.gigabrain.config);
+    const duplicateDb = openDb(duplicateWs.dbPath);
+    try {
+      const original = captureFromEvent({
+        db: duplicateDb,
+        config: duplicateConfig,
+        event: {
+          scope: 'profile:main',
+          agentId: 'main',
+          sessionKey: 'agent:main:dup',
+          messages: [{ role: 'user', content: 'remember that Alex prefers concise, direct answers.' }],
+          text: '<memory_note type="PREFERENCE" confidence="0.9">Alex prefers concise, direct answers.</memory_note>',
+        },
+        runId: 'capture-unit-dup-run',
+        reviewVersion: 'rv-capture-unit',
+        logger: { info: () => {} },
+      });
+      assert.equal(original.inserted, 1, 'seed duplicate memory should insert normally');
+
+      const exactDuplicate = captureFromEvent({
+        db: duplicateDb,
+        config: duplicateConfig,
+        event: {
+          scope: 'profile:main',
+          agentId: 'main',
+          sessionKey: 'agent:main:dup',
+          messages: [{ role: 'user', content: 'remember that Alex prefers concise, direct answers.' }],
+          text: '<memory_note type="PREFERENCE" confidence="0.9">Alex prefers concise, direct answers.</memory_note>',
+        },
+        runId: 'capture-unit-dup-run',
+        reviewVersion: 'rv-capture-unit',
+        logger: { info: () => {} },
+      });
+      assert.equal(exactDuplicate.inserted, 0, 'exact duplicate should not insert a second registry row');
+      assert.equal(exactDuplicate.dropped_exact_duplicate, 1, 'exact duplicate should be dropped');
+      assert.equal(exactDuplicate.native_written, 0, 'exact duplicate should not append a native line');
+      assert.equal(exactDuplicate.write_records.at(-1)?.written_native, false, 'exact duplicate telemetry should report no native write');
+      assert.equal(exactDuplicate.write_records.at(-1)?.duplicate, 'exact', 'exact duplicate telemetry should retain duplicate type');
+
+      const semanticDuplicate = captureFromEvent({
+        db: duplicateDb,
+        config: duplicateConfig,
+        event: {
+          scope: 'profile:main',
+          agentId: 'main',
+          sessionKey: 'agent:main:dup',
+          messages: [{ role: 'user', content: 'remember that Alex prefers concise and direct answers.' }],
+          text: '<memory_note type="PREFERENCE" confidence="0.9">Alex prefers concise and direct answers.</memory_note>',
+        },
+        runId: 'capture-unit-dup-run',
+        reviewVersion: 'rv-capture-unit',
+        logger: { info: () => {} },
+      });
+      assert.equal(semanticDuplicate.inserted, 0, 'semantic duplicate should not insert a second registry row');
+      assert.equal(semanticDuplicate.dropped_semantic_duplicate, 1, 'semantic duplicate should be dropped');
+      assert.equal(semanticDuplicate.native_written, 0, 'semantic duplicate should not append a native line');
+      assert.equal(semanticDuplicate.write_records.at(-1)?.written_native, false, 'semantic duplicate telemetry should report no native write');
+      assert.equal(semanticDuplicate.write_records.at(-1)?.duplicate, 'semantic', 'semantic duplicate telemetry should retain duplicate type');
+      assert.match(String(semanticDuplicate.write_records.at(-1)?.source_path || ''), /MEMORY\.md$/, 'semantic duplicate telemetry should retain existing native provenance');
+
+      const duplicateMemoryMd = fs.readFileSync(path.join(duplicateWs.workspace, 'MEMORY.md'), 'utf8');
+      assert.match(duplicateMemoryMd, /Alex prefers concise, direct answers\./, 'seed native note should remain present');
+      assert.doesNotMatch(duplicateMemoryMd, /Alex prefers concise and direct answers\./, 'semantic duplicate should not leak an alternate phrasing into MEMORY.md');
+      assert.equal((duplicateMemoryMd.match(/## Preferences/g) || []).length, 1, 'duplicate capture should not create an extra preferences heading');
+
+      const nativeSync = syncNativeMemory({ db: duplicateDb, config: duplicateConfig, dryRun: false });
+      assert.equal(nativeSync.inserted_chunks, 1, 'only the original native bullet should be indexed after duplicate capture attempts');
+      const duplicateChunks = duplicateDb.prepare(`
+        SELECT content, linked_memory_id
+        FROM memory_native_chunks
+        WHERE source_path = ?
+        ORDER BY line_start ASC
+      `).all(path.join(duplicateWs.workspace, 'MEMORY.md'));
+      assert.equal(duplicateChunks.length, 1, 'native sync should see only one active chunk for the preference');
+      assert.equal(String(duplicateChunks[0]?.content || ''), 'Alex prefers concise, direct answers.', 'the indexed chunk should remain the original phrasing');
+      assert.equal(Boolean(duplicateChunks[0]?.linked_memory_id), true, 'the surviving native chunk should stay linked to the original memory');
+    } finally {
+      duplicateDb.close();
+    }
 
     // Phase 0A: Thinking block contamination must be stripped before parsing
     const thinkingContaminated = parseMemoryNotes(`
