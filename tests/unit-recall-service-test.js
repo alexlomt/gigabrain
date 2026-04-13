@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 
 import { normalizeConfig } from '../lib/core/config.js';
+import { ensureNativeStore } from '../lib/core/native-sync.js';
 import { ensurePersonStore, rebuildEntityMentions } from '../lib/core/person-service.js';
 import { recallForQuery } from '../lib/core/recall-service.js';
 import { makeConfigObject, makeTempWorkspace, openDb, seedMemoryCurrent } from './helpers.js';
@@ -125,6 +127,65 @@ const run = async () => {
       verificationResult.budget.maxTokens,
       1600,
       'verification_lookup recall should use the larger adaptive verification budget',
+    );
+
+    seedMemoryCurrent(db, Array.from({ length: 8 }, (_, index) => ({
+      memory_id: `verify-noise-${index + 1}`,
+      type: 'PREFERENCE',
+      content: `GBE2E_DUR_${index + 1} Alex prefers durable marker ${index + 1}.`,
+      scope: 'profile:main',
+      confidence: 0.91,
+      value_score: 0.9,
+      value_label: 'core',
+    })));
+    ensureNativeStore(db);
+    const nowIso = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO memory_native_chunks (
+        chunk_id, source_path, source_kind, source_date, section, line_start, line_end,
+        content, normalized, hash, scope, memory_type, linked_memory_id, first_seen_at, last_seen_at, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      'native-verification-hit',
+      `${ws.workspace}/memory/2026-04-13.md`,
+      'daily_note',
+      '2026-04-13',
+      'CONTEXT',
+      5,
+      5,
+      'GBE2E_EPH_52F1 Alex is travelling today under end-to-end marker 52F1.',
+      'gbe2e eph 52f1 alex is travelling today under end to end marker 52f1',
+      randomUUID(),
+      'profile:main',
+      'CONTEXT',
+      null,
+      nowIso,
+      nowIso,
+      'active',
+    );
+
+    const verificationNativeResult = recallForQuery({
+      db,
+      config: {
+        ...config,
+        recall: {
+          ...config.recall,
+          topK: 3,
+        },
+      },
+      query: 'What exact wording mentions GBE2E_EPH_52F1?',
+      scope: 'profile:main',
+      strategyContext: { strategy: 'verification_lookup', deepLookupAllowed: true },
+    });
+    assert.equal(
+      verificationNativeResult.results[0]?.memory_id,
+      'native:native-verification-hit',
+      'verification lookup should surface the native-only exact match ahead of broader active rows',
+    );
+    assert.equal(
+      verificationNativeResult.querySignals.entityIntent,
+      false,
+      'verification lookup should not misclassify exact marker queries as entity intent from fallback tokens',
     );
 
     const semanticFallbackResult = recallForQuery({
