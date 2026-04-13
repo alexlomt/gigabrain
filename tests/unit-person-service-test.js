@@ -32,6 +32,7 @@ const run = async () => {
       { memory_id: 'p-alpha', type: 'USER_FACT', content: 'Mira coordinates the alpha launch.', scope: 'project:alpha', confidence: 0.76 },
       { memory_id: 'p-beta', type: 'USER_FACT', content: 'Soren coordinates the beta launch.', scope: 'project:beta', confidence: 0.76 },
       { memory_id: 'p4', type: 'CONTEXT', content: 'Archive Contact Content Date are section labels, not people.', scope: 'shared', confidence: 0.8 },
+      { memory_id: 'p5', type: 'ENTITY', content: 'Project Narwhal Ledger ships weekly status packs.', scope: 'shared', confidence: 0.84 },
     ]);
     db.prepare(`
       INSERT INTO memory_native_chunks (
@@ -70,6 +71,21 @@ const run = async () => {
       WHERE entity_key = 'riley'
     `).get()?.c || 0;
     assert.equal(Number(count) >= 3, true, 'entity mention rebuild should index active + native person mentions');
+
+    const compoundMentions = db.prepare(`
+      SELECT COUNT(*) AS c
+      FROM memory_entity_mentions
+      WHERE entity_key = 'narwhal ledger'
+        AND memory_id = 'p5'
+    `).get()?.c || 0;
+    assert.equal(Number(compoundMentions) >= 1, true, 'compound project names should be indexed as one entity mention');
+    const fragmentedMentions = db.prepare(`
+      SELECT COUNT(*) AS c
+      FROM memory_entity_mentions
+      WHERE entity_key IN ('narwhal', 'ledger')
+        AND memory_id = 'p5'
+    `).get()?.c || 0;
+    assert.equal(Number(fragmentedMentions), 0, 'compound project mentions should not fragment into standalone tokens');
 
     const keys = resolveEntityKeysForQuery(db, 'wer ist riley?');
     assert.equal(keys.includes('riley'), true, 'query resolver should detect person key');
