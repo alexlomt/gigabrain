@@ -90,6 +90,38 @@ const run = async () => {
         value_score: 0.72,
         content_time: '2026-03-14',
       },
+      {
+        memory_id: 'm-9',
+        type: 'ENTITY',
+        content: 'Project Narwhal Ledger is the reporting workspace for treasury operations.',
+        scope: 'shared',
+        confidence: 0.92,
+        value_score: 0.82,
+      },
+      {
+        memory_id: 'm-10',
+        type: 'PREFERENCE',
+        content: 'Project Narwhal Ledger prefers weekly reporting packs over ad hoc status pings.',
+        scope: 'shared',
+        confidence: 0.91,
+        value_score: 0.81,
+      },
+      {
+        memory_id: 'm-11',
+        type: 'PREFERENCE',
+        content: 'Narwhal prefers concise standups.',
+        scope: 'shared',
+        confidence: 0.89,
+        value_score: 0.8,
+      },
+      {
+        memory_id: 'm-12',
+        type: 'PREFERENCE',
+        content: 'Ledger prefers immutable logs.',
+        scope: 'shared',
+        confidence: 0.88,
+        value_score: 0.79,
+      },
     ]);
     ensureNativeStore(db);
     rebuildEntityMentions(db);
@@ -135,6 +167,19 @@ const run = async () => {
     });
     assert.equal(String(preferenceRecall.results[0]?.type || ''), 'PREFERENCE', 'short preference prompts should prioritize preference memories');
     assert.equal(String(preferenceRecall.results[0]?.content || '').toLowerCase().includes('winter'), true, 'short preference prompts should recover the season preference row');
+
+    const compoundPreferenceRecall = orchestrateRecall({
+      db,
+      config,
+      query: 'What does Project Narwhal Ledger prefer?',
+      scope: 'shared',
+    });
+    assert.equal(compoundPreferenceRecall.strategy, 'entity_brief', 'entity-directed preference queries should promote out of quick_context into entity_brief when the entity is resolved');
+    assert.equal(compoundPreferenceRecall.usedWorldModel, true, 'entity-directed preference queries should use the selected entity brief when available');
+    assert.equal(compoundPreferenceRecall.selectedEntityId, 'project:narwhal-ledger', 'compound project preference queries should lock onto the exact compound project entity');
+    assert.equal(compoundPreferenceRecall.rankingMode, 'entity_brief:entity_locked', 'compound project preference queries should use entity-locked ranking');
+    assert.equal(String(compoundPreferenceRecall.results[0]?.content || '').toLowerCase().includes('project narwhal ledger prefers weekly reporting packs'), true, 'compound project preference queries should rank the exact project preference fact first');
+    assert.equal(compoundPreferenceRecall.results.every((row) => /narwhal ledger/i.test(String(row.content || ''))), true, 'entity-locked preference recall should suppress fragment-only Narwhal or Ledger rows');
 
     const timelineRecall = orchestrateRecall({
       db,
