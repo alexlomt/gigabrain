@@ -218,6 +218,103 @@ const run = async () => {
       duplicateDb.close();
     }
 
+    const groupedSectionWs = makeTempWorkspace('gb-v3-unit-capture-grouped-');
+    const groupedSectionConfig = normalizeConfig(makeConfigObject(groupedSectionWs.workspace).plugins.entries.gigabrain.config);
+    const groupedSectionDb = openDb(groupedSectionWs.dbPath);
+    try {
+      const firstPreference = captureFromEvent({
+        db: groupedSectionDb,
+        config: groupedSectionConfig,
+        event: {
+          scope: 'profile:main',
+          agentId: 'main',
+          sessionKey: 'agent:main:grouped',
+          messages: [{ role: 'user', content: 'remember that Alex prefers concise, direct answers for production work.' }],
+          text: '<memory_note type="PREFERENCE" confidence="0.9">Alex prefers concise, direct answers for production work.</memory_note>',
+        },
+        runId: 'capture-unit-grouped-run',
+        reviewVersion: 'rv-capture-unit',
+        logger: { info: () => {} },
+      });
+      const secondPreference = captureFromEvent({
+        db: groupedSectionDb,
+        config: groupedSectionConfig,
+        event: {
+          scope: 'profile:main',
+          agentId: 'main',
+          sessionKey: 'agent:main:grouped',
+          messages: [{ role: 'user', content: 'remember that Alex prefers immediate execution when the next step is clear.' }],
+          text: '<memory_note type="PREFERENCE" confidence="0.9">Alex prefers immediate execution when the next step is clear.</memory_note>',
+        },
+        runId: 'capture-unit-grouped-run',
+        reviewVersion: 'rv-capture-unit',
+        logger: { info: () => {} },
+      });
+      assert.equal(firstPreference.inserted, 1, 'first grouped preference should insert');
+      assert.equal(secondPreference.inserted, 1, 'second grouped preference should insert');
+      const groupedMemoryMd = fs.readFileSync(path.join(groupedSectionWs.workspace, 'MEMORY.md'), 'utf8');
+      assert.equal((groupedMemoryMd.match(/## Preferences/g) || []).length, 1, 'consecutive preferences should share one trailing preferences heading');
+      assert.match(groupedMemoryMd, /Alex prefers concise, direct answers for production work\./, 'first grouped preference should be present in MEMORY.md');
+      assert.match(groupedMemoryMd, /Alex prefers immediate execution when the next step is clear\./, 'second grouped preference should be present in MEMORY.md');
+
+      const groupedSync = syncNativeMemory({ db: groupedSectionDb, config: groupedSectionConfig, dryRun: false });
+      assert.equal(groupedSync.inserted_chunks, 2, 'grouped preference writes should still produce two native chunks');
+    } finally {
+      groupedSectionDb.close();
+    }
+
+    const appendOnlyWs = makeTempWorkspace('gb-v3-unit-capture-append-only-');
+    const appendOnlyConfig = normalizeConfig(makeConfigObject(appendOnlyWs.workspace).plugins.entries.gigabrain.config);
+    const appendOnlyDb = openDb(appendOnlyWs.dbPath);
+    try {
+      captureFromEvent({
+        db: appendOnlyDb,
+        config: appendOnlyConfig,
+        event: {
+          scope: 'profile:main',
+          agentId: 'main',
+          sessionKey: 'agent:main:append-only',
+          messages: [{ role: 'user', content: 'remember that Alex prefers concise, direct answers for production work.' }],
+          text: '<memory_note type="PREFERENCE" confidence="0.9">Alex prefers concise, direct answers for production work.</memory_note>',
+        },
+        runId: 'capture-unit-append-only-run',
+        reviewVersion: 'rv-capture-unit',
+        logger: { info: () => {} },
+      });
+      captureFromEvent({
+        db: appendOnlyDb,
+        config: appendOnlyConfig,
+        event: {
+          scope: 'profile:main',
+          agentId: 'main',
+          sessionKey: 'agent:main:append-only',
+          messages: [{ role: 'user', content: 'remember that Decision: keep validation outputs production-grade by default.' }],
+          text: '<memory_note type="DECISION" confidence="0.9">Decision: keep validation outputs production-grade by default.</memory_note>',
+        },
+        runId: 'capture-unit-append-only-run',
+        reviewVersion: 'rv-capture-unit',
+        logger: { info: () => {} },
+      });
+      captureFromEvent({
+        db: appendOnlyDb,
+        config: appendOnlyConfig,
+        event: {
+          scope: 'profile:main',
+          agentId: 'main',
+          sessionKey: 'agent:main:append-only',
+          messages: [{ role: 'user', content: 'remember that Alex prefers immediate execution when the next step is clear.' }],
+          text: '<memory_note type="PREFERENCE" confidence="0.9">Alex prefers immediate execution when the next step is clear.</memory_note>',
+        },
+        runId: 'capture-unit-append-only-run',
+        reviewVersion: 'rv-capture-unit',
+        logger: { info: () => {} },
+      });
+      const appendOnlyMemoryMd = fs.readFileSync(path.join(appendOnlyWs.workspace, 'MEMORY.md'), 'utf8');
+      assert.equal((appendOnlyMemoryMd.match(/## Preferences/g) || []).length, 2, 'revisiting preferences after another section should stay append-only and open a fresh preferences block');
+    } finally {
+      appendOnlyDb.close();
+    }
+
     // Phase 0A: Thinking block contamination must be stripped before parsing
     const thinkingContaminated = parseMemoryNotes(`
 <thinking>I should store a memory about the user's pet.</thinking>
