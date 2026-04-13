@@ -58,6 +58,13 @@ const parseAgentIdFromSessionKey = (sessionKey: string): string => {
   return String(parts[1] || 'shared').trim() || 'shared';
 };
 
+const normalizeResolvedScope = (value: string): string => {
+  const scope = String(value || '').trim();
+  if (!scope) return '';
+  if (scope === 'main') return 'profile:main';
+  return scope;
+};
+
 const slugifyScopeToken = (value: string): string => {
   const input = String(value || '').toLowerCase();
   let out = '';
@@ -176,19 +183,19 @@ const sanitizeCandidateQuery = (input: string): string => {
 };
 
 const resolveScopeForEvent = (event: any): string => {
-  const explicit = String(event?.scope || event?.agentId || '').trim();
+  const explicit = normalizeResolvedScope(String(event?.scope || event?.agentId || '').trim());
   if (explicit) return explicit;
 
   const sessionKey = String(event?.sessionKey || event?.meta?.sessionKey || '').trim();
   if (sessionKey) {
-    const parsedAgentId = parseAgentIdFromSessionKey(sessionKey);
+    const parsedAgentId = normalizeResolvedScope(parseAgentIdFromSessionKey(sessionKey));
     if (parsedAgentId && parsedAgentId !== 'shared') return parsedAgentId;
   }
 
   const workspaceScope = deriveScopeFromWorkspaceDir(String(event?.workspaceDir || '').trim());
   if (workspaceScope) return workspaceScope;
   if (!sessionKey) return 'shared';
-  return parseAgentIdFromSessionKey(sessionKey);
+  return normalizeResolvedScope(parseAgentIdFromSessionKey(sessionKey));
 };
 
 const mergeEventWithCtx = (event: any, ctx: any) => {

@@ -158,6 +158,21 @@ const run = async () => {
     },
   );
 
+  await agentEnd(
+    {
+      prompt: 'remember this',
+      messages: [
+        { role: 'user', content: 'Remember the operator marker.' },
+      ],
+      output: '<memory_note type="PREFERENCE" confidence="0.88">The main operator prefers profile-scoped capture.</memory_note>',
+    },
+    {
+      agentId: 'main',
+      sessionKey: 'agent:main:telegram:dm:314',
+      workspaceDir: ws.workspace,
+    },
+  );
+
   const dbAfter = openDb(ws.dbPath);
   try {
     const stored = dbAfter.prepare(`
@@ -183,6 +198,20 @@ const run = async () => {
       String(workspaceStored.scope || ''),
       workspaceOnlyScope,
       'agent_end should derive scope from ctx.workspaceDir when agentId/sessionKey are unavailable',
+    );
+
+    const mainStored = dbAfter.prepare(`
+      SELECT scope
+      FROM memory_current
+      WHERE normalized LIKE '%profile scoped capture%'
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `).get();
+    assert.equal(Boolean(mainStored), true, 'agent_end should persist main-agent captures');
+    assert.equal(
+      String(mainStored.scope || ''),
+      'profile:main',
+      'main agent captures should normalize to profile:main scope',
     );
   } finally {
     dbAfter.close();
