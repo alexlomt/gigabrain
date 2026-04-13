@@ -132,6 +132,29 @@ const run = async () => {
     fs.rmSync(dailyWs.root, { recursive: true, force: true });
   }
 
+  const identityWs = makeTempWorkspace('gb-v4-native-promotion-identity-');
+  try {
+    fs.writeFileSync(path.join(identityWs.workspace, 'MEMORY.md'), '# MEMORY\n\n## Core Identity\n\n- Lobster verifies before acting.\n', 'utf8');
+
+    const config = normalizeConfig(makeConfigObject(identityWs.workspace).plugins.entries.gigabrain.config);
+    const db = openDb(identityWs.dbPath);
+    try {
+      runNativeCycle({ db, config });
+      const promoted = db.prepare(`
+        SELECT type, scope
+        FROM memory_current
+        WHERE content = 'Lobster verifies before acting.'
+        LIMIT 1
+      `).get();
+      assert.equal(String(promoted?.type || ''), 'AGENT_IDENTITY', 'identity-style headings should not be misclassified as entities');
+      assert.equal(String(promoted?.scope || ''), 'profile:main', 'identity-style MEMORY.md promotions should remain profile-scoped');
+    } finally {
+      db.close();
+    }
+  } finally {
+    fs.rmSync(identityWs.root, { recursive: true, force: true });
+  }
+
   const legacyWs = makeTempWorkspace('gb-v4-native-promotion-legacy-');
   try {
     const memoryPath = path.join(legacyWs.workspace, 'MEMORY.md');
