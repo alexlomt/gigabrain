@@ -90,7 +90,10 @@ const run = async () => {
       sessionLabel: 'MCP hardening',
       summary: 'Implemented Codex App checkpoint capture for Gigabrain.',
       scope: projectScope,
-      decisions: ['Use SDK-based MCP transport for Codex App.'],
+      decisions: [
+        'Use SDK-based MCP transport for Codex App.',
+        'Keep checkpoint decisions grouped under a single heading.',
+      ],
       openLoops: ['Document the new checkpoint workflow in the README.'],
       touchedFiles: ['lib/core/codex-mcp.js'],
       durableCandidates: ['The repo codename is Atlas Beacon.'],
@@ -99,6 +102,11 @@ const run = async () => {
     assert.equal(checkpoint.written_native, true, 'checkpoint should write native session logs');
     assert.equal(String(checkpoint.source_path).endsWith('.md'), true, 'checkpoint should write to today’s daily note');
     assert.equal(checkpoint.written_sections.includes('Codex App Sessions'), true, 'checkpoint should include the summary section');
+    const checkpointBody = fs.readFileSync(String(checkpoint.source_path), 'utf8');
+    const checkpointSection = checkpointBody.slice(checkpointBody.indexOf('## Codex App Sessions'));
+    assert.equal((checkpointSection.match(/## Decisions/g) || []).length, 1, 'checkpoint decisions should stay grouped under one trailing Decisions heading');
+    assert.match(checkpointSection, /Decision: Use SDK-based MCP transport for Codex App\./, 'checkpoint should include the first decision bullet');
+    assert.match(checkpointSection, /Decision: Keep checkpoint decisions grouped under a single heading\./, 'checkpoint should include the second decision bullet');
 
     const ephemeral = runRemember({
       configPath,
