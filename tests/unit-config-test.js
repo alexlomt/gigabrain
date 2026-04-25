@@ -45,6 +45,8 @@ const run = async () => {
   assert.equal(Math.abs(budgetTotal - 1) < 0.00001, true, 'class budgets must normalize to 1');
   assert.equal(config.native.syncMode, 'hybrid', 'native sync mode should stay hybrid');
   assert.equal(Array.isArray(config.native.includeFiles), true, 'native include files should normalize to array');
+  assert.equal(config.native.includeFiles.some((item) => String(item).endsWith('memory/pinned/peer-agents.md')), true, 'peer-agent pinned memory should be part of default native includes');
+  assert.equal(config.native.includeFiles.some((item) => String(item).endsWith('memory/pinned-core-people.md')), false, 'obsolete pinned-core-people include should not remain in defaults');
   assert.equal(config.person.keepPublicFacts, true, 'person policy should keep public facts by default');
   assert.equal(config.capture.rememberIntent.enabled, true, 'remember intent should be enabled by default');
   assert.equal(Array.isArray(config.capture.rememberIntent.phrasesBase), true, 'remember intent phrases should normalize');
@@ -54,6 +56,9 @@ const run = async () => {
   assert.equal(String(config.llm.taskProfiles.memory_review.model), 'qwen3.5:9b', 'memory review should default to qwen3.5:9b');
   assert.equal(Number(config.llm.taskProfiles.chat_general.temperature), 1, 'chat general should use official-ish default sampling');
   assert.equal(String(config.llm.review.profile), 'memory_review', 'review profile should default to memory_review');
+  assert.equal(config.llm.queueReview.enabled, false, 'queue review should default to disabled');
+  assert.equal(String(config.llm.queueReview.profile), 'memory_review', 'queue review should default to memory_review profile');
+  assert.equal(Array.isArray(config.llm.queueReview.allowedReasons), true, 'queue review reasons should normalize to array');
   assert.equal(String(config.vault.subdir), 'Gigabrain', 'vault mirror should default to Gigabrain subdir');
   assert.equal(String(config.vault.homeNoteName), 'Home', 'vault home note should default to Home');
   assert.deepEqual(config.vault.manualFolders, ['Inbox', 'Manual'], 'vault manual folders should normalize');

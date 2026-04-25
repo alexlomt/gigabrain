@@ -29,6 +29,8 @@ const TEST_FILES = [
   'unit-runtime-guard-test.js',
   'unit-llm-router-test.js',
   'unit-review-queue-test.js',
+  'unit-queue-review-service-test.js',
+  'unit-hygiene-migration-test.js',
   'unit-http-routes-test.js',
   'unit-package-metadata-test.js',
   'unit-embedding-service-test.js',

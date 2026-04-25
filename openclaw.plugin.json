@@ -1,6 +1,11 @@
 {
   "id": "gigabrain",
   "kind": "memory",
+  "activation": {
+    "onCommands": [
+      "memory"
+    ]
+  },
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
@@ -821,6 +826,41 @@
                 "default": "memory_review"
               }
             }
+          },
+          "queueReview": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": false
+              },
+              "limit": {
+                "type": "number",
+                "default": 200
+              },
+              "minConfidence": {
+                "type": "number",
+                "default": 0.8
+              },
+              "profile": {
+                "type": "string",
+                "default": "memory_review"
+              },
+              "allowedReasons": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": [
+                  "capture_missing_note",
+                  "capture_review_required",
+                  "capture_parse_failed",
+                  "llm_unavailable",
+                  "duplicate_semantic"
+                ]
+              }
+            }
           }
         }
       },
@@ -883,8 +923,9 @@
               "memory/latest.md",
               "memory/recent-changes.md",
               "memory/whois.md",
-              "memory/pinned-core-people.md",
-              "memory/pinned/core-people.md"
+              "memory/pinned/core-people.md",
+              "memory/pinned/peer-agents.md",
+              "memory/gigabrain-harmonized.md"
             ]
           },
           "excludeGlobs": {

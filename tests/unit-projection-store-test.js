@@ -44,6 +44,33 @@ const run = async () => {
     });
     assert.equal(graphResults[0]?.memory_id === 'plain-hit' || graphResults[0]?.memory_id === 'fts-prefix-hit', true, 'search should still rank normal lexical hits after FTS weighting');
 
+    seedMemoryCurrent(db, [
+      {
+        memory_id: 'profile-hit',
+        type: 'PREFERENCE',
+        content: 'Alex prefers direct execution when scope is clear.',
+        scope: 'profile:main',
+        confidence: 0.93,
+        value_score: 0.72,
+      },
+      {
+        memory_id: 'shared-visible-hit',
+        type: 'PREFERENCE',
+        content: 'Alex prefers direct execution in shared runbooks.',
+        scope: 'shared',
+        confidence: 0.82,
+        value_score: 0.4,
+      },
+    ]);
+    const mainScopedResults = searchCurrentMemories(db, {
+      query: 'direct execution',
+      topK: 10,
+      scope: 'main',
+      statuses: ['active'],
+    }).map((row) => row.memory_id);
+    assert.equal(mainScopedResults.includes('profile-hit'), true, 'legacy main scope queries should see profile:main memories');
+    assert.equal(mainScopedResults.includes('shared-visible-hit'), true, 'profile/main scope queries should still include shared memories');
+
     assert.throws(
       () => searchCurrentMemories(db, {
         query: 'graph',

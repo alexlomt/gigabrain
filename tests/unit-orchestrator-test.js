@@ -194,6 +194,22 @@ const run = async () => {
         confidence: 0.96,
         value_score: 0.9,
       },
+      {
+        memory_id: 'm-17',
+        type: 'USER_FACT',
+        content: 'Alex is purchasing a rural property in Canterbury, CT3 1HS.',
+        scope: 'profile:main',
+        confidence: 0.96,
+        value_score: 0.78,
+      },
+      {
+        memory_id: 'm-18',
+        type: 'DECISION',
+        content: 'The clean fix for PR #68741 was to route bridge-safe handling by the resolved adapter command, not the literal openclaw agent id.',
+        scope: 'profile:main',
+        confidence: 0.93,
+        value_score: 0.52,
+      },
     ]);
     rebuildEntityMentions(db);
 
@@ -214,6 +230,24 @@ const run = async () => {
     });
     assert.equal(agentIdentityRecall.selectedEntityId, 'person:lobster');
     assert.equal(agentIdentityRecall.strategy, 'entity_brief');
+
+    const propertyRecall = orchestrateRecall({
+      db,
+      config,
+      query: 'What do you know about Alex rural property Canterbury CT3 1HS?',
+      scope: 'profile:main',
+    });
+    assert.equal(propertyRecall.strategy, 'entity_brief', 'Alex-specific property question should keep entity-brief routing');
+    assert.match(String(propertyRecall.results[0]?.content || ''), /Canterbury, CT3 1HS/i, 'entity lock must not bury strong non-entity lexical property hits under generic Alex facts');
+
+    const prRecall = orchestrateRecall({
+      db,
+      config,
+      query: 'PR #68741 bridge-safe adapter command',
+      scope: 'profile:main',
+    });
+    assert.equal(prRecall.strategy, 'verification_lookup', 'PR-number lookups should use verification/deep lookup routing');
+    assert.match(String(prRecall.results[0]?.content || ''), /PR #68741.*bridge-safe/i, 'PR-number lookup should recover working-reference implementation decisions');
 
     const preferenceRecall = orchestrateRecall({
       db,
