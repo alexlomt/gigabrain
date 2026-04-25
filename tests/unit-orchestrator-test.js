@@ -159,6 +159,96 @@ const run = async () => {
     assert.equal(String(selfRecall.results[0]?.type || ''), 'AGENT_IDENTITY', 'self-identity prompts should prioritize AGENT_IDENTITY rows');
     assert.equal(String(selfRecall.results[0]?.content || '').toLowerCase().includes('atlas is the coding agent'), true, 'self-identity prompts should surface the agent identity row');
 
+    fs.writeFileSync(path.join(ws.workspace, 'IDENTITY.md'), '# IDENTITY.md\n\n- **Name:** Lobster\n- **Creature:** Personal AI operator\n- **Vibe:** Direct\n- **Emoji:** 🦞\n', 'utf8');
+    fs.writeFileSync(path.join(ws.workspace, 'USER.md'), '# USER.md\n\n- **Name:** Alex Lomtatidze\n- **What to call them:** Alex\n- **Timezone:** Europe/London\n', 'utf8');
+    seedMemoryCurrent(db, [
+      {
+        memory_id: 'm-13',
+        type: 'AGENT_IDENTITY',
+        content: 'Lobster is the personal AI operator for this workspace.',
+        scope: 'profile:main',
+        confidence: 0.98,
+        value_score: 0.92,
+      },
+      {
+        memory_id: 'm-14',
+        type: 'USER_FACT',
+        content: 'Alex Lomtatidze is London-based and runs an AI agency.',
+        scope: 'profile:main',
+        confidence: 0.97,
+        value_score: 0.91,
+      },
+      {
+        memory_id: 'm-15',
+        type: 'PREFERENCE',
+        content: 'Alex prefers direct, verified answers and practical business value.',
+        scope: 'profile:main',
+        confidence: 0.95,
+        value_score: 0.9,
+      },
+      {
+        memory_id: 'm-16',
+        type: 'AGENT_IDENTITY',
+        content: 'Lobster is direct, pragmatic, and quietly supportive.',
+        scope: 'profile:main',
+        confidence: 0.96,
+        value_score: 0.9,
+      },
+      {
+        memory_id: 'm-17',
+        type: 'USER_FACT',
+        content: 'Alex is purchasing a rural property in Canterbury, CT3 1HS.',
+        scope: 'profile:main',
+        confidence: 0.96,
+        value_score: 0.78,
+      },
+      {
+        memory_id: 'm-18',
+        type: 'DECISION',
+        content: 'The clean fix for PR #68741 was to route bridge-safe handling by the resolved adapter command, not the literal openclaw agent id.',
+        scope: 'profile:main',
+        confidence: 0.93,
+        value_score: 0.52,
+      },
+    ]);
+    rebuildEntityMentions(db);
+
+    const userIdentityRecall = orchestrateRecall({
+      db,
+      config,
+      query: 'Who am I?',
+      scope: 'profile:main',
+    });
+    assert.equal(userIdentityRecall.selectedEntityId, 'person:alex');
+    assert.equal(userIdentityRecall.strategy, 'entity_brief');
+
+    const agentIdentityRecall = orchestrateRecall({
+      db,
+      config,
+      query: 'Who are you?',
+      scope: 'profile:main',
+    });
+    assert.equal(agentIdentityRecall.selectedEntityId, 'person:lobster');
+    assert.equal(agentIdentityRecall.strategy, 'entity_brief');
+
+    const propertyRecall = orchestrateRecall({
+      db,
+      config,
+      query: 'What do you know about Alex rural property Canterbury CT3 1HS?',
+      scope: 'profile:main',
+    });
+    assert.equal(propertyRecall.strategy, 'entity_brief', 'Alex-specific property question should keep entity-brief routing');
+    assert.match(String(propertyRecall.results[0]?.content || ''), /Canterbury, CT3 1HS/i, 'entity lock must not bury strong non-entity lexical property hits under generic Alex facts');
+
+    const prRecall = orchestrateRecall({
+      db,
+      config,
+      query: 'PR #68741 bridge-safe adapter command',
+      scope: 'profile:main',
+    });
+    assert.equal(prRecall.strategy, 'verification_lookup', 'PR-number lookups should use verification/deep lookup routing');
+    assert.match(String(prRecall.results[0]?.content || ''), /PR #68741.*bridge-safe/i, 'PR-number lookup should recover working-reference implementation decisions');
+
     const preferenceRecall = orchestrateRecall({
       db,
       config,

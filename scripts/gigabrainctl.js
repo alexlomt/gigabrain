@@ -9,6 +9,8 @@ import { openDatabase } from '../lib/core/sqlite.js';
 import { loadResolvedConfig } from '../lib/core/config.js';
 import { runMaintenance } from '../lib/core/maintenance-service.js';
 import { runAudit, runAuditRestore, runAuditReport } from '../lib/core/audit-service.js';
+import { reviewPendingQueue } from '../lib/core/queue-review-service.js';
+import { applyQueueRetention } from '../lib/core/review-queue.js';
 import { ensureProjectionStore, materializeProjectionFromMemories } from '../lib/core/projection-store.js';
 import { captureSnapshotMetrics } from '../lib/core/metrics.js';
 import { buildVaultSurface, inspectVaultHealth, loadSurfaceSummary, syncVaultPull } from '../lib/core/vault-mirror.js';
@@ -571,6 +573,24 @@ const commandNightly = async () => {
       reviewVersion,
       runId,
     });
+    const queueReviewDb = openDatabase(dbPath);
+    let queueReview;
+    try {
+      queueReview = await reviewPendingQueue({
+        db: queueReviewDb,
+        config,
+        dryRun,
+        reviewVersion,
+        runId: maintain.runId,
+      });
+    } finally {
+      queueReviewDb.close();
+    }
+    const queueRetention = applyQueueRetention(
+      config.runtime.paths.reviewQueuePath,
+      config.runtime.reviewQueueRetention,
+      { dryRun },
+    );
     const harmonize = runNightlyHarmonize({
       configPath,
       dbPath,
@@ -617,6 +637,8 @@ const commandNightly = async () => {
       runId: maintain.runId,
       lock,
       maintain,
+      queueReview,
+      queueRetention,
       harmonize,
       audit,
       verification,

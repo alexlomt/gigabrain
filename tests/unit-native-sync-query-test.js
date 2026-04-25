@@ -219,6 +219,14 @@ fallback: active_or_native
     const syncedContents = syncedRows.map((row) => String(row.content || ''));
     assert.equal(syncedContents.some((content) => /query:|fallback:|user:|assistant:/i.test(content)), false, 'native sync should not index recall or transcript control lines');
     assert.equal(syncedContents.some((content) => content.includes('Durable fact about Liz and Alex.')), true, 'native sync should keep human-readable durable notes from the same file');
+
+    const targetedSource = path.join(ws.workspace, 'memory', '2026-03-08-session-start.md');
+    fs.appendFileSync(targetedSource, '\n- Another durable fact about Liz and Alex.\n', 'utf8');
+    const targetedSync = syncNativeMemory({ db, config, dryRun: false, sourcePaths: [targetedSource] });
+    assert.equal(targetedSync.changed_files, 1, 'targeted native sync should process the requested changed file');
+    assert.equal(targetedSync.removed_sources, 0, 'targeted native sync must not mark other known sources removed');
+    const sourceCount = db.prepare('SELECT COUNT(*) AS c FROM memory_native_sync_state').get();
+    assert.equal(Number(sourceCount?.c || 0) >= 1, true, 'targeted native sync should preserve sync state for existing sources');
   } finally {
     db.close();
   }

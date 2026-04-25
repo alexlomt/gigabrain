@@ -174,8 +174,8 @@ const makeConfigObject = (workspace) => ({
               'memory/latest.md',
               'memory/recent-changes.md',
               'memory/whois.md',
-              'memory/pinned-core-people.md',
               'memory/pinned/core-people.md',
+              'memory/pinned/peer-agents.md',
             ],
             excludeGlobs: [
               'memory/archive/**',

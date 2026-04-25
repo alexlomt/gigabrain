@@ -12,6 +12,8 @@ import { ensureNativeStore, syncNativeMemory } from './lib/core/native-sync.js';
 import { promoteNativeChunks } from './lib/core/native-promotion.js';
 import { ensurePersonStore, rebuildEntityMentions } from './lib/core/person-service.js';
 import { ensureWorldModelReady, ensureWorldModelStore, getSynthesis, rebuildWorldModel } from './lib/core/world-model.js';
+import { registerGigabrainMemoryCli, gigabrainMemoryCliDescriptors } from './lib/core/openclaw-memory-cli.js';
+import { gigabrainMemoryRuntime } from './lib/core/openclaw-memory-runtime.js';
 import { openDatabase } from './lib/core/sqlite.js';
 import { recordRecallLatency } from './lib/core/metrics.js';
 
@@ -29,6 +31,14 @@ type PluginApi = {
     auth?: 'gateway' | 'plugin';
     match?: 'exact' | 'prefix';
     handler: (req: any, res: any) => Promise<void> | void;
+  }) => void;
+  registerMemoryCapability?: (capability: {
+    runtime?: unknown;
+  }) => void;
+  registerMemoryRuntime?: (runtime: unknown) => void;
+  registerCli?: (registrar: (ctx: { program: any; config: any; workspaceDir?: string; logger: PluginLogger }) => void | Promise<void>, opts?: {
+    commands?: string[];
+    descriptors?: Array<{ name: string; description: string; hasSubcommands: boolean }>;
   }) => void;
 };
 
@@ -428,6 +438,17 @@ const gigabrainPlugin = {
     const dbPath = path.resolve(config.runtime.paths.registryPath);
     fs.mkdirSync(path.dirname(dbPath), { recursive: true });
     logger.info?.(`[gigabrain] v3 startup db=${dbPath}`);
+
+    api.registerMemoryCapability?.({
+      runtime: gigabrainMemoryRuntime,
+    });
+    if (!api.registerMemoryCapability && api.registerMemoryRuntime) {
+      api.registerMemoryRuntime(gigabrainMemoryRuntime);
+    }
+    api.registerCli?.(registerGigabrainMemoryCli, {
+      commands: ['memory'],
+      descriptors: gigabrainMemoryCliDescriptors,
+    });
 
     withDb(dbPath, config, () => undefined);
     withDb(dbPath, config, (db) => {

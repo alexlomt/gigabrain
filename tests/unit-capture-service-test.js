@@ -37,6 +37,7 @@ const run = async () => {
       logger: { info: () => {} },
     });
     assert.equal(summary.inserted, 1);
+    assert.equal(Number(summary.native_sync?.inserted_chunks || 0) >= 1, true, 'capture dual-write should immediately sync native chunks');
     const row = db.prepare(`
       SELECT type, content, confidence, source_layer, source_path, source_line
       FROM memory_current
@@ -89,6 +90,12 @@ const run = async () => {
       logger: { info: () => {} },
     });
     assert.equal(noisy.queued_review, 1, 'malformed low-confidence facts should be queued for review');
+    const queuedReviewRow = fs.readFileSync(path.join(ws.outputRoot, 'memory-review-queue.jsonl'), 'utf8')
+      .trim()
+      .split(/\r?\n/)
+      .map((line) => JSON.parse(line))
+      .find((item) => String(item?.payload?.content || '').includes('jabber'));
+    assert.equal(Boolean(queuedReviewRow?.payload?.excerpt), true, 'queued low-confidence facts should include an excerpt for automatic queue review');
     const queued = db.prepare(`
       SELECT COUNT(*) AS c
       FROM memory_current
@@ -112,6 +119,7 @@ const run = async () => {
     });
     assert.equal(nativeOnly.inserted, 0, 'ephemeral remember intent should stay out of the durable registry');
     assert.equal(nativeOnly.native_only, 1, 'ephemeral remember intent should still write a native note');
+    assert.equal(Number(nativeOnly.native_sync?.inserted_chunks || 0) >= 1, true, 'native-only capture should immediately sync the written daily note');
     const dailyPath = path.join(ws.memoryRoot, `${new Date().toISOString().slice(0, 10)}.md`);
     assert.equal(fs.existsSync(dailyPath), true, "ephemeral remember intent should create today's daily note");
     const dailyBody = fs.readFileSync(dailyPath, 'utf8');
@@ -203,8 +211,7 @@ const run = async () => {
       assert.doesNotMatch(duplicateMemoryMd, /Alex prefers concise and direct answers\./, 'semantic duplicate should not leak an alternate phrasing into MEMORY.md');
       assert.equal((duplicateMemoryMd.match(/## Preferences/g) || []).length, 1, 'duplicate capture should not create an extra preferences heading');
 
-      const nativeSync = syncNativeMemory({ db: duplicateDb, config: duplicateConfig, dryRun: false });
-      assert.equal(nativeSync.inserted_chunks, 1, 'only the original native bullet should be indexed after duplicate capture attempts');
+      syncNativeMemory({ db: duplicateDb, config: duplicateConfig, dryRun: false });
       const duplicateChunks = duplicateDb.prepare(`
         SELECT content, linked_memory_id
         FROM memory_native_chunks
@@ -257,8 +264,13 @@ const run = async () => {
       assert.match(groupedMemoryMd, /Alex prefers concise, direct answers for production work\./, 'first grouped preference should be present in MEMORY.md');
       assert.match(groupedMemoryMd, /Alex prefers immediate execution when the next step is clear\./, 'second grouped preference should be present in MEMORY.md');
 
-      const groupedSync = syncNativeMemory({ db: groupedSectionDb, config: groupedSectionConfig, dryRun: false });
-      assert.equal(groupedSync.inserted_chunks, 2, 'grouped preference writes should still produce two native chunks');
+      syncNativeMemory({ db: groupedSectionDb, config: groupedSectionConfig, dryRun: false });
+      const groupedChunkCount = groupedSectionDb.prepare(`
+        SELECT COUNT(*) AS c
+        FROM memory_native_chunks
+        WHERE source_path = ? AND status = 'active'
+      `).get(path.join(groupedSectionWs.workspace, 'MEMORY.md'));
+      assert.equal(Number(groupedChunkCount?.c || 0), 2, 'grouped preference writes should still produce two native chunks');
     } finally {
       groupedSectionDb.close();
     }

@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import { rebuildEntityMentions } from '../lib/core/person-service.js';
 import { ensureNativeStore } from '../lib/core/native-sync.js';
@@ -52,6 +54,45 @@ const run = async () => {
     const empty = rebuildWorldModel({ db, config, now: '2026-03-08T11:00:00.000Z' });
     assert.equal(empty.cleared, true, 'empty world rebuild should stay empty instead of generating ghost syntheses');
     assert.equal(empty.counts.syntheses, 0, 'empty world rebuild should not emit syntheses');
+
+    {
+      const nativeWs = makeTempWorkspace('gb-v5-world-model-native-only-');
+      const nativeConfig = normalizeConfig(makeConfigObject(nativeWs.workspace).plugins.entries.gigabrain.config);
+      const nativeDb = openDb(nativeWs.dbPath);
+      try {
+        ensureNativeStore(nativeDb);
+        nativeDb.prepare(`
+          INSERT INTO memory_native_chunks (
+            chunk_id, source_path, source_kind, source_date, section, line_start, line_end,
+            content, normalized, hash, scope, memory_type, linked_memory_id, first_seen_at, last_seen_at, status
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          'native-sam-1',
+          path.join(nativeWs.workspace, 'MEMORY.md'),
+          'memory_md',
+          '2026-03-08',
+          'Memory > Facts',
+          12,
+          12,
+          'Sam is Alex partner and lives in London.',
+          'sam is alex partner and lives in london',
+          'hash-native-sam-1',
+          'profile:main',
+          'USER_FACT',
+          null,
+          '2026-03-08T11:00:00.000Z',
+          '2026-03-08T11:00:00.000Z',
+          'active',
+        );
+        rebuildEntityMentions(nativeDb);
+        const nativeSummary = rebuildWorldModel({ db: nativeDb, config: nativeConfig, now: '2026-03-08T11:01:00.000Z' });
+        assert.equal(nativeSummary.counts.entities > 0, true, 'world model should ingest native-only chunks, not just registry rows');
+        const nativeMatches = findEntityMatches(nativeDb, 'Who is Sam?', { scope: 'profile:main', limit: 10 });
+        assert.equal(nativeMatches.some((entity) => entity.entity_id === 'person:sam'), true, 'native-only person mentions should be recallable through entity matching');
+      } finally {
+        nativeDb.close();
+      }
+    }
 
     seedMemoryCurrent(db, [
       {
@@ -242,6 +283,64 @@ const run = async () => {
     assert.equal(entities.some((entity) => entity.entity_id === 'organization:austrian'), false, 'weak adjective-like organization aliases should not be promoted into world-model entities');
     assert.equal(entities.some((entity) => ['person:email', 'person:chrome', 'organization:neobank', 'project:setup', 'person:archive', 'person:contact', 'person:content', 'person:date', 'person:guest', 'person:link', 'person:name', 'person:notes', 'person:person', 'person:status'].includes(entity.entity_id)), false, 'operational nouns and descriptor labels should not surface as world-model entities');
     assert.equal(entities.some((entity) => ['person:freundin', 'person:sozialarbeiterin', 'person:zumstein'].includes(entity.entity_id)), false, 'role labels and redundant surname-only entities should stay out of the surfaced entity list');
+
+    fs.writeFileSync(path.join(ws.workspace, 'IDENTITY.md'), '# IDENTITY.md\n\n- **Name:** Lobster\n- **Creature:** Personal AI operator\n- **Vibe:** Direct\n- **Emoji:** 🦞\n', 'utf8');
+    fs.writeFileSync(path.join(ws.workspace, 'USER.md'), '# USER.md\n\n- **Name:** Alex Lomtatidze\n- **What to call them:** Alex\n- **Timezone:** Europe/London\n', 'utf8');
+    seedMemoryCurrent(db, [
+      {
+        memory_id: 'm-identity-1',
+        type: 'AGENT_IDENTITY',
+        content: 'Lobster is the personal AI operator for this workspace.',
+        scope: 'profile:main',
+        confidence: 0.98,
+        created_at: '2026-03-08T11:06:00.000Z',
+        updated_at: '2026-03-08T11:06:00.000Z',
+      },
+      {
+        memory_id: 'm-identity-2',
+        type: 'USER_FACT',
+        content: 'Alex Lomtatidze is London-based and runs an AI agency.',
+        scope: 'profile:main',
+        confidence: 0.97,
+        created_at: '2026-03-08T11:06:10.000Z',
+        updated_at: '2026-03-08T11:06:10.000Z',
+      },
+      {
+        memory_id: 'm-identity-3',
+        type: 'PREFERENCE',
+        content: 'Alex prefers direct, verified answers and practical business value.',
+        scope: 'profile:main',
+        confidence: 0.94,
+        created_at: '2026-03-08T11:06:15.000Z',
+        updated_at: '2026-03-08T11:06:15.000Z',
+      },
+      {
+        memory_id: 'm-identity-4',
+        type: 'AGENT_IDENTITY',
+        content: 'Lobster is direct, pragmatic, and quietly supportive.',
+        scope: 'profile:main',
+        confidence: 0.96,
+        created_at: '2026-03-08T11:06:18.000Z',
+        updated_at: '2026-03-08T11:06:18.000Z',
+      },
+      {
+        memory_id: 'm-tool-1',
+        type: 'CONTEXT',
+        content: 'Postiz social OAuth still needs to be set up before marketing work can go live.',
+        scope: 'profile:main',
+        confidence: 0.89,
+        created_at: '2026-03-08T11:06:20.000Z',
+        updated_at: '2026-03-08T11:06:20.000Z',
+      },
+    ]);
+    rebuildEntityMentions(db);
+    const rebuiltWithWorkspaceIdentity = rebuildWorldModel({ db, config, now: '2026-03-08T12:05:00.000Z' });
+    assert.equal(rebuiltWithWorkspaceIdentity.ok, true, 'rebuild should succeed after workspace identity facts are added');
+    const entitiesAfterIdentity = listEntities(db, { limit: 50, includeHidden: true });
+    assert.equal(entitiesAfterIdentity.some((entity) => entity.entity_id === 'person:alex'), true, 'workspace user identity should be represented as a person entity');
+    assert.equal(entitiesAfterIdentity.some((entity) => entity.entity_id === 'person:lobster'), true, 'workspace agent identity should be represented as a person entity');
+    const surfacedEntitiesAfterIdentity = listEntities(db, { limit: 50 });
+    assert.equal(surfacedEntitiesAfterIdentity.some((entity) => entity.entity_id === 'person:postiz'), false, 'tool names should not surface as bogus person identities');
 
     const warm = ensureWorldModelReady({ db, config, rebuildIfEmpty: true });
     assert.equal(warm.rebuilt, false, 'warm check should not rebuild once data exists');
