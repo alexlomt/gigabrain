@@ -4,6 +4,8 @@ import path from 'node:path';
 
 import { normalizeConfig } from '../lib/core/config.js';
 import { runMaintenance } from '../lib/core/maintenance-service.js';
+import { normalizeContent } from '../lib/core/policy.js';
+import { upsertCurrentMemory } from '../lib/core/projection-store.js';
 import { makeConfigObject, makeTempWorkspace, openDb } from './helpers.js';
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
@@ -89,6 +91,182 @@ const run = async () => {
     }
   } finally {
     fs.rmSync(deleteWs.root, { recursive: true, force: true });
+  }
+
+  const nativeLayerWs = makeTempWorkspace('gb-v4-native-reconcile-native-layer-');
+  try {
+    const config = normalizeConfig(makeConfigObject(nativeLayerWs.workspace).plugins.entries.gigabrain.config);
+    const memoryPath = path.join(nativeLayerWs.workspace, 'MEMORY.md');
+    fs.writeFileSync(memoryPath, '# MEMORY\n\n## Preferences\n\n- Jordan prefers espresso.\n', 'utf8');
+
+    let db = openDb(nativeLayerWs.dbPath);
+    try {
+      upsertCurrentMemory(db, {
+        memory_id: 'native-stale-row',
+        type: 'PREFERENCE',
+        content: 'Jordan prefers stale native test coffee.',
+        normalized: normalizeContent('Jordan prefers stale native test coffee.'),
+        source: 'capture',
+        source_layer: 'native',
+        source_path: memoryPath,
+        source_line: 5,
+        confidence: 0.9,
+        scope: 'profile:main',
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    } finally {
+      db.close();
+    }
+
+    runMaintain({ ws: nativeLayerWs, config, runId: 'native-layer-stale-1' });
+
+    db = openDb(nativeLayerWs.dbPath);
+    try {
+      assert.equal(String(getStatus(db, 'native-stale-row')), 'rejected', 'source_layer=native rows whose source content disappeared should be rejected');
+    } finally {
+      db.close();
+    }
+  } finally {
+    fs.rmSync(nativeLayerWs.root, { recursive: true, force: true });
+  }
+
+  const scopeAliasWs = makeTempWorkspace('gb-v4-native-scope-alias-');
+  try {
+    const config = normalizeConfig(makeConfigObject(scopeAliasWs.workspace).plugins.entries.gigabrain.config);
+    const memoryPath = path.join(scopeAliasWs.workspace, 'MEMORY.md');
+    const content = 'Jordan prefers clean native scope dedupe.';
+    fs.writeFileSync(memoryPath, `# MEMORY\n\n## Preferences\n\n- ${content} <!-- gigabrain:scope=main type=PREFERENCE -->\n`, 'utf8');
+
+    let db = openDb(scopeAliasWs.dbPath);
+    try {
+      upsertCurrentMemory(db, {
+        memory_id: 'scope-existing-row',
+        type: 'PREFERENCE',
+        content,
+        normalized: normalizeContent(content),
+        source: 'capture',
+        source_layer: 'registry',
+        confidence: 0.9,
+        scope: 'profile:main',
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    } finally {
+      db.close();
+    }
+
+    runMaintain({ ws: scopeAliasWs, config, runId: 'native-scope-alias-1' });
+
+    db = openDb(scopeAliasWs.dbPath);
+    try {
+      const activeDuplicates = db.prepare(`
+        SELECT COUNT(*) AS c
+        FROM memory_current
+        WHERE content = ?
+          AND status = 'active'
+      `).get(content);
+      assert.equal(Number(activeDuplicates?.c || 0), 1, 'native scope=main should dedupe against profile:main rows');
+      assert.equal(getActiveLinkCount(db, 'scope-existing-row') >= 1, true, 'scope-alias native chunk should link to existing profile:main memory');
+    } finally {
+      db.close();
+    }
+  } finally {
+    fs.rmSync(scopeAliasWs.root, { recursive: true, force: true });
+  }
+
+  const crossScopeWs = makeTempWorkspace('gb-v4-cross-scope-exact-dedupe-');
+  try {
+    const config = normalizeConfig(makeConfigObject(crossScopeWs.workspace).plugins.entries.gigabrain.config);
+    const content = 'User prefers setup work done cleanly.';
+    let db = openDb(crossScopeWs.dbPath);
+    try {
+      for (const [memoryId, scope] of [['cross-shared-row', 'shared'], ['cross-profile-row', 'profile:main']]) {
+        upsertCurrentMemory(db, {
+          memory_id: memoryId,
+          type: 'PREFERENCE',
+          content,
+          normalized: normalizeContent(content),
+          source: 'capture',
+          source_layer: 'registry',
+          confidence: 0.9,
+          scope,
+          status: 'active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      }
+    } finally {
+      db.close();
+    }
+
+    runMaintain({ ws: crossScopeWs, config, runId: 'cross-scope-dedupe-1' });
+
+    db = openDb(crossScopeWs.dbPath);
+    try {
+      const activeDuplicates = db.prepare(`
+        SELECT COUNT(*) AS c
+        FROM memory_current
+        WHERE content = ?
+          AND status = 'active'
+      `).get(content);
+      assert.equal(Number(activeDuplicates?.c || 0), 1, 'exact duplicate content should not stay active across shared/profile:main scopes');
+    } finally {
+      db.close();
+    }
+  } finally {
+    fs.rmSync(crossScopeWs.root, { recursive: true, force: true });
+  }
+
+  const priorityWs = makeTempWorkspace('gb-v4-dedupe-priority-');
+  try {
+    const config = normalizeConfig(makeConfigObject(priorityWs.workspace).plugins.entries.gigabrain.config);
+    const content = 'User prefers deterministic memory dedupe priority.';
+    let db = openDb(priorityWs.dbPath);
+    try {
+      upsertCurrentMemory(db, {
+        memory_id: 'priority-registry-row',
+        type: 'PREFERENCE',
+        content,
+        normalized: normalizeContent(content),
+        source: 'capture',
+        source_layer: 'registry',
+        confidence: 0.99,
+        scope: 'profile:main',
+        status: 'active',
+        created_at: new Date(Date.now() + 1000).toISOString(),
+        updated_at: new Date(Date.now() + 1000).toISOString(),
+      });
+      upsertCurrentMemory(db, {
+        memory_id: 'priority-promoted-row',
+        type: 'PREFERENCE',
+        content,
+        normalized: normalizeContent(content),
+        source: 'native',
+        source_layer: 'promoted_native',
+        confidence: 0.9,
+        scope: 'profile:main',
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    } finally {
+      db.close();
+    }
+
+    runMaintain({ ws: priorityWs, config, runId: 'dedupe-priority-1' });
+
+    db = openDb(priorityWs.dbPath);
+    try {
+      assert.equal(String(getStatus(db, 'priority-promoted-row')), 'active', 'promoted/native-backed row should win exact dedupe over registry');
+      assert.equal(String(getStatus(db, 'priority-registry-row')), 'archived', 'registry duplicate should lose to promoted/native-backed row');
+    } finally {
+      db.close();
+    }
+  } finally {
+    fs.rmSync(priorityWs.root, { recursive: true, force: true });
   }
 
   const moveWs = makeTempWorkspace('gb-v4-native-reconcile-move-');

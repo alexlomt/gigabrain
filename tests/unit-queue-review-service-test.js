@@ -210,6 +210,67 @@ const run = async () => {
       db.close();
     }
   }
+
+  {
+    const temp = makeTempWorkspace('gb-v3-queue-review-legacy-semantic-');
+    const raw = makeConfigObject(temp.workspace);
+    raw.plugins.entries.gigabrain.config.llm.queueReview = {
+      enabled: true,
+      limit: 50,
+      minConfidence: 0.8,
+      profile: 'memory_review',
+      allowedReasons: ['duplicate_semantic'],
+    };
+    writeConfigFile(temp.configPath, raw);
+    const { config } = loadConfig(temp.configPath);
+    const queuePath = config.runtime.paths.reviewQueuePath;
+    const db = openDb(temp.dbPath);
+    try {
+      seedMemoryCurrent(db, [
+        {
+          memory_id: 'existing-1',
+          type: 'DECISION',
+          scope: 'profile:main',
+          content: 'Use a dedicated worker thread for sync browser work in async services.',
+          normalized: 'use a dedicated worker thread for sync browser work in async services',
+          status: 'active',
+        },
+      ]);
+      writeQueue(queuePath, [{
+        status: 'pending',
+        reason: 'semantic_borderline',
+        reason_code: 'capture_review_required',
+        similarity: 0.84,
+        payload: {
+          type: 'DECISION',
+          content: 'Run sync browser work on a dedicated worker thread instead of inside the event loop.',
+          matched_memory_id: 'existing-1',
+          matched_content: 'Use a dedicated worker thread for sync browser work in async services.',
+          scope: 'profile:main',
+        },
+      }]);
+      const result = await reviewPendingQueue({
+        db,
+        config,
+        dryRun: false,
+        runId: 'test-run-legacy-semantic',
+        reviewer: makeReviewer({
+          decision: 'keep_both',
+          confidence: 0.91,
+          reason: 'candidate and existing memory overlap but winner is not explicit',
+        }),
+      });
+      assert.equal(result.ok, true);
+      assert.equal(result.keptBoth, 1, 'legacy semantic_borderline rows should resolve as duplicate review, not capture store');
+      assert.equal(result.stored, 0, 'legacy semantic_borderline rows must not try to store and requeue themselves');
+      const queueRows = fs.readFileSync(queuePath, 'utf8').trim().split(/\r?\n/).map((line) => JSON.parse(line));
+      assert.equal(String(queueRows[0].status), 'resolved_auto', 'legacy semantic duplicate row should be auto-resolved');
+      assert.equal(String(queueRows[0].resolved_reason), 'queue_review_keep_both', 'legacy semantic duplicate row should record keep-both resolution');
+    } finally {
+      db.close();
+    }
+  }
+
 };
 
 export {

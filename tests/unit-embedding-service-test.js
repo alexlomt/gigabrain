@@ -125,6 +125,21 @@ const run = async () => {
 
       assert.equal(reranked[0].memory_id, 'candidate-winter', 'semantic rerank should promote the semantically matching candidate');
 
+      const linkedNative = semanticRerank([
+        { memory_id: 'native:chunk-deploy', linked_memory_id: 'candidate-deploy', content: 'Deploy the release checklist.', _score: 0.92 },
+        { memory_id: 'native:chunk-winter', linked_memory_id: 'candidate-winter', content: 'Jordan prefers winter.', _score: 0.35 },
+      ], 'winter preference', {
+        recall: {
+          semanticRerankEnabled: true,
+          semanticRerankAlpha: 0.2,
+          ollamaUrl: 'http://127.0.0.1:11434',
+          embeddingTimeoutMs: 500,
+        },
+      }, db);
+
+      assert.equal(linkedNative[0].linked_memory_id, 'candidate-winter', 'native rows should use linked registry memory embeddings when available');
+      assert.equal(typeof linkedNative[0]._semantic_score, 'number');
+
       const partialCache = semanticRerank([
         { memory_id: 'uncached-strong', content: 'Deploy checklist for the release.', _score: 10 },
         { memory_id: 'candidate-winter', content: 'Jordan prefers winter.', _score: 6 },

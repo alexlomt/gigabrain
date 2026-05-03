@@ -49,6 +49,54 @@
                 "default": "output/memory-review-queue.jsonl"
               }
             }
+          },
+          "reviewQueueRetention": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": true
+              },
+              "keepPendingOnly": {
+                "type": "boolean",
+                "default": true
+              },
+              "requireExcerptForPending": {
+                "type": "boolean",
+                "default": true
+              },
+              "maxRows": {
+                "type": "number",
+                "default": 2000
+              },
+              "maxPendingRows": {
+                "type": "number",
+                "default": 600
+              },
+              "maxNonPendingRows": {
+                "type": "number",
+                "default": 0
+              },
+              "maxPendingAgeDays": {
+                "type": "number",
+                "default": 21
+              },
+              "relevantReasons": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": [
+                  "llm_unavailable",
+                  "capture_note_parse_failed",
+                  "semantic_borderline",
+                  "capture_parse_failed",
+                  "duplicate_semantic",
+                  "capture_review_required"
+                ]
+              }
+            }
           }
         }
       },
@@ -75,6 +123,112 @@
           "queueOnModelUnavailable": {
             "type": "boolean",
             "default": true
+          },
+          "autoCapture": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": false
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "off",
+                  "shadow",
+                  "review",
+                  "auto"
+                ],
+                "default": "off"
+              },
+              "provider": {
+                "type": "string",
+                "enum": [
+                  "openclaw",
+                  "openai_compatible",
+                  "none",
+                  ""
+                ],
+                "default": ""
+              },
+              "baseUrl": {
+                "type": "string",
+                "default": ""
+              },
+              "model": {
+                "type": "string",
+                "default": ""
+              },
+              "apiKey": {
+                "type": "string",
+                "default": ""
+              },
+              "profile": {
+                "type": "string",
+                "default": "auto_capture"
+              },
+              "timeoutMs": {
+                "type": "number",
+                "default": 45000
+              },
+              "minConfidence": {
+                "type": "number",
+                "default": 0.88
+              },
+              "minImportance": {
+                "type": "number",
+                "default": 0.75
+              },
+              "queueMinConfidence": {
+                "type": "number",
+                "default": 0.65
+              },
+              "queueMinImportance": {
+                "type": "number",
+                "default": 0.5
+              },
+              "minContentChars": {
+                "type": "number",
+                "default": 20
+              },
+              "maxCandidates": {
+                "type": "number",
+                "default": 5
+              },
+              "maxTurns": {
+                "type": "number",
+                "default": 16
+              },
+              "maxCharsPerTurn": {
+                "type": "number",
+                "default": 4000
+              },
+              "targetTokens": {
+                "type": "number",
+                "default": 10000
+              },
+              "softMaxTokens": {
+                "type": "number",
+                "default": 15000
+              },
+              "hardMaxTokens": {
+                "type": "number",
+                "default": 25000
+              },
+              "includeExistingMemories": {
+                "type": "boolean",
+                "default": true
+              },
+              "existingMemoryLimit": {
+                "type": "number",
+                "default": 80
+              },
+              "minTriggerChars": {
+                "type": "number",
+                "default": 80
+              }
+            }
           },
           "rememberIntent": {
             "type": "object",
@@ -220,6 +374,59 @@
           "embeddingTimeoutMs": {
             "type": "number",
             "default": 5000
+          },
+          "adaptiveBudgeting": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": true
+              }
+            }
+          }
+        }
+      },
+      "memoryLlm": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "openai_compatible",
+              "ollama",
+              "none"
+            ],
+            "default": "none"
+          },
+          "baseUrl": {
+            "type": "string",
+            "default": ""
+          },
+          "model": {
+            "type": "string",
+            "default": ""
+          },
+          "apiKey": {
+            "type": "string",
+            "default": ""
+          },
+          "apiKeyEnv": {
+            "type": "string",
+            "default": "GIGABRAIN_MEMORY_LLM_API_KEY"
+          },
+          "timeoutMs": {
+            "type": "number",
+            "default": 15000
+          },
+          "maxRetries": {
+            "type": "number",
+            "default": 1
           }
         }
       },
@@ -276,6 +483,14 @@
             "default": [
               "topic"
             ]
+          },
+          "multiEntityEnabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "fallbackChainEnabled": {
+            "type": "boolean",
+            "default": true
           }
         }
       },
@@ -359,6 +574,18 @@
                 "default": 80
               }
             }
+          },
+          "evolutionEnabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "autoResolveLoops": {
+            "type": "boolean",
+            "default": true
+          },
+          "llmContradictionReview": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -406,36 +633,36 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-        "obsidian": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "mode": {
-              "type": "string",
-              "enum": [
-                "curated",
-                "diagnostic"
-              ],
-              "default": "curated"
-            },
-            "exportDiagnostics": {
-              "type": "boolean",
-              "default": false
-            },
-            "exportEntityPages": {
-              "type": "string",
-              "enum": [
-                "off",
-                "stable_only",
-                "all"
-              ],
-              "default": "stable_only"
-            },
-            "entityPages": {
-              "type": "boolean",
-              "default": true
+          "obsidian": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "curated",
+                  "diagnostic"
+                ],
+                "default": "curated"
+              },
+              "exportDiagnostics": {
+                "type": "boolean",
+                "default": false
+              },
+              "exportEntityPages": {
+                "type": "string",
+                "enum": [
+                  "off",
+                  "stable_only",
+                  "all"
+                ],
+                "default": "stable_only"
+              },
+              "entityPages": {
+                "type": "boolean",
+                "default": true
+              }
             }
-          }
           },
           "webConsole": {
             "type": "object",
@@ -494,7 +721,14 @@
               "benchmark",
               "mb:",
               "smoke test",
-              "^\\(none\\)$"
+              "^\\(none\\)$",
+              "Post-Compaction Audit",
+              "\\[Subagent Context\\]",
+              "Exec completed (",
+              "Conversation info (untrusted metadata)",
+              "[System Message] [sessionId:",
+              "compaction audit",
+              "subagent.*depth d+/d+"
             ]
           },
           "junkPatternsAppend": {
@@ -522,7 +756,9 @@
               "\\b(?:i|ich)\\s+(?:like|love|prefer|mag|liebe|bevorzuge)\\b",
               "\\b(?:pronouns?|pronomen)\\b",
               "\\b(?:partner(?:in)?|wife|husband|girlfriend|boyfriend|friend|mentor|sibling)\\b",
-              "\\b(?:proud of|stolz auf|grateful|dankbar|appreciates?|sch[aä]tzt|supports?|unterst[uü]tzt|trusts?|vertraut)\\b"
+              "\\b(?:proud of|stolz auf|grateful|dankbar|appreciates?|sch[aä]tzt|supports?|unterst[uü]tzt|trusts?|vertraut)\\b",
+              "\\b(?:care|caring|appreciation|valued|important to|matters? to|means? a lot to)\\b",
+              "\\b(?:goal|target|birthday|poly|polyamorous|relationship|dating|reads?|reading|bookmarks?)\\b"
             ]
           },
           "highValueShortPatternsAppend": {
@@ -546,7 +782,9 @@
               "\\b(?:proud of|stolz auf|grateful|dankbar|appreciates?|sch[aä]tzt|supports?|unterst[uü]tzt|trusts?|vertraut)\\b",
               "\\b(?:partner(?:in)?|wife|husband|girlfriend|boyfriend|best friend|mentor|sibling)\\b",
               "\\b(?:pronouns?|pronomen)\\b",
-              "\\b(?:identity|personality|continuity|evolution)\\b"
+              "\\b(?:identity|personality|continuity|evolution)\\b",
+              "\\b(?:care|caring|appreciation|valued|important to|matters? to|means? a lot to|self-sufficient|helpful)\\b",
+              "\\b(?:goal|target|birthday|poly|polyamorous|relationship|dating|reads?|reading|weight goal|lose weight)\\b"
             ]
           },
           "durablePatternsAppend": {
@@ -555,24 +793,6 @@
               "type": "string"
             },
             "default": []
-          },
-          "valueThresholds": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "keep": {
-                "type": "number",
-                "default": 0.78
-              },
-              "archive": {
-                "type": "number",
-                "default": 0.3
-              },
-              "reject": {
-                "type": "number",
-                "default": 0.18
-              }
-            }
           },
           "plausibility": {
             "type": "object",
@@ -588,10 +808,10 @@
                   "type": "string"
                 },
                 "default": [
-                  "\\b(?:jabber)\\b",
-                  "\\b(?:began|started)\\s+a\\s+\\d+\\b",
-                  "\\b\\d+\\s+jabber\\b",
-                  "\\b(?:started|began)\\s+a\\s+jabber\\b"
+                  "\\bjabber\\b",
+                  "\\bbegan\\s+a\\s+\\d+\\b",
+                  "\\bstarted\\s+a\\s+\\d+\\b",
+                  "\\b\\d+\\s+jabber\\b"
                 ]
               },
               "brokenPhrasePatternsAppend": {
@@ -615,10 +835,21 @@
                   "target",
                   "current",
                   "kg",
+                  "goal",
                   "newsletter",
                   "launched",
                   "founded",
-                  "joined"
+                  "joined",
+                  "birthday",
+                  "relationship",
+                  "partner",
+                  "poly",
+                  "telegram",
+                  "email",
+                  "read",
+                  "reading",
+                  "care",
+                  "appreciation"
                 ]
               },
               "semanticAnchorsAppend": {
@@ -627,6 +858,24 @@
                   "type": "string"
                 },
                 "default": []
+              }
+            }
+          },
+          "valueThresholds": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "keep": {
+                "type": "number",
+                "default": 0.78
+              },
+              "archive": {
+                "type": "number",
+                "default": 0.3
+              },
+              "reject": {
+                "type": "number",
+                "default": 0.18
               }
             }
           }
@@ -794,6 +1043,39 @@
                     "default": "default"
                   }
                 }
+              },
+              "auto_capture": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "model": {
+                    "type": "string"
+                  },
+                  "temperature": {
+                    "type": "number",
+                    "default": 0.1
+                  },
+                  "top_p": {
+                    "type": "number",
+                    "default": 0.75
+                  },
+                  "top_k": {
+                    "type": "number",
+                    "default": 20
+                  },
+                  "max_tokens": {
+                    "type": "number",
+                    "default": 900
+                  },
+                  "reasoning": {
+                    "type": "string",
+                    "enum": [
+                      "off",
+                      "default"
+                    ],
+                    "default": "off"
+                  }
+                }
               }
             }
           },
@@ -895,6 +1177,54 @@
           "vacuum": {
             "type": "boolean",
             "default": true
+          },
+          "harmonize": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": false
+              },
+              "outPath": {
+                "type": "string",
+                "default": "memory/gigabrain-harmonized.md"
+              },
+              "statuses": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": [
+                  "active",
+                  "archived"
+                ]
+              },
+              "maxRows": {
+                "type": "number",
+                "default": 420
+              },
+              "perTypeLimit": {
+                "type": "number",
+                "default": 120
+              },
+              "minConfidence": {
+                "type": "number",
+                "default": 0
+              },
+              "syncNative": {
+                "type": "boolean",
+                "default": true
+              },
+              "includeInNative": {
+                "type": "boolean",
+                "default": true
+              },
+              "backup": {
+                "type": "boolean",
+                "default": true
+              }
+            }
           }
         }
       },
@@ -955,6 +1285,24 @@
           "onDemandTemporalDays": {
             "type": "number",
             "default": 3650
+          },
+          "sparkAdvisory": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "dedupeEnabled": {
+                "type": "boolean",
+                "default": true
+              },
+              "maxChunks": {
+                "type": "number",
+                "default": 260
+              },
+              "nearDuplicateThreshold": {
+                "type": "number",
+                "default": 0.9
+              }
+            }
           }
         }
       },
@@ -1006,7 +1354,7 @@
           },
           "exportActiveNodes": {
             "type": "boolean",
-            "default": false
+            "default": true
           },
           "exportRecentArchivesLimit": {
             "type": "number",
@@ -1063,6 +1411,101 @@
           "requireWordBoundaryMatch": {
             "type": "boolean",
             "default": true
+          }
+        }
+      },
+      "codex": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "storeMode": {
+            "type": "string",
+            "default": "global"
+          },
+          "projectRoot": {
+            "type": "string"
+          },
+          "projectStorePath": {
+            "type": "string",
+            "default": "/home/alex/.gigabrain"
+          },
+          "userProfilePath": {
+            "type": "string",
+            "default": "/home/alex/.gigabrain/profile"
+          },
+          "projectScope": {
+            "type": "string",
+            "default": ""
+          },
+          "defaultProjectScope": {
+            "type": "string",
+            "default": ""
+          },
+          "defaultUserScope": {
+            "type": "string",
+            "default": "profile:user"
+          },
+          "defaultTarget": {
+            "type": "string",
+            "enum": [
+              "project",
+              "user"
+            ],
+            "default": "project"
+          },
+          "recallOrder": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "project",
+                "user",
+                "remote"
+              ]
+            },
+            "default": [
+              "project",
+              "user",
+              "remote"
+            ]
+          },
+          "userOverlayTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "PREFERENCE",
+              "USER_FACT",
+              "AGENT_IDENTITY",
+              "DECISION"
+            ]
+          }
+        }
+      },
+      "remoteBridge": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "baseUrl": {
+            "type": "string",
+            "default": ""
+          },
+          "authToken": {
+            "type": "string",
+            "default": ""
+          },
+          "timeoutMs": {
+            "type": "number",
+            "default": 8000
           }
         }
       }

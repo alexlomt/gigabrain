@@ -7,11 +7,12 @@ import { fileURLToPath } from 'node:url';
 import { openDatabase } from '../lib/core/sqlite.js';
 
 import { loadResolvedConfig } from '../lib/core/config.js';
+import { buildMissingEmbeddings, getEmbeddingSync } from '../lib/core/embedding-service.js';
 import { runMaintenance } from '../lib/core/maintenance-service.js';
 import { runAudit, runAuditRestore, runAuditReport } from '../lib/core/audit-service.js';
 import { reviewPendingQueue } from '../lib/core/queue-review-service.js';
 import { applyQueueRetention } from '../lib/core/review-queue.js';
-import { ensureProjectionStore, materializeProjectionFromMemories } from '../lib/core/projection-store.js';
+import { ensureProjectionStore, materializeProjectionFromMemories, normalizeProjectionScope } from '../lib/core/projection-store.js';
 import { captureSnapshotMetrics } from '../lib/core/metrics.js';
 import { buildVaultSurface, inspectVaultHealth, loadSurfaceSummary, syncVaultPull } from '../lib/core/vault-mirror.js';
 import { orchestrateRecall } from '../lib/core/orchestrator.js';
@@ -48,6 +49,7 @@ Commands:
   briefing     Print the latest generated briefing artifacts
   review       Inspect contradictions or open loops
   vault        Build/report/doctor/pull the Obsidian memory surface
+  embeddings   Inspect/probe/backfill local semantic embeddings
 
 Examples:
   node scripts/gigabrainctl.js nightly --config ~/.openclaw/openclaw.json
@@ -86,19 +88,44 @@ const readBool = (name, fallback = false, list = flags) => {
 
 const wantsHelp = flags.includes('--help') || flags.includes('-h');
 
+const canonicalScope = (scope = '') => normalizeProjectionScope(scope || 'shared', { allowEmpty: true }) || 'shared';
+
+const scopesCanDedupe = (left = '', right = '') => {
+  const a = canonicalScope(left);
+  const b = canonicalScope(right);
+  return a === b || a === 'shared' || b === 'shared';
+};
+
 const duplicateGroups = (db) => {
   ensureProjectionStore(db);
-  const row = db.prepare(`
-    SELECT COUNT(*) AS c
-    FROM (
-      SELECT normalized_hash, scope, COUNT(*) AS cnt
-      FROM memory_current
-      WHERE status = 'active'
-      GROUP BY normalized_hash, scope
-      HAVING cnt > 1
-    )
-  `).get();
-  return Number(row?.c || 0);
+  const rows = db.prepare(`
+    SELECT memory_id, normalized_hash, scope
+    FROM memory_current
+    WHERE status = 'active'
+      AND COALESCE(normalized_hash, '') <> ''
+  `).all();
+  const byHash = new Map();
+  for (const row of rows) {
+    const key = String(row.normalized_hash || '');
+    const list = byHash.get(key) || [];
+    list.push(row);
+    byHash.set(key, list);
+  }
+  let groups = 0;
+  for (const list of byHash.values()) {
+    if (!list || list.length <= 1) continue;
+    let duplicate = false;
+    for (let i = 0; i < list.length && !duplicate; i += 1) {
+      for (let j = i + 1; j < list.length; j += 1) {
+        if (scopesCanDedupe(list[i].scope, list[j].scope)) {
+          duplicate = true;
+          break;
+        }
+      }
+    }
+    if (duplicate) groups += 1;
+  }
+  return groups;
 };
 
 const loadConfigAndDbPath = () => {
@@ -862,6 +889,126 @@ const commandReview = async () => {
   }
 };
 
+const commandEmbeddings = async () => {
+  const action = String(flags[0] || 'status').trim().toLowerCase();
+  const embeddingFlags = flags.slice(1);
+  const configPath = readFlag('--config', '', embeddingFlags);
+  const workspaceOverride = readFlag('--workspace', '', embeddingFlags);
+  const loaded = loadResolvedConfig({
+    configPath,
+    workspaceRoot: workspaceOverride || undefined,
+  });
+  const config = loaded.config;
+  const dbPath = path.resolve(readFlag('--db', config.runtime.paths.registryPath, embeddingFlags));
+  const db = openDatabase(dbPath);
+  const activeCoverage = () => {
+    ensureProjectionStore(db);
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS memory_embeddings (
+        memory_id   TEXT PRIMARY KEY,
+        model       TEXT NOT NULL DEFAULT 'bge-m3',
+        embedding   BLOB NOT NULL,
+        dims        INTEGER NOT NULL DEFAULT 1024,
+        computed_at TEXT NOT NULL
+      )
+    `);
+    const active = Number(db.prepare("SELECT COUNT(*) AS c FROM memory_current WHERE status='active'").get()?.c || 0);
+    const embedded = Number(db.prepare(`
+      SELECT COUNT(*) AS c
+      FROM memory_current mc
+      JOIN memory_embeddings me ON me.memory_id = mc.memory_id
+      WHERE mc.status = 'active'
+    `).get()?.c || 0);
+    const byModel = db.prepare(`
+      SELECT me.model, me.dims, COUNT(*) AS c
+      FROM memory_current mc
+      JOIN memory_embeddings me ON me.memory_id = mc.memory_id
+      WHERE mc.status = 'active'
+      GROUP BY me.model, me.dims
+      ORDER BY c DESC
+    `).all();
+    return { active, embedded, missing: Math.max(0, active - embedded), coverage: active ? embedded / active : 1, byModel };
+  };
+  try {
+    if (action === 'status') {
+      console.log(JSON.stringify({
+        ok: true,
+        action: 'embeddings_status',
+        configPath: loaded.configPath,
+        dbPath,
+        recall: {
+          semanticRerankEnabled: config?.recall?.semanticRerankEnabled === true,
+          embeddingProvider: config?.recall?.embeddingProvider,
+          embeddingBaseUrl: config?.recall?.embeddingBaseUrl,
+          embeddingModel: config?.recall?.embeddingModel,
+        },
+        active: activeCoverage(),
+      }, null, 2));
+      return;
+    }
+    if (action === 'probe') {
+      const recall = config.recall || {};
+      const provider = readFlag('--provider', recall.embeddingProvider || 'ollama', embeddingFlags);
+      const baseUrl = readFlag('--base-url', recall.embeddingBaseUrl || recall.ollamaUrl || 'http://127.0.0.1:11434', embeddingFlags);
+      const model = readFlag('--model', recall.embeddingModel || 'bge-m3', embeddingFlags);
+      const timeoutMs = Number(readFlag('--timeout-ms', String(recall.embeddingTimeoutMs || 30000), embeddingFlags) || 30000);
+      const started = Date.now();
+      const vec = getEmbeddingSync('gigabrain semantic probe', { provider, baseUrl, apiKey: recall.embeddingApiKey || '', model, timeoutMs });
+      console.log(JSON.stringify({
+        ok: Array.isArray(vec) && vec.length > 0,
+        action: 'embeddings_probe',
+        provider,
+        baseUrl,
+        model,
+        dims: Array.isArray(vec) ? vec.length : 0,
+        elapsedMs: Date.now() - started,
+      }, null, 2));
+      return;
+    }
+    if (action === 'backfill') {
+      const maxBatches = Math.max(1, Math.min(100, Number(readFlag('--max-batches', '20', embeddingFlags) || 20)));
+      const forceRebuildActive = readBool('--force-rebuild-active', false, embeddingFlags);
+      const before = activeCoverage();
+      if (forceRebuildActive) {
+        db.prepare(`
+          DELETE FROM memory_embeddings
+          WHERE memory_id IN (SELECT memory_id FROM memory_current WHERE status='active')
+        `).run();
+      }
+      const backfillConfig = {
+        ...config,
+        recall: {
+          ...config.recall,
+          semanticRerankEnabled: true,
+        },
+      };
+      const batches = [];
+      for (let i = 0; i < maxBatches; i += 1) {
+        const result = buildMissingEmbeddings(db, backfillConfig);
+        batches.push(result);
+        if (Number(result.failed || 0) > 0 || Number(result.computed || 0) === 0) break;
+        const current = activeCoverage();
+        if (current.missing === 0) break;
+      }
+      const after = activeCoverage();
+      console.log(JSON.stringify({
+        ok: after.missing === 0 && after.byModel.length === 1,
+        action: 'embeddings_backfill',
+        configPath: loaded.configPath,
+        dbPath,
+        forceRebuildActive,
+        before,
+        batches,
+        after,
+      }, null, 2));
+      return;
+    }
+    throw new Error(`Unknown embeddings action: ${action || '(none)'}`);
+  } finally {
+    db.close();
+  }
+};
+
 const commandVault = async () => {
   const action = String(flags[0] || 'build').trim().toLowerCase();
   const vaultFlags = flags.slice(1);
@@ -994,6 +1141,10 @@ const main = async () => {
   }
   if (command === 'vault') {
     await commandVault();
+    return;
+  }
+  if (command === 'embeddings') {
+    await commandEmbeddings();
     return;
   }
   throw new Error(`Unknown command: ${command || '(none)'}`);
