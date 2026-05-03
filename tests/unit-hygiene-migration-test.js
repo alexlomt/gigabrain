@@ -26,6 +26,15 @@ const run = async () => {
         status: 'active',
       },
       {
+        memory_id: 'protected-memtest-active',
+        type: 'PREFERENCE',
+        content: 'MEMTEST_PROTECTKEEP_20260425 Alex prefers shielded-delta for the protect-maintain test.',
+        scope: 'profile:main',
+        status: 'active',
+        tags: ['protected'],
+        source_session: 'memtest:protect-maintain',
+      },
+      {
         memory_id: 'real-active',
         type: 'PREFERENCE',
         content: 'Alex prefers production-grade memory migrations.',
@@ -72,7 +81,7 @@ const run = async () => {
       runId: 'hygiene-test-run',
     });
     assert.equal(dryRun.dryRun, true);
-    assert.equal(dryRun.testArtifacts.candidates, 1, 'dry-run should identify active MEMTEST rows');
+    assert.equal(dryRun.testArtifacts.candidates, 2, 'dry-run should identify active MEMTEST rows, including protected test artifacts');
     assert.equal(dryRun.dailyNoteDedupe.removedBullets, 1, 'dry-run should identify duplicate daily-note bullets outside code fences');
     assert.equal(dryRun.queue.candidates, 1, 'dry-run should identify non-durable pending queue chatter');
     assert.equal((fs.readFileSync(dailyPath, 'utf8').match(/Duplicate daily note bullet\./g) || []).length, 4, 'dry-run must not edit native files');
@@ -93,6 +102,9 @@ const run = async () => {
     const memtest = db.prepare('SELECT status, value_label FROM memory_current WHERE memory_id = ?').get('memtest-active');
     assert.equal(String(memtest.status), 'rejected', 'active MEMTEST rows should be rejected, not deleted');
     assert.equal(String(memtest.value_label), 'hygiene_test_artifact');
+    const protectedMemtest = db.prepare('SELECT status, value_label FROM memory_current WHERE memory_id = ?').get('protected-memtest-active');
+    assert.equal(String(protectedMemtest.status), 'rejected', 'protected MEMTEST rows should be quarantined as test artifacts');
+    assert.equal(String(protectedMemtest.value_label), 'hygiene_test_artifact');
     const real = db.prepare('SELECT status FROM memory_current WHERE memory_id = ?').get('real-active');
     assert.equal(String(real.status), 'active', 'real memory should not be touched');
 

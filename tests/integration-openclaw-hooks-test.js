@@ -37,6 +37,7 @@ const deriveScopeFromWorkspaceDir = (workspaceDir = '') => {
 const registerPlugin = (workspace) => {
   const handlers = new Map();
   const logs = [];
+  let memoryCapability = null;
   const api = {
     config: makeConfigObject(workspace).plugins.entries.gigabrain.config,
     logger: {
@@ -47,21 +48,45 @@ const registerPlugin = (workspace) => {
     on: (name, handler) => {
       handlers.set(name, handler);
     },
+    registerMemoryCapability: (capability) => {
+      memoryCapability = capability;
+    },
   };
   gigabrainPlugin.register(api);
-  return { handlers, logs };
+  return { handlers, logs, memoryCapability };
 };
 
 const run = async () => {
   const ws = makeTempWorkspace('gb-v053-openclaw-hooks-');
   const workspaceOnlyDir = path.join(ws.root, 'Agent Workspace', 'CPTO Ops');
   const workspaceOnlyScope = deriveScopeFromWorkspaceDir(workspaceOnlyDir);
-  const { handlers, logs } = registerPlugin(ws.workspace);
+  const { handlers, logs, memoryCapability } = registerPlugin(ws.workspace);
   const beforePromptBuild = handlers.get('before_prompt_build');
   const agentEnd = handlers.get('agent_end');
 
   assert.equal(typeof beforePromptBuild, 'function', 'plugin should register before_prompt_build');
   assert.equal(typeof agentEnd, 'function', 'plugin should register agent_end');
+  assert.equal(typeof memoryCapability?.flushPlanResolver, 'function', 'plugin should register a pre-compaction flush plan resolver');
+  const flushPlan = memoryCapability.flushPlanResolver({
+    nowMs: Date.UTC(2026, 4, 3, 9, 30, 0),
+    cfg: {
+      agents: {
+        defaults: {
+          compaction: {
+            reserveTokensFloor: 12345,
+            memoryFlush: {
+              forceFlushTranscriptBytes: '3mb',
+            },
+          },
+        },
+      },
+    },
+  });
+  assert.equal(flushPlan.relativePath, 'memory/2026-05-03.md', 'flush should target canonical daily note path');
+  assert.equal(flushPlan.reserveTokensFloor, 12345, 'flush should respect OpenClaw reserve token config');
+  assert.equal(flushPlan.forceFlushTranscriptBytes, 3 * 1024 * 1024, 'flush should parse byte-size config');
+  assert.match(flushPlan.prompt, /APPEND new content only/i, 'flush prompt should be append-only');
+  assert.doesNotMatch(flushPlan.prompt, /YYYY-MM-DD-HHMM\.md/i, 'flush prompt should not encourage timestamped variants');
 
   const db = openDb(ws.dbPath);
   try {

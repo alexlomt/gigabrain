@@ -53,6 +53,9 @@ const run = async () => {
   assert.equal(config.capture.rememberIntent.writeNative, true, 'remember intent should dual-write to native by default');
   assert.equal(config.nativePromotion.enabled, true, 'native promotion should be enabled by default');
   assert.equal(Number(config.nativePromotion.minConfidence).toFixed(2), '0.72', 'native promotion threshold should default to 0.72');
+  assert.equal(config.memoryLlm.enabled, false, 'stateless memory LLM should default to disabled');
+  assert.equal(String(config.memoryLlm.provider), 'none', 'stateless memory LLM should default to provider none');
+  assert.equal(String(config.memoryLlm.apiKeyEnv), 'GIGABRAIN_MEMORY_LLM_API_KEY', 'stateless memory LLM should default to env-based keys');
   assert.equal(String(config.llm.taskProfiles.memory_review.model), 'qwen3.5:9b', 'memory review should default to qwen3.5:9b');
   assert.equal(Number(config.llm.taskProfiles.chat_general.temperature), 1, 'chat general should use official-ish default sampling');
   assert.equal(String(config.llm.review.profile), 'memory_review', 'review profile should default to memory_review');

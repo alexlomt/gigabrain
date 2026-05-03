@@ -240,6 +240,14 @@ const run = async () => {
     assert.equal(propertyRecall.strategy, 'entity_brief', 'Alex-specific property question should keep entity-brief routing');
     assert.match(String(propertyRecall.results[0]?.content || ''), /Canterbury, CT3 1HS/i, 'entity lock must not bury strong non-entity lexical property hits under generic Alex facts');
 
+    const directPropertyRecall = orchestrateRecall({
+      db,
+      config,
+      query: 'What property is Alex purchasing?',
+    });
+    assert.equal(directPropertyRecall.scope, 'profile:main', 'profile-first workspaces should default empty recall scope to profile:main');
+    assert.match(String(directPropertyRecall.results[0]?.content || ''), /Canterbury, CT3 1HS/i, 'generic property questions should recover the factual property memory before generic Alex preferences');
+
     const prRecall = orchestrateRecall({
       db,
       config,
@@ -270,6 +278,28 @@ const run = async () => {
     assert.equal(compoundPreferenceRecall.rankingMode, 'entity_brief:entity_locked', 'compound project preference queries should use entity-locked ranking');
     assert.equal(String(compoundPreferenceRecall.results[0]?.content || '').toLowerCase().includes('project narwhal ledger prefers weekly reporting packs'), true, 'compound project preference queries should rank the exact project preference fact first');
     assert.equal(compoundPreferenceRecall.results.every((row) => /narwhal ledger/i.test(String(row.content || ''))), true, 'entity-locked preference recall should suppress fragment-only Narwhal or Ledger rows');
+
+    seedMemoryCurrent(db, [
+      {
+        memory_id: 'm-transcript-vault',
+        type: 'USER_FACT',
+        content: 'A separate Transcript Vault / Episodic Recall Store is the approved architecture for long-term transcript recall and must stay separate from Gigabrain.',
+        scope: 'profile:main',
+        confidence: 0.97,
+        value_score: 0.3372,
+        value_label: 'situational',
+      },
+    ]);
+    rebuildEntityMentions(db);
+    const transcriptVaultRecall = orchestrateRecall({
+      db,
+      config,
+      query: 'What is the Transcript Vault?',
+      scope: 'profile:main',
+    });
+    assert.equal(transcriptVaultRecall.strategy, 'entity_brief', 'project definition questions should promote to entity_brief when a project entity is resolved');
+    assert.equal(transcriptVaultRecall.selectedEntityId, 'project:transcript', 'Transcript Vault queries should resolve the transcript project entity');
+    assert.match(String(transcriptVaultRecall.results[0]?.content || ''), /Transcript Vault \/ Episodic Recall Store/i, 'generic Transcript Vault questions should recover the architecture memory');
 
     const timelineRecall = orchestrateRecall({
       db,

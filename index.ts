@@ -7,6 +7,7 @@ import { GIGABRAIN_HTTP_ROUTES, createMemoryHttpHandler } from './lib/core/http-
 import { ensureProjectionStore, materializeProjectionFromMemories } from './lib/core/projection-store.js';
 import { ensureEventStore } from './lib/core/event-store.js';
 import { captureFromEvent } from './lib/core/capture-service.js';
+import { enqueueAutoCaptureEvent } from './lib/core/auto-capture-service.js';
 import { orchestrateRecall } from './lib/core/orchestrator.js';
 import { ensureNativeStore, syncNativeMemory } from './lib/core/native-sync.js';
 import { promoteNativeChunks } from './lib/core/native-promotion.js';
@@ -34,6 +35,7 @@ type PluginApi = {
   }) => void;
   registerMemoryCapability?: (capability: {
     runtime?: unknown;
+    flushPlanResolver?: (params?: any) => unknown;
   }) => void;
   registerMemoryRuntime?: (runtime: unknown) => void;
   registerCli?: (registrar: (ctx: { program: any; config: any; workspaceDir?: string; logger: PluginLogger }) => void | Promise<void>, opts?: {
@@ -43,6 +45,110 @@ type PluginApi = {
 };
 
 type PluginConfig = ReturnType<typeof normalizeConfig>;
+
+const SILENT_REPLY_TOKEN = 'NO_REPLY';
+const MEMORY_FLUSH_SOFT_TOKENS = 4000;
+const MEMORY_FLUSH_FORCE_TRANSCRIPT_BYTES = 2 * 1024 * 1024;
+const MEMORY_FLUSH_RESERVE_TOKENS_FLOOR = 20000;
+const MEMORY_FLUSH_TARGET_HINT = 'Store durable memories only in memory/YYYY-MM-DD.md (create memory/ if needed).';
+const MEMORY_FLUSH_APPEND_ONLY_HINT = 'If memory/YYYY-MM-DD.md already exists, APPEND new content only and do not overwrite existing entries.';
+const MEMORY_FLUSH_READ_ONLY_HINT = 'Treat workspace bootstrap/reference files such as MEMORY.md, DREAMS.md, SOUL.md, TOOLS.md, and AGENTS.md as read-only during this flush; never overwrite, replace, or edit them.';
+
+const normalizeNonNegativeInt = (value: unknown): number | null => {
+  const num = typeof value === 'number' ? value : (typeof value === 'string' && /^\d+(?:\.\d+)?$/.test(value.trim()) ? Number(value.trim()) : NaN);
+  if (!Number.isFinite(num)) return null;
+  const int = Math.floor(num);
+  return int >= 0 ? int : null;
+};
+
+const parseNonNegativeByteSize = (value: unknown): number | null => {
+  if (typeof value === 'number') return normalizeNonNegativeInt(value);
+  const text = String(value || '').trim().toLowerCase();
+  if (!text) return null;
+  const direct = normalizeNonNegativeInt(text);
+  if (direct != null) return direct;
+  const match = text.match(/^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb|tb)$/);
+  if (!match) return null;
+  const multipliers: Record<string, number> = {
+    b: 1,
+    kb: 1024,
+    mb: 1024 ** 2,
+    gb: 1024 ** 3,
+    tb: 1024 ** 4,
+  };
+  return Math.floor(Number(match[1]) * multipliers[match[2]]);
+};
+
+const formatDateStampInTimezone = (nowMs: number, timezone = 'UTC'): string => {
+  try {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date(nowMs));
+    const year = parts.find((part) => part.type === 'year')?.value;
+    const month = parts.find((part) => part.type === 'month')?.value;
+    const day = parts.find((part) => part.type === 'day')?.value;
+    if (year && month && day) return `${year}-${month}-${day}`;
+  } catch {
+    // Fall back to UTC below.
+  }
+  return new Date(nowMs).toISOString().slice(0, 10);
+};
+
+const ensureNoReplyHint = (text: string): string => {
+  if (text.includes(SILENT_REPLY_TOKEN)) return text;
+  return `${text}\n\nIf no user-visible reply is needed, start with ${SILENT_REPLY_TOKEN}.`;
+};
+
+const ensureMemoryFlushSafetyHints = (text: string): string => {
+  let next = String(text || '').trim();
+  for (const hint of [MEMORY_FLUSH_TARGET_HINT, MEMORY_FLUSH_APPEND_ONLY_HINT, MEMORY_FLUSH_READ_ONLY_HINT]) {
+    if (!next.includes(hint)) next = next ? `${next}\n\n${hint}` : hint;
+  }
+  return next;
+};
+
+const appendCurrentTimeLine = (text: string, nowMs: number, timezone: string): string => {
+  const trimmed = String(text || '').trimEnd();
+  if (trimmed.includes('Current time:')) return trimmed;
+  return `${trimmed}\nCurrent time: ${new Date(nowMs).toISOString()} (${timezone})`;
+};
+
+const buildGigabrainMemoryFlushPlan = ({ config, params = {} }: { config: PluginConfig; params?: any }) => {
+  const cfg = params?.cfg;
+  const defaults = cfg?.agents?.defaults?.compaction?.memoryFlush;
+  if (defaults?.enabled === false) return null;
+  const nowMs = Number.isFinite(Number(params?.nowMs)) ? Number(params.nowMs) : Date.now();
+  const timezone = String(config?.runtime?.timezone || 'UTC').trim() || 'UTC';
+  const dateStamp = formatDateStampInTimezone(nowMs, timezone);
+  const prompt = ensureNoReplyHint(ensureMemoryFlushSafetyHints(String(defaults?.prompt || '').trim() || [
+    'Pre-compaction memory flush for Gigabrain.',
+    MEMORY_FLUSH_TARGET_HINT,
+    MEMORY_FLUSH_READ_ONLY_HINT,
+    MEMORY_FLUSH_APPEND_ONLY_HINT,
+    'Do NOT create timestamped variant files (for example YYYY-MM-DD-HHMM.md); always use the canonical YYYY-MM-DD.md filename.',
+    `If nothing durable should be stored, reply with ${SILENT_REPLY_TOKEN}.`,
+  ].join(' ')));
+  const systemPrompt = ensureNoReplyHint(ensureMemoryFlushSafetyHints(String(defaults?.systemPrompt || '').trim() || [
+    'Pre-compaction memory flush turn.',
+    'The session is near auto-compaction; capture only durable memories to disk.',
+    MEMORY_FLUSH_TARGET_HINT,
+    MEMORY_FLUSH_READ_ONLY_HINT,
+    MEMORY_FLUSH_APPEND_ONLY_HINT,
+    `Usually ${SILENT_REPLY_TOKEN} is correct if there is no durable new information.`,
+  ].join(' ')));
+  return {
+    softThresholdTokens: normalizeNonNegativeInt(defaults?.softThresholdTokens) ?? MEMORY_FLUSH_SOFT_TOKENS,
+    forceFlushTranscriptBytes: parseNonNegativeByteSize(defaults?.forceFlushTranscriptBytes) ?? MEMORY_FLUSH_FORCE_TRANSCRIPT_BYTES,
+    reserveTokensFloor: normalizeNonNegativeInt(cfg?.agents?.defaults?.compaction?.reserveTokensFloor) ?? MEMORY_FLUSH_RESERVE_TOKENS_FLOOR,
+    model: String(defaults?.model || '').trim() || undefined,
+    prompt: appendCurrentTimeLine(prompt.replaceAll('YYYY-MM-DD', dateStamp), nowMs, timezone),
+    systemPrompt: systemPrompt.replaceAll('YYYY-MM-DD', dateStamp),
+    relativePath: `memory/${dateStamp}.md`,
+  };
+};
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   Boolean(value && typeof value === 'object' && !Array.isArray(value));
@@ -380,6 +486,12 @@ const markSessionBriefed = (cache: Map<string, number>, sessionKey: string) => {
 const withDb = <T,>(dbPath: string, config: PluginConfig, fn: (db: any) => T): T => {
   // Reuse the shared SQLite opener so transient writer contention waits instead of failing fast.
   const db = openDatabase(dbPath);
+  let shouldClose = true;
+  const close = () => {
+    if (!shouldClose) return;
+    shouldClose = false;
+    db.close();
+  };
   try {
     ensureProjectionStore(db);
     ensureEventStore(db);
@@ -391,9 +503,15 @@ const withDb = <T,>(dbPath: string, config: PluginConfig, fn: (db: any) => T): T
       materializeProjectionFromMemories(db);
     }
     ensureWorldModelReady({ db, config });
-    return fn(db);
-  } finally {
-    db.close();
+    const result = fn(db) as any;
+    if (result && typeof result.then === 'function') {
+      return result.finally(close) as T;
+    }
+    close();
+    return result;
+  } catch (err) {
+    close();
+    throw err;
   }
 };
 
@@ -441,6 +559,7 @@ const gigabrainPlugin = {
 
     api.registerMemoryCapability?.({
       runtime: gigabrainMemoryRuntime,
+      flushPlanResolver: (params?: any) => buildGigabrainMemoryFlushPlan({ config, params }),
     });
     if (!api.registerMemoryCapability && api.registerMemoryRuntime) {
       api.registerMemoryRuntime(gigabrainMemoryRuntime);
@@ -464,10 +583,19 @@ const gigabrainPlugin = {
         sourcePaths: nativeSync.changed_sources || [],
         dryRun: false,
       });
-      rebuildEntityMentions(db);
+      const nativeChanged = Number(nativeSync.changed_files || 0) > 0
+        || Number(nativeSync.inserted_chunks || 0) > 0
+        || Number(nativeSync.removed_sources || 0) > 0
+        || Number(nativePromotion.promoted_inserted || 0) > 0
+        || Number(nativePromotion.linked_existing || 0) > 0;
+      if (nativeChanged) {
+        rebuildEntityMentions(db);
+      }
       if (config.worldModel?.enabled !== false) {
-        const worldModel = rebuildWorldModel({ db, config });
-        logger.info?.(`[gigabrain] world model entities=${worldModel.counts.entities} beliefs=${worldModel.counts.beliefs} syntheses=${worldModel.counts.syntheses}`);
+        const worldModel = nativeChanged
+          ? rebuildWorldModel({ db, config })
+          : ensureWorldModelReady({ db, config, rebuildIfEmpty: false });
+        logger.info?.(`[gigabrain] world model entities=${worldModel.counts.entities || 0} beliefs=${worldModel.counts.beliefs || 0} syntheses=${worldModel.counts.syntheses || 0}`);
       }
       logger.info?.(`[gigabrain] native sync changed=${nativeSync.changed_files} inserted=${nativeSync.inserted_chunks} promoted=${nativePromotion.promoted_inserted} linked=${nativePromotion.linked_existing}`);
     });
@@ -587,15 +715,29 @@ const gigabrainPlugin = {
       try {
         const resolvedEvent = mergeEventWithCtx(event, ctx);
         const payload = extractCapturePayload(resolvedEvent);
-        const result = withDb(dbPath, config, (db) => captureFromEvent({
-          db,
-          config,
-          event: payload,
-          logger,
-          runId: `capture-${new Date().toISOString().replace(/[:.]/g, '-')}`,
-          reviewVersion: '',
-        }));
-        logger.info?.(`[gigabrain] capture inserted=${result.inserted} queued=${result.queued_review}`);
+        const runId = `capture-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+        const result = await withDb(dbPath, config, async (db) => {
+          const autoCapture = enqueueAutoCaptureEvent({
+            db,
+            config,
+            event: payload,
+            logger,
+            runId,
+          });
+          const capture = captureFromEvent({
+            db,
+            config,
+            event: payload,
+            logger,
+            runId,
+            reviewVersion: '',
+          });
+          return {
+            ...capture,
+            auto_capture: autoCapture,
+          };
+        });
+        logger.info?.(`[gigabrain] capture inserted=${result.inserted} queued=${result.queued_review} auto_queue=${result.auto_capture?.queue_reason || 'n/a'}`);
       } catch (err) {
         logger.warn?.(`[gigabrain] capture hook error: ${err instanceof Error ? err.message : String(err)}`);
       }
