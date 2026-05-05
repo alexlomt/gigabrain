@@ -222,6 +222,24 @@ const run = async () => {
         created_at: '2026-03-08T11:05:57.000Z',
         updated_at: '2026-03-08T11:05:57.000Z',
       },
+      {
+        memory_id: 'm-6h',
+        type: 'DECISION',
+        content: 'Final Paperclip workflow is: Alex in Telegram → Lobster/main as Board intake → CEO-level Paperclip issue → dedicated paperclip-ceo OpenClaw agent → Paperclip heads/workers → CEO review/close → Lobster/main reports back to Alex.',
+        scope: 'shared',
+        confidence: 0.9,
+        created_at: '2026-03-08T11:05:58.000Z',
+        updated_at: '2026-03-08T11:05:58.000Z',
+      },
+      {
+        memory_id: 'm-6i',
+        type: 'DECISION',
+        content: 'Higgsfield Creator should preserve prompt/reference evidence, generation parameters, output paths, and quality notes for produced assets.',
+        scope: 'higgsfield-creator',
+        confidence: 0.96,
+        created_at: '2026-03-08T11:05:59.000Z',
+        updated_at: '2026-03-08T11:05:59.000Z',
+      },
     ]);
 
     ensureNativeStore(db);
@@ -274,6 +292,7 @@ const run = async () => {
     const syntheses = listSyntheses(db, { kind: 'session_brief', limit: 5 });
     assert.equal(syntheses.length >= 1, true, 'session brief synthesis should be present');
     assert.doesNotMatch(syntheses[0].content, /mail friend|memory-?notes/i, 'session brief should not surface weak meta-style facts');
+    assert.doesNotMatch(syntheses[0].content, /Higgsfield Creator should preserve prompt\/reference evidence/i, 'global session brief should not leak agent-scoped beliefs');
     const currentState = listSyntheses(db, { kind: 'current_state', limit: 5 });
     assert.equal(currentState.length >= 1, true, 'current state synthesis should be present');
     assert.doesNotMatch(currentState[0].content, /telegram:\s*779443319|@legendary_gainz/i, 'current state should exclude contact-style Telegram facts');
@@ -283,6 +302,7 @@ const run = async () => {
     assert.equal(entities.some((entity) => entity.entity_id === 'organization:austrian'), false, 'weak adjective-like organization aliases should not be promoted into world-model entities');
     assert.equal(entities.some((entity) => ['person:email', 'person:chrome', 'organization:neobank', 'project:setup', 'person:archive', 'person:contact', 'person:content', 'person:date', 'person:guest', 'person:link', 'person:name', 'person:notes', 'person:person', 'person:status'].includes(entity.entity_id)), false, 'operational nouns and descriptor labels should not surface as world-model entities');
     assert.equal(entities.some((entity) => ['person:freundin', 'person:sozialarbeiterin', 'person:zumstein'].includes(entity.entity_id)), false, 'role labels and redundant surname-only entities should stay out of the surfaced entity list');
+    assert.equal(entities.some((entity) => ['person:board', 'person:paperclip', 'person:telegram', 'person:higgsfield', 'person:scrapling'].includes(entity.entity_id)), false, 'workflow/system nouns should not be promoted into person entities');
 
     fs.writeFileSync(path.join(ws.workspace, 'IDENTITY.md'), '# IDENTITY.md\n\n- **Name:** Lobster\n- **Creature:** Personal AI operator\n- **Vibe:** Direct\n- **Emoji:** 🦞\n', 'utf8');
     fs.writeFileSync(path.join(ws.workspace, 'USER.md'), '# USER.md\n\n- **Name:** Alex Lomtatidze\n- **What to call them:** Alex\n- **Timezone:** Europe/London\n', 'utf8');
@@ -336,10 +356,10 @@ const run = async () => {
     rebuildEntityMentions(db);
     const rebuiltWithWorkspaceIdentity = rebuildWorldModel({ db, config, now: '2026-03-08T12:05:00.000Z' });
     assert.equal(rebuiltWithWorkspaceIdentity.ok, true, 'rebuild should succeed after workspace identity facts are added');
-    const entitiesAfterIdentity = listEntities(db, { limit: 50, includeHidden: true });
+    const entitiesAfterIdentity = listEntities(db, { limit: 5000, includeHidden: true });
     assert.equal(entitiesAfterIdentity.some((entity) => entity.entity_id === 'person:alex'), true, 'workspace user identity should be represented as a person entity');
     assert.equal(entitiesAfterIdentity.some((entity) => entity.entity_id === 'person:lobster'), true, 'workspace agent identity should be represented as a person entity');
-    const surfacedEntitiesAfterIdentity = listEntities(db, { limit: 50 });
+    const surfacedEntitiesAfterIdentity = listEntities(db, { limit: 5000 });
     assert.equal(surfacedEntitiesAfterIdentity.some((entity) => entity.entity_id === 'person:postiz'), false, 'tool names should not surface as bogus person identities');
 
     const warm = ensureWorldModelReady({ db, config, rebuildIfEmpty: true });
