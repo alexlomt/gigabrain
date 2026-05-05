@@ -54,7 +54,8 @@
         "vault:pull": "node scripts/gigabrainctl.js vault pull",
         "migrate:v3": "node scripts/migrate-v3.js",
         "harmonize": "node scripts/harmonize-memory.js",
-        "vault:export": "node scripts/vault-export.js"
+        "vault:export": "node scripts/vault-export.js",
+        "build:runtime-js": "node scripts/build-runtime-js.js"
     },
     "keywords": [
         "openclaw",
@@ -74,7 +75,7 @@
     },
     "openclaw": {
         "extensions": [
-            "./index.ts"
+            "./index.js"
         ]
     },
     "peerDependencies": {
@@ -87,6 +88,7 @@
     },
     "files": [
         "index.ts",
+        "index.js",
         "lib/",
         "memory_api/app.py",
         "memory_api/README.md",
