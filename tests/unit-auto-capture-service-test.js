@@ -110,12 +110,103 @@ const run = async () => {
 
     assert.equal(auto.enabled, true);
     assert.equal(auto.mode, 'auto');
-    assert.equal(auto.candidates, 3);
-    assert.equal(auto.auto_save_candidates, 1, 'only the safe high-confidence candidate should be prepared for save');
+    assert.equal(auto.candidates, 4);
+    assert.equal(auto.auto_save_candidates, 2, 'safe high-confidence and deterministic explicit future-run candidates should be prepared for save');
     assert.equal(auto.queued_review, 1, 'medium-confidence candidate should be queued');
     assert.equal(auto.rejected, 1, 'secret-like candidate should be rejected');
     assert.match(auto.generated_text, /Alex wants important project decisions/i);
     assert.doesNotMatch(auto.generated_text, /abcdef1234567890/);
+
+    const scopedAuto = await autoCaptureFromEvent({
+      db,
+      config,
+      event: {
+        scope: 'scrapling-research-operator',
+        agentId: 'scrapling-research-operator',
+        sessionKey: 'agent:scrapling-research-operator:paperclip:issue:scope-test',
+        messages: [
+          { role: 'user', content: 'Decide the worker memory boundary.' },
+          { role: 'assistant', content: 'Decision: Scrapling keeps web evidence memory in the Scrapling worker scope only.' },
+        ],
+        text: 'Decision: Scrapling keeps web evidence memory in the Scrapling worker scope only.',
+      },
+      runId: 'auto-capture-scope-unit',
+      reviewVersion: 'rv-auto-capture-unit',
+      completeJson: async () => JSON.stringify({
+        candidates: [{
+          action: 'auto_save',
+          type: 'DECISION',
+          content: 'Scrapling keeps web evidence memory in the Scrapling worker scope only.',
+          scope: 'paperclip-ceo',
+          confidence: 0.96,
+          importance: 0.9,
+          sensitivity: 'low',
+          reason: 'model attempted the wrong scope; runtime must override it',
+        }],
+      }),
+    });
+    assert.equal(scopedAuto.auto_save_candidates, 1);
+    assert.match(scopedAuto.generated_text, /scope="scrapling-research-operator"/, 'auto-capture must force event scope over model-selected scope');
+    assert.doesNotMatch(scopedAuto.generated_text, /scope="paperclip-ceo"/);
+
+    const scopedCapture = captureFromEvent({
+      db,
+      config,
+      event: {
+        agentId: 'scrapling-research-operator',
+        sessionKey: 'agent:scrapling-research-operator:paperclip:issue:scope-test',
+        scope: 'scrapling-research-operator',
+        text: scopedAuto.generated_text,
+        prompt: '',
+        messages: [],
+      },
+      runId: 'auto-capture-scope-unit',
+      reviewVersion: 'rv-auto-capture-unit',
+      logger: { info: () => {} },
+    });
+    assert.equal(scopedCapture.inserted, 1, 'forced-scope auto memory note should be captured');
+    const scopedStored = db.prepare(`
+      SELECT scope
+      FROM memory_current
+      WHERE content LIKE '%Scrapling keeps web evidence memory%'
+      LIMIT 1
+    `).get();
+    assert.equal(String(scopedStored?.scope || ''), 'scrapling-research-operator');
+
+    const sharedConfig = makeAutoConfig(ws.workspace);
+    sharedConfig.runtime.paths.reviewQueuePath = path.join(ws.outputRoot, 'shared-auto-capture-review.jsonl');
+    fs.rmSync(sharedConfig.runtime.paths.reviewQueuePath, { force: true });
+    const sharedAuto = await autoCaptureFromEvent({
+      db,
+      config: sharedConfig,
+      event: {
+        scope: 'shared',
+        agentId: 'shared',
+        sessionKey: 'agent:shared:auto-capture',
+        messages: [
+          { role: 'user', content: 'Save a global fact automatically.' },
+          { role: 'assistant', content: 'Decision: global memory should require explicit promotion.' },
+        ],
+        text: 'Decision: global memory should require explicit promotion.',
+      },
+      runId: 'auto-capture-shared-unit',
+      reviewVersion: 'rv-auto-capture-unit',
+      completeJson: async () => JSON.stringify({
+        candidates: [{
+          action: 'auto_save',
+          type: 'DECISION',
+          content: 'Global memory should require explicit promotion.',
+          scope: 'shared',
+          confidence: 0.96,
+          importance: 0.9,
+          sensitivity: 'low',
+          reason: 'shared memory promotion guard',
+        }],
+      }),
+    });
+    assert.equal(sharedAuto.auto_save_candidates, 0, 'shared scope must not auto-save without explicit promotion');
+    assert.equal(sharedAuto.queued_review, 1, 'shared auto-save candidates should be routed to review');
+    assert.equal(sharedAuto.generated_text, '');
 
     const capture = captureFromEvent({
       db,
@@ -132,11 +223,11 @@ const run = async () => {
       reviewVersion: 'rv-auto-capture-unit',
       logger: { info: () => {} },
     });
-    assert.equal(capture.inserted, 1, 'generated auto memory note should be captured');
+    assert.equal(capture.inserted, 2, 'generated auto memory notes should be captured');
     const stored = db.prepare(`
       SELECT type, content, scope, source_layer
       FROM memory_current
-      WHERE content LIKE '%important project decisions%'
+      WHERE content LIKE 'Alex wants important project decisions%'
       LIMIT 1
     `).get();
     assert.equal(String(stored?.type || ''), 'PREFERENCE');
@@ -176,7 +267,7 @@ const run = async () => {
         }],
       }),
     });
-    assert.equal(shadow.shadowed, 1);
+    assert.equal(shadow.shadowed, 2);
     assert.equal(shadow.generated_text, '', 'shadow mode must not generate save notes');
 
     const packet = buildAutoCapturePacket({

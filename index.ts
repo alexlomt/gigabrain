@@ -446,7 +446,7 @@ const resolveSessionKey = (event: any): string => String(
 
 const buildSessionPreludeInjection = (content: string): string => {
   const lines = ['<gigabrain-session-brief>'];
-  lines.push('instruction: This is the latest Gigabrain session prelude. Use it silently as grounding at the start of the session.');
+  lines.push('instruction: This is the latest scope-specific Gigabrain session prelude. Use it silently as grounding at the start of the session.');
   lines.push('instruction: Prefer this briefing and later Gigabrain recall context over ad-hoc verification unless the user explicitly asks for exact provenance.');
   for (const rawLine of String(content || '').split(/\r?\n/)) {
     const line = String(rawLine || '').trim();
@@ -455,6 +455,51 @@ const buildSessionPreludeInjection = (content: string): string => {
   }
   lines.push('</gigabrain-session-brief>');
   return `${lines.join('\n')}\n`;
+};
+
+const buildScopedSessionPreludeFromMemories = (db: any, scope: string): string => {
+  const rows = db.prepare(`
+    SELECT type, content, confidence, value_score
+    FROM memory_current
+    WHERE status = 'active' AND scope = ?
+    ORDER BY COALESCE(value_score, 0) DESC, COALESCE(confidence, 0) DESC, updated_at DESC
+    LIMIT 6
+  `).all(scope);
+  if (!Array.isArray(rows) || rows.length === 0) return '';
+  const lines = [
+    'Session Brief',
+    '',
+    `High-confidence scope-specific grounding for ${scope}.`,
+    '',
+  ];
+  for (const row of rows) {
+    const content = String(row?.content || '').replace(/\s+/g, ' ').trim();
+    if (!content) continue;
+    const type = String(row?.type || 'CONTEXT').trim() || 'CONTEXT';
+    lines.push(`- [${type}] ${content}`);
+  }
+  return lines.join('\n').trim();
+};
+
+const getScopedSessionPreludeContent = (db: any, scope: string): string => {
+  const normalizedScope = normalizeResolvedScope(scope || 'shared') || 'shared';
+  const candidates = normalizedScope === 'shared'
+    ? [{ subjectType: 'global', subjectId: 'global' }]
+    : [
+        { subjectType: 'scope', subjectId: normalizedScope },
+        ...(normalizedScope === 'profile:main' ? [{ subjectType: 'profile', subjectId: 'main' }] : []),
+      ];
+  for (const candidate of candidates) {
+    const synthesis = getSynthesis(db, {
+      kind: 'session_brief',
+      subjectType: candidate.subjectType,
+      subjectId: candidate.subjectId,
+    });
+    const content = String(synthesis?.content || '').trim();
+    if (content) return content;
+  }
+  if (normalizedScope === 'shared') return '';
+  return buildScopedSessionPreludeFromMemories(db, normalizedScope);
 };
 
 const BRIEFED_SESSION_LIMIT = 2048;
@@ -681,14 +726,10 @@ const gigabrainPlugin = {
               sessionPrelude: '',
             };
           }
-          const synthesis = getSynthesis(db, {
-            kind: 'session_brief',
-            subjectType: 'global',
-            subjectId: 'global',
-          });
+          const sessionPreludeContent = getScopedSessionPreludeContent(db, scope);
           return {
             recall: orchestrated,
-            sessionPrelude: synthesis?.content ? buildSessionPreludeInjection(synthesis.content) : '',
+            sessionPrelude: sessionPreludeContent ? buildSessionPreludeInjection(sessionPreludeContent) : '',
           };
         });
         if (!recall?.injection) return;
