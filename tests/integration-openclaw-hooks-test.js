@@ -3,6 +3,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 
 import gigabrainPlugin from '../index.ts';
+import { ensureWorldModelReady, ensureWorldModelStore } from '../lib/core/world-model.js';
 import { makeConfigObject, makeTempWorkspace, openDb, seedMemoryCurrent } from './helpers.js';
 
 const slugifyScopeToken = (value = '') => {
@@ -112,6 +113,16 @@ const run = async () => {
         confidence: 0.88,
       },
     ]);
+    ensureWorldModelStore(db);
+    ensureWorldModelReady({ db, config: makeConfigObject(ws.workspace).plugins.entries.gigabrain.config });
+    db.prepare(`
+      INSERT INTO memory_syntheses (synthesis_id, kind, subject_type, subject_id, content, stale, confidence, generated_at, input_hash, payload)
+      VALUES (?, 'session_brief', ?, ?, ?, 0, 0.9, ?, ?, '{}')
+    `).run('session_brief:global:global', 'global', 'global', 'GLOBAL SESSION BRIEF SHOULD NOT LEAK INTO AGENT SCOPES', new Date().toISOString(), 'global-hash');
+    db.prepare(`
+      INSERT INTO memory_syntheses (synthesis_id, kind, subject_type, subject_id, content, stale, confidence, generated_at, input_hash, payload)
+      VALUES (?, 'session_brief', ?, ?, ?, 0, 0.9, ?, ?, '{}')
+    `).run('session_brief:scope:cpto', 'scope', 'cpto', 'CPTO scoped session brief is visible only to the cpto agent.', new Date().toISOString(), 'cpto-hash');
   } finally {
     db.close();
   }
@@ -135,6 +146,17 @@ const run = async () => {
     String(recallResult?.appendSystemContext || '').includes('roadmap planning and release sequencing'),
     true,
     'hook recall should use ctx-derived agent scope rather than falling back to shared',
+  );
+  assert.equal(
+    String(recallResult?.appendSystemContext || '').includes('<gigabrain-session-brief>')
+      && String(recallResult?.appendSystemContext || '').includes('scope-specific grounding for cpto'),
+    true,
+    'hook should inject the session prelude for the resolved agent scope',
+  );
+  assert.equal(
+    String(recallResult?.appendSystemContext || '').includes('GLOBAL SESSION BRIEF SHOULD NOT LEAK'),
+    false,
+    'hook must not inject the global session prelude into a scoped agent session',
   );
   assert.equal('messages' in (recallResult || {}), false, 'hook should not rely on returning a rewritten messages array');
 
