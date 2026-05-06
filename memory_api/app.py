@@ -27,18 +27,20 @@ from pypdf import PdfReader
 from pydantic import BaseModel, ConfigDict, Field
 
 _home = os.path.expanduser("~")
-DB_PATH = os.getenv("GB_REGISTRY_PATH", os.path.join(_home, ".openclaw", "gigabrain", "memory", "registry.sqlite"))
+_runtime_gigabrain_root = os.path.join(_home, ".openclaw", "runtime", "gigabrain")
+_legacy_gigabrain_root = os.path.join(_home, ".openclaw", "gigabrain", "memory")
+DB_PATH = os.getenv("GB_REGISTRY_PATH", os.path.join(_runtime_gigabrain_root, "registry.sqlite"))
 TOKEN = os.getenv("GB_UI_TOKEN", "")
 OPENCLAW_CONFIG_PATH = os.getenv("GB_OPENCLAW_CONFIG", os.path.join(_home, ".openclaw", "openclaw.json"))
-DOCS_DIR = os.getenv("GB_DOCS_PATH", os.path.join(_home, ".openclaw", "gigabrain", "memory", "docs"))
-LEGACY_DOCS_DIR = os.path.join(_home, ".openclaw", "gigabrain", "memory", "docs")
+DOCS_DIR = os.getenv("GB_DOCS_PATH", os.path.join(_runtime_gigabrain_root, "output", "docs"))
+LEGACY_DOCS_DIR = os.path.join(_legacy_gigabrain_root, "docs")
 OPENCLAW_BIN = os.getenv("GB_OPENCLAW_BIN", os.path.join(_home, ".openclaw", "bin", "openclaw"))
 DOC_INDEX_AGENT = os.getenv("GB_DOC_INDEX_AGENT", "main")
 DOC_INDEX_DEBOUNCE_SECONDS = int(os.getenv("GB_DOC_INDEX_DEBOUNCE", "10"))
 DOC_INDEX_TIMEOUT_SECONDS = int(os.getenv("GB_DOC_INDEX_TIMEOUT", "900"))
-DOC_INDEX_LOCK_PATH = os.getenv("GB_DOC_INDEX_LOCK", os.path.join(_home, ".openclaw", "gigabrain", "memory", ".doc-index.lock"))
-GRAPH_PATH = os.getenv("GB_GRAPH_PATH", os.path.join(_home, ".openclaw", "gigabrain", "memory", "graph.json"))
-OUTPUT_DIR = os.getenv("GB_OUTPUT_DIR", os.path.realpath(os.path.join(os.path.dirname(DB_PATH), "..", "output")))
+DOC_INDEX_LOCK_PATH = os.getenv("GB_DOC_INDEX_LOCK", os.path.join(_runtime_gigabrain_root, "output", ".doc-index.lock"))
+GRAPH_PATH = os.getenv("GB_GRAPH_PATH", os.path.join(_runtime_gigabrain_root, "graph.db"))
+OUTPUT_DIR = os.getenv("GB_OUTPUT_DIR", os.path.join(_runtime_gigabrain_root, "output"))
 RAW_DOCS_DIR = os.getenv("GB_RAW_DOCS_DIR", os.path.join(OUTPUT_DIR, "docs-raw"))
 SURFACE_SUMMARY_PATH = os.getenv("GB_SURFACE_SUMMARY_PATH", os.path.join(OUTPUT_DIR, "memory-surface-summary.json"))
 GB_RECALL_EXPLAIN_URL = os.getenv("GB_RECALL_EXPLAIN_URL", "http://127.0.0.1:18789/gb/recall/explain")
@@ -332,6 +334,70 @@ def _directory_is_empty(path: str) -> Optional[bool]:
         return True
     except Exception:
         return None
+
+
+def _doc_file_state(file_path: Optional[str]) -> dict[str, Any]:
+    path_value = str(file_path or "").strip()
+    if not path_value:
+        return {
+            "path_exists": False,
+            "path_is_file": False,
+            "within_docs_dir": False,
+            "readable_by_api": False,
+            "broken": True,
+        }
+    real_path = os.path.realpath(path_value)
+    path_is_file = os.path.isfile(real_path)
+    within_docs_dir = _is_within_docs_dir(real_path)
+    readable_by_api = path_is_file and within_docs_dir
+    return {
+        "path_exists": os.path.exists(real_path),
+        "path_is_file": path_is_file,
+        "within_docs_dir": within_docs_dir,
+        "readable_by_api": readable_by_api,
+        "broken": not readable_by_api,
+    }
+
+
+def _collect_doc_file_health(conn: sqlite3.Connection) -> dict[str, Any]:
+    rows = conn.execute(
+        """
+        SELECT id, title, status, path, last_indexed_at
+        FROM documents
+        WHERE status != 'deleted'
+        ORDER BY title ASC, id ASC
+        """
+    ).fetchall()
+    missing = []
+    outside_docs_dir = []
+    indexed_missing = []
+    readable = 0
+    for row in rows:
+        state = _doc_file_state(row["path"])
+        item = {
+            "id": row["id"],
+            "title": row["title"],
+            "status": row["status"],
+            "path": row["path"],
+            "last_indexed_at": row["last_indexed_at"],
+        }
+        if state["readable_by_api"]:
+            readable += 1
+        if not state["path_is_file"]:
+            missing.append(item)
+        if row["path"] and not state["within_docs_dir"]:
+            outside_docs_dir.append(item)
+        if row["last_indexed_at"] and not state["readable_by_api"]:
+            indexed_missing.append(item)
+    return {
+        "records": len(rows),
+        "readable_files": readable,
+        "missing_files": len(missing),
+        "outside_docs_dir": len(outside_docs_dir),
+        "indexed_missing_files": len(indexed_missing),
+        "broken": len(missing) + len(outside_docs_dir) > 0,
+        "broken_items": (missing + [item for item in outside_docs_dir if item not in missing])[:20],
+    }
 
 
 def _collect_doc_index_status() -> dict[str, Any]:
@@ -1091,12 +1157,52 @@ def init_db():
     conn.close()
 
 
+def _validate_startup_registry_path() -> None:
+    explicit_registry = bool(str(os.getenv("GB_REGISTRY_PATH", "")).strip())
+    if not os.path.exists(DB_PATH):
+        if not explicit_registry:
+            raise RuntimeError(
+                f"Gigabrain registry not found at default path {DB_PATH!r}; set GB_REGISTRY_PATH explicitly"
+            )
+        return
+    conn = sqlite3.connect(DB_PATH, timeout=max(1.0, SQLITE_BUSY_TIMEOUT_MS / 1000.0))
+    try:
+        rows = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        table_names = {str(row[0] or "") for row in rows}
+    finally:
+        conn.close()
+    if table_names and "memories" not in table_names:
+        raise RuntimeError(f"Gigabrain registry at {DB_PATH!r} does not contain required table 'memories'")
+
+
+def _validate_required_tables() -> None:
+    required = {"memories", "documents"}
+    conn = sqlite3.connect(DB_PATH, timeout=max(1.0, SQLITE_BUSY_TIMEOUT_MS / 1000.0))
+    try:
+        rows = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        table_names = {str(row[0] or "") for row in rows}
+    finally:
+        conn.close()
+    missing = sorted(required - table_names)
+    if missing:
+        raise RuntimeError(f"Gigabrain registry at {DB_PATH!r} is missing required tables: {', '.join(missing)}")
+
+
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app):
+    _validate_startup_registry_path()
     init_db()
+    _validate_required_tables()
     ensure_docs_dir()
+    _logging.info(
+        "Gigabrain Memory API paths: registry=%s docs=%s output=%s graph=%s",
+        DB_PATH,
+        DOCS_DIR,
+        OUTPUT_DIR,
+        GRAPH_PATH,
+    )
     yield
 
 app.router.lifespan_context = lifespan
@@ -1450,6 +1556,8 @@ def list_docs(
     if status:
         clauses.append("status = ?")
         params.append(status)
+    else:
+        clauses.append("status != 'deleted'")
     if tag:
         clauses.append("tags LIKE ? ESCAPE '\\'")
         params.append(_tag_like(tag))
@@ -1467,6 +1575,7 @@ def list_docs(
     out = []
     for row in rows:
         data = dict(row)
+        data.update(_doc_file_state(data.get("path")))
         data["preview"] = preview_doc_content(data.get("path"))
         out.append(data)
     response = JSONResponse(content=out)
@@ -1480,9 +1589,10 @@ def get_doc(doc_id: str, auth: dict = Depends(require_token)):
     conn = get_db()
     row = conn.execute("SELECT * FROM documents WHERE id = ?", (doc_id,)).fetchone()
     conn.close()
-    if not row:
+    if not row or str(row["status"] or "").lower() == "deleted":
         raise HTTPException(status_code=404, detail="Not found")
     data = dict(row)
+    data.update(_doc_file_state(data.get("path")))
     data["content"] = read_doc_content(data.get("path"))
     return data
 
@@ -2434,7 +2544,8 @@ def metrics(auth: dict = Depends(require_token)):
     else:
         total = active = pending = rejected = 0
     if _is_admin(auth):
-        docs = conn.execute("SELECT COUNT(*) as c FROM documents").fetchone()[0]
+        docs_records_total = conn.execute("SELECT COUNT(*) as c FROM documents").fetchone()[0]
+        docs = conn.execute("SELECT COUNT(*) as c FROM documents WHERE status != 'deleted'").fetchone()[0]
         docs_active = conn.execute("SELECT COUNT(*) as c FROM documents WHERE status = 'active'").fetchone()[0]
         docs_indexed = conn.execute(
             "SELECT COUNT(*) as c FROM documents WHERE status != 'deleted' AND last_indexed_at IS NOT NULL AND TRIM(last_indexed_at) != ''"
@@ -2443,15 +2554,19 @@ def metrics(auth: dict = Depends(require_token)):
             "SELECT COUNT(*) as c FROM documents WHERE status = 'active' AND (last_indexed_at IS NULL OR TRIM(last_indexed_at) = '')"
         ).fetchone()[0]
         docs_last_indexed_at = conn.execute(
-            "SELECT MAX(last_indexed_at) FROM documents WHERE last_indexed_at IS NOT NULL AND TRIM(last_indexed_at) != ''"
+            "SELECT MAX(last_indexed_at) FROM documents WHERE status != 'deleted' AND last_indexed_at IS NOT NULL AND TRIM(last_indexed_at) != ''"
         ).fetchone()[0]
+        docs_file_health = _collect_doc_file_health(conn)
         doc_index = _collect_doc_index_status()
+        doc_index["file_health"] = docs_file_health
     else:
+        docs_records_total = 0
         docs = 0
         docs_active = 0
         docs_indexed = 0
         docs_pending_index = 0
         docs_last_indexed_at = None
+        docs_file_health = None
         doc_index = None
     conn.close()
     return {
@@ -2460,9 +2575,11 @@ def metrics(auth: dict = Depends(require_token)):
         "pending": pending,
         "rejected": rejected,
         "docs_total": docs,
+        "docs_records_total": docs_records_total,
         "docs_active": docs_active,
         "docs_indexed": docs_indexed,
         "docs_pending_index": docs_pending_index,
         "docs_last_indexed_at": docs_last_indexed_at,
+        "docs_file_health": docs_file_health,
         "doc_index": doc_index,
     }
