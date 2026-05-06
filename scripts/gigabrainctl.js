@@ -745,7 +745,11 @@ const commandDoctor = async () => {
     const vaultHealth = inspectVaultHealth({ config, db });
     checks.push({
       name: 'vault_surface_ready',
-      ok: config?.vault?.enabled !== true || vaultHealth.manual_protection.ok === true,
+      ok: config?.vault?.enabled !== true || (
+        vaultHealth.manual_protection.ok === true
+        && vaultHealth.vault?.stale !== true
+        && vaultHealth.native?.stale !== true
+      ),
       value: vaultHealth,
     });
   } finally {
@@ -1301,7 +1305,11 @@ const commandVault = async () => {
   if (action === 'doctor') {
     const health = inspectVaultHealth({ config, dbPath });
     console.log(JSON.stringify({
-      ok: config?.vault?.enabled !== true || health.manual_protection.ok === true,
+      ok: config?.vault?.enabled !== true || (
+        health.manual_protection.ok === true
+        && health.vault?.stale !== true
+        && health.native?.stale !== true
+      ),
       action: 'vault_doctor',
       configPath: loaded.configPath,
       dbPath,
