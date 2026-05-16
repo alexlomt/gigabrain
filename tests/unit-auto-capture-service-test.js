@@ -283,6 +283,36 @@ const run = async () => {
     assert.equal(shouldConsiderAutoCaptureEvent({ config, event: { messages: [{ role: 'user', content: 'Hows it going' }] } }).ok, false);
     assert.equal(shouldConsiderAutoCaptureEvent({ config, event: { messages: [{ role: 'user', content: 'Going forward, I prefer that high-confidence stable preferences are captured automatically.' }] } }).ok, true);
     assert.equal(shouldConsiderAutoCaptureEvent({ config, event: { messages: [{ role: 'user', content: 'Status?' }, { role: 'assistant', content: 'Running smoke tests and systemctl checks.' }] } }).ok, false);
+    const syntheticWakeDecisionGate = shouldConsiderAutoCaptureEvent({
+      config,
+      event: {
+        agentId: 'linkedin-public-evidence-operator',
+        scope: 'linkedin-public-evidence-operator',
+        sessionKey: 'agent:linkedin-public-evidence-operator:paperclip:issue:test',
+        messages: [
+          { role: 'user', content: '[Tue 2026-05-12 00:37 UTC] You are the LinkedIn Public Evidence Operator.\n\nPaperclip wake event for a cloud adapter.\n\nSet these values in your run context:\nPAPERCLIP_RUN_ID=test-run\nPAPERCLIP_AGENT_ID=test-agent\nPAPERCLIP_API_URL=http://127.0.0.1:3100/\n\nHTTP rules:\n- Use Authorization: Bearer $PAPERCLIP_API_KEY\n\nWorkflow:\n1) GET /api/agents/me\n\n- issue: ADR-411 LinkedIn validation\n- reason: issue_assigned' },
+          { role: 'assistant', content: 'Decision: Going forward, the LinkedIn Public Evidence Operator should keep durable operating memory only in its own scope.' },
+        ],
+        text: 'Decision: Going forward, the LinkedIn Public Evidence Operator should keep durable operating memory only in its own scope.',
+      },
+    });
+    assert.equal(syntheticWakeDecisionGate.ok, true, 'synthetic Paperclip wakes should not block durable assistant memory signals');
+    assert.equal(syntheticWakeDecisionGate.syntheticWakeDetected, true, 'synthetic Paperclip wakes should be detected');
+    const syntheticWakeNoSignalGate = shouldConsiderAutoCaptureEvent({
+      config,
+      event: {
+        agentId: 'linkedin-public-evidence-operator',
+        scope: 'linkedin-public-evidence-operator',
+        sessionKey: 'agent:linkedin-public-evidence-operator:paperclip:issue:test',
+        messages: [
+          { role: 'user', content: '[Tue 2026-05-12 00:37 UTC] Paperclip wake event for a cloud adapter.\n\nSet these values in your run context:\nPAPERCLIP_RUN_ID=test-run\nPAPERCLIP_AGENT_ID=test-agent\n\nHTTP rules:\n- Use Authorization: Bearer $PAPERCLIP_API_KEY\n\n- issue: ADR-411 LinkedIn validation\n- reason: issue_assigned' },
+          { role: 'assistant', content: 'Done. The extractor ran successfully and QA passed.' },
+        ],
+        text: 'Done. The extractor ran successfully and QA passed.',
+      },
+    });
+    assert.equal(syntheticWakeNoSignalGate.ok, false, 'synthetic wakes without a durable signal should still be skipped');
+    assert.equal(syntheticWakeNoSignalGate.reason, 'no_memory_signal');
     assert.equal(isToolLikeText('functions.exec raw_params={"command":"node --input-type=module"}'), true);
     const toolPacket = buildAutoCapturePacket({
       db,
@@ -312,6 +342,24 @@ const run = async () => {
       'auto-capture packet must exclude tool/synthetic live-test content',
     );
     assert.equal(JSON.stringify(toolPacket).includes('Smoke tests are green'), true, 'normal assistant progress text remains available');
+
+    const syntheticWakePacket = buildAutoCapturePacket({
+      db,
+      config,
+      event: {
+        agentId: 'linkedin-public-evidence-operator',
+        scope: 'linkedin-public-evidence-operator',
+        sessionKey: 'agent:linkedin-public-evidence-operator:paperclip:issue:test',
+        messages: [
+          { role: 'user', content: '[Tue 2026-05-12 00:37 UTC] Paperclip wake event for a cloud adapter.\n\nSet these values in your run context:\nPAPERCLIP_RUN_ID=test-run\nPAPERCLIP_AGENT_ID=test-agent\nPAPERCLIP_API_URL=http://127.0.0.1:3100/\n\nHTTP rules:\n- Use Authorization: Bearer $PAPERCLIP_API_KEY\n\nWorkflow:\n1) GET /api/agents/me\n\n- issue: ADR-411 LinkedIn validation\n- reason: issue_assigned' },
+          { role: 'assistant', content: 'Decision: Going forward, the LinkedIn Public Evidence Operator should keep durable operating memory only in its own scope.' },
+        ],
+        text: 'Decision: Going forward, the LinkedIn Public Evidence Operator should keep durable operating memory only in its own scope.',
+      },
+    });
+    assert.equal(JSON.stringify(syntheticWakePacket).includes('PAPERCLIP_RUN_ID'), false, 'synthetic Paperclip wake scaffolding should not be copied into auto-capture packets');
+    assert.equal(JSON.stringify(syntheticWakePacket).includes('HTTP rules'), false, 'synthetic Paperclip wake HTTP boilerplate should be stripped from auto-capture packets');
+    assert.match(JSON.stringify(syntheticWakePacket), /Paperclip issue wake: ADR-411 LinkedIn validation \(issue_assigned\)/, 'synthetic wakes should be summarized compactly in auto-capture packets');
 
     const queueConfig = makeAutoConfig(ws.workspace, {
       mode: 'auto',

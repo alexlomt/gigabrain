@@ -122,6 +122,30 @@ const run = async () => {
         confidence: 0.88,
         value_score: 0.79,
       },
+      {
+        memory_id: 'm-13-linkedin-identity',
+        type: 'AGENT_IDENTITY',
+        content: 'LinkedIn Public Evidence Operator is a specialist OpenClaw worker for public LinkedIn evidence collection and compliance-safe validation.',
+        scope: 'linkedin-public-evidence-operator',
+        confidence: 0.95,
+        value_score: 0.86,
+      },
+      {
+        memory_id: 'm-14-linkedin-boundary',
+        type: 'PREFERENCE',
+        content: 'LinkedIn Public Evidence Operator must not bypass access controls, CAPTCHAs, authentication requirements, paywalls, or private visibility boundaries.',
+        scope: 'linkedin-public-evidence-operator',
+        confidence: 0.96,
+        value_score: 0.88,
+      },
+      {
+        memory_id: 'm-15-shared-operator-noise',
+        type: 'USER_FACT',
+        content: 'The operator completed a shared evidence review checklist for a generic dashboard migration.',
+        scope: 'shared',
+        confidence: 0.82,
+        value_score: 0.91,
+      },
     ]);
     ensureNativeStore(db);
     rebuildEntityMentions(db);
@@ -278,6 +302,24 @@ const run = async () => {
     assert.equal(compoundPreferenceRecall.rankingMode, 'entity_brief:entity_locked', 'compound project preference queries should use entity-locked ranking');
     assert.equal(String(compoundPreferenceRecall.results[0]?.content || '').toLowerCase().includes('project narwhal ledger prefers weekly reporting packs'), true, 'compound project preference queries should rank the exact project preference fact first');
     assert.equal(compoundPreferenceRecall.results.every((row) => /narwhal ledger/i.test(String(row.content || ''))), true, 'entity-locked preference recall should suppress fragment-only Narwhal or Ledger rows');
+
+    const linkedInOperatorRecall = orchestrateRecall({
+      db,
+      config,
+      query: 'What boundaries does the LinkedIn Public Evidence Operator follow around CAPTCHAs and access controls?',
+      scope: 'linkedin-public-evidence-operator',
+    });
+    assert.notEqual(linkedInOperatorRecall.selectedEntityDisplayName, 'operator', 'scoped operator-title recall should not lock onto the generic operator entity');
+    assert.equal(
+      String(linkedInOperatorRecall.results[0]?.scope || ''),
+      'linkedin-public-evidence-operator',
+      'scoped operator-title recall should rank the same-scope memory first',
+    );
+    assert.match(
+      String(linkedInOperatorRecall.results[0]?.content || ''),
+      /LinkedIn Public Evidence Operator|CAPTCHAs|access controls/i,
+      'scoped operator-title recall should surface the LinkedIn operator boundary memory',
+    );
 
     seedMemoryCurrent(db, [
       {

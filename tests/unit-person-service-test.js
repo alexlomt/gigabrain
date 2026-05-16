@@ -33,6 +33,7 @@ const run = async () => {
       { memory_id: 'p-beta', type: 'USER_FACT', content: 'Soren coordinates the beta launch.', scope: 'project:beta', confidence: 0.76 },
       { memory_id: 'p4', type: 'CONTEXT', content: 'Archive Contact Content Date are section labels, not people.', scope: 'shared', confidence: 0.8 },
       { memory_id: 'p5', type: 'ENTITY', content: 'Project Narwhal Ledger ships weekly status packs.', scope: 'shared', confidence: 0.84 },
+      { memory_id: 'p6', type: 'AGENT_IDENTITY', content: 'LinkedIn Public Evidence Operator is the public-evidence worker for compliance-safe research.', scope: 'linkedin-public-evidence-operator', confidence: 0.92 },
     ]);
     db.prepare(`
       INSERT INTO memory_native_chunks (
@@ -87,9 +88,25 @@ const run = async () => {
     `).get()?.c || 0;
     assert.equal(Number(fragmentedMentions), 0, 'compound project mentions should not fragment into standalone tokens');
 
+    const linkedInCompoundMentions = db.prepare(`
+      SELECT COUNT(*) AS c
+      FROM memory_entity_mentions
+      WHERE entity_key = 'linkedin public evidence operator'
+        AND memory_id = 'p6'
+    `).get()?.c || 0;
+    assert.equal(Number(linkedInCompoundMentions) >= 1, true, 'agent-title memories should preserve the full compound operator title');
+    const linkedInFragmentedMentions = db.prepare(`
+      SELECT COUNT(*) AS c
+      FROM memory_entity_mentions
+      WHERE entity_key IN ('operator', 'evidence', 'public', 'creator')
+        AND memory_id = 'p6'
+    `).get()?.c || 0;
+    assert.equal(Number(linkedInFragmentedMentions), 0, 'generic operator/evidence fragments should not be indexed from agent-title memories');
+
     const keys = resolveEntityKeysForQuery(db, 'wer ist riley?');
     assert.equal(keys.includes('riley'), true, 'query resolver should detect person key');
     assert.equal(resolveEntityKeysForQuery(db, 'wer ist partnerin?').includes('partnerin'), false, 'query resolver should reject generic relationship nouns as entities');
+    assert.equal(resolveEntityKeysForQuery(db, 'What does the LinkedIn Public Evidence Operator do?', { scope: 'linkedin-public-evidence-operator' }).includes('linkedin public evidence operator'), true, 'query resolver should recover compound agent titles from scoped mentions');
     const alphaFilter = buildEntityMentionScopeFilter('project:alpha');
     const alphaKeys = db.prepare(`
       SELECT DISTINCT entity_key
