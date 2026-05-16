@@ -698,7 +698,7 @@ const gigabrainPlugin = {
                         auto_capture: autoCapture
                     };
                 });
-                logger.info?.(`[gigabrain] capture inserted=${result.inserted} queued=${result.queued_review} auto_queue=${result.auto_capture?.queue_reason || 'n/a'}`);
+                logger.info?.(`[gigabrain] capture inserted=${result.inserted} queued=${result.queued_review} auto_queue=${result.auto_capture?.queue_reason || 'n/a'} scope=${payload.scope || 'shared'} agent=${payload.agentId || 'unknown'} synthetic_wake=${result.auto_capture?.synthetic_wake_detected ? 'yes' : 'no'} gate=${result.auto_capture?.gate_reason || 'n/a'}`);
             } catch (err) {
                 logger.warn?.(`[gigabrain] capture hook error: ${err instanceof Error ? err.message : String(err)}`);
             }
