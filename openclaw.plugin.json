@@ -172,6 +172,10 @@
                 "type": "number",
                 "default": 45000
               },
+              "processingStaleMs": {
+                "type": "number",
+                "default": 900000
+              },
               "minConfidence": {
                 "type": "number",
                 "default": 0.88
