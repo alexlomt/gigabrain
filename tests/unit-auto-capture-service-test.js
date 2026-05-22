@@ -283,6 +283,14 @@ const run = async () => {
     assert.equal(shouldConsiderAutoCaptureEvent({ config, event: { messages: [{ role: 'user', content: 'Hows it going' }] } }).ok, false);
     assert.equal(shouldConsiderAutoCaptureEvent({ config, event: { messages: [{ role: 'user', content: 'Going forward, I prefer that high-confidence stable preferences are captured automatically.' }] } }).ok, true);
     assert.equal(shouldConsiderAutoCaptureEvent({ config, event: { messages: [{ role: 'user', content: 'Status?' }, { role: 'assistant', content: 'Running smoke tests and systemctl checks.' }] } }).ok, false);
+    assert.equal(
+      shouldConsiderAutoCaptureEvent({
+        config,
+        event: { messages: [{ role: 'user', content: 'Execution summary: Going forward, I want production verification failures to be called out plainly.' }] },
+      }).ok,
+      false,
+      'execution-summary chatter should not enter auto-capture even when it contains memory-like text',
+    );
     const syntheticWakeDecisionGate = shouldConsiderAutoCaptureEvent({
       config,
       event: {
@@ -496,6 +504,42 @@ const run = async () => {
     });
     assert.equal(circuitProcessed.circuit_open, true);
     assert.equal(circuitProcessed.processed, 0, 'provider circuit should prevent burning new pending rows');
+
+    const staleQueueConfig = makeAutoConfig(ws.workspace, {
+      mode: 'auto',
+      provider: 'openclaw',
+      maxCandidates: 2,
+      maxTurns: 8,
+      maxCharsPerTurn: 1200,
+      includeExistingMemories: false,
+      existingMemoryLimit: 0,
+    });
+    const staleQueuePath = resolveAutoCaptureQueuePath(staleQueueConfig);
+    const staleAt = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    fs.writeFileSync(staleQueuePath, `${JSON.stringify({
+      id: 'acq_stale_processing',
+      hash: 'acq_stale_processing',
+      status: 'processing',
+      attempts: 1,
+      enqueued_at: staleAt,
+      updated_at: staleAt,
+      processing_started_at: staleAt,
+      packet: failedRows[0].packet,
+    })}\n`, 'utf8');
+    const staleProcessed = await processAutoCaptureQueue({
+      db,
+      config: staleQueueConfig,
+      limit: 1,
+      logger: { warn: () => {} },
+      completeJson: async () => { throw new Error('should not run while recovered row is deferred'); },
+    });
+    assert.equal(staleProcessed.processingRecovered, 1, 'stale processing rows should be recovered before processing');
+    assert.equal(staleProcessed.processed, 0, 'recovered rows should honor retry backoff instead of immediately burning the LLM again');
+    const staleRows = fs.readFileSync(staleQueuePath, 'utf8').trim().split('\n').filter(Boolean).map((line) => JSON.parse(line));
+    assert.equal(staleRows[0].status, 'failed_retryable');
+    assert.equal(staleRows[0].error_class, 'timeout_or_aborted');
+    assert.equal(staleRows[0].error_message, 'stale_processing_recovered');
+    assert.match(String(staleRows[0].next_attempt_at || ''), /^\d{4}-\d{2}-\d{2}T/);
 
   } finally {
     db.close();

@@ -64,7 +64,7 @@ const readQueueRows = (filePath) => {
 };
 
 const hasProcessableQueueRows = (queuePath) => readQueueRows(queuePath)
-  .some((row) => ['pending', 'failed_retryable'].includes(String(row?.status || 'pending')));
+  .some((row) => ['pending', 'failed_retryable', 'processing'].includes(String(row?.status || 'pending')));
 
 const acquireLock = ({ outputDir, configPath }) => {
   ensureDir(outputDir);
