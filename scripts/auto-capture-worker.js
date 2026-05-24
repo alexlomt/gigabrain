@@ -9,6 +9,7 @@ import { ensureProjectionStore, materializeProjectionFromMemories } from '../lib
 import { ensureEventStore } from '../lib/core/event-store.js';
 import { ensureWorldModelReady } from '../lib/core/world-model.js';
 import { processAutoCaptureQueue, resolveAutoCaptureQueuePath } from '../lib/core/auto-capture-service.js';
+import { refreshGeneratedMemorySurface } from '../lib/core/surface-refresh-service.js';
 
 const args = process.argv.slice(2);
 const readFlag = (name, fallback = '') => {
@@ -98,6 +99,19 @@ const releaseLock = (lock) => {
   if (lock?.acquired && lock.lockDir) fs.rmSync(lock.lockDir, { recursive: true, force: true });
 };
 
+const makeRefreshRunId = () => `auto-capture-worker-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+
+const runSurfaceRefresh = ({ config, configPath, dbPath, db = null, reason }) => refreshGeneratedMemorySurface({
+  config,
+  configPath,
+  dbPath,
+  db,
+  reason,
+  runId: makeRefreshRunId(),
+  force: false,
+  rebuildGraph: true,
+});
+
 const main = async () => {
   const configPath = readFlag('--config', '/home/alex/.openclaw/openclaw.json');
   const limit = clampInt(readFlag('--limit', '3'), 1, 20, 3);
@@ -117,8 +131,15 @@ const main = async () => {
   try {
     const queuePath = resolveAutoCaptureQueuePath(config);
     if (!hasProcessableQueueRows(queuePath)) {
+      const surfaceRefresh = runSurfaceRefresh({
+        config,
+        configPath: loaded.configPath || configPath,
+        dbPath,
+        reason: 'auto_capture_no_processable_rows',
+      });
+      if (surfaceRefresh.ok === false) process.exitCode = 1;
       console.log(JSON.stringify({
-        ok: true,
+        ok: surfaceRefresh.ok !== false,
         queuePath,
         rows: readQueueRows(queuePath).length,
         processed: 0,
@@ -129,6 +150,7 @@ const main = async () => {
         results: [],
         skipped: true,
         reason: 'no_processable_rows',
+        surfaceRefresh,
       }, null, 2));
       return;
     }
@@ -145,7 +167,16 @@ const main = async () => {
       logger: console,
       reviewVersion: 'auto-capture-worker-v1',
     });
-    console.log(JSON.stringify({ ok: true, ...result }, null, 2));
+    const surfaceRefresh = runSurfaceRefresh({
+      config,
+      configPath: loaded.configPath || configPath,
+      dbPath,
+      db,
+      reason: 'auto_capture_post_process',
+    });
+    const ok = result?.ok !== false && surfaceRefresh.ok !== false;
+    if (!ok) process.exitCode = 1;
+    console.log(JSON.stringify({ ok, ...result, surfaceRefresh }, null, 2));
   } finally {
     try { db?.close?.(); } catch {}
     releaseLock(lock);

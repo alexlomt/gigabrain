@@ -40,6 +40,7 @@ const TEST_FILES = [
   'unit-native-sync-query-test.js',
   'unit-codex-service-test.js',
   'unit-vault-mirror-test.js',
+  'unit-surface-refresh-service-test.js',
   'unit-memory-studio-test.js',
   'integration-audit-maintenance-test.js',
   'integration-eval-tools-test.js',

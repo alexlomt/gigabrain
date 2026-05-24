@@ -19,6 +19,7 @@ import { buildMemoryPassport, writeMemoryPassport } from '../lib/core/memory-pas
 import { exportPassportBundle, importPassportBundle } from '../lib/core/passport-bundle.js';
 import { captureSnapshotMetrics } from '../lib/core/metrics.js';
 import { buildVaultSurface, inspectVaultHealth, loadSurfaceSummary, syncVaultPull } from '../lib/core/vault-mirror.js';
+import { refreshGeneratedMemorySurface } from '../lib/core/surface-refresh-service.js';
 import { orchestrateRecall } from '../lib/core/orchestrator.js';
 import { captureFromEvent } from '../lib/core/capture-service.js';
 import {
@@ -669,12 +670,24 @@ const commandNightly = async () => {
         minConfidence: Number(readFlag('--llm-review-min-confidence', String(config.llm.review.minConfidence)) || config.llm.review.minConfidence),
       },
     });
+    const finalSurfaceRefresh = refreshGeneratedMemorySurface({
+      config,
+      configPath,
+      dbPath,
+      dryRun,
+      runId: `${maintain.runId}-final-surface`,
+      reason: 'post_nightly_mutations',
+      force: true,
+      rebuildGraph: true,
+    });
     const verification = verifyNightlyOutputs({
       maintain,
       dryRun,
     });
+    const ok = finalSurfaceRefresh.ok === true;
+    if (!ok) process.exitCode = 1;
     console.log(JSON.stringify({
-      ok: true,
+      ok,
       command: 'nightly',
       runId: maintain.runId,
       lock,
@@ -683,6 +696,7 @@ const commandNightly = async () => {
       queueRetention,
       harmonize,
       audit,
+      finalSurfaceRefresh,
       verification,
     }, null, 2));
   } finally {
