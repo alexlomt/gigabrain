@@ -63,7 +63,7 @@ const GOLDEN_MEMORIES = [
   { label: 'viral-machine', type: 'CONTEXT', content: 'The Viral Machine is a tweet discovery and posting pipeline running on the Mac Studio.', confidence: 0.86, scope: 'shared', value_score: 0.78 },
   { label: 'spark-project', type: 'CONTEXT', content: 'Spark is the intelligence layer that provides advisory and suggestion flows to Gigabrain.', confidence: 0.87, scope: 'shared', value_score: 0.80 },
   { label: 'oura-project', type: 'CONTEXT', content: 'The Oura health dashboard tracks sleep, HRV, and longevity scores via a FastAPI backend.', confidence: 0.85, scope: 'shared', value_score: 0.76 },
-  { label: 'ollama-setup', type: 'CONTEXT', content: 'Ollama runs on the Mac Studio with qwen3.5:9b and bge-m3 models for memory review and embeddings.', confidence: 0.84, scope: 'shared', value_score: 0.72 },
+  { label: 'ollama-setup', type: 'CONTEXT', content: 'Ollama runs with Qwen chat and qwen3-embedding:4b for memory review and embeddings.', confidence: 0.84, scope: 'shared', value_score: 0.72 },
 
   // --- Temporal episodes ---
   { label: 'episode-jan-2026', type: 'DECISION', content: 'In January 2026, Jordan and Atlas worked on the gigabrain architecture and entity cleanup.', confidence: 0.92, scope: 'main', value_score: 0.88, content_time: '2026-01-15' },
