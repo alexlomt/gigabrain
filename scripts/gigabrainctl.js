@@ -1184,9 +1184,9 @@ const commandEmbeddings = async () => {
     db.exec(`
       CREATE TABLE IF NOT EXISTS memory_embeddings (
         memory_id   TEXT PRIMARY KEY,
-        model       TEXT NOT NULL DEFAULT 'bge-m3',
+        model       TEXT NOT NULL DEFAULT 'qwen3-embedding:4b',
         embedding   BLOB NOT NULL,
-        dims        INTEGER NOT NULL DEFAULT 1024,
+        dims        INTEGER NOT NULL DEFAULT 2560,
         computed_at TEXT NOT NULL
       )
     `);
@@ -1228,7 +1228,7 @@ const commandEmbeddings = async () => {
       const recall = config.recall || {};
       const provider = readFlag('--provider', recall.embeddingProvider || 'ollama', embeddingFlags);
       const baseUrl = readFlag('--base-url', recall.embeddingBaseUrl || recall.ollamaUrl || 'http://127.0.0.1:11434', embeddingFlags);
-      const model = readFlag('--model', recall.embeddingModel || 'bge-m3', embeddingFlags);
+      const model = readFlag('--model', recall.embeddingModel || 'qwen3-embedding:4b', embeddingFlags);
       const timeoutMs = Number(readFlag('--timeout-ms', String(recall.embeddingTimeoutMs || 30000), embeddingFlags) || 30000);
       const started = Date.now();
       const vec = getEmbeddingSync('gigabrain semantic probe', { provider, baseUrl, apiKey: recall.embeddingApiKey || '', model, timeoutMs });

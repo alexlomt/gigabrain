@@ -20,7 +20,7 @@ const bodyIdx = args.indexOf('-d');
 const raw = bodyIdx !== -1 ? String(args[bodyIdx + 1] || '{}') : '{}';
 const body = JSON.parse(raw);
 const input = String(body.input || '').toLowerCase();
-const vector = input.includes('winter') ? [1, 0] : [0.5, 0.5, 0.5];
+const vector = input.includes('winter') ? [1, 0] : [0.5, 0.5];
 process.stdout.write(JSON.stringify({ data: [{ embedding: vector }] }));
 `;
 
@@ -108,7 +108,7 @@ const run = async () => {
       });
       storeEmbedding(db, {
         memoryId: 'candidate-deploy',
-        embedding: [0.5, 0.5, 0.5],
+        embedding: [0.5, 0.5],
       });
 
       const reranked = semanticRerank([
