@@ -52,7 +52,16 @@ const run = async () => {
   assert.equal(Array.isArray(config.capture.rememberIntent.phrasesBase), true, 'remember intent phrases should normalize');
   assert.equal(config.capture.rememberIntent.writeNative, true, 'remember intent should dual-write to native by default');
   assert.equal(config.nativePromotion.enabled, true, 'native promotion should be enabled by default');
+  assert.equal(config.nativePromotion.requireDailyMetadata, false, 'daily metadata gating should be opt-in for existing installs');
   assert.equal(Number(config.nativePromotion.minConfidence).toFixed(2), '0.72', 'native promotion threshold should default to 0.72');
+  assert.equal(
+    normalizeConfig({
+      runtime: { paths: { workspaceRoot: '/tmp/demo-workspace' } },
+      nativePromotion: { requireDailyMetadata: true },
+    }).nativePromotion.requireDailyMetadata,
+    true,
+    'daily metadata gating should normalize when explicitly enabled',
+  );
   assert.equal(config.memoryLlm.enabled, false, 'stateless memory LLM should default to disabled');
   assert.equal(String(config.memoryLlm.provider), 'none', 'stateless memory LLM should default to provider none');
   assert.equal(String(config.memoryLlm.apiKeyEnv), 'GIGABRAIN_MEMORY_LLM_API_KEY', 'stateless memory LLM should default to env-based keys');

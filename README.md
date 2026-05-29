@@ -627,12 +627,15 @@ This means changing a local LLM or embedding model does not break the core write
     "enabled": true,
     "promoteFromDaily": true,
     "promoteFromMemoryMd": true,
+    "requireDailyMetadata": false,
     "minConfidence": 0.72
   }
 }
 ```
 
 Native promotion turns durable native bullets back into structured registry memories with provenance (`source_layer`, `source_path`, `source_line`). This keeps OpenClaw-style native memory first-class while still giving Gigabrain structured recall, dedupe, and archive behavior.
+
+Set `requireDailyMetadata` to `true` when generated daily notes should remain available to native recall but only explicitly annotated daily bullets may promote into the structured registry.
 
 ### Obsidian surface (recommended in `v0.6`)
 

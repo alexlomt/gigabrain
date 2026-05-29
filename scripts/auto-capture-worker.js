@@ -8,7 +8,7 @@ import { openDatabase } from '../lib/core/sqlite.js';
 import { ensureProjectionStore, materializeProjectionFromMemories } from '../lib/core/projection-store.js';
 import { ensureEventStore } from '../lib/core/event-store.js';
 import { ensureWorldModelReady } from '../lib/core/world-model.js';
-import { processAutoCaptureQueue, resolveAutoCaptureQueuePath } from '../lib/core/auto-capture-service.js';
+import { applyAutoCaptureQueueRetention, processAutoCaptureQueue, resolveAutoCaptureQueuePath } from '../lib/core/auto-capture-service.js';
 import { refreshGeneratedMemorySurface } from '../lib/core/surface-refresh-service.js';
 
 const args = process.argv.slice(2);
@@ -130,6 +130,7 @@ const main = async () => {
   let db;
   try {
     const queuePath = resolveAutoCaptureQueuePath(config);
+    const retention = applyAutoCaptureQueueRetention({ queuePath });
     if (!hasProcessableQueueRows(queuePath)) {
       const surfaceRefresh = runSurfaceRefresh({
         config,
@@ -150,6 +151,7 @@ const main = async () => {
         results: [],
         skipped: true,
         reason: 'no_processable_rows',
+        retention,
         surfaceRefresh,
       }, null, 2));
       return;
@@ -176,7 +178,7 @@ const main = async () => {
     });
     const ok = result?.ok !== false && surfaceRefresh.ok !== false;
     if (!ok) process.exitCode = 1;
-    console.log(JSON.stringify({ ok, ...result, surfaceRefresh }, null, 2));
+    console.log(JSON.stringify({ ok, ...result, retention, surfaceRefresh }, null, 2));
   } finally {
     try { db?.close?.(); } catch {}
     releaseLock(lock);

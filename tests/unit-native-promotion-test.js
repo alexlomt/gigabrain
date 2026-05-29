@@ -86,6 +86,7 @@ const run = async () => {
       '## Preferences',
       '',
       '- Avery prefers weekly reporting cadence. <!-- gigabrain:scope=profile:main -->',
+      '- Avery prefers clean handoffs.',
       '',
       '## Remembered Today',
       '',
@@ -94,7 +95,13 @@ const run = async () => {
       '',
     ].join('\n'), 'utf8');
 
-    const config = normalizeConfig(makeConfigObject(dailyWs.workspace).plugins.entries.gigabrain.config);
+    const config = normalizeConfig({
+      ...makeConfigObject(dailyWs.workspace).plugins.entries.gigabrain.config,
+      nativePromotion: {
+        ...makeConfigObject(dailyWs.workspace).plugins.entries.gigabrain.config.nativePromotion,
+        requireDailyMetadata: true,
+      },
+    });
     const db = openDb(dailyWs.dbPath);
     try {
       const { promotion } = runNativeCycle({ db, config });
@@ -125,6 +132,13 @@ const run = async () => {
         WHERE content = 'Avery is tired today.'
       `).get();
       assert.equal(Number(situational?.c || 0), 0, 'situational daily note should still stay out of durable memory');
+
+      const untrusted = db.prepare(`
+        SELECT COUNT(*) AS c
+        FROM memory_current
+        WHERE content = 'Avery prefers clean handoffs.'
+      `).get();
+      assert.equal(Number(untrusted?.c || 0), 0, 'unmetadataed daily notes should stay native-only when daily metadata is required');
     } finally {
       db.close();
     }

@@ -6,6 +6,7 @@ import { normalizeConfig } from '../lib/core/config.js';
 import { captureFromEvent } from '../lib/core/capture-service.js';
 import {
   autoCaptureFromEvent,
+  applyAutoCaptureQueueRetention,
   buildAutoCapturePacket,
   containsSecretLikeValue,
   enqueueAutoCaptureEvent,
@@ -282,6 +283,19 @@ const run = async () => {
 
     assert.equal(shouldConsiderAutoCaptureEvent({ config, event: { messages: [{ role: 'user', content: 'Hows it going' }] } }).ok, false);
     assert.equal(shouldConsiderAutoCaptureEvent({ config, event: { messages: [{ role: 'user', content: 'Going forward, I prefer that high-confidence stable preferences are captured automatically.' }] } }).ok, true);
+    const memoryFlushGate = shouldConsiderAutoCaptureEvent({
+      config,
+      event: {
+        prompt: 'Pre-compaction memory flush for Gigabrain. Capture important facts from this conversation using <memory_note>.',
+        messages: [
+          { role: 'user', content: 'Pre-compaction memory flush for Gigabrain.' },
+          { role: 'assistant', content: 'Going forward, keep this maintenance summary out of auto-capture.' },
+        ],
+        text: 'Going forward, keep this maintenance summary out of auto-capture.',
+      },
+    });
+    assert.equal(memoryFlushGate.ok, false, 'pre-compaction memory flush turns must not enter auto-capture');
+    assert.equal(memoryFlushGate.reason, 'memory_flush_turn');
     assert.equal(shouldConsiderAutoCaptureEvent({ config, event: { messages: [{ role: 'user', content: 'Status?' }, { role: 'assistant', content: 'Running smoke tests and systemctl checks.' }] } }).ok, false);
     assert.equal(
       shouldConsiderAutoCaptureEvent({
@@ -413,6 +427,10 @@ const run = async () => {
     assert.equal(processed.processed, 1);
     assert.equal(processed.completed, 1);
     assert.equal(processed.autoSaved, 1, 'worker should capture high-confidence auto-save candidates');
+    const completedRows = fs.readFileSync(autoQueuePath, 'utf8').trim().split('\n').filter(Boolean).map((line) => JSON.parse(line));
+    assert.equal(completedRows[0].status, 'completed');
+    assert.equal(Boolean(completedRows[0].packet), false, 'completed queue rows must not retain full conversation packets');
+    assert.equal(completedRows[0].packet_summary?.packet_scrubbed, true, 'completed queue rows should retain only a compact packet audit summary');
     const asyncStored = db.prepare(`
       SELECT COUNT(*) AS c
       FROM memory_current
@@ -540,6 +558,26 @@ const run = async () => {
     assert.equal(staleRows[0].error_class, 'timeout_or_aborted');
     assert.equal(staleRows[0].error_message, 'stale_processing_recovered');
     assert.match(String(staleRows[0].next_attempt_at || ''), /^\d{4}-\d{2}-\d{2}T/);
+
+    const terminalQueuePath = path.join(ws.outputRoot, 'terminal-auto-capture-queue.jsonl');
+    fs.writeFileSync(terminalQueuePath, `${JSON.stringify({
+      id: 'acq_terminal_completed',
+      hash: 'acq_terminal_completed',
+      status: 'completed',
+      processed_at: new Date().toISOString(),
+      packet: {
+        scope: 'profile:main',
+        agent_id: 'main',
+        session_key: 'agent:main:test',
+        conversation: [{ role: 'user', content: 'Going forward, store this only while pending.' }],
+        existing_memories: [{ content: 'Existing memory should not remain in terminal packets.' }],
+      },
+    })}\n`, 'utf8');
+    const retention = applyAutoCaptureQueueRetention({ queuePath: terminalQueuePath });
+    assert.equal(retention.packets_scrubbed, 1, 'retention rewrite should scrub terminal packets even when no rows are processable');
+    const terminalRows = fs.readFileSync(terminalQueuePath, 'utf8').trim().split('\n').filter(Boolean).map((line) => JSON.parse(line));
+    assert.equal(Boolean(terminalRows[0].packet), false);
+    assert.equal(terminalRows[0].packet_summary?.conversation_turns, 1);
 
   } finally {
     db.close();
