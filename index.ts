@@ -53,6 +53,7 @@ const MEMORY_FLUSH_RESERVE_TOKENS_FLOOR = 20000;
 const MEMORY_FLUSH_TARGET_HINT = 'Store durable memories only in memory/YYYY-MM-DD.md (create memory/ if needed).';
 const MEMORY_FLUSH_APPEND_ONLY_HINT = 'If memory/YYYY-MM-DD.md already exists, APPEND new content only and do not overwrite existing entries.';
 const MEMORY_FLUSH_READ_ONLY_HINT = 'Treat workspace bootstrap/reference files such as MEMORY.md, DREAMS.md, SOUL.md, TOOLS.md, and AGENTS.md as read-only during this flush; never overwrite, replace, or edit them.';
+const MEMORY_FLUSH_METADATA_HINT = 'Write only concise bullet points, and each durable bullet must end with Gigabrain metadata like <!-- gigabrain:scope=profile:main type=DECISION -->; if you cannot choose a concrete type, do not write the bullet.';
 
 const normalizeNonNegativeInt = (value: unknown): number | null => {
   const num = typeof value === 'number' ? value : (typeof value === 'string' && /^\d+(?:\.\d+)?$/.test(value.trim()) ? Number(value.trim()) : NaN);
@@ -104,7 +105,7 @@ const ensureNoReplyHint = (text: string): string => {
 
 const ensureMemoryFlushSafetyHints = (text: string): string => {
   let next = String(text || '').trim();
-  for (const hint of [MEMORY_FLUSH_TARGET_HINT, MEMORY_FLUSH_APPEND_ONLY_HINT, MEMORY_FLUSH_READ_ONLY_HINT]) {
+  for (const hint of [MEMORY_FLUSH_TARGET_HINT, MEMORY_FLUSH_APPEND_ONLY_HINT, MEMORY_FLUSH_READ_ONLY_HINT, MEMORY_FLUSH_METADATA_HINT]) {
     if (!next.includes(hint)) next = next ? `${next}\n\n${hint}` : hint;
   }
   return next;
@@ -128,6 +129,7 @@ const buildGigabrainMemoryFlushPlan = ({ config, params = {} }: { config: Plugin
     MEMORY_FLUSH_TARGET_HINT,
     MEMORY_FLUSH_READ_ONLY_HINT,
     MEMORY_FLUSH_APPEND_ONLY_HINT,
+    MEMORY_FLUSH_METADATA_HINT,
     'Do NOT create timestamped variant files (for example YYYY-MM-DD-HHMM.md); always use the canonical YYYY-MM-DD.md filename.',
     `If nothing durable should be stored, reply with ${SILENT_REPLY_TOKEN}.`,
   ].join(' ')));
@@ -137,6 +139,7 @@ const buildGigabrainMemoryFlushPlan = ({ config, params = {} }: { config: Plugin
     MEMORY_FLUSH_TARGET_HINT,
     MEMORY_FLUSH_READ_ONLY_HINT,
     MEMORY_FLUSH_APPEND_ONLY_HINT,
+    MEMORY_FLUSH_METADATA_HINT,
     `Usually ${SILENT_REPLY_TOKEN} is correct if there is no durable new information.`,
   ].join(' ')));
   return {

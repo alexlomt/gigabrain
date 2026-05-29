@@ -87,6 +87,7 @@ const run = async () => {
   assert.equal(flushPlan.reserveTokensFloor, 12345, 'flush should respect OpenClaw reserve token config');
   assert.equal(flushPlan.forceFlushTranscriptBytes, 3 * 1024 * 1024, 'flush should parse byte-size config');
   assert.match(flushPlan.prompt, /APPEND new content only/i, 'flush prompt should be append-only');
+  assert.match(flushPlan.prompt, /gigabrain:scope=profile:main type=DECISION/i, 'flush prompt should require structured Gigabrain metadata');
   assert.doesNotMatch(flushPlan.prompt, /YYYY-MM-DD-HHMM\.md/i, 'flush prompt should not encourage timestamped variants');
 
   const db = openDb(ws.dbPath);
