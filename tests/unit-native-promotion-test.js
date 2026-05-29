@@ -21,6 +21,7 @@ const runNativeCycle = ({ db, config }) => {
   });
   const reconciliation = reconcilePromotedNativeRows({
     db,
+    config,
     dryRun: false,
   });
   return {
@@ -146,6 +147,77 @@ const run = async () => {
     fs.rmSync(dailyWs.root, { recursive: true, force: true });
   }
 
+  const gatedLegacyWs = makeTempWorkspace('gb-v4-native-promotion-gated-legacy-');
+  try {
+    const dailyPath = path.join(gatedLegacyWs.memoryRoot, '2026-04-14.md');
+    fs.writeFileSync(dailyPath, [
+      '# 2026-04-14',
+      '',
+      '## Preferences',
+      '',
+      '- Avery prefers clean handoffs.',
+      '',
+    ].join('\n'), 'utf8');
+
+    const config = normalizeConfig({
+      ...makeConfigObject(gatedLegacyWs.workspace).plugins.entries.gigabrain.config,
+      nativePromotion: {
+        ...makeConfigObject(gatedLegacyWs.workspace).plugins.entries.gigabrain.config.nativePromotion,
+        requireDailyMetadata: true,
+      },
+    });
+    const db = openDb(gatedLegacyWs.dbPath);
+    try {
+      syncNativeMemory({ db, config, dryRun: false });
+      seedMemoryCurrent(db, [
+        {
+          memory_id: 'legacy-unmetadataed-daily-row',
+          type: 'PREFERENCE',
+          content: 'Avery prefers clean handoffs.',
+          source: 'promoted_native',
+          source_layer: 'promoted_native',
+          source_path: dailyPath,
+          source_line: 5,
+          scope: 'profile:main',
+          confidence: 0.72,
+          value_score: 0.82,
+          value_label: 'core',
+        },
+      ]);
+      db.prepare(`
+        UPDATE memory_native_chunks
+        SET linked_memory_id = 'legacy-unmetadataed-daily-row'
+        WHERE source_path = ?
+          AND content = 'Avery prefers clean handoffs.'
+      `).run(dailyPath);
+
+      const reconciliation = reconcilePromotedNativeRows({
+        db,
+        config,
+        dryRun: false,
+      });
+      assert.equal(reconciliation.rejected_policy, 1, 'metadata gate should reject restored unmetadataed daily promotions');
+
+      const row = db.prepare(`
+        SELECT status
+        FROM memory_current
+        WHERE memory_id = 'legacy-unmetadataed-daily-row'
+      `).get();
+      assert.equal(String(row?.status || ''), 'rejected', 'unmetadataed daily promotion should not remain active after reconciliation');
+
+      const linked = db.prepare(`
+        SELECT COUNT(*) AS c
+        FROM memory_native_chunks
+        WHERE linked_memory_id = 'legacy-unmetadataed-daily-row'
+      `).get();
+      assert.equal(Number(linked?.c || 0), 0, 'rejected daily promotion should release its native chunk link');
+    } finally {
+      db.close();
+    }
+  } finally {
+    fs.rmSync(gatedLegacyWs.root, { recursive: true, force: true });
+  }
+
   const identityWs = makeTempWorkspace('gb-v4-native-promotion-identity-');
   try {
     fs.writeFileSync(path.join(identityWs.workspace, 'MEMORY.md'), '# MEMORY\n\n## Core Identity\n\n- Lobster verifies before acting.\n', 'utf8');
@@ -203,6 +275,7 @@ const run = async () => {
 
       const reconciliation = reconcilePromotedNativeRows({
         db,
+        config,
         dryRun: false,
       });
       assert.equal(reconciliation.relinked_rows, 1, 'reconciliation should relink valid legacy promoted rows before rejecting them');
@@ -262,6 +335,7 @@ const run = async () => {
 
       const reconciliation = reconcilePromotedNativeRows({
         db,
+        config,
         dryRun: false,
       });
       assert.equal(reconciliation.relinked_rows, 1, 'reconciliation should relink legacy promoted rows with matching daily chunks');
