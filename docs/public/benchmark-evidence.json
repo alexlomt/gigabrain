@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "sanitized-public-aggregate",
+  "generated_at": "2026-08-06T00:00:00Z",
+  "evidence_sets": [
+    {
+      "id": "answer-shape-main30-development",
+      "status": "development",
+      "denominator": 30,
+      "metrics": {
+        "baseline_accuracy": 0.1667,
+        "candidate_accuracy": 0.2333,
+        "baseline_hit_at_k": 0.3667,
+        "candidate_hit_at_k": 0.4,
+        "baseline_mrr": 0.2115,
+        "candidate_mrr": 0.28,
+        "baseline_preference_score": 0.6,
+        "candidate_preference_score": 0.8
+      },
+      "limitations": [
+        "Small development regression set, not held out.",
+        "The candidate was selected on this set.",
+        "No comparison to an external product or public leaderboard.",
+        "Aggregate metrics only; no private query or memory content is published."
+      ]
+    }
+  ],
+  "claims": {
+    "public_sota": false,
+    "held_out_score": false
+  }
+}

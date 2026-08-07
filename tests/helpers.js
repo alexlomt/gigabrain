@@ -1,0 +1,253 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { DatabaseSync } from 'node:sqlite';
+
+import { ensureProjectionStore, upsertCurrentMemory } from '../lib/core/projection-store.js';
+import { ensureEventStore } from '../lib/core/event-store.js';
+
+const makeTempWorkspace = (prefix = 'gb-v3-test-') => {
+  const root = fs.mkdtempSync(path.join(process.env.GIGABRAIN_TEST_TMPDIR || os.tmpdir(), prefix));
+  const workspace = path.join(root, 'workspace');
+  const memoryRoot = path.join(workspace, 'memory');
+  const outputRoot = path.join(workspace, 'output');
+  fs.mkdirSync(memoryRoot, { recursive: true });
+  fs.mkdirSync(outputRoot, { recursive: true });
+  return {
+    root,
+    workspace,
+    memoryRoot,
+    outputRoot,
+    dbPath: path.join(memoryRoot, 'registry.sqlite'),
+    configPath: path.join(root, 'openclaw.json'),
+  };
+};
+
+const seedMemoryCurrent = (db, rows = []) => {
+  ensureProjectionStore(db);
+  ensureEventStore(db);
+  const nowIso = new Date().toISOString();
+  for (const row of rows) {
+    upsertCurrentMemory(db, {
+      memory_id: row.memory_id || randomUUID(),
+      type: row.type || 'CONTEXT',
+      content: row.content || 'unknown',
+      normalized: row.normalized || '',
+      source: row.source || 'capture',
+      source_agent: row.source_agent || 'main',
+      source_host: row.source_host || null,
+      source_session: row.source_session || 'sess',
+      source_layer: row.source_layer || 'registry',
+      source_path: row.source_path || null,
+      source_line: row.source_line ?? null,
+      confidence: row.confidence ?? 0.6,
+      scope: row.scope || 'shared',
+      status: row.status || 'active',
+      value_score: row.value_score ?? null,
+      value_label: row.value_label || null,
+      created_at: row.created_at || nowIso,
+      updated_at: row.updated_at || nowIso,
+      tags: row.tags || [],
+      content_time: row.content_time || null,
+      valid_until: row.valid_until || null,
+    });
+  }
+};
+
+const makeConfigObject = (workspace) => ({
+  plugins: {
+    entries: {
+      gigabrain: {
+        enabled: true,
+        config: {
+          enabled: true,
+          runtime: {
+            cleanupVersion: 'v3.0.0-test',
+            paths: {
+              workspaceRoot: workspace,
+              memoryRoot: 'memory',
+              outputDir: 'output',
+              reviewQueuePath: 'output/memory-review-queue.jsonl',
+            },
+          },
+          capture: {
+            enabled: true,
+            requireMemoryNote: true,
+            minConfidence: 0.65,
+            minContentChars: 25,
+            queueOnModelUnavailable: true,
+            rememberIntent: {
+              enabled: true,
+              phrasesBase: ['remember this', 'remember that', 'merk dir', 'note this', 'note that', 'note this down', 'save this', 'save this preference'],
+              writeNative: true,
+              writeRegistry: true,
+            },
+          },
+          dedupe: {
+            exactEnabled: true,
+            semanticEnabled: true,
+            autoThreshold: 0.92,
+            reviewThreshold: 0.85,
+            crossScopeGlobal: false,
+          },
+          recall: {
+            topK: 8,
+            minScore: 0.45,
+            maxTokens: 1200,
+            archiveFallbackEnabled: true,
+            mode: 'hybrid',
+            classBudgets: { core: 0.45, situational: 0.3, decisions: 0.25 },
+            // U14: semanticRerankEnabled defaults ON, so the shared test config
+            // pins a sentinel non-Ollama port. buildEmbeddingEndpoint rejects it
+            // BEFORE spawning curl — tests and offline eval harnesses exercise
+            // the default-ON graceful-degradation path with zero network calls.
+            // Tests that want the dense leg override ollamaUrl and shim curl.
+            ollamaUrl: 'http://127.0.0.1:9',
+            embeddingTimeoutMs: 1000,
+          },
+          quality: {
+            mode: 'knowledge_rich',
+            junkFilterEnabled: true,
+            minContentChars: 25,
+            junkPatternsAppend: [],
+            junkPatternsReplace: false,
+            highValueShortEnabled: true,
+            highValueShortPatternsAppend: [],
+            durableEnabled: true,
+            durablePatternsAppend: [],
+            valueThresholds: { keep: 0.78, archive: 0.3, reject: 0.18 },
+          },
+          llm: {
+            provider: 'none',
+            timeoutMs: 12000,
+            taskProfiles: {
+              memory_review: {
+                model: 'qwen3.5:9b',
+                temperature: 0.15,
+                top_p: 0.8,
+                top_k: 20,
+                max_tokens: 180,
+                reasoning: 'off',
+              },
+              extraction_json: {
+                model: 'qwen3.5:9b',
+                temperature: 0.1,
+                top_p: 0.75,
+                top_k: 20,
+                max_tokens: 220,
+                reasoning: 'off',
+              },
+              memory_canonicalize: {
+                model: 'qwen3.5:9b',
+                temperature: 0.2,
+                top_p: 0.85,
+                top_k: 30,
+                max_tokens: 220,
+                reasoning: 'off',
+              },
+              chat_general: {
+                model: 'qwen3.5:latest',
+                temperature: 1,
+                top_p: 0.95,
+                top_k: 40,
+                max_tokens: 1200,
+                reasoning: 'default',
+              },
+            },
+            review: {
+              enabled: false,
+              limit: 200,
+              minScore: 0.18,
+              maxScore: 0.62,
+              minConfidence: 0.8,
+              profile: 'memory_review',
+            },
+          },
+          maintenance: {
+            snapshotDir: 'memory/backups',
+            eventsPath: 'output/memory-events.jsonl',
+            usageLogPath: 'memory/usage-log.md',
+            compactDays: 30,
+            emergencyUnvacuumedDays: 7,
+            maxEmergencyFiles: 1,
+            vacuum: true,
+          },
+          native: {
+            enabled: true,
+            memoryMdPath: 'MEMORY.md',
+            dailyNotesGlob: 'memory/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*.md',
+            includeFiles: [
+              'memory/latest.md',
+              'memory/recent-changes.md',
+              'memory/whois.md',
+              'memory/pinned-core-people.md',
+              'memory/pinned/core-people.md',
+            ],
+            excludeGlobs: [
+              'memory/archive/**',
+              'memory/debug/**',
+              'memory/private/**',
+              'memory/working.md',
+              'memory/*-captured.md',
+            ],
+            syncMode: 'hybrid',
+            maxChunkChars: 900,
+            onDemandTemporalDays: 3650,
+          },
+          nativePromotion: {
+            enabled: true,
+            promoteFromDaily: true,
+            promoteFromMemoryMd: true,
+            minConfidence: 0.72,
+          },
+          person: {
+            keepPublicFacts: true,
+            relationshipPriorityBoost: 0.35,
+            publicProfileBoost: 0.1,
+            requireWordBoundaryMatch: true,
+          },
+        },
+      },
+    },
+  },
+});
+
+const writeConfigFile = (configPath, payload) => {
+  fs.writeFileSync(configPath, JSON.stringify(payload, null, 2), 'utf8');
+};
+
+const openDb = (dbPath) => {
+  const db = new DatabaseSync(dbPath);
+  ensureProjectionStore(db);
+  ensureEventStore(db);
+  return db;
+};
+
+const getStatusCounts = (db) => {
+  const rows = db.prepare(`
+    SELECT status, COUNT(*) AS c
+    FROM memory_current
+    GROUP BY status
+  `).all();
+  const out = {};
+  for (const row of rows) {
+    out[String(row.status || 'unknown')] = Number(row.c || 0);
+  }
+  return out;
+};
+
+const assertFileExists = (filePath, label) => {
+  assert.equal(fs.existsSync(filePath), true, `${label || filePath} must exist`);
+};
+
+export {
+  makeTempWorkspace,
+  seedMemoryCurrent,
+  makeConfigObject,
+  writeConfigFile,
+  openDb,
+  getStatusCounts,
+  assertFileExists,
+};

@@ -1,0 +1,61 @@
+name: Public mirror gate
+
+on:
+  push:
+    branches:
+      - main
+      - 'codex/public-mirror-*'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-mirror-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public-mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout complete history
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.23.2'
+          cache: npm
+
+      - name: Install without lifecycle scripts
+        run: npm ci --ignore-scripts --legacy-peer-deps
+
+      - name: Public mirror unit tests
+        run: node tests/run-all.js --filter public-mirror
+
+      - name: Derive deterministic candidate date
+        run: echo "PUBLIC_MIRROR_COMMIT_DATE=$(git show -s --format=%cI HEAD)" >> "$GITHUB_ENV"
+
+      - name: Build fresh-root candidate
+        run: >-
+          node scripts/build-public-mirror.mjs
+          --source "$GITHUB_WORKSPACE"
+          --destination "$RUNNER_TEMP/gigabrain-public-mirror"
+          --commit-date "$PUBLIC_MIRROR_COMMIT_DATE"
+
+      - name: Validate current fresh-root candidate
+        working-directory: ${{ runner.temp }}/gigabrain-public-mirror
+        run: node scripts/check-public-mirror.mjs --require-single-commit
+
+      - name: Install candidate without lifecycle scripts
+        working-directory: ${{ runner.temp }}/gigabrain-public-mirror
+        run: npm ci --ignore-scripts --legacy-peer-deps
+
+      - name: Test candidate public inventory
+        working-directory: ${{ runner.temp }}/gigabrain-public-mirror
+        run: node tests/run-all.js

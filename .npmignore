@@ -1,0 +1,4 @@
+# dev/eval tooling — not shipped (fixtures already excluded via package.json files)
+eval/
+tests/
+scripts/eval-runner.js
