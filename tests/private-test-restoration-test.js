@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { spawn } from "node:child_process";
 import {
   chmodSync,
   existsSync,
@@ -19,6 +20,17 @@ export const OWNER_TASK = "2B";
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const oldBytes = "assert.equal(scope, 'OperatorFixtureAlpha');\n";
 const newBytes = "assert.equal(scope, 'SyntheticFixtureAlpha');\n";
+
+function runChild(command, args, options) {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, { ...options, stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => { stdout += chunk; });
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.on("close", (status) => resolve({ status, stderr, stdout }));
+  });
+}
 
 function makeScenario(root, name) {
   const scenarioRoot = path.join(root, name);
@@ -127,6 +139,36 @@ export async function run() {
     assert.throws(
       () => restorer.restoreReviewedTests(nonRegular),
       /RESTORE_SOURCE_NOT_REGULAR/,
+    );
+
+    const raced = makeScenario(root, "target-publication-race");
+    const inventoryPath = path.join(root, "race-inventory.json");
+    const stagePath = path.join(root, "race-stage-paths.txt");
+    writeFileSync(inventoryPath, `${JSON.stringify({ tests: raced.inventory })}\n`);
+    writeFileSync(stagePath, `${raced.stagePaths.join("\n")}\n`);
+    writeFileSync(raced.receiptPath, `${JSON.stringify({
+      replacements: raced.replacements,
+      reviewedTargets: raced.stagePaths,
+      syntheticHashes: { [raced.stagePaths[0]]: raced.inventory[0].syntheticSha256 },
+    })}\n`, { mode: 0o600 });
+    chmodSync(raced.receiptPath, 0o600);
+    const childArgs = [
+      restorerPath,
+      "--inventory", inventoryPath,
+      "--protected-root", raced.protectedRoot,
+      "--receipt", raced.receiptPath,
+      "--stage-paths", stagePath,
+      "--target-root", raced.targetRoot,
+    ];
+    const racedResults = await Promise.all([
+      runChild(process.execPath, childArgs, { cwd: root }),
+      runChild(process.execPath, childArgs, { cwd: root }),
+    ]);
+    assert.deepEqual(racedResults.map((result) => result.status).sort(), [0, 1]);
+    assert.match(racedResults.find((result) => result.status === 1).stderr, /RESTORE_TARGET_EXISTS/);
+    assert.equal(
+      readFileSync(path.join(raced.targetRoot, "tests", "compat", "new-test.js"), "utf8"),
+      newBytes,
     );
   } finally {
     rmSync(root, { recursive: true, force: true });

@@ -1,0 +1,820 @@
+{
+  "entries": [
+    {
+      "coveredPaths": [
+        "tests/compat/auto-capture-worker-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_AUTO_CAPTURE missing durable bounded capture worker",
+      "id": "compat-auto-capture-worker",
+      "ownerSourceFirstTaskId": "9",
+      "runner": "node",
+      "testPath": "tests/compat/auto-capture-worker-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/contract-behavior-harness-test.js",
+        "tests/compat/contract-test-helpers.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "compat-behavior-harness",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/compat/contract-behavior-harness-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/checkpoint-promotion-isolation-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_CHECKPOINT_ISOLATION missing metadata-gated checkpoint promotion",
+      "id": "compat-checkpoint-promotion-isolation",
+      "ownerSourceFirstTaskId": "6",
+      "runner": "node",
+      "testPath": "tests/compat/checkpoint-promotion-isolation-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/embedding-identity-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_EMBEDDING_IDENTITY missing model/dimension/query identity",
+      "id": "compat-embedding-identity",
+      "ownerSourceFirstTaskId": "7",
+      "runner": "node",
+      "testPath": "tests/compat/embedding-identity-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/full-registry-migration-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_FULL_MIGRATION missing source-first registry migration receipt",
+      "id": "compat-full-registry-migration",
+      "ownerSourceFirstTaskId": "4",
+      "runner": "node",
+      "testPath": "tests/compat/full-registry-migration-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/generated-surface-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_GENERATED_SURFACE missing deterministic generated runtime surface",
+      "id": "compat-generated-surface",
+      "ownerSourceFirstTaskId": "5",
+      "runner": "node",
+      "testPath": "tests/compat/generated-surface-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/memory-api-projection-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_MEMORY_API_PROJECTION missing projection sync contract",
+      "id": "compat-memory-api-projection",
+      "ownerSourceFirstTaskId": "11",
+      "runner": "node",
+      "testPath": "tests/compat/memory-api-projection-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/native-lock-concurrency-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_NATIVE_LOCK missing cross-process native-memory lock",
+      "id": "compat-native-lock-concurrency",
+      "ownerSourceFirstTaskId": "6",
+      "runner": "node",
+      "testPath": "tests/compat/native-lock-concurrency-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/native-metadata-promotion-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_NATIVE_METADATA missing typed native metadata parser",
+      "id": "compat-native-metadata-promotion",
+      "ownerSourceFirstTaskId": "6",
+      "runner": "node",
+      "testPath": "tests/compat/native-metadata-promotion-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/observational-diagnostics-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_OBSERVATIONAL_DIAGNOSTICS missing zero-write diagnostics guard",
+      "id": "compat-observational-diagnostics",
+      "ownerSourceFirstTaskId": "12",
+      "runner": "node",
+      "testPath": "tests/compat/observational-diagnostics-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/openclaw-hooks-and-flush-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_OPENCLAW_HOOKS missing prompt-build and compaction-flush hooks",
+      "id": "compat-openclaw-hooks-and-flush",
+      "ownerSourceFirstTaskId": "5",
+      "runner": "node",
+      "testPath": "tests/compat/openclaw-hooks-and-flush-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/openclaw-memory-runtime-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_OPENCLAW_MEMORY_RUNTIME missing governed OpenClaw runtime adapter",
+      "id": "compat-openclaw-memory-runtime",
+      "ownerSourceFirstTaskId": "5",
+      "runner": "node",
+      "testPath": "tests/compat/openclaw-memory-runtime-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/rollback-restore-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_ROLLBACK_RESTORE missing verified rollback restoration",
+      "id": "compat-rollback-restore",
+      "ownerSourceFirstTaskId": "4",
+      "runner": "node",
+      "testPath": "tests/compat/rollback-restore-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/scope-visibility-matrix-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_SCOPE_VISIBILITY missing fail-closed scope visibility matrix",
+      "id": "compat-scope-visibility-matrix",
+      "ownerSourceFirstTaskId": "5",
+      "runner": "node",
+      "testPath": "tests/compat/scope-visibility-matrix-test.js"
+    },
+    {
+      "coveredPaths": [
+        ".github/workflows/ci.yml",
+        ".gitignore",
+        "config/migration/deployed-test-inventory.json",
+        "config/migration/task2-stage-paths.txt",
+        "eval/baseline.json",
+        "eval/cases.jsonl",
+        "eval/golden-seed.js",
+        "eval/run-deep-recall-eval.js",
+        "tests/compat/expected-failures.json",
+        "tests/full-test-inventory-contract-test.js",
+        "tests/full-test-inventory.js",
+        "tests/restored-private-test-helpers.js",
+        "tests/run-all.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "full-test-inventory",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/full-test-inventory-contract-test.js"
+    },
+    {
+      "coveredPaths": [
+        "package.json",
+        "public-release-manifest.json",
+        "scripts/check-no-pii.mjs",
+        "scripts/check-public-mirror.mjs",
+        "scripts/npm-pack-inventory.mjs",
+        "tests/fixtures/npm-pack-invalid.json",
+        "tests/fixtures/npm-pack-npm10.json",
+        "tests/fixtures/npm-pack-npm12.json",
+        "tests/npm-pack-parser-test.js",
+        "tests/unit-pii-scanner-test.js",
+        "tests/unit-public-mirror-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "npm-pack-schema",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/npm-pack-parser-test.js"
+    },
+    {
+      "coveredPaths": [
+        "scripts/restore-private-tests.mjs",
+        "tests/private-test-restoration-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "private-test-restoration",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/private-test-restoration-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/memory_api_security_test.py"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "python-security-floor",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "python",
+      "testPath": "tests/memory_api_security_test.py"
+    },
+    {
+      "coveredPaths": [
+        "tests/isolated-release-live-helpers.js",
+        "tests/release-live-codex-cli-test.js",
+        "tests/release-live-isolation-test.js",
+        "tests/release-live-openclaw-install-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "release-live-isolation",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/release-live-isolation-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-audit-maintenance-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-audit-maintenance",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-audit-maintenance-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-bridge-contract-routes-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-bridge-contract-routes",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-bridge-contract-routes-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-claude-desktop-bundle-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-claude-desktop-bundle",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-claude-desktop-bundle-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-claude-setup-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-claude-setup",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-claude-setup-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-codex-mcp-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-codex-mcp",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-codex-mcp-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-codex-setup-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-codex-setup",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-codex-setup-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-eval-gate-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-eval-gate",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-eval-gate-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-eval-tools-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-eval-tools",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-eval-tools-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-memory-api-security-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-memory-api-security",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-memory-api-security-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-migration-and-api-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-migration-and-api",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-migration-and-api-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-native-recall-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-native-recall",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-native-recall-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-nightly-cli-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-nightly-cli",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-nightly-cli-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-openclaw-hooks-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-openclaw-hooks",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-openclaw-hooks-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-packaged-claude-setup-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-packaged-claude-setup",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-packaged-claude-setup-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-packaged-codex-setup-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-packaged-codex-setup",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-packaged-codex-setup-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-packaged-passport-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-packaged-passport",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-packaged-passport-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-packaged-sync-hosts-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-packaged-sync-hosts",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-packaged-sync-hosts-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-setup-first-run-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-setup-first-run",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-setup-first-run-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-standalone-path-resolution-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-standalone-path-resolution",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-standalone-path-resolution-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/integration-vault-cli-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-integration-vault-cli",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/integration-vault-cli-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/performance-nightly-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-performance-nightly",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/performance-nightly-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/regression-memory-behavior-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-regression-memory-behavior",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/regression-memory-behavior-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/regression-native-promotion-reconcile-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-regression-native-promotion-reconcile",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/regression-native-promotion-reconcile-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-audit-hardening-regression-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-audit-hardening-regression",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-audit-hardening-regression-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-auto-capture-service-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-auto-capture-service",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-auto-capture-service-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-belief-trust-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-belief-trust",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-belief-trust-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-codex-service-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-codex-service",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-codex-service-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-embedding-service-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-embedding-service",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-embedding-service-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-eval-harness-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-eval-harness",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-eval-harness-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-host-trust-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-host-trust",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-host-trust-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-hygiene-migration-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-hygiene-migration",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-hygiene-migration-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-llm-router-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-llm-router",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-llm-router-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-memory-actions-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-memory-actions",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-memory-actions-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-memory-llm-client-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-memory-llm-client",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-memory-llm-client-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-memory-passport-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-memory-passport",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-memory-passport-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-memory-studio-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-memory-studio",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-memory-studio-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-native-promotion-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-native-promotion",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-native-promotion-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-native-sync-query-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-native-sync-query",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-native-sync-query-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-openclaw-import-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-openclaw-import",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-openclaw-import-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-openclaw-memory-runtime-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-openclaw-memory-runtime",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-openclaw-memory-runtime-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-orchestrator-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-orchestrator",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-orchestrator-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-package-metadata-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-package-metadata",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-package-metadata-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-passport-bundle-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-passport-bundle",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-passport-bundle-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-person-service-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-person-service",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-person-service-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-queue-review-service-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-queue-review-service",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-queue-review-service-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-review-queue-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-review-queue",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-review-queue-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-surface-refresh-service-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-surface-refresh-service",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-surface-refresh-service-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-vault-mirror-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-vault-mirror",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-vault-mirror-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-world-model-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-world-model",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-world-model-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/unit-world-model-custom-slots-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-world-model-custom-slots",
+      "ownerSourceFirstTaskId": "2B",
+      "runner": "node",
+      "testPath": "tests/unit-world-model-custom-slots-test.js"
+    },
+    {
+      "coveredPaths": [
+        "config/migration/source-first-port-map.json",
+        "config/migration/source-first-test-registry.json",
+        "config/migration/upstream-source-allowlist.json",
+        "scripts/check-source-first-divergence.mjs",
+        "tests/source-first-divergence-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "source-first-policy",
+      "ownerSourceFirstTaskId": "2A",
+      "runner": "node",
+      "testPath": "tests/source-first-divergence-test.js"
+    },
+    {
+      "coveredPaths": [
+        "docs/migration/v0.11-base-provenance.md",
+        "package-lock.json"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "task1-provenance",
+      "ownerSourceFirstTaskId": "1",
+      "runner": "node",
+      "testPath": "tests/source-first-divergence-test.js"
+    }
+  ],
+  "entryCount": 71,
+  "manifestSha256": "4c3bb6c5c197bfb56e43207869fd6d251ccbde77170d51100f463961b70b9dfa",
+  "schemaVersion": 1
+}

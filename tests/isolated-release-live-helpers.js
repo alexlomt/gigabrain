@@ -28,5 +28,11 @@ export function verifyIsolatedCanaryReceipt(kind) {
   assert.equal(receipt.productionHostTouched, false);
   assert.equal(receipt.ok, true);
   assert.ok(Number.isInteger(receipt.port) && receipt.port >= 1024 && receipt.port <= 65535);
-  if (Number.isInteger(receipt.productionPort)) assert.notEqual(receipt.port, receipt.productionPort);
+  assert.ok(
+    Number.isInteger(receipt.productionPort)
+      && receipt.productionPort >= 1
+      && receipt.productionPort <= 65535,
+    "productionPort is required",
+  );
+  assert.notEqual(receipt.port, receipt.productionPort, "release-live canary must use an alternate port");
 }

@@ -5,6 +5,14 @@ import path from "node:path";
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const inventoryPath = path.join(repoRoot, "config", "migration", "deployed-test-inventory.json");
 const deployedInventory = JSON.parse(readFileSync(inventoryPath, "utf8"));
+const sourceFirstMap = JSON.parse(readFileSync(
+  path.join(repoRoot, "config", "migration", "source-first-port-map.json"),
+  "utf8",
+));
+export const SOURCE_FIRST_TEST_REGISTRY = Object.freeze(JSON.parse(readFileSync(
+  path.join(repoRoot, "config", "migration", "source-first-test-registry.json"),
+  "utf8",
+)));
 const stagePaths = readFileSync(path.join(repoRoot, "config", "migration", "task2-stage-paths.txt"), "utf8")
   .split(/\r?\n/)
   .filter(Boolean);
@@ -15,12 +23,24 @@ const canonicalize = (value) => Array.isArray(value)
     ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]))
     : value;
 const canonicalJson = (value) => `${JSON.stringify(canonicalize(value), null, 2)}\n`;
+const RESTORE_STATES = new Set([
+  "isolated_canary_adapted",
+  "protected_private_development",
+  "synthetic_restored",
+  "upstream_replaced",
+]);
 
 export const DEPLOYED_CLASS_COUNTS = Object.freeze({
   normal_registered: 62,
   isolated_release_live: 2,
   private_memorybench_overlay: 1,
 });
+
+export const DEPLOYED_NORMAL_TEST_FILES = Object.freeze(
+  deployedInventory.tests
+    .filter((row) => row.class === "normal_registered")
+    .map((row) => row.syntheticTarget.replace(/^tests\//, "")),
+);
 
 function validateDeployedInventory() {
   if (deployedInventory.schemaVersion !== 1 || !Array.isArray(deployedInventory.tests)) {
@@ -50,6 +70,7 @@ function validateDeployedInventory() {
       !/^[0-9a-f]{64}$/.test(row.sourceSha256) ||
       typeof row.syntheticTarget !== "string" ||
       !Object.hasOwn(counts, row.class) ||
+      !RESTORE_STATES.has(row.restoreState) ||
       previous.localeCompare(row.sourcePath, "en") > 0
     ) {
       throw new Error("DEPLOYED_TEST_INVENTORY_SCHEMA");
@@ -57,8 +78,15 @@ function validateDeployedInventory() {
     paths.add(row.sourcePath);
     counts[row.class] += 1;
     previous = row.sourcePath;
-    if (row.restoreState === "isolated_canary_adapted" && !staged.has(row.syntheticTarget)) {
+    if (["isolated_canary_adapted", "synthetic_restored"].includes(row.restoreState) && !staged.has(row.syntheticTarget)) {
       throw new Error("TASK2_STAGE_PATH_INVENTORY");
+    }
+    if (row.class === "normal_registered") {
+      try {
+        readFileSync(path.join(repoRoot, row.syntheticTarget));
+      } catch {
+        throw new Error(`DEPLOYED_NORMAL_TARGET_MISSING ${row.syntheticTarget}`);
+      }
     }
   }
   if (
@@ -119,6 +147,9 @@ const COMPATIBILITY_TESTS = [
   ["compat/scope-visibility-matrix-test.js", "5"],
 ];
 
+const RESTORED_DEPLOYED_TESTS = DEPLOYED_NORMAL_TEST_FILES
+  .filter((file) => !PUBLIC_TEST_FILES.includes(file));
+
 const descriptor = (file, ownerTask, runner = "module", testClass = "normal") => Object.freeze({
   class: testClass,
   file,
@@ -128,10 +159,13 @@ const descriptor = (file, ownerTask, runner = "module", testClass = "normal") =>
 
 export const NORMAL_TEST_DESCRIPTORS = Object.freeze([
   ...PUBLIC_TEST_FILES.map((file) => descriptor(file, "upstream")),
+  ...RESTORED_DEPLOYED_TESTS.map((file) => descriptor(file, "2B")),
   ...COMPATIBILITY_TESTS.map(([file, owner]) => descriptor(file, owner)),
+  descriptor("compat/contract-behavior-harness-test.js", "2B"),
   descriptor("full-test-inventory-contract-test.js", "2B"),
   descriptor("npm-pack-parser-test.js", "2B"),
   descriptor("private-test-restoration-test.js", "2B"),
+  descriptor("release-live-isolation-test.js", "2B"),
   descriptor("source-first-divergence-test.js", "2A", "script"),
 ].sort((left, right) => left.file.localeCompare(right.file, "en")));
 
@@ -201,4 +235,52 @@ export function classifyExpectedOutcome(entry, error) {
   return "xfail";
 }
 
+function validateRegisteredDeployedTargets() {
+  const registered = new Set(NORMAL_TEST_DESCRIPTORS.map((row) => row.file));
+  for (const file of DEPLOYED_NORMAL_TEST_FILES) {
+    if (!registered.has(file)) throw new Error(`DEPLOYED_NORMAL_TARGET_UNREGISTERED tests/${file}`);
+  }
+}
+
+function validateSourceFirstRegistrations() {
+  const physical = new Set(PHYSICAL_TEST_DESCRIPTORS.map((row) => `tests/${row.file}`));
+  physical.add("tests/memory_api_security_test.py");
+  const expectedDocument = JSON.parse(readFileSync(
+    path.join(repoRoot, "tests", "compat", "expected-failures.json"),
+    "utf8",
+  ));
+  const expectedByTest = new Map(expectedDocument.entries.map((row) => [`tests/${row.test}`, row]));
+  const registrationById = new Map();
+  for (const row of SOURCE_FIRST_TEST_REGISTRY.entries || []) {
+    if (registrationById.has(row.id) || !physical.has(row.testPath)) {
+      throw new Error(`SOURCE_FIRST_TEST_UNREGISTERED ${row.testPath}`);
+    }
+    registrationById.set(row.id, row);
+    const expected = expectedByTest.get(row.testPath);
+    if (row.expectedOutcome === "xfail") {
+      if (
+        !expected
+        || expected.ownerTask !== row.ownerSourceFirstTaskId
+        || expected.signature !== row.expectedSignature
+      ) {
+        throw new Error(`SOURCE_FIRST_TEST_SIGNATURE ${row.testPath}`);
+      }
+    } else if (expected) {
+      throw new Error(`SOURCE_FIRST_TEST_SIGNATURE ${row.testPath}`);
+    }
+  }
+  for (const candidate of sourceFirstMap.candidateChanges || []) {
+    const registration = registrationById.get(candidate.gate?.registrationId);
+    if (
+      !registration
+      || !registration.coveredPaths.includes(candidate.targetPath)
+      || !candidate.ownerTasks.includes(registration.ownerSourceFirstTaskId)
+    ) {
+      throw new Error(`SOURCE_FIRST_TEST_RELEVANCE ${candidate.targetPath}`);
+    }
+  }
+}
+
 validateDeployedInventory();
+validateRegisteredDeployedTargets();
+validateSourceFirstRegistrations();

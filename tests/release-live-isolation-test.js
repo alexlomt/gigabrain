@@ -10,7 +10,7 @@ export const OWNER_TASK = "2B";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
-function writeCanary(root, overrides = {}) {
+function writeCanary(root, kind, overrides = {}) {
   mkdirSync(path.join(root, "candidate"), { recursive: true, mode: 0o700 });
   mkdirSync(path.join(root, "receipts"), { recursive: true, mode: 0o700 });
   const candidate = Buffer.from("synthetic immutable candidate\n");
@@ -20,7 +20,7 @@ function writeCanary(root, overrides = {}) {
   chmodSync(candidatePath, 0o444);
   const receipt = {
     candidateSha256: sha256(candidate),
-    kind: "release-live-codex-cli",
+    kind,
     ok: true,
     port: 43123,
     productionHostTouched: false,
@@ -30,7 +30,7 @@ function writeCanary(root, overrides = {}) {
     ...overrides,
   };
   writeFileSync(
-    path.join(root, "receipts", "release-live-codex-cli.json"),
+    path.join(root, "receipts", `${kind}.json`),
     `${JSON.stringify(receipt)}\n`,
     { mode: 0o600 },
   );
@@ -41,20 +41,16 @@ export async function run() {
   const root = mkdtempSync(path.join(tmpdir(), "gigabrain-canary-isolation-"));
   try {
     process.env.GIGABRAIN_CANARY_ROOT = root;
-    writeCanary(root);
-    assert.doesNotThrow(() => verifyIsolatedCanaryReceipt("release-live-codex-cli"));
+    for (const kind of ["release-live-codex-cli", "release-live-openclaw-install"]) {
+      writeCanary(root, kind);
+      assert.doesNotThrow(() => verifyIsolatedCanaryReceipt(kind));
 
-    writeCanary(root, { productionPort: undefined });
-    assert.throws(
-      () => verifyIsolatedCanaryReceipt("release-live-codex-cli"),
-      /productionPort is required/,
-    );
+      writeCanary(root, kind, { productionPort: undefined });
+      assert.throws(() => verifyIsolatedCanaryReceipt(kind), /productionPort is required/);
 
-    writeCanary(root, { port: 43123, productionPort: 43123 });
-    assert.throws(
-      () => verifyIsolatedCanaryReceipt("release-live-codex-cli"),
-      /alternate port/,
-    );
+      writeCanary(root, kind, { port: 43123, productionPort: 43123 });
+      assert.throws(() => verifyIsolatedCanaryReceipt(kind), /alternate port/);
+    }
   } finally {
     if (previous === undefined) delete process.env.GIGABRAIN_CANARY_ROOT;
     else process.env.GIGABRAIN_CANARY_ROOT = previous;

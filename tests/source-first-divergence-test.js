@@ -28,7 +28,7 @@ assert.equal(realMap.deployedSource.commit, "43cd4b41518b5e35b3872722fcceaac535a
 assert.equal(realMap.deployedCommits.length, 47);
 assert.equal(realMap.deployedFiles.length, 208);
 assert.equal(realMap.preTagTools.length, 9);
-assert.equal(realMap.candidateChanges.length, 49);
+assert.equal(realMap.candidateChanges.length, 103);
 assert.equal(realAllowlist.entries.length, 142);
 assert.deepEqual(
   realMap.deployedCommits.map((row) => row.sequence),
@@ -86,6 +86,10 @@ function makeFixture(mutate = () => {}) {
   mkdirSync(path.join(fixtureRepo, "tests"), { recursive: true });
   writeFileSync(
     path.join(fixtureRepo, "tests", "unregistered-test.js"),
+    "export async function run() { return true; }\n",
+  );
+  writeFileSync(
+    path.join(fixtureRepo, "tests", "registered-test.js"),
     "export async function run() { return true; }\n",
   );
   commitAll(fixtureRepo, "fixture base");
@@ -148,13 +152,30 @@ function makeFixture(mutate = () => {}) {
       changeType: "added",
       contentSha256: blobIdentity(path.join(fixtureRepo, "config", "meta.json")),
       disposition: "operator_only",
+      gate: { registrationId: "fixture-gate" },
       ownerTasks: ["2A"],
       reason: "Synthetic policy metadata owned by the fixture.",
       targetMode: "100644",
       targetPath: "config/meta.json",
-      testGate: "source-first divergence fixture gate",
     },
   ];
+  const testRegistryEntries = [
+    {
+      coveredPaths: ["config/meta.json"],
+      expectedOutcome: "pass",
+      expectedSignature: null,
+      id: "fixture-gate",
+      ownerSourceFirstTaskId: "2A",
+      runner: "node",
+      testPath: "tests/registered-test.js",
+    },
+  ];
+  const registry = {
+    entries: testRegistryEntries,
+    entryCount: testRegistryEntries.length,
+    manifestSha256: sha256(canonicalJson(testRegistryEntries)),
+    schemaVersion: 1,
+  };
 
   const baseRows = git(fixtureRepo, ["ls-tree", "-r", base])
     .split("\n")
@@ -192,12 +213,14 @@ function makeFixture(mutate = () => {}) {
       preTagToolManifestSha256: sha256(canonicalJson(preTagTools)),
       preTagTools,
       schemaVersion: 1,
+      testRegistry: "source-first-test-registry.json",
       upstreamAllowlist: "upstream-source-allowlist.json",
     },
     base,
     fixtureRepo,
     legacyBytes,
     policyDir,
+    registry,
     root,
   };
 
@@ -205,7 +228,10 @@ function makeFixture(mutate = () => {}) {
 
   fixture.allowlist.entryCount ??= fixture.allowlist.entries.length;
   fixture.allowlist.manifestSha256 ??= sha256(canonicalJson(fixture.allowlist.entries));
+  fixture.registry.entryCount ??= fixture.registry.entries.length;
+  fixture.registry.manifestSha256 ??= sha256(canonicalJson(fixture.registry.entries));
   writeFileSync(path.join(policyDir, "upstream-source-allowlist.json"), canonicalJson(fixture.allowlist));
+  writeFileSync(path.join(policyDir, "source-first-test-registry.json"), canonicalJson(fixture.registry));
   writeFileSync(path.join(policyDir, "source-first-port-map.json"), canonicalJson(fixture.map));
   return fixture;
 }
@@ -221,6 +247,14 @@ function runGuard(fixture, extraArgs = []) {
       timeout: 10_000,
     },
   );
+}
+
+function registerFixtureCoverage(registry, targetPath) {
+  if (!registry.entries[0].coveredPaths.includes(targetPath)) {
+    registry.entries[0].coveredPaths.push(targetPath);
+    registry.entries[0].coveredPaths.sort((left, right) => left.localeCompare(right, "en"));
+  }
+  registry.manifestSha256 = sha256(canonicalJson(registry.entries));
 }
 
 function expectPass(name, mutate) {
@@ -248,24 +282,35 @@ function expectFailure(name, code, mutate, extraArgs = []) {
 
 expectPass("exact classified delta", () => {});
 
-expectFailure("candidate prose cannot stand in for test evidence", "UNSTRUCTURED_GATE", () => {});
+expectFailure("candidate prose cannot stand in for test evidence", "UNSTRUCTURED_GATE", ({ map }) => {
+  delete map.candidateChanges[0].gate;
+  map.candidateChanges[0].testGate = "synthetic prose is not evidence";
+});
 
-expectFailure("active gate cannot point to an unrelated blob", "GATE_NOT_TEST", ({ map }) => {
-  delete map.candidateChanges[0].testGate;
-  map.candidateChanges[0].gate = {
-    kind: "active_test",
-    ownerSourceFirstTaskId: "2A",
-    testPath: "config/meta.json",
-  };
+expectFailure("active gate cannot point to an unrelated blob", "GATE_NOT_TEST", ({ registry }) => {
+  registry.entries[0].testPath = "config/meta.json";
+  registry.manifestSha256 = sha256(canonicalJson(registry.entries));
 });
 
 expectFailure("active gate test must be registered", "GATE_UNREGISTERED", ({ map }) => {
-  delete map.candidateChanges[0].testGate;
-  map.candidateChanges[0].gate = {
-    kind: "active_test",
-    ownerSourceFirstTaskId: "2A",
-    testPath: "tests/unregistered-test.js",
-  };
+  map.candidateChanges[0].gate = { registrationId: "not-registered" };
+});
+
+expectFailure("active gate must cover its candidate path", "GATE_IRRELEVANT", ({ registry }) => {
+  registry.entries[0].coveredPaths = ["lib/core.js"];
+  registry.manifestSha256 = sha256(canonicalJson(registry.entries));
+});
+
+expectFailure("xfail registration requires an exact owned signature", "GATE_SIGNATURE_MISSING", ({ registry }) => {
+  registry.entries[0].expectedOutcome = "xfail";
+  registry.entries[0].expectedSignature = "";
+  registry.manifestSha256 = sha256(canonicalJson(registry.entries));
+});
+
+expectFailure("xfail registration must match the expected-failure manifest", "GATE_SIGNATURE_MISMATCH", ({ registry }) => {
+  registry.entries[0].expectedOutcome = "xfail";
+  registry.entries[0].expectedSignature = "SYNTHETIC_EXPECTED_SIGNATURE";
+  registry.manifestSha256 = sha256(canonicalJson(registry.entries));
 });
 
 expectFailure("removed upstream ownership requires core patch", "UPSTREAM_PATCH_NOT_CORE", ({ allowlist, fixtureRepo, map }) => {
@@ -282,7 +327,7 @@ expectFailure("removed upstream ownership requires core patch", "UPSTREAM_PATCH_
     reason: "Synthetic non-core upstream patch fixture.",
     targetMode: "100644",
     targetPath: "lib/core.js",
-    testGate: "synthetic prose",
+    gate: { registrationId: "fixture-gate" },
   });
 });
 
@@ -310,22 +355,14 @@ expectFailure(
   ["--base", "HEAD"],
 );
 
-expectFailure("nonexistent active candidate gate", "ACTIVE_GATE_MISSING", ({ map }) => {
-  delete map.candidateChanges[0].testGate;
-  map.candidateChanges[0].gate = {
-    kind: "active_test",
-    ownerSourceFirstTaskId: "2A",
-    testPath: "tests/not-present.js",
-  };
+expectFailure("nonexistent active candidate gate", "ACTIVE_GATE_MISSING", ({ registry }) => {
+  registry.entries[0].testPath = "tests/not-present-test.js";
+  registry.manifestSha256 = sha256(canonicalJson(registry.entries));
 });
 
-expectFailure("unowned active candidate gate", "GATE_OWNER_MISMATCH", ({ map }) => {
-  delete map.candidateChanges[0].testGate;
-  map.candidateChanges[0].gate = {
-    kind: "active_test",
-    ownerSourceFirstTaskId: "9",
-    testPath: "tests/source-first-divergence-test.js",
-  };
+expectFailure("unowned active candidate gate", "GATE_OWNER_MISMATCH", ({ registry }) => {
+  registry.entries[0].ownerSourceFirstTaskId = "9";
+  registry.manifestSha256 = sha256(canonicalJson(registry.entries));
 });
 
 expectFailure("preserved commit without target", "MISSING_COMMIT_TARGET", ({ map }) => {
@@ -378,11 +415,10 @@ expectFailure("core patch without test", "MISSING_TEST_GATE", ({ allowlist, fixt
     reason: "Synthetic core patch fixture.",
     targetMode: "100644",
     targetPath: "lib/core.js",
-    testGate: "",
   });
 });
 
-expectFailure("private literal marker in source", "PRIVATE_LITERAL", ({ allowlist, fixtureRepo, map }) => {
+expectFailure("private literal marker in source", "PRIVATE_LITERAL", ({ allowlist, fixtureRepo, map, registry }) => {
   writeFileSync(
     path.join(fixtureRepo, "lib", "core.js"),
     'export const value = "SOURCE_FIRST_PRIVATE_LITERAL";\n',
@@ -394,13 +430,14 @@ expectFailure("private literal marker in source", "PRIVATE_LITERAL", ({ allowlis
   map.candidateChanges.push({
     changeType: "modified",
     contentSha256: blobIdentity(path.join(fixtureRepo, "lib", "core.js")),
-    disposition: "compat_module",
+    disposition: "core_patch",
+    gate: { registrationId: "fixture-gate" },
     ownerTasks: ["2A"],
     reason: "Synthetic source scan fixture.",
     targetMode: "100644",
     targetPath: "lib/core.js",
-    testGate: "source-first divergence fixture gate",
   });
+  registerFixtureCoverage(registry, "lib/core.js");
 });
 
 expectFailure("private literal marker in defaults", "PRIVATE_LITERAL", ({ fixtureRepo, map }) => {
@@ -409,7 +446,7 @@ expectFailure("private literal marker in defaults", "PRIVATE_LITERAL", ({ fixtur
   map.candidateChanges[0].contentSha256 = blobIdentity(path.join(fixtureRepo, "config", "meta.json"));
 });
 
-expectFailure("obsolete implementation copied in", "OBSOLETE_SOURCE_COPY", ({ allowlist, fixtureRepo, legacyBytes, map }) => {
+expectFailure("obsolete implementation copied in", "OBSOLETE_SOURCE_COPY", ({ allowlist, fixtureRepo, legacyBytes, map, registry }) => {
   writeFileSync(path.join(fixtureRepo, "lib", "core.js"), legacyBytes);
   commitAll(fixtureRepo, "obsolete source fixture");
   allowlist.entries = allowlist.entries.filter((entry) => entry.path !== "lib/core.js");
@@ -418,26 +455,28 @@ expectFailure("obsolete implementation copied in", "OBSOLETE_SOURCE_COPY", ({ al
   map.candidateChanges.push({
     changeType: "modified",
     contentSha256: blobIdentity(path.join(fixtureRepo, "lib", "core.js")),
-    disposition: "compat_module",
+    disposition: "core_patch",
+    gate: { registrationId: "fixture-gate" },
     ownerTasks: ["2A"],
     reason: "Synthetic obsolete-copy fixture.",
     targetMode: "100644",
     targetPath: "lib/core.js",
-    testGate: "source-first divergence fixture gate",
   });
+  registerFixtureCoverage(registry, "lib/core.js");
 });
 
-expectFailure("stale map row", "STALE_MAP_ROW", ({ map }) => {
+expectFailure("stale map row", "STALE_MAP_ROW", ({ map, registry }) => {
   map.candidateChanges.push({
     changeType: "added",
     contentSha256: "5".repeat(64),
     disposition: "compat_module",
+    gate: { registrationId: "fixture-gate" },
     ownerTasks: ["2A"],
     reason: "Synthetic stale row fixture.",
     targetMode: "100644",
     targetPath: "lib/not-present.js",
-    testGate: "source-first divergence fixture gate",
   });
+  registerFixtureCoverage(registry, "lib/not-present.js");
 });
 
 expectFailure("stale allowlist row", "STALE_ALLOWLIST_ROW", ({ allowlist }) => {

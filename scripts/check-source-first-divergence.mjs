@@ -22,10 +22,12 @@ const WILDCARD = /[*?\[\]{}]/;
 const AUTHORITATIVE_BASE = "ef624f97cc616a9e00b6df653eded455fbd30e01";
 const POLICY_INFRASTRUCTURE = new Set([
   "config/migration/source-first-port-map.json",
+  "config/migration/source-first-test-registry.json",
   "config/migration/upstream-source-allowlist.json",
   "scripts/check-source-first-divergence.mjs",
 ]);
-const ACTIVE_GATE_KINDS = new Set(["active_test"]);
+const TEST_RUNNERS = new Set(["node", "python"]);
+const EXPECTED_OUTCOMES = new Set(["pass", "xfail"]);
 
 // These values are filled from the reviewed forensic snapshot. They deliberately
 // bind counts and manifest hashes rather than source bytes or private literals.
@@ -149,19 +151,10 @@ function validateHistoricalTarget(row, { rowKind = "row" } = {}) {
 }
 
 function validateCandidateGate(row) {
-  const hasLegacyGate = Object.hasOwn(row, "testGate");
-  const hasActiveGate = Object.hasOwn(row, "gate");
-  if (hasLegacyGate === hasActiveGate) fail("MISSING_TEST_GATE");
-  if (hasLegacyGate) {
-    nonEmptyString(row.testGate, "MISSING_TEST_GATE");
-    return;
-  }
-  exactKeys(row.gate, ["kind", "ownerSourceFirstTaskId", "testPath"]);
-  if (!ACTIVE_GATE_KINDS.has(row.gate.kind)) fail("MISSING_TEST_GATE");
-  if (typeof row.gate.ownerSourceFirstTaskId !== "string" || !TASK.test(row.gate.ownerSourceFirstTaskId)) {
-    fail("MISSING_TEST_GATE");
-  }
-  validatePath(row.gate.testPath);
+  if (Object.hasOwn(row, "testGate")) fail("UNSTRUCTURED_GATE");
+  if (!Object.hasOwn(row, "gate")) fail("MISSING_TEST_GATE");
+  exactKeys(row.gate, ["registrationId"]);
+  nonEmptyString(row.gate.registrationId, "MISSING_TEST_GATE");
 }
 
 function validateAuditedBase(value) {
@@ -199,12 +192,15 @@ function validateMap(map) {
     "preTagToolManifestSha256",
     "preTagTools",
     "schemaVersion",
+    "testRegistry",
     "upstreamAllowlist",
   ]);
   if (map.schemaVersion !== 1) fail("SCHEMA_VERSION");
   validateAuditedBase(map.auditedBase);
   nonEmptyString(map.upstreamAllowlist);
   validatePath(map.upstreamAllowlist);
+  nonEmptyString(map.testRegistry);
+  validatePath(map.testRegistry);
 
   exactKeys(map.deployedSource, [
     "commit",
@@ -358,6 +354,48 @@ function validateAllowlist(allowlist) {
   checkManifest(allowlist.entries, allowlist.entryCount, allowlist.manifestSha256, "ALLOWLIST_MANIFEST");
 }
 
+function validateTestRegistry(registry) {
+  exactKeys(registry, ["entries", "entryCount", "manifestSha256", "schemaVersion"]);
+  if (registry.schemaVersion !== 1) fail("SCHEMA_VERSION");
+  if (!Array.isArray(registry.entries) || !Number.isSafeInteger(registry.entryCount)) fail("SCHEMA");
+  if (!SHA256.test(registry.manifestSha256)) fail("SCHEMA");
+  const ids = new Set();
+  for (const row of registry.entries) {
+    exactKeys(row, [
+      "coveredPaths",
+      "expectedOutcome",
+      "expectedSignature",
+      "id",
+      "ownerSourceFirstTaskId",
+      "runner",
+      "testPath",
+    ]);
+    nonEmptyString(row.id);
+    if (ids.has(row.id)) fail("DUPLICATE_ROW", row.id);
+    ids.add(row.id);
+    if (typeof row.ownerSourceFirstTaskId !== "string" || !TASK.test(row.ownerSourceFirstTaskId)) {
+      fail("MISSING_OWNER");
+    }
+    if (!TEST_RUNNERS.has(row.runner) || !EXPECTED_OUTCOMES.has(row.expectedOutcome)) fail("SCHEMA");
+    validatePath(row.testPath);
+    if (
+      (row.runner === "node" && !/^tests\/.+-test\.js$/.test(row.testPath))
+      || (row.runner === "python" && !/^tests\/.+_test\.py$/.test(row.testPath))
+    ) {
+      fail("GATE_NOT_TEST", row.testPath);
+    }
+    validatePathList(row.coveredPaths);
+    ensureSorted(row.coveredPaths, (value) => value);
+    if (row.expectedOutcome === "xfail") {
+      nonEmptyString(row.expectedSignature, "GATE_SIGNATURE_MISSING");
+    } else if (row.expectedSignature !== null) {
+      fail("SCHEMA");
+    }
+  }
+  ensureSorted(registry.entries, (row) => row.id);
+  checkManifest(registry.entries, registry.entryCount, registry.manifestSha256, "TEST_REGISTRY_MANIFEST");
+}
+
 function ensureSorted(rows, key) {
   const values = rows.map(key);
   const sorted = [...values].sort(compareText);
@@ -472,7 +510,7 @@ function validatePrivateAndObsolete(map, head, candidateRow) {
   if (privatePatterns.some((pattern) => pattern.test(text))) fail("PRIVATE_LITERAL", candidateRow.targetPath);
 }
 
-function validatePolicyAuthority({ allowlistPath, base, head, map, mapPath }) {
+function validatePolicyAuthority({ allowlistPath, base, head, map, mapPath, testRegistryPath }) {
   const repoRoot = path.resolve(gitText(["rev-parse", "--show-toplevel"]));
   const authoritativeBaseExists = git(
     ["cat-file", "-e", `${AUTHORITATIVE_BASE}^{commit}`],
@@ -482,9 +520,11 @@ function validatePolicyAuthority({ allowlistPath, base, head, map, mapPath }) {
   if (authoritativeBaseExists) {
     const canonicalMap = path.join(repoRoot, "config", "migration", "source-first-port-map.json");
     const canonicalAllowlist = path.join(repoRoot, "config", "migration", "upstream-source-allowlist.json");
+    const canonicalTestRegistry = path.join(repoRoot, "config", "migration", "source-first-test-registry.json");
     if (
       mapPath !== canonicalMap ||
       allowlistPath !== canonicalAllowlist ||
+      testRegistryPath !== canonicalTestRegistry ||
       base !== AUTHORITATIVE_BASE ||
       map.auditedBase.commit !== AUTHORITATIVE_BASE
     ) {
@@ -499,14 +539,59 @@ function validatePolicyAuthority({ allowlistPath, base, head, map, mapPath }) {
   if (base === head && map.auditedBase.commit === head) fail("NON_AUTHORITATIVE_POLICY");
 }
 
-function validateActiveGates(map, headByPath) {
+function readExpectedFailures(head, headByPath) {
+  const manifestPath = "tests/compat/expected-failures.json";
+  if (!headByPath.has(manifestPath)) return new Map();
+  let document;
+  try {
+    document = JSON.parse(blobAt(head, manifestPath).toString("utf8"));
+  } catch {
+    fail("EXPECTED_FAILURE_SCHEMA");
+  }
+  if (document?.schemaVersion !== 1 || !Array.isArray(document.entries)) fail("EXPECTED_FAILURE_SCHEMA");
+  return new Map(document.entries.map((entry) => [entry.test, entry]));
+}
+
+function validateActiveGates(map, registry, headByPath, head) {
+  const registrations = new Map(registry.entries.map((entry) => [entry.id, entry]));
+  const used = new Set();
+  const expectedFailures = readExpectedFailures(head, headByPath);
   for (const row of map.candidateChanges) {
-    if (!row.gate) continue;
-    if (!row.ownerTasks.includes(row.gate.ownerSourceFirstTaskId)) {
+    const registration = registrations.get(row.gate.registrationId);
+    if (!registration) fail("GATE_UNREGISTERED", row.targetPath);
+    used.add(registration.id);
+    if (!row.ownerTasks.includes(registration.ownerSourceFirstTaskId)) {
       fail("GATE_OWNER_MISMATCH", row.targetPath);
     }
-    const gateEntry = headByPath.get(row.gate.testPath);
-    if (!gateEntry || gateEntry.type !== "blob") fail("ACTIVE_GATE_MISSING", row.gate.testPath);
+    if (!registration.coveredPaths.includes(row.targetPath)) fail("GATE_IRRELEVANT", row.targetPath);
+    const gateEntry = headByPath.get(registration.testPath);
+    if (!gateEntry || gateEntry.type !== "blob") fail("ACTIVE_GATE_MISSING", registration.testPath);
+    if (
+      (registration.runner === "node" && !registration.testPath.endsWith("-test.js"))
+      || (registration.runner === "python" && !registration.testPath.endsWith("_test.py"))
+    ) {
+      fail("GATE_NOT_TEST", registration.testPath);
+    }
+    const expected = expectedFailures.get(registration.testPath.replace(/^tests\//, ""));
+    if (registration.expectedOutcome === "xfail") {
+      if (
+        !expected
+        || expected.ownerTask !== registration.ownerSourceFirstTaskId
+        || expected.signature !== registration.expectedSignature
+      ) {
+        fail("GATE_SIGNATURE_MISMATCH", registration.testPath);
+      }
+    } else if (expected) {
+      fail("GATE_SIGNATURE_MISMATCH", registration.testPath);
+    }
+  }
+  for (const registration of registry.entries) {
+    if (!used.has(registration.id)) fail("TEST_REGISTRY_STALE", registration.id);
+    for (const coveredPath of registration.coveredPaths) {
+      if (!map.candidateChanges.some((row) => row.targetPath === coveredPath)) {
+        fail("TEST_REGISTRY_STALE", coveredPath);
+      }
+    }
   }
 }
 
@@ -541,11 +626,14 @@ function main() {
   const allowlistPath = path.resolve(path.dirname(mapPath), map.upstreamAllowlist);
   const allowlist = readCanonicalJson(allowlistPath);
   validateAllowlist(allowlist);
+  const testRegistryPath = path.resolve(path.dirname(mapPath), map.testRegistry);
+  const testRegistry = readCanonicalJson(testRegistryPath);
+  validateTestRegistry(testRegistry);
   validateAuthoritativeSnapshot(map);
 
   const base = resolveCommit(options.base);
   const head = resolveCommit("HEAD");
-  validatePolicyAuthority({ allowlistPath, base, head, map, mapPath });
+  validatePolicyAuthority({ allowlistPath, base, head, map, mapPath, testRegistryPath });
   if (base !== map.auditedBase.commit || allowlist.auditedBase.commit !== base) fail("INVALID_BASE");
   const baseTreeId = gitText(["rev-parse", `${base}^{tree}`]);
   if (baseTreeId !== map.auditedBase.tree || allowlist.auditedBase.tree !== baseTreeId) fail("INVALID_BASE");
@@ -576,11 +664,12 @@ function main() {
     if (allowByPath.has(entry.path)) continue;
     const candidate = candidateByPath.get(entry.path);
     if (!candidate || candidate.changeType === "added") fail("ALLOWLIST_INCOMPLETE", entry.path);
+    if (candidate.disposition !== "core_patch") fail("UPSTREAM_PATCH_NOT_CORE", entry.path);
   }
 
   const diff = readDiff(base, head);
   const headByPath = new Map(readTree(head).map((entry) => [entry.path, entry]));
-  validateActiveGates(map, headByPath);
+  validateActiveGates(map, testRegistry, headByPath, head);
   const seenDiffs = new Set();
   const statusToChange = { A: "added", D: "deleted", M: "modified", T: "modified" };
   for (const actual of diff) {
