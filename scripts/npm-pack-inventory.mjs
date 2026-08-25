@@ -39,9 +39,11 @@ function validateReport(report) {
   const seen = new Set();
   for (const entry of report.files) {
     if (!isObject(entry)) throw new Error("npm pack inventory contained an invalid file entry");
-    const file = String(entry.path || "");
+    if (typeof entry.path !== "string") throw new Error("npm pack file path must be a string");
+    const file = entry.path;
     if (
       !file ||
+      file.trim() !== file ||
       file.startsWith("/") ||
       file.includes("\\") ||
       file.includes("\0") ||
@@ -78,7 +80,8 @@ export function parseNpmPackInventory(output) {
   const files = [];
   const seen = new Set();
   for (const entry of entries) {
-    const file = String(entry.path);
+    if (typeof entry.path !== "string") throw new Error("npm pack file path must be a string");
+    const file = entry.path;
     if (seen.has(file)) throw new Error("npm pack inventory contained a duplicate file path");
     seen.add(file);
     files.push(file);

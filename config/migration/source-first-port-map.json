@@ -261,7 +261,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "b4a142b7fd9f7a19c06866d41cb226c2bfaec47044c30eb4ee90ab28cbe7eb16",
+      "contentSha256": "9ccdf680600f198258a688c157fd1abcc3e12bf2242ca77caff4d071eeee762b",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "npm-pack-schema"
@@ -904,7 +904,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "98c3d598a91678b6e4d0e8870a92aaaba59b34b8d9cc81bd430cd79115873b53",
+      "contentSha256": "42393d5beab5e97d3b322afbdbf7b369a1f84061e298bff2d125b05f8c6665c3",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "npm-pack-schema"
