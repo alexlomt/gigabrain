@@ -812,9 +812,22 @@
       "ownerSourceFirstTaskId": "1",
       "runner": "node",
       "testPath": "tests/source-first-divergence-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/expected-failures.json",
+        "tests/compat/upstream-adoption-test.js",
+        "tests/full-test-inventory.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_UPSTREAM_ADOPTION missing hash-bound adoption and retirement contract",
+      "id": "upstream-adoption",
+      "ownerSourceFirstTaskId": "3",
+      "runner": "node",
+      "testPath": "tests/compat/upstream-adoption-test.js"
     }
   ],
-  "entryCount": 71,
-  "manifestSha256": "4c3bb6c5c197bfb56e43207869fd6d251ccbde77170d51100f463961b70b9dfa",
+  "entryCount": 72,
+  "manifestSha256": "d6f6019e23a6dc6f1d9539baf7869a7502d845367aed3a5efdf35a2651f37048",
   "schemaVersion": 1
 }

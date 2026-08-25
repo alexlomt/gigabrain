@@ -63,13 +63,14 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "cb6e8173d2cab3866956ecb99958a322e2658c3caa310881ed97f3d4816319e2",
+      "contentSha256": "974628665ca19113a58d8c6d6ad7b7863cdbcd3bb248199b2ef53fd8ed851917",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
       },
       "ownerTasks": [
-        "2A"
+        "2A",
+        "3"
       ],
       "reason": "Canonical owner, signature and path-relevance registry for source-first test evidence.",
       "targetMode": "100644",
@@ -362,13 +363,14 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "30b4831b97ef06e61ff56c1bd964ad15d549cc67e4526ad0121c574cdd1bedcd",
+      "contentSha256": "05258eef0d4cc8e9a49009ed4f9dac92c3b3d4ebddb43d96ef2ed3fc5625d609",
       "disposition": "private_dev_only",
       "gate": {
-        "registrationId": "full-test-inventory"
+        "registrationId": "upstream-adoption"
       },
       "ownerTasks": [
-        "2B"
+        "2B",
+        "3"
       ],
       "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
       "targetMode": "100644",
@@ -526,6 +528,20 @@
     },
     {
       "changeType": "added",
+      "contentSha256": "32d4fb2a8f668bd6663a080071685742a66073a8a5064454867ae2f27a7bdc4e",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "upstream-adoption"
+      },
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Byte-identity, retired-byte/path, release-tree and package-behavior adoption contract.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/upstream-adoption-test.js"
+    },
+    {
+      "changeType": "added",
       "contentSha256": "ee424a9f4e9895344567534638095ee07711a2400fcd11af980009476053b723",
       "disposition": "private_dev_only",
       "gate": {
@@ -582,13 +598,14 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "30029b933d5cb88f0c5be625a1c110439cbcf399e74e23a4d599f52a50e100f4",
+      "contentSha256": "b7122626a1905e4174b506846325920ccf7884166b4a18158419e4fe236b2eef",
       "disposition": "private_dev_only",
       "gate": {
-        "registrationId": "full-test-inventory"
+        "registrationId": "upstream-adoption"
       },
       "ownerTasks": [
-        "2B"
+        "2B",
+        "3"
       ],
       "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure.",
       "targetMode": "100644",
@@ -1044,14 +1061,15 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "8ec785897f930aad67ed876c245d496d9cb809532dea78792812386c734249d7",
+      "contentSha256": "c68159af256a9f293dbcc6845442d72b15dcb251c0936b561bcf0d3b8a42355a",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
       },
       "ownerTasks": [
         "2A",
-        "2B"
+        "2B",
+        "3"
       ],
       "reason": "Synthetic regression coverage for source-first policy failures.",
       "targetMode": "100644",

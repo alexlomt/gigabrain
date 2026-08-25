@@ -28,7 +28,7 @@ assert.equal(realMap.deployedSource.commit, "43cd4b41518b5e35b3872722fcceaac535a
 assert.equal(realMap.deployedCommits.length, 47);
 assert.equal(realMap.deployedFiles.length, 208);
 assert.equal(realMap.preTagTools.length, 9);
-assert.equal(realMap.candidateChanges.length, 103);
+assert.equal(realMap.candidateChanges.length, 104);
 assert.equal(realAllowlist.entries.length, 142);
 assert.deepEqual(
   realMap.deployedCommits.map((row) => row.sequence),

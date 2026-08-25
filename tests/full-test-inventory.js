@@ -145,6 +145,7 @@ const COMPATIBILITY_TESTS = [
   ["compat/openclaw-memory-runtime-test.js", "5"],
   ["compat/rollback-restore-test.js", "4"],
   ["compat/scope-visibility-matrix-test.js", "5"],
+  ["compat/upstream-adoption-test.js", "3"],
 ];
 
 const RESTORED_DEPLOYED_TESTS = DEPLOYED_NORMAL_TEST_FILES
