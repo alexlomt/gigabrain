@@ -1,0 +1,917 @@
+{
+  "auditedBase": {
+    "commit": "ef624f97cc616a9e00b6df653eded455fbd30e01",
+    "tree": "2a7affea1439f4250bcf9a3078ecf0cb36cc3358"
+  },
+  "entries": [
+    {
+      "blob": "3dc35fe2ca5c184602dc3f431ed1c4ff78474336",
+      "mode": "100644",
+      "path": ".github/ISSUE_TEMPLATE/bug_report.yml",
+      "type": "blob"
+    },
+    {
+      "blob": "99529b5f722b4c3c0b9afcf1e290e742eb8f6d47",
+      "mode": "100644",
+      "path": ".github/ISSUE_TEMPLATE/config.yml",
+      "type": "blob"
+    },
+    {
+      "blob": "a79e6bcfd27a1a96bd4968339cf3f011b51ccf28",
+      "mode": "100644",
+      "path": ".github/ISSUE_TEMPLATE/feature_request.yml",
+      "type": "blob"
+    },
+    {
+      "blob": "55c44bd9c5531eb8a53031ee6caf109e08af03ed",
+      "mode": "100644",
+      "path": ".github/pull_request_template.md",
+      "type": "blob"
+    },
+    {
+      "blob": "bcaf3d1b868a88fdea8297cde1d87163cfdabe1c",
+      "mode": "100644",
+      "path": ".github/workflows/ci.yml",
+      "type": "blob"
+    },
+    {
+      "blob": "9ca3084d32c2d9fb0a5d35de1a33f5cb33300d8a",
+      "mode": "100644",
+      "path": ".github/workflows/codeql.yml",
+      "type": "blob"
+    },
+    {
+      "blob": "f1374342a65e0ad108d16aa590c0d181b23002bb",
+      "mode": "100644",
+      "path": ".github/workflows/pii-scan.yml",
+      "type": "blob"
+    },
+    {
+      "blob": "359e26f0419d71832499059d0222123fd475e878",
+      "mode": "100644",
+      "path": ".github/workflows/public-mirror.yml",
+      "type": "blob"
+    },
+    {
+      "blob": "2cf473d6f77d5d7f67176106fe4452fce11728d8",
+      "mode": "100644",
+      "path": ".gitignore",
+      "type": "blob"
+    },
+    {
+      "blob": "a37f050558a2d07886f4808ceaebc24cfc65cd0d",
+      "mode": "100644",
+      "path": ".npmignore",
+      "type": "blob"
+    },
+    {
+      "blob": "4d11542a29fa42e0a56349284f88542102c9b97c",
+      "mode": "100644",
+      "path": "CHANGELOG.md",
+      "type": "blob"
+    },
+    {
+      "blob": "ffc119204c3fe14ee57339ee3fa1a1fb429c7540",
+      "mode": "100644",
+      "path": "CODE_OF_CONDUCT.md",
+      "type": "blob"
+    },
+    {
+      "blob": "d55b8bd97c0cef2d8f24cac178a1b8ab6d788442",
+      "mode": "100644",
+      "path": "CONCEPTS.md",
+      "type": "blob"
+    },
+    {
+      "blob": "c7c088b4535795d7802ff53c6c7409c210a07159",
+      "mode": "100644",
+      "path": "CONTRIBUTING.md",
+      "type": "blob"
+    },
+    {
+      "blob": "eea27923b26d8449e0b7e50440cd64469b651b3b",
+      "mode": "100644",
+      "path": "LICENSE",
+      "type": "blob"
+    },
+    {
+      "blob": "118794965e613e511f9bc14ed894da93ef129bd2",
+      "mode": "100644",
+      "path": "README.md",
+      "type": "blob"
+    },
+    {
+      "blob": "68d1b4341f7c98f01d7f49eaf7e5ef74cacd52a0",
+      "mode": "100644",
+      "path": "SECURITY.md",
+      "type": "blob"
+    },
+    {
+      "blob": "7e15355c638f89cc808658b519f70c962804cfbd",
+      "mode": "100644",
+      "path": "docs/POLICY-no-personal-data.md",
+      "type": "blob"
+    },
+    {
+      "blob": "87ed91fb105bdad4cffaa7aa50ac51371b1456a9",
+      "mode": "100644",
+      "path": "docs/checkpoint-control-plane.md",
+      "type": "blob"
+    },
+    {
+      "blob": "fb99e798b01a8eb1bb5503674bcf572b6cc650d7",
+      "mode": "100644",
+      "path": "docs/configuration.md",
+      "type": "blob"
+    },
+    {
+      "blob": "b105315f2e89f1c9ad0fc0aeeed529eb4782bafb",
+      "mode": "100644",
+      "path": "docs/coverage-matrix.md",
+      "type": "blob"
+    },
+    {
+      "blob": "a5ad8c499bd77bc015ebf1d12ea1d51ba6284341",
+      "mode": "100644",
+      "path": "docs/handoff-record.md",
+      "type": "blob"
+    },
+    {
+      "blob": "19e45a52b5fcb1dde7e5ef9200f738cff84940c5",
+      "mode": "100644",
+      "path": "docs/maintenance.md",
+      "type": "blob"
+    },
+    {
+      "blob": "8df44d231ca8293123e42912648a1473cceda371",
+      "mode": "100644",
+      "path": "docs/memory-protocol.md",
+      "type": "blob"
+    },
+    {
+      "blob": "125a8b4c8cb177b38d72391b0f536297c6345689",
+      "mode": "100644",
+      "path": "docs/obsidian.md",
+      "type": "blob"
+    },
+    {
+      "blob": "5263522d561fbce5d9db2628a36e300dc88d7c7c",
+      "mode": "100644",
+      "path": "docs/public/benchmark-evidence.json",
+      "type": "blob"
+    },
+    {
+      "blob": "4a898c0412df32d99607a67baf81f9f1c1f57b87",
+      "mode": "100644",
+      "path": "docs/public/benchmark-evidence.md",
+      "type": "blob"
+    },
+    {
+      "blob": "39b8a558c0d331425eab1ecb285b5dabd0df7481",
+      "mode": "100644",
+      "path": "docs/public/privacy-model.md",
+      "type": "blob"
+    },
+    {
+      "blob": "c225b52ae3eae35a49f9b9b186e6fffbb958f7b2",
+      "mode": "100644",
+      "path": "docs/public/release-readiness.md",
+      "type": "blob"
+    },
+    {
+      "blob": "ce9e07478f981891cd0f80d4126ab431bf62548f",
+      "mode": "100644",
+      "path": "docs/public/security-review.md",
+      "type": "blob"
+    },
+    {
+      "blob": "ab9af7c1896283c9fbd0f2c941e7376d456e3abe",
+      "mode": "100644",
+      "path": "docs/public/v0.11.0.md",
+      "type": "blob"
+    },
+    {
+      "blob": "d50d4261c7cfd95267596016f79a0c7282c043e7",
+      "mode": "100644",
+      "path": "docs/public/why-gigabrain.md",
+      "type": "blob"
+    },
+    {
+      "blob": "6e1834ef96353176cb1e1022599df5f84bfd4678",
+      "mode": "100644",
+      "path": "docs/recall.md",
+      "type": "blob"
+    },
+    {
+      "blob": "e2efcf837c36b4acfeb95ac1f1c5fb1af69ab2ce",
+      "mode": "100644",
+      "path": "docs/schemas/checkpoint.1.schema.json",
+      "type": "blob"
+    },
+    {
+      "blob": "d6673abe20944f8668645a1704986648fe0e2ae3",
+      "mode": "100644",
+      "path": "docs/schemas/claim.1.schema.json",
+      "type": "blob"
+    },
+    {
+      "blob": "f22c15eb251db1af443652bbfe052b11e9f670c9",
+      "mode": "100644",
+      "path": "docs/schemas/receipt.1.schema.json",
+      "type": "blob"
+    },
+    {
+      "blob": "bf549bc099eb9238c8d4aecf219a197687313081",
+      "mode": "100644",
+      "path": "docs/setup-claude.md",
+      "type": "blob"
+    },
+    {
+      "blob": "57ff6fbab85e0a5728372a737d8052b0cabadfa4",
+      "mode": "100644",
+      "path": "docs/setup-codex.md",
+      "type": "blob"
+    },
+    {
+      "blob": "b5c8bf9c4a051927c1847646c4ecd3018e0ba72f",
+      "mode": "100644",
+      "path": "docs/setup-openclaw.md",
+      "type": "blob"
+    },
+    {
+      "blob": "72c9a06ed0580fdc4510a64acb0a3233aaf859be",
+      "mode": "100644",
+      "path": "docs/setup-remote-mcp.md",
+      "type": "blob"
+    },
+    {
+      "blob": "2439b0b6bc72bee85d67822a65b1dbd24c04eba9",
+      "mode": "100644",
+      "path": "docs/sharing.md",
+      "type": "blob"
+    },
+    {
+      "blob": "9814c35f796b852675401478542440ec51443073",
+      "mode": "100644",
+      "path": "docs/upgrading.md",
+      "type": "blob"
+    },
+    {
+      "blob": "6bfa1fdc06e44371a134f1de1278ab4a9b63d12b",
+      "mode": "100644",
+      "path": "docs/world-model-custom-slots.md",
+      "type": "blob"
+    },
+    {
+      "blob": "0c0665e71260465b5f675ae040eacf738d604141",
+      "mode": "100644",
+      "path": "index.ts",
+      "type": "blob"
+    },
+    {
+      "blob": "ca42a20121ef1e9f7e42fbe68a27ec779956df5a",
+      "mode": "100644",
+      "path": "lib/core/adaptive-trust.js",
+      "type": "blob"
+    },
+    {
+      "blob": "8ef271f60c2073fe317d1ec441379e29431f92b0",
+      "mode": "100644",
+      "path": "lib/core/agent-memory-policy.js",
+      "type": "blob"
+    },
+    {
+      "blob": "744101e29e7150571089d4b8f36bb31b161908f8",
+      "mode": "100644",
+      "path": "lib/core/audit-service.js",
+      "type": "blob"
+    },
+    {
+      "blob": "ef0f8f8532e7213f7997f5cfc5340f7b0281aa4a",
+      "mode": "100644",
+      "path": "lib/core/belief-arbitration.js",
+      "type": "blob"
+    },
+    {
+      "blob": "0c70a4ff5cd7001c781835be1de27bd97570c87b",
+      "mode": "100644",
+      "path": "lib/core/bm25.js",
+      "type": "blob"
+    },
+    {
+      "blob": "3d665ade3b7e581510bc5bbd3e9cae85074c4b6a",
+      "mode": "100644",
+      "path": "lib/core/capture-service.js",
+      "type": "blob"
+    },
+    {
+      "blob": "e6652adfacf6b1fa40e21fef842193af72d436d9",
+      "mode": "100644",
+      "path": "lib/core/checkpoint-migration.js",
+      "type": "blob"
+    },
+    {
+      "blob": "722b0bb58a6352843e66020d37c3700021aa0513",
+      "mode": "100644",
+      "path": "lib/core/claude-project.js",
+      "type": "blob"
+    },
+    {
+      "blob": "4cb80bf947dc76fcae5280441791146182e90f77",
+      "mode": "100644",
+      "path": "lib/core/codex-mcp.js",
+      "type": "blob"
+    },
+    {
+      "blob": "17a92e878e9829503b02ef3b24943f525e44b3d6",
+      "mode": "100644",
+      "path": "lib/core/codex-project.js",
+      "type": "blob"
+    },
+    {
+      "blob": "2db35e452391fca0291255298b9442c27edc469f",
+      "mode": "100644",
+      "path": "lib/core/codex-service.js",
+      "type": "blob"
+    },
+    {
+      "blob": "2eb336f7146cf7ccf2b223b03ebb01d93047a3eb",
+      "mode": "100644",
+      "path": "lib/core/config.js",
+      "type": "blob"
+    },
+    {
+      "blob": "1f99a11f08462049599c2faadaf8a1fd604b9f41",
+      "mode": "100644",
+      "path": "lib/core/control-plane.js",
+      "type": "blob"
+    },
+    {
+      "blob": "fcaa127392a5150e8b66c7e82c12838011f2aa69",
+      "mode": "100644",
+      "path": "lib/core/embedding-service.js",
+      "type": "blob"
+    },
+    {
+      "blob": "fdd034f2bbfe7fe66748652b118497c0f30c2199",
+      "mode": "100644",
+      "path": "lib/core/eval-harness.js",
+      "type": "blob"
+    },
+    {
+      "blob": "3061b45a64900bb52e6120fcc74298abfd3e8b75",
+      "mode": "100644",
+      "path": "lib/core/event-store.js",
+      "type": "blob"
+    },
+    {
+      "blob": "2b651ef943359413a3e247d3c24da0b0f0c03c9a",
+      "mode": "100644",
+      "path": "lib/core/handoff-bundle.js",
+      "type": "blob"
+    },
+    {
+      "blob": "22fc16508e18682862091ac453644fec0569b0f9",
+      "mode": "100644",
+      "path": "lib/core/handoff-record.js",
+      "type": "blob"
+    },
+    {
+      "blob": "a2679710653d5aa17bd20f508ae93c87677bc666",
+      "mode": "100644",
+      "path": "lib/core/host-memory-sync.js",
+      "type": "blob"
+    },
+    {
+      "blob": "0d69b7048e673bad9c3cf9ce172801b2c7d1fd0a",
+      "mode": "100644",
+      "path": "lib/core/host-trust.js",
+      "type": "blob"
+    },
+    {
+      "blob": "7abaebcb6782bca1415c5a7c7dcaf9e04d7f2930",
+      "mode": "100644",
+      "path": "lib/core/http-routes.js",
+      "type": "blob"
+    },
+    {
+      "blob": "216998aa32ab7af0b2abde1faddaaf34e021970d",
+      "mode": "100644",
+      "path": "lib/core/lifecycle-hooks.js",
+      "type": "blob"
+    },
+    {
+      "blob": "ab40a982d02958c245fb2dd710be4e0527ccd934",
+      "mode": "100644",
+      "path": "lib/core/llm-router.js",
+      "type": "blob"
+    },
+    {
+      "blob": "9fdbd0143859e7822205b6957958da110c36d7a0",
+      "mode": "100644",
+      "path": "lib/core/maintenance-service.js",
+      "type": "blob"
+    },
+    {
+      "blob": "dace02bce0f7ef68024f640a4478b61b86460b80",
+      "mode": "100644",
+      "path": "lib/core/memory-actions.js",
+      "type": "blob"
+    },
+    {
+      "blob": "79a47b0d753b1ed603ad1447705fa1c84e18f21b",
+      "mode": "100644",
+      "path": "lib/core/metrics.js",
+      "type": "blob"
+    },
+    {
+      "blob": "ef243289d5cc9d422b91257ea48de246be1cc462",
+      "mode": "100644",
+      "path": "lib/core/multi-hop-recall.js",
+      "type": "blob"
+    },
+    {
+      "blob": "cb81e0460e9ed33755be641abfac7b71c8c4ab5f",
+      "mode": "100644",
+      "path": "lib/core/native-memory.js",
+      "type": "blob"
+    },
+    {
+      "blob": "d270d81410ee886468f5de33e59732a2c9b101fb",
+      "mode": "100644",
+      "path": "lib/core/native-promotion.js",
+      "type": "blob"
+    },
+    {
+      "blob": "c4b3c28a6336adf27f83e60bd1f4dad1d52ec821",
+      "mode": "100644",
+      "path": "lib/core/native-sync.js",
+      "type": "blob"
+    },
+    {
+      "blob": "c5fba47ce4ab1ab816002745f115c81c9a73a181",
+      "mode": "100644",
+      "path": "lib/core/openclaw-import.js",
+      "type": "blob"
+    },
+    {
+      "blob": "28b13039e5e62ad7ecb4ecb265e6950b8dc31cc8",
+      "mode": "100644",
+      "path": "lib/core/orchestrator.js",
+      "type": "blob"
+    },
+    {
+      "blob": "ad83cbcd2671cf18d7ec2d1add9a813ccc2beddf",
+      "mode": "100644",
+      "path": "lib/core/person-service.js",
+      "type": "blob"
+    },
+    {
+      "blob": "cba5e1a40ea66bc7bec030e64add654b268eefa5",
+      "mode": "100644",
+      "path": "lib/core/policy.js",
+      "type": "blob"
+    },
+    {
+      "blob": "e99929af39860438ba85169a90f8b76ff9bd2b33",
+      "mode": "100644",
+      "path": "lib/core/projection-store.js",
+      "type": "blob"
+    },
+    {
+      "blob": "ffe7f30ebbdc194c115cec29ddc4410ebcb55f6e",
+      "mode": "100644",
+      "path": "lib/core/recall-service.js",
+      "type": "blob"
+    },
+    {
+      "blob": "274bd3fc489b39aa24496de71fb57fa069752bbf",
+      "mode": "100644",
+      "path": "lib/core/remote-mcp.js",
+      "type": "blob"
+    },
+    {
+      "blob": "226dbeddc841542111a8022eb4162b66b6e32c58",
+      "mode": "100644",
+      "path": "lib/core/review-queue.js",
+      "type": "blob"
+    },
+    {
+      "blob": "e8c59674654b1fa37b64b93fb60b51188692ed2e",
+      "mode": "100644",
+      "path": "lib/core/runtime-guard.js",
+      "type": "blob"
+    },
+    {
+      "blob": "862bb42de022277b46a7a60e3f26fd6d09d941d5",
+      "mode": "100644",
+      "path": "lib/core/safe-fs.js",
+      "type": "blob"
+    },
+    {
+      "blob": "23bf1ac540a3d32acb78020a9e6edfdede73e2b8",
+      "mode": "100644",
+      "path": "lib/core/sqlite.js",
+      "type": "blob"
+    },
+    {
+      "blob": "fb1269b9dac6cef8b24577ddd3245ac114f80fe2",
+      "mode": "100644",
+      "path": "lib/core/standalone-client.js",
+      "type": "blob"
+    },
+    {
+      "blob": "d9f1ed7e0ed7fb2dc9cabea9a191fb1fc6aeec53",
+      "mode": "100644",
+      "path": "lib/core/transcript-harvester.js",
+      "type": "blob"
+    },
+    {
+      "blob": "bd1b430a188c9a3a36233b986a2724161ab63db8",
+      "mode": "100644",
+      "path": "lib/core/url-safety.js",
+      "type": "blob"
+    },
+    {
+      "blob": "db378678939216b155106d54ff49a55ba3ff3b54",
+      "mode": "100644",
+      "path": "lib/core/vault-inbox.js",
+      "type": "blob"
+    },
+    {
+      "blob": "40d67240b5e69c141446dade0e5c04918ef5a091",
+      "mode": "100644",
+      "path": "lib/core/vault-sync.js",
+      "type": "blob"
+    },
+    {
+      "blob": "74fdcbd23faa76c3c97af73d66659c6d5078eaf7",
+      "mode": "100644",
+      "path": "lib/core/wiki-project.js",
+      "type": "blob"
+    },
+    {
+      "blob": "c192b0b3f7deb3a5264a2e6837ead86ed2b84613",
+      "mode": "100644",
+      "path": "lib/core/workspace-identity.js",
+      "type": "blob"
+    },
+    {
+      "blob": "e10eba4a9607b96539347c3b3e02cbf68d56031c",
+      "mode": "100644",
+      "path": "lib/core/world-model.js",
+      "type": "blob"
+    },
+    {
+      "blob": "eaade6ce9b7d5645009b853a44b366f301df19ca",
+      "mode": "100644",
+      "path": "memory_api/.env.example",
+      "type": "blob"
+    },
+    {
+      "blob": "95613a5521877d545826f1e530e579f9f8e4a49f",
+      "mode": "100644",
+      "path": "memory_api/README.md",
+      "type": "blob"
+    },
+    {
+      "blob": "bf33eb11b874abdf8be0b72b0957b3dc42fe0f46",
+      "mode": "100644",
+      "path": "memory_api/app.py",
+      "type": "blob"
+    },
+    {
+      "blob": "31bd63042902683168fa438776b594f5e211b491",
+      "mode": "100644",
+      "path": "memory_api/requirements.txt",
+      "type": "blob"
+    },
+    {
+      "blob": "8bdf0fb89ca1ca83ae3e751ae962beac33b59f1c",
+      "mode": "100644",
+      "path": "memory_api/static/index.html",
+      "type": "blob"
+    },
+    {
+      "blob": "422e670b7208e72dbec22bdd000f19367095da65",
+      "mode": "100644",
+      "path": "openclaw.plugin.json",
+      "type": "blob"
+    },
+    {
+      "blob": "3ba94316cf1121874ada3dff0e00dd31314b3883",
+      "mode": "100644",
+      "path": "public-release-manifest.json",
+      "type": "blob"
+    },
+    {
+      "blob": "2886ac7a9d976ecd1bbfe172c054f0e52e0cb7b2",
+      "mode": "100644",
+      "path": "scripts/audit-github-surface.mjs",
+      "type": "blob"
+    },
+    {
+      "blob": "1e532a0b9897c0e24c9fd4cbbaf5daf7520fc08b",
+      "mode": "100644",
+      "path": "scripts/build-claude-desktop-bundle.js",
+      "type": "blob"
+    },
+    {
+      "blob": "2fd811c4c8785b530151ca33c33caa9fd728ea26",
+      "mode": "100644",
+      "path": "scripts/build-public-mirror.mjs",
+      "type": "blob"
+    },
+    {
+      "blob": "dc512294443770e7d475747d2c8cff150892e58d",
+      "mode": "100644",
+      "path": "scripts/check-no-pii.mjs",
+      "type": "blob"
+    },
+    {
+      "blob": "2d5f0e74422ac9002098dcd370a510e77f77634e",
+      "mode": "100644",
+      "path": "scripts/check-public-mirror.mjs",
+      "type": "blob"
+    },
+    {
+      "blob": "5a809a154bc1852fcb4c356127f489a4e4545e53",
+      "mode": "100644",
+      "path": "scripts/claude-desktop-launcher.sh",
+      "type": "blob"
+    },
+    {
+      "blob": "eff4671c2ef3fbd43d928f622836eb821f7660b8",
+      "mode": "100755",
+      "path": "scripts/demo-handoff.sh",
+      "type": "blob"
+    },
+    {
+      "blob": "a32861d4fd969285633211f03a38186ca9dfb52e",
+      "mode": "100755",
+      "path": "scripts/gigabrain-claude-setup.js",
+      "type": "blob"
+    },
+    {
+      "blob": "394557573abddc585ca699d3d831b57163d16942",
+      "mode": "100755",
+      "path": "scripts/gigabrain-codex-checkpoint.js",
+      "type": "blob"
+    },
+    {
+      "blob": "c66f7fa4d611d9024afc72d56b262126d179b7fe",
+      "mode": "100755",
+      "path": "scripts/gigabrain-codex-setup.js",
+      "type": "blob"
+    },
+    {
+      "blob": "46c230b3cb99badaa0b9038a41c3f61cadb8af27",
+      "mode": "100755",
+      "path": "scripts/gigabrain-hermes-setup.js",
+      "type": "blob"
+    },
+    {
+      "blob": "bf3f7d3aa3c148e867871369518da734f056d0cd",
+      "mode": "100755",
+      "path": "scripts/gigabrain-mcp.js",
+      "type": "blob"
+    },
+    {
+      "blob": "83888289cc2d44137276c70d1c9a44c55a22e91a",
+      "mode": "100755",
+      "path": "scripts/gigabrainctl.js",
+      "type": "blob"
+    },
+    {
+      "blob": "6b0898f8ae1fd42a9e1eb50a81039dca3185ed40",
+      "mode": "100755",
+      "path": "scripts/graph-build.js",
+      "type": "blob"
+    },
+    {
+      "blob": "f1f55fd102e2f23b03e6b942a3b6c4da962dd9be",
+      "mode": "100755",
+      "path": "scripts/harmonize-memory.js",
+      "type": "blob"
+    },
+    {
+      "blob": "3d9af899b61284513582a56b24a1c15dcbdd6041",
+      "mode": "100755",
+      "path": "scripts/migrate-v3.js",
+      "type": "blob"
+    },
+    {
+      "blob": "cb023cb58b1d91bcee4bc91879789a592560c255",
+      "mode": "100644",
+      "path": "scripts/package-smoke.js",
+      "type": "blob"
+    },
+    {
+      "blob": "247eb076bea1770ae2a8be29b37cdfb00e72d4bb",
+      "mode": "100644",
+      "path": "scripts/privacy-policy.mjs",
+      "type": "blob"
+    },
+    {
+      "blob": "9c53f484510a7ef3abf5bf10f246a599fec3c228",
+      "mode": "100644",
+      "path": "scripts/setup-first-run.js",
+      "type": "blob"
+    },
+    {
+      "blob": "156ab00725c34ce1800694e43368e2187cf4ad89",
+      "mode": "100644",
+      "path": "tests/helpers.js",
+      "type": "blob"
+    },
+    {
+      "blob": "e0f58794a6644f1e34da45d435c5b0e5d947a6b8",
+      "mode": "100644",
+      "path": "tests/integration-remote-mcp-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "c9c4bcd152eb56f5c3b517fca739b8eefe32cf15",
+      "mode": "100644",
+      "path": "tests/memory_api_security_test.py",
+      "type": "blob"
+    },
+    {
+      "blob": "ededcf8261660ee1a519858f1bd63ca311e63d02",
+      "mode": "100755",
+      "path": "tests/run-all.js",
+      "type": "blob"
+    },
+    {
+      "blob": "598acf7e95a25364a28056fabb944105a1ce8219",
+      "mode": "100644",
+      "path": "tests/unit-bitemporal-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "72f1664664423798044eaeb7bbade464f4d46799",
+      "mode": "100644",
+      "path": "tests/unit-bm25-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "4b1d52df6cdd0db9349fde175f4d95bdfbab2e2d",
+      "mode": "100644",
+      "path": "tests/unit-capture-service-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "8e62a1b3f64c64e6a0baea29f783ae30842fabb6",
+      "mode": "100644",
+      "path": "tests/unit-checkpoint-migration-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "c9d3dbc40dc5bd4521deec286b2d93cf41818d49",
+      "mode": "100644",
+      "path": "tests/unit-claim-promotion-auth-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "060e7c33e1aa26fe68cae74d78ab8ed5d4eb3fa3",
+      "mode": "100644",
+      "path": "tests/unit-cloud-inbox-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "059a982006c104a7577563e0ad833270a3dc252d",
+      "mode": "100644",
+      "path": "tests/unit-config-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "fe74a468ac285b5887590841ee3bd651766094c5",
+      "mode": "100644",
+      "path": "tests/unit-control-plane-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "58115d1845f59c8ae25a8533f512fc92de067da2",
+      "mode": "100644",
+      "path": "tests/unit-cross-store-merge-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "7814dbe2b9c7fd7c22a3f40f6ca5e1b293706533",
+      "mode": "100644",
+      "path": "tests/unit-event-store-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "d3be208789cef2b397b222109841527329f8d289",
+      "mode": "100644",
+      "path": "tests/unit-git-wiki-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "35abf1c352d8e46f887f27d6a754e0b559a8e356",
+      "mode": "100644",
+      "path": "tests/unit-handoff-pii-redaction-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "33813f6f6a2cc8c53ce50666f833f43a03a87dc2",
+      "mode": "100644",
+      "path": "tests/unit-host-memory-sync-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "2ec5e45533b2966f393ea283e704070108c709d1",
+      "mode": "100644",
+      "path": "tests/unit-http-routes-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "18a1cd1acd6d3b148d8a2a73e4fb1056f6bfcbe8",
+      "mode": "100644",
+      "path": "tests/unit-lifecycle-hooks-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "f283bbdfd1be1ddcb624ef8a1834e98c409dcef4",
+      "mode": "100644",
+      "path": "tests/unit-pii-scanner-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "a61b72f134b5cbd314c122c39cafde687761fe53",
+      "mode": "100644",
+      "path": "tests/unit-plugin-runtime-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "d9b3e864a3c10c143098bc95af81935123d74915",
+      "mode": "100644",
+      "path": "tests/unit-policy-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "2fd7285fea01db943187de27b87034f394afd35c",
+      "mode": "100644",
+      "path": "tests/unit-projection-store-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "edd7dde07d145bcfcc06325d0fb82d8e2b8079b7",
+      "mode": "100644",
+      "path": "tests/unit-public-mirror-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "975fe4c5e9cbd351da90c15bd1b6faa7e6d59e07",
+      "mode": "100644",
+      "path": "tests/unit-recall-service-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "4861ee664463fee02a98a4a12b24113fe02fb4ca",
+      "mode": "100644",
+      "path": "tests/unit-remote-mcp-auth-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "2e180903525375cda4ed5d6f4919e1a33c1b9a30",
+      "mode": "100644",
+      "path": "tests/unit-runtime-guard-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "ea9d5c9409e344694253f720dbe5e42a10f4907a",
+      "mode": "100644",
+      "path": "tests/unit-safe-boundaries-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "3e3ea9002b98f28cfb8cda0c0f362a158f4e7bef",
+      "mode": "100644",
+      "path": "tests/unit-sqlite-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "fef1e46c2afb508aff1344fcd7262657917da738",
+      "mode": "100644",
+      "path": "tests/unit-standalone-client-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "c7fa6609a0356b47eb4ebd27ac6a1293c8fc4cbf",
+      "mode": "100644",
+      "path": "tests/unit-transcript-harvester-test.js",
+      "type": "blob"
+    },
+    {
+      "blob": "e7b117415675e6b2d7df9ec57558e6c5e84d0d71",
+      "mode": "100644",
+      "path": "tests/unit-utility-hardening-test.js",
+      "type": "blob"
+    }
+  ],
+  "entryCount": 151,
+  "manifestSha256": "6472a6acecd11ac133b760383c921ddabcbb055a386e9255215abf1eb1e91bad",
+  "schemaVersion": 1
+}

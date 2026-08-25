@@ -1,0 +1,4261 @@
+{
+  "auditedBase": {
+    "commit": "ef624f97cc616a9e00b6df653eded455fbd30e01",
+    "tree": "2a7affea1439f4250bcf9a3078ecf0cb36cc3358"
+  },
+  "candidateChanges": [
+    {
+      "changeType": "added",
+      "contentSha256": "canonical-self",
+      "disposition": "operator_only",
+      "ownerTasks": [
+        "2A"
+      ],
+      "reason": "Canonical source-first policy map and forensic disposition ledger.",
+      "targetMode": "100644",
+      "targetPath": "config/migration/source-first-port-map.json",
+      "testGate": "canonical map schema and divergence fixture gate"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "07b2cf6901cd0f56d239c1bbff10acf99c34732592f2d2c99fdea2fedd4bab52",
+      "disposition": "operator_only",
+      "ownerTasks": [
+        "2A"
+      ],
+      "reason": "Exact path, mode, type, and blob allowlist for untouched upstream source.",
+      "targetMode": "100644",
+      "targetPath": "config/migration/upstream-source-allowlist.json",
+      "testGate": "upstream byte-identity and stale-row gate"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "26656a2cce4da509311ef9e6d3b2e6afdf7af1dba653f36411eb9bf8add7b5cb",
+      "disposition": "operator_only",
+      "ownerTasks": [
+        "1"
+      ],
+      "reason": "Audited release and package provenance for the clean compatibility base.",
+      "targetMode": "100644",
+      "targetPath": "docs/migration/v0.11-base-provenance.md",
+      "testGate": "provenance document and source SHA gate"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "42cb6e61fff22e53cdd2afe99ee375c3d46836f85172dfbc51ebf0d14831ad93",
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "1"
+      ],
+      "reason": "Task 1 compatibility-version metadata only; dependency semantics remain upstream-owned.",
+      "targetMode": "100644",
+      "targetPath": "package-lock.json",
+      "testGate": "package metadata semantic-delta and dual-toolchain gates"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "433a88c648f4f962d392df2212ef74aad8ce9a802356bea6eaea6f29620de636",
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "1"
+      ],
+      "reason": "Task 1 compatibility-version metadata only; package behavior remains upstream-owned.",
+      "targetMode": "100644",
+      "targetPath": "package.json",
+      "testGate": "package metadata semantic-delta and dual-toolchain gates"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "98b3ccc89f8f6688ef82dd9d2ac6006a279a4018fce13be313759107c107e40e",
+      "disposition": "operator_only",
+      "ownerTasks": [
+        "2A"
+      ],
+      "reason": "Fail-closed source-first policy guard; no runtime source behavior.",
+      "targetMode": "100644",
+      "targetPath": "scripts/check-source-first-divergence.mjs",
+      "testGate": "source-first divergence synthetic fixture matrix"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "882389cb639e9350833ad7bd2cbc862d8c9ed9fc9a92b6d00e5f74d615872068",
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2A"
+      ],
+      "reason": "Synthetic regression coverage for source-first policy failures.",
+      "targetMode": "100644",
+      "targetPath": "tests/source-first-divergence-test.js",
+      "testGate": "source-first divergence synthetic fixture matrix"
+    }
+  ],
+  "deployedCommits": [
+    {
+      "commit": "d6877de968baef117fd6a3b2621152a0008cc25d",
+      "contract": "governance and trust-control-plane positioning",
+      "criticality": "N",
+      "disposition": "retired",
+      "historicalDisposition": "Historical contract retained in Git provenance; old implementation is not a candidate source.",
+      "ownerTasks": [
+        "1",
+        "16"
+      ],
+      "reason": "Retire the old positioning prose and use the audited 0.11 documentation.",
+      "sequence": 1,
+      "sourcePaths": [
+        "README.md",
+        "docs/memory-passport.md",
+        "site/index.html"
+      ],
+      "testGate": "provenance/docs review and source SHA gate"
+    },
+    {
+      "commit": "77c3668d6a21b15a8682651c34bb0e2528b1c260",
+      "contract": "custom slot and host-trust documentation",
+      "criticality": "N",
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reconcile documentation and generated schema with canonical 0.11 trust fields.",
+      "sequence": 2,
+      "sourcePaths": [
+        "docs/configuration.md"
+      ],
+      "testGate": "schema/docs parity gate"
+    },
+    {
+      "commit": "5da6908495de1ff88ba3c22dfa5ebbdbca74472f",
+      "contract": "per-host ingest trust and deny-by-default all-scope export",
+      "criticality": "C",
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3",
+        "11"
+      ],
+      "reason": "Use upstream adaptive trust and retain only behavioral privacy coverage.",
+      "sequence": 3,
+      "sourcePaths": [
+        "lib/core/host-memory-sync.js",
+        "lib/core/host-trust.js",
+        "tests/run-all.js",
+        "tests/unit-host-trust-test.js"
+      ],
+      "testGate": "trust and scope compatibility fixtures"
+    },
+    {
+      "commit": "83943806904a888f6d4151953dc8671e2a620df3",
+      "contract": "integrity-checked Passport bundle",
+      "criticality": "M/C",
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "11"
+      ],
+      "reason": "Use upstream Handoff after fidelity validation; the old Passport is not a primary backup.",
+      "sequence": 4,
+      "sourcePaths": [
+        "lib/core/passport-bundle.js",
+        "lib/core/projection-store.js",
+        "scripts/gigabrainctl.js",
+        "tests/run-all.js",
+        "tests/unit-passport-bundle-test.js"
+      ],
+      "testGate": "Handoff fidelity and full-database-only migration gate"
+    },
+    {
+      "commit": "e5a95b09594f29f3e04b09c0708cb8ff8c932adf",
+      "contract": "config-driven custom world-model slots",
+      "criticality": "C",
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Use upstream custom-slot support and keep operator patterns outside source.",
+      "sequence": 5,
+      "sourcePaths": [
+        "lib/core/world-model.js",
+        "tests/unit-world-model-custom-slots-test.js"
+      ],
+      "testGate": "custom-slot privacy and schema fixtures"
+    },
+    {
+      "commit": "f14e2128b80aaa199b627c058dff2a1fe730a36a",
+      "contract": "deterministic deep-recall and leak gate",
+      "criticality": "C",
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve the quality contract as protected evaluation data and compatibility tests.",
+      "sequence": 6,
+      "sourcePaths": [
+        ".gitignore",
+        "eval/baseline.json",
+        "eval/run-deep-recall-eval.js",
+        "tests/integration-eval-gate-test.js",
+        "tests/run-all.js"
+      ],
+      "testGate": "23-of-23 deterministic recall and zero-leak gates"
+    },
+    {
+      "commit": "e5f63d115acd42d68848ab630dcc2c3d536ebb47",
+      "contract": "belief-trust test registration",
+      "criticality": "N",
+      "disposition": "retired",
+      "historicalDisposition": "Historical contract retained in Git provenance; old implementation is not a candidate source.",
+      "ownerTasks": [
+        "2",
+        "3",
+        "11"
+      ],
+      "reason": "The registration-only change is superseded by upstream arbitration coverage.",
+      "sequence": 7,
+      "sourcePaths": [
+        "tests/run-all.js",
+        "tests/unit-belief-trust-test.js"
+      ],
+      "testGate": "belief/custom-slot inventory and arbitration gates"
+    },
+    {
+      "commit": "cee6c263ce4f1aee0c7465340d75cdb23a602fd4",
+      "contract": "belief host-trust scoring and source propagation",
+      "criticality": "C",
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "2",
+        "3",
+        "11"
+      ],
+      "reason": "Use upstream arbitration and adaptive trust while validating equivalent provenance.",
+      "sequence": 8,
+      "sourcePaths": [
+        "lib/core/world-model.js"
+      ],
+      "testGate": "belief/custom-slot inventory and arbitration gates"
+    },
+    {
+      "commit": "4d1abc3408ee4af6ac3c2337854de5a023eb61ce",
+      "contract": "custom-slot test registration",
+      "criticality": "N",
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "3",
+        "11"
+      ],
+      "reason": "Preserve exact test ownership in the complete private inventory.",
+      "sequence": 9,
+      "sourcePaths": [
+        "tests/run-all.js"
+      ],
+      "testGate": "belief/custom-slot inventory and arbitration gates"
+    },
+    {
+      "commit": "b009e0c3f732814a536575d4fa805279553fd2e5",
+      "contract": "explicit allowAllScopes through CLI, MCP, and Codex",
+      "criticality": "C",
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "2",
+        "11"
+      ],
+      "reason": "Retain upstream all-scope behavior and port the deny-by-default contract tests.",
+      "sequence": 10,
+      "sourcePaths": [
+        "lib/core/codex-mcp.js",
+        "lib/core/codex-service.js",
+        "scripts/gigabrainctl.js"
+      ],
+      "testGate": "all-scope deny/default packaged tests"
+    },
+    {
+      "commit": "b3118255a7f579181c0493bb9617c38297306ee3",
+      "contract": "packaged all-scope privacy coverage",
+      "criticality": "N/C",
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "11"
+      ],
+      "reason": "Transplant the packaged privacy regression without copying runtime code.",
+      "sequence": 11,
+      "sourcePaths": [
+        "tests/integration-packaged-sync-hosts-test.js"
+      ],
+      "testGate": "all-scope deny/default packaged tests"
+    },
+    {
+      "commit": "71d619fa17e5d987b109d387b5d3a1ac76bb3675",
+      "contract": "dependency fixes",
+      "criticality": "C historical",
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "1",
+        "13"
+      ],
+      "reason": "Discard the old lockfile and retain 0.11 dependencies plus current audits.",
+      "sequence": 12,
+      "sourcePaths": [
+        "package-lock.json"
+      ],
+      "testGate": "dependency lock/audit and dual-toolchain gates"
+    },
+    {
+      "commit": "44aff21f3e7937e7b8fd07b5b9798b2f59d04329",
+      "contract": "traversal, injection, and prototype-pollution hardening",
+      "criticality": "C",
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "2",
+        "5"
+      ],
+      "reason": "Retain upstream safe boundaries and port only regression fixtures.",
+      "sequence": 13,
+      "sourcePaths": [
+        "lib/core/event-store.js",
+        "lib/core/http-routes.js",
+        "lib/core/memory-actions.js",
+        "lib/core/native-memory.js",
+        "lib/core/native-promotion.js",
+        "lib/core/projection-store.js",
+        "lib/core/review-queue.js"
+      ],
+      "testGate": "safe-boundary and audit-hardening regressions"
+    },
+    {
+      "commit": "239bc7048b233061e3adc5cd95e7aae44ad7dc62",
+      "contract": "workspace identity, self-reference, and compound entities",
+      "criticality": "C",
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "2",
+        "3",
+        "6A",
+        "14"
+      ],
+      "reason": "Prefer upstream identity/entity behavior and compare it on current fixtures.",
+      "sequence": 14,
+      "sourcePaths": [
+        "lib/core/orchestrator.js",
+        "lib/core/person-service.js",
+        "lib/core/workspace-identity.js",
+        "lib/core/world-model.js",
+        "tests/unit-orchestrator-test.js"
+      ],
+      "testGate": "workspace identity, compound entity, and scope matrix"
+    },
+    {
+      "commit": "8f8ca93e357cb10712fac75de3a9c6c7e924e6c7",
+      "contract": "durable MEMORY.md writes after containment hardening",
+      "criticality": "PC",
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Preserve the allowed-root writer contract through focused native writer tests.",
+      "sequence": 15,
+      "sourcePaths": [
+        "lib/core/native-memory.js"
+      ],
+      "testGate": "native writer containment gate"
+    },
+    {
+      "commit": "6038461dc2c2fa64cf88edad1d1cb99765018dab",
+      "contract": "Memory API projection sync and document indexing",
+      "criticality": "PC",
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Forward-port the projection contract onto the 0.11 Memory API.",
+      "sequence": 16,
+      "sourcePaths": [
+        "memory_api/app.py"
+      ],
+      "testGate": "Node/Python projection, document, and API coherence gate"
+    },
+    {
+      "commit": "62ec7b69b7762aa6284537faee7b9395ca8fddae",
+      "contract": "document index provider and store hardening",
+      "criticality": "M/C",
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Retain only provider and path behavior relevant to the live contract.",
+      "sequence": 17,
+      "sourcePaths": [
+        "memory_api/app.py"
+      ],
+      "testGate": "Node/Python projection, document, and API coherence gate"
+    },
+    {
+      "commit": "48d99770c0f600d6216d1ebbdf8a6a6703c7c081",
+      "contract": "OpenAI-compatible embedding configuration",
+      "criticality": "M",
+      "disposition": "retired",
+      "historicalDisposition": "Historical contract retained in Git provenance; old implementation is not a candidate source.",
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Keep loopback Ollama and retire the old remote embedding-provider implementation.",
+      "sequence": 18,
+      "sourcePaths": [
+        "lib/core/config.js",
+        "lib/core/embedding-service.js",
+        "openclaw.plugin.json"
+      ],
+      "testGate": "Node/Python projection, document, and API coherence gate"
+    },
+    {
+      "commit": "07e3b04d614f3d6d818b3a3ed86d6216edfbc6f5",
+      "contract": "modern before_prompt_build and OpenClaw document-index alignment",
+      "criticality": "PC",
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Preserve the modern hook through the 0.11 compatibility adapter and reject deprecated hooks.",
+      "sequence": 19,
+      "sourcePaths": [
+        "index.ts",
+        "memory_api/.env.example",
+        "memory_api/README.md",
+        "memory_api/app.py",
+        "tests/integration-openclaw-hooks-test.js"
+      ],
+      "testGate": "Node/Python projection, document, and API coherence gate"
+    },
+    {
+      "commit": "63578bf174fc587aa7f32e6eeed762ec6dd22536",
+      "contract": "document storage and index health paths",
+      "criticality": "M/C",
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Port the targeted health behavior onto current API paths.",
+      "sequence": 20,
+      "sourcePaths": [
+        "memory_api/app.py"
+      ],
+      "testGate": "Node/Python projection, document, and API coherence gate"
+    },
+    {
+      "commit": "79a2f643a133b4689da8003fc911265a612db0fb",
+      "contract": "per-memory timeline route and package metadata",
+      "criticality": "C",
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Use upstream timeline support and preserve private-source package coverage.",
+      "sequence": 21,
+      "sourcePaths": [
+        "README.md",
+        "lib/core/http-routes.js",
+        "memory_api/README.md",
+        "package.json",
+        "tests/run-all.js",
+        "tests/unit-http-routes-test.js",
+        "tests/unit-package-metadata-test.js"
+      ],
+      "testGate": "Node/Python projection, document, and API coherence gate"
+    },
+    {
+      "commit": "795ffac1833450fa0be2fc8ec17e1fd3fa9a2f8a",
+      "contract": "stale promoted-native reconciliation",
+      "criticality": "PC",
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Port reconciliation with an owned red/green regression.",
+      "sequence": 22,
+      "sourcePaths": [
+        "lib/core/maintenance-service.js",
+        "lib/core/native-promotion.js",
+        "tests/regression-native-promotion-reconcile-test.js",
+        "tests/run-all.js",
+        "tests/unit-native-promotion-test.js"
+      ],
+      "testGate": "Node/Python projection, document, and API coherence gate"
+    },
+    {
+      "commit": "72a8bca4d0cb24a115bf40a45f4c2123aecf23b5",
+      "contract": "recursive capture parsing and Memory API admin paths",
+      "criticality": "C",
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Compare upstream first and patch only proven missing cases.",
+      "sequence": 23,
+      "sourcePaths": [
+        "README.md",
+        "lib/core/capture-service.js",
+        "memory_api/README.md",
+        "memory_api/app.py"
+      ],
+      "testGate": "Node/Python projection, document, and API coherence gate"
+    },
+    {
+      "commit": "35884c10e161dec96bbf3e50c347bf5bd095b0ea",
+      "contract": "bounded recall-explain proxy timeout",
+      "criticality": "M",
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Retain the bounded API timeout as an isolated setting with a test.",
+      "sequence": 24,
+      "sourcePaths": [
+        "memory_api/README.md",
+        "memory_api/app.py"
+      ],
+      "testGate": "Node/Python projection, document, and API coherence gate"
+    },
+    {
+      "commit": "f251fda5b98395e75fb7b547e28025aff2758ed9",
+      "contract": "typed native metadata and memory_type",
+      "criticality": "PC",
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "5",
+        "6A"
+      ],
+      "reason": "Manually port additive typed metadata onto the 0.11 native pipeline.",
+      "sequence": 25,
+      "sourcePaths": [
+        "lib/core/native-memory.js",
+        "lib/core/native-metadata.js",
+        "lib/core/native-promotion.js",
+        "lib/core/native-sync.js",
+        "tests/unit-native-promotion-test.js"
+      ],
+      "testGate": "metadata, gate, reconcile, and compound taxonomy fixtures"
+    },
+    {
+      "commit": "4aaba7245b2a4fbd5196df1cbbd11dbad8274489",
+      "contract": "compound-project canonicalization",
+      "criticality": "C",
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "5",
+        "6A"
+      ],
+      "reason": "Port behavioral fixtures and retain upstream logic instead of copying regexes.",
+      "sequence": 26,
+      "sourcePaths": [
+        "lib/core/person-service.js",
+        "tests/unit-person-service-test.js",
+        "tests/unit-world-model-test.js"
+      ],
+      "testGate": "metadata, gate, reconcile, and compound taxonomy fixtures"
+    },
+    {
+      "commit": "27f7845a1f63f3981b80ea6786964dc241ca1632",
+      "contract": "strict section-heading type inference",
+      "criticality": "C",
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "5",
+        "6A"
+      ],
+      "reason": "Preserve type inference through promotion fixtures.",
+      "sequence": 27,
+      "sourcePaths": [
+        "lib/core/native-promotion.js",
+        "tests/unit-native-promotion-test.js"
+      ],
+      "testGate": "metadata, gate, reconcile, and compound taxonomy fixtures"
+    },
+    {
+      "commit": "1a434d1ffc83690f15584e19528bc2d3d9e45b43",
+      "contract": "main to profile:main normalization",
+      "criticality": "PC",
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "5",
+        "6A"
+      ],
+      "reason": "Apply canonical scope normalization at every compatibility boundary.",
+      "sequence": 28,
+      "sourcePaths": [
+        "index.ts",
+        "tests/integration-openclaw-hooks-test.js"
+      ],
+      "testGate": "metadata, gate, reconcile, and compound taxonomy fixtures"
+    },
+    {
+      "commit": "006a69f6498500a88eec551af709b6cef82c403a",
+      "contract": "native duplicate suppression on capture",
+      "criticality": "PC",
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "5",
+        "6A"
+      ],
+      "reason": "Preserve duplicate suppression through native writer tests.",
+      "sequence": 29,
+      "sourcePaths": [
+        "lib/core/capture-service.js",
+        "tests/unit-capture-service-test.js"
+      ],
+      "testGate": "metadata, gate, reconcile, and compound taxonomy fixtures"
+    },
+    {
+      "commit": "e703afa0183a08c21775529ae5527a341bb9b167",
+      "contract": "trailing section-heading reuse",
+      "criticality": "M/C",
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "5",
+        "6A"
+      ],
+      "reason": "Preserve readable append-only native output.",
+      "sequence": 30,
+      "sourcePaths": [
+        "lib/core/native-memory.js",
+        "tests/unit-capture-service-test.js",
+        "tests/unit-codex-service-test.js"
+      ],
+      "testGate": "metadata, gate, reconcile, and compound taxonomy fixtures"
+    },
+    {
+      "commit": "cf71345fc232c0041b755d6a553542123c1e7d33",
+      "contract": "exact verification and native lookup ranking",
+      "criticality": "C",
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "2",
+        "6A",
+        "14"
+      ],
+      "reason": "Translate golden fixtures onto the 0.11 Borda, RRF, and relevance-floor pipeline.",
+      "sequence": 31,
+      "sourcePaths": [
+        "lib/core/person-service.js",
+        "lib/core/recall-service.js",
+        "tests/unit-recall-service-test.js"
+      ],
+      "testGate": "verification and native-recall golden queries"
+    },
+    {
+      "commit": "d1314cae8eac6887a6ad79af331f9c1abc2f32fc",
+      "contract": "OpenClaw memory runtime, CLI, hygiene, scoped recall, and review integration",
+      "criticality": "PC/C",
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "3",
+        "4",
+        "5",
+        "7",
+        "8",
+        "9",
+        "10"
+      ],
+      "reason": "Split the contract into focused compatibility modules; never bulk cherry-pick the implementation.",
+      "sequence": 32,
+      "sourcePaths": [
+        "index.ts",
+        "lib/core/capture-service.js",
+        "lib/core/config.js",
+        "lib/core/hygiene-migration.js",
+        "lib/core/maintenance-service.js",
+        "lib/core/memory-actions.js",
+        "lib/core/native-sync.js",
+        "lib/core/openclaw-memory-cli.js",
+        "lib/core/openclaw-memory-runtime.js",
+        "lib/core/orchestrator.js",
+        "lib/core/person-service.js",
+        "lib/core/projection-store.js",
+        "lib/core/queue-review-service.js",
+        "lib/core/recall-service.js",
+        "lib/core/review-queue.js",
+        "lib/core/world-model.js",
+        "openclaw.plugin.json",
+        "scripts/gigabrain-hygiene-20260425.js",
+        "scripts/gigabrainctl.js",
+        "tests/helpers.js",
+        "tests/run-all.js",
+        "tests/unit-capture-service-test.js",
+        "tests/unit-config-test.js",
+        "tests/unit-hygiene-migration-test.js",
+        "tests/unit-native-sync-query-test.js",
+        "tests/unit-orchestrator-test.js",
+        "tests/unit-projection-store-test.js",
+        "tests/unit-queue-review-service-test.js",
+        "tests/unit-world-model-test.js"
+      ],
+      "testGate": "full OpenClaw, native, review, and surface compatibility suite"
+    },
+    {
+      "commit": "a860c333a1bce6aff5395402276b47c379036545",
+      "contract": "auto-capture, memory LLM, flush resolver, queue review, and embeddings CLI",
+      "criticality": "PC",
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "4",
+        "6",
+        "7",
+        "8"
+      ],
+      "reason": "Reimplement bounded compatibility services around the 0.11 core.",
+      "sequence": 33,
+      "sourcePaths": [
+        "index.ts",
+        "lib/core/auto-capture-service.js",
+        "lib/core/capture-service.js",
+        "lib/core/config.js",
+        "lib/core/embedding-service.js",
+        "lib/core/hygiene-migration.js",
+        "lib/core/llm-router.js",
+        "lib/core/maintenance-service.js",
+        "lib/core/memory-llm-client.js",
+        "lib/core/native-promotion.js",
+        "lib/core/native-sync.js",
+        "lib/core/openclaw-memory-runtime.js",
+        "lib/core/orchestrator.js",
+        "lib/core/queue-review-service.js",
+        "lib/core/recall-service.js",
+        "lib/core/vault-mirror.js",
+        "openclaw.plugin.json",
+        "scripts/auto-capture-worker.js",
+        "scripts/gigabrainctl.js",
+        "tests/integration-openclaw-hooks-test.js",
+        "tests/regression-native-promotion-reconcile-test.js",
+        "tests/run-all.js",
+        "tests/unit-auto-capture-service-test.js",
+        "tests/unit-config-test.js",
+        "tests/unit-embedding-service-test.js",
+        "tests/unit-hygiene-migration-test.js",
+        "tests/unit-memory-llm-client-test.js",
+        "tests/unit-openclaw-memory-runtime-test.js",
+        "tests/unit-orchestrator-test.js",
+        "tests/unit-queue-review-service-test.js"
+      ],
+      "testGate": "flush, embedding, capture, provider, queue, and surface gates"
+    },
+    {
+      "commit": "5735e239a2a73f31127f611f6b61b0336c35d87a",
+      "contract": "archive summaries routed outside native sources",
+      "criticality": "C",
+      "disposition": "operator_only",
+      "ownerTasks": [
+        "10"
+      ],
+      "reason": "Keep generated summaries outside every native-promotion source glob.",
+      "sequence": 34,
+      "sourcePaths": [
+        "lib/core/maintenance-service.js"
+      ],
+      "testGate": "generated-output exclusion and nightly gate"
+    },
+    {
+      "commit": "a1ba817f5951cbeca4438f3c58f9c7a4b0c53434",
+      "contract": "scope-specific prelude, forced event scope, and shared review-only",
+      "criticality": "PC",
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "3",
+        "4",
+        "7"
+      ],
+      "reason": "Preserve the exact privacy contract in the compatibility scope policy.",
+      "sequence": 35,
+      "sourcePaths": [
+        "index.ts",
+        "lib/core/auto-capture-service.js",
+        "lib/core/memory-llm-client.js",
+        "tests/integration-openclaw-hooks-test.js",
+        "tests/unit-auto-capture-service-test.js"
+      ],
+      "testGate": "scope, prelude, and auto-capture privacy fixtures"
+    },
+    {
+      "commit": "0141286d4ee476ab36a0259692b59ccd4c252d68",
+      "contract": "generated production JavaScript and taxonomy cleanup",
+      "criticality": "PC/C",
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "4",
+        "6A"
+      ],
+      "reason": "Replace the hand-maintained runtime blob with deterministic build parity.",
+      "sequence": 36,
+      "sourcePaths": [
+        "index.js",
+        "lib/core/world-model.js",
+        "package.json",
+        "scripts/build-runtime-js.js",
+        "tests/unit-world-model-test.js"
+      ],
+      "testGate": "deterministic index.js build and taxonomy/entity parity"
+    },
+    {
+      "commit": "eeee97350ff3dbc1d30dfbe994e26b6c971b508c",
+      "contract": "Memory API runtime validation and surface-drift health",
+      "criticality": "PC/C",
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "8",
+        "9",
+        "10"
+      ],
+      "reason": "Port health behavior through current API and generated-surface modules.",
+      "sequence": 37,
+      "sourcePaths": [
+        "lib/core/vault-mirror.js",
+        "memory_api/app.py",
+        "scripts/gigabrainctl.js"
+      ],
+      "testGate": "surface drift, API path, and doctor-read tests"
+    },
+    {
+      "commit": "85c91367b65ed8b8323bd54f96d2ac8e5d413f58",
+      "contract": "Paperclip wake sanitization and recall/capture quality",
+      "criticality": "C",
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "2",
+        "6A",
+        "7",
+        "14"
+      ],
+      "reason": "Translate synthetic behavior fixtures and do not restore verbose payload logging.",
+      "sequence": 38,
+      "sourcePaths": [
+        "index.js",
+        "lib/core/auto-capture-service.js",
+        "lib/core/person-service.js",
+        "lib/core/recall-service.js",
+        "lib/core/world-model.js",
+        "tests/unit-auto-capture-service-test.js",
+        "tests/unit-orchestrator-test.js",
+        "tests/unit-person-service-test.js"
+      ],
+      "testGate": "Paperclip wake/noise, entity, and recall quality fixtures"
+    },
+    {
+      "commit": "e5e1d9a03d2e96a8241e64f56412cdc48cbf4f52",
+      "contract": "durable auto-capture queue state, retry, and packet scrubbing",
+      "criticality": "PC",
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "7"
+      ],
+      "reason": "Preserve the queue contract with crash, concurrency, and no-op coverage.",
+      "sequence": 39,
+      "sourcePaths": [
+        "lib/core/auto-capture-service.js",
+        "scripts/auto-capture-worker.js",
+        "tests/unit-auto-capture-service-test.js"
+      ],
+      "testGate": "queue crash, retry, stale, and packet-scrub tests"
+    },
+    {
+      "commit": "73043dde41606008eeefb361bd7e578e93666c41",
+      "contract": "configurable stale-processing threshold",
+      "criticality": "M/C",
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "7"
+      ],
+      "reason": "Retain the threshold in generated schema and worker tests.",
+      "sequence": 40,
+      "sourcePaths": [
+        "lib/core/config.js",
+        "openclaw.plugin.json"
+      ],
+      "testGate": "queue crash, retry, stale, and packet-scrub tests"
+    },
+    {
+      "commit": "12e08e337475289bfacf3b4e04057c8b4ca10e81",
+      "contract": "post-mutation surface refresh",
+      "criticality": "PC",
+      "disposition": "operator_only",
+      "ownerTasks": [
+        "8"
+      ],
+      "reason": "Preserve mutation-only refresh and forbid writes on status/no-op paths.",
+      "sequence": 41,
+      "sourcePaths": [
+        "lib/core/surface-refresh-service.js",
+        "scripts/auto-capture-worker.js",
+        "scripts/gigabrainctl.js",
+        "tests/run-all.js",
+        "tests/unit-surface-refresh-service-test.js"
+      ],
+      "testGate": "mutation-only refresh and no-op hash gate"
+    },
+    {
+      "commit": "9843d5d8ccd96beb7b5f1bdcf1cbded441a1fa28",
+      "contract": "Qwen3 2,560-dimension embeddings and query instruction",
+      "criticality": "PC",
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "6"
+      ],
+      "reason": "Preserve exact model identity, instruction, dimensions, and cache validation.",
+      "sequence": 42,
+      "sourcePaths": [
+        "eval/golden-seed.js",
+        "lib/core/config.js",
+        "lib/core/embedding-service.js",
+        "openclaw.plugin.json",
+        "scripts/gigabrainctl.js",
+        "tests/unit-embedding-service-test.js"
+      ],
+      "testGate": "Qwen identity, dimension, and live-local smoke gate"
+    },
+    {
+      "commit": "9ddf95ce12bab1fd6ddf830997bc62da15481b40",
+      "contract": "compaction flush boundaries and typed prompt metadata",
+      "criticality": "PC",
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "5",
+        "7"
+      ],
+      "reason": "Preserve flush planning and auto-capture exclusion through the adapter.",
+      "sequence": 43,
+      "sourcePaths": [
+        "docs/configuration.md",
+        "index.ts",
+        "lib/core/auto-capture-service.js",
+        "lib/core/capture-service.js",
+        "lib/core/config.js",
+        "lib/core/native-promotion.js",
+        "scripts/auto-capture-worker.js",
+        "tests/integration-openclaw-hooks-test.js",
+        "tests/unit-auto-capture-service-test.js",
+        "tests/unit-config-test.js",
+        "tests/unit-native-promotion-test.js"
+      ],
+      "testGate": "flush exclusion and daily metadata gate/reconcile tests"
+    },
+    {
+      "commit": "d445804242589fd6a4a7809b461b17ec4f8b850f",
+      "contract": "daily metadata gate on promotion and reconciliation",
+      "criticality": "PC",
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "5",
+        "7"
+      ],
+      "reason": "Manually port the fail-closed metadata gate before native sync.",
+      "sequence": 44,
+      "sourcePaths": [
+        "lib/core/config.js",
+        "lib/core/maintenance-service.js",
+        "lib/core/native-promotion.js",
+        "openclaw.plugin.json",
+        "tests/unit-native-promotion-test.js"
+      ],
+      "testGate": "flush exclusion and daily metadata gate/reconcile tests"
+    },
+    {
+      "commit": "9796ca9bcb2aad9a08fbdc0666eaac53252f9a9d",
+      "contract": "symlink, path, and review-queue audit hardening",
+      "criticality": "C",
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "2",
+        "5"
+      ],
+      "reason": "Retain upstream hardening and port only regression cases.",
+      "sequence": 45,
+      "sourcePaths": [
+        "lib/core/native-memory.js",
+        "lib/core/review-queue.js",
+        "tests/run-all.js",
+        "tests/unit-audit-hardening-regression-test.js"
+      ],
+      "testGate": "symlink, path, and prototype-pollution regressions"
+    },
+    {
+      "commit": "111f22c9cca1c1bc0fa5e34b007e0bf805fd32cd",
+      "contract": "regenerated production entry",
+      "criticality": "PC build state",
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Replace the historical blob with a deterministic packed-entry parity gate.",
+      "sequence": 46,
+      "sourcePaths": [
+        "index.js"
+      ],
+      "testGate": "deterministic index.js rebuild and packed-entry parity"
+    },
+    {
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "contract": "shared cross-process native-memory lock",
+      "criticality": "PC",
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Preserve and harden locking with cross-runtime concurrency tests.",
+      "sequence": 47,
+      "sourcePaths": [
+        "lib/core/native-memory.js"
+      ],
+      "testGate": "Node/Node and Node/Python lock concurrency gate"
+    }
+  ],
+  "deployedFiles": [
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Rebuild development workflow coverage from the audited 0.11 branch rather than copying old metadata.",
+      "sourceBlob": "69658848ad4d3a601ecc6c44e1e1883a89c9e3a1",
+      "sourceMode": "100644",
+      "sourcePath": ".github/CODEOWNERS",
+      "targetPath": ".github/CODEOWNERS",
+      "testGate": "dual-toolchain CI and workflow inventory gate (Task 2)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "274fbd9a0227e9eb856fd16ad61e54af2ffbbe01",
+      "sourceMode": "100644",
+      "sourcePath": ".github/ISSUE_TEMPLATE/bug_report.yml",
+      "targetPath": ".github/ISSUE_TEMPLATE/bug_report.yml",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "99529b5f722b4c3c0b9afcf1e290e742eb8f6d47",
+      "sourceMode": "100644",
+      "sourcePath": ".github/ISSUE_TEMPLATE/config.yml",
+      "targetPath": ".github/ISSUE_TEMPLATE/config.yml",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "a79e6bcfd27a1a96bd4968339cf3f011b51ccf28",
+      "sourceMode": "100644",
+      "sourcePath": ".github/ISSUE_TEMPLATE/feature_request.yml",
+      "targetPath": ".github/ISSUE_TEMPLATE/feature_request.yml",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "0f595405fc2911d455aa7c5af393ab70001f9c9c",
+      "sourceMode": "100644",
+      "sourcePath": ".github/pull_request_template.md",
+      "targetPath": ".github/pull_request_template.md",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "535b43ae75f64f9008d154396f6db3a2ad6bf5ab",
+      "sourceMode": "100644",
+      "sourcePath": ".github/workflows/ci.yml",
+      "targetPath": ".github/workflows/ci.yml",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "ab0b1ff66263a00a926566215a2bcb6ed0af8a4c",
+      "sourceMode": "100644",
+      "sourcePath": ".gitignore",
+      "targetPath": ".gitignore",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "42e0d869e81df41bd3c2981bafb9a2bb1bbb1606",
+      "sourceMode": "100644",
+      "sourcePath": "CHANGELOG.md",
+      "targetPath": "CHANGELOG.md",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "ffc119204c3fe14ee57339ee3fa1a1fb429c7540",
+      "sourceMode": "100644",
+      "sourcePath": "CODE_OF_CONDUCT.md",
+      "targetPath": "CODE_OF_CONDUCT.md",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "0bcdf8e26d7d9061c45e43a4a3869a51d2047d37",
+      "sourceMode": "100644",
+      "sourcePath": "CONTRIBUTING.md",
+      "targetPath": "CONTRIBUTING.md",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "eea27923b26d8449e0b7e50440cd64469b651b3b",
+      "sourceMode": "100644",
+      "sourcePath": "LICENSE",
+      "targetPath": "LICENSE",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "296b3cffa157beb1267f4d4b47f1228ec1dc44f5",
+      "sourceMode": "100644",
+      "sourcePath": "README.md",
+      "targetPath": "README.md",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "e3045f3055e30476750417463e0e86f70ad665e4",
+      "sourceMode": "100644",
+      "sourcePath": "SECURITY.md",
+      "targetPath": "SECURITY.md",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "ec4ac3e2d3d85526608d8e84c84e926ef18b498c",
+      "sourceMode": "100644",
+      "sourcePath": "bench/memorybench/README.md",
+      "targetPath": "bench/memorybench/README.md",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "299ec81167f5f13a4632d3a5ae039e7b1cf3a0a1",
+      "sourceMode": "100755",
+      "sourcePath": "bench/memorybench/compare.js",
+      "targetPath": "bench/memorybench/compare.js",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "e86173d33fe9667c3ab44d98f3cf9b9c1b1ed697",
+      "sourceMode": "100644",
+      "sourcePath": "bench/memorybench/install-official-provider.js",
+      "targetPath": "bench/memorybench/install-official-provider.js",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "063e20b101e054dff0dff9a0557c53738f719d7c",
+      "sourceMode": "100644",
+      "sourcePath": "bench/memorybench/memory-studio-lib.js",
+      "targetPath": "bench/memorybench/memory-studio-lib.js",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "fa28db41441b5f42749cc43cc283e7ac20141505",
+      "sourceMode": "100644",
+      "sourcePath": "bench/memorybench/memory-studio-presets.json",
+      "targetPath": "bench/memorybench/memory-studio-presets.json",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "a8bd21c99a7697d273771cd5d262841c474117aa",
+      "sourceMode": "100644",
+      "sourcePath": "bench/memorybench/memory-studio-program.md",
+      "targetPath": "bench/memorybench/memory-studio-program.md",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "8a51cd81dc92db4f0247ea9d3f3b75724c897b86",
+      "sourceMode": "100644",
+      "sourcePath": "bench/memorybench/provider/gigabrain/index.ts",
+      "targetPath": "bench/memorybench/provider/gigabrain/index.ts",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "4fe68c0fcd07c44871170f06c2c1432d5d46f8c6",
+      "sourceMode": "100644",
+      "sourcePath": "bench/memorybench/provider/gigabrain/prompts.ts",
+      "targetPath": "bench/memorybench/provider/gigabrain/prompts.ts",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "92aca9300265804c5f4df9589ec8be0b6e2f862a",
+      "sourceMode": "100755",
+      "sourcePath": "bench/memorybench/run-official-memorybench.js",
+      "targetPath": "bench/memorybench/run-official-memorybench.js",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "5cf08c96a01c5c5ad51f12b1fa45a8b43a766496",
+      "sourceMode": "100755",
+      "sourcePath": "bench/memorybench/run.js",
+      "targetPath": "bench/memorybench/run.js",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "operator_only",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Preserve useful private operational context while reconciling it with 0.11 documentation.",
+      "sourceBlob": "92fd5fd7406744ced907a5fdf3b19eb93ebdeb7e",
+      "sourceMode": "100644",
+      "sourcePath": "docs/architecture/v3-lean-overhaul.md",
+      "targetPath": "docs/architecture/v3-lean-overhaul.md",
+      "testGate": "documentation provenance and package-exclusion review gate"
+    },
+    {
+      "disposition": "operator_only",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Preserve useful private operational context while reconciling it with 0.11 documentation.",
+      "sourceBlob": "8b137891791fe96927ad78e64b0aad7bded08bdc",
+      "sourceMode": "100644",
+      "sourcePath": "docs/assets/.gitkeep",
+      "targetPath": "docs/assets/.gitkeep",
+      "testGate": "documentation provenance and package-exclusion review gate"
+    },
+    {
+      "disposition": "operator_only",
+      "ownerTasks": [
+        "3",
+        "12"
+      ],
+      "reason": "Preserve as an operator runbook or private integration document, not public runtime source.",
+      "sourceBlob": "05354b47a116e827bb0809ae281cb7e0bde62dd4",
+      "sourceMode": "100644",
+      "sourcePath": "docs/audits/destination-audit-2026-05.md",
+      "targetPath": "docs/audits/destination-audit-2026-05.md",
+      "testGate": "operator documentation and package-exclusion review gate"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "6079232ea97fc385a879964a4a1a3b87422b6fd5",
+      "sourceMode": "100644",
+      "sourcePath": "docs/configuration.md",
+      "targetPath": "docs/configuration.md",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "operator_only",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Preserve useful private operational context while reconciling it with 0.11 documentation.",
+      "sourceBlob": "76b5123b2323bf7ffa762bfc84d135a68589d78a",
+      "sourceMode": "100644",
+      "sourcePath": "docs/cross-memory-pivot-2026-04.md",
+      "targetPath": "docs/cross-memory-pivot-2026-04.md",
+      "testGate": "documentation provenance and package-exclusion review gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "df09416096fb64b057370830458feceecc984425",
+      "sourceMode": "100644",
+      "sourcePath": "docs/launch/gtm-brief.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "6641e525f14c2aa31b9f075d3905cf9e3f923315",
+      "sourceMode": "100644",
+      "sourcePath": "docs/launch/pilot-offer.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "11869c728de96bb33fd15e650879d711bdad34c2",
+      "sourceMode": "100644",
+      "sourcePath": "docs/launch/x-posts.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "19e45a52b5fcb1dde7e5ef9200f738cff84940c5",
+      "sourceMode": "100644",
+      "sourcePath": "docs/maintenance.md",
+      "targetPath": "docs/maintenance.md",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "operator_only",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Preserve useful private operational context while reconciling it with 0.11 documentation.",
+      "sourceBlob": "f49cfd35ec7d736d1f91ecf0e7c15a33207dddca",
+      "sourceMode": "100644",
+      "sourcePath": "docs/memory-passport.md",
+      "targetPath": "docs/memory-passport.md",
+      "testGate": "documentation provenance and package-exclusion review gate"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "9a0fb5d7b7bbc0ca52931ce3eba3f75548e6b641",
+      "sourceMode": "100644",
+      "sourcePath": "docs/memory-protocol.md",
+      "targetPath": "docs/memory-protocol.md",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "operator_only",
+      "ownerTasks": [
+        "3",
+        "12"
+      ],
+      "reason": "Preserve as an operator runbook or private integration document, not public runtime source.",
+      "sourceBlob": "4e1b3b201e0e1fff73207a04a855c9fa7bd7a729",
+      "sourceMode": "100644",
+      "sourcePath": "docs/nimbus-memory-bridge.md",
+      "targetPath": "docs/nimbus-memory-bridge.md",
+      "testGate": "operator documentation and package-exclusion review gate"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "f4a9f89f4363e4a427dbc079a0734f40cccf4159",
+      "sourceMode": "100644",
+      "sourcePath": "docs/obsidian.md",
+      "targetPath": "docs/obsidian.md",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "operator_only",
+      "ownerTasks": [
+        "3",
+        "12"
+      ],
+      "reason": "Preserve as an operator runbook or private integration document, not public runtime source.",
+      "sourceBlob": "c28510055b6314984305f07c878d18bcefb70671",
+      "sourceMode": "100644",
+      "sourcePath": "docs/ops/gigabrain-jobs.md",
+      "targetPath": "docs/ops/gigabrain-jobs.md",
+      "testGate": "operator documentation and package-exclusion review gate"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "021c66ddab75bcb69f07db9e044ae832ef36b24b",
+      "sourceMode": "100644",
+      "sourcePath": "docs/recall.md",
+      "targetPath": "docs/recall.md",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "c5cae875aa846e4d498117c42d5e59caecae55f8",
+      "sourceMode": "100644",
+      "sourcePath": "docs/release/v0.7.1-batchlog.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "7505a9d092c7a251378120db517fdbf8bea413d7",
+      "sourceMode": "100644",
+      "sourcePath": "docs/setup-claude.md",
+      "targetPath": "docs/setup-claude.md",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "b40bf14b2ad7d47d62ae1fa322bd5c162e5811db",
+      "sourceMode": "100644",
+      "sourcePath": "docs/setup-codex.md",
+      "targetPath": "docs/setup-codex.md",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "operator_only",
+      "ownerTasks": [
+        "3",
+        "12"
+      ],
+      "reason": "Preserve as an operator runbook or private integration document, not public runtime source.",
+      "sourceBlob": "aeb4dae3a26133b81687654860d3107afd7f940e",
+      "sourceMode": "100644",
+      "sourcePath": "docs/setup-hermes.md",
+      "targetPath": "docs/setup-hermes.md",
+      "testGate": "operator documentation and package-exclusion review gate"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "27741604d5db918b2bf1aeaaee7392c361e47d2a",
+      "sourceMode": "100644",
+      "sourcePath": "docs/setup-openclaw.md",
+      "targetPath": "docs/setup-openclaw.md",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "a26a9fceea30057ef2768de94b672d08065af144",
+      "sourceMode": "100644",
+      "sourcePath": "docs/sharing.md",
+      "targetPath": "docs/sharing.md",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "a1f559d4f9ffcc544d13a120b8d49e4206d7ebf9",
+      "sourceMode": "100644",
+      "sourcePath": "docs/upgrading.md",
+      "targetPath": "docs/upgrading.md",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "a1d321f5eada4c4f772585834ffc89eb6b21bbc1",
+      "sourceMode": "100644",
+      "sourcePath": "eval/baseline.json",
+      "targetPath": "eval/baseline.json",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "d94e61a711c58ee2a8dd7d11fd810e1996863476",
+      "sourceMode": "100644",
+      "sourcePath": "eval/cases.jsonl",
+      "targetPath": "eval/cases.jsonl",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "995bc2b564af7fc13091b524d6a966cce268b9d6",
+      "sourceMode": "100644",
+      "sourcePath": "eval/deep-recall-summary-2026-03-11.md",
+      "targetPath": "eval/deep-recall-summary-2026-03-11.md",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "5569b157cb197f0563223c57c690c9019ed87d6d",
+      "sourceMode": "100644",
+      "sourcePath": "eval/golden-seed.js",
+      "targetPath": "eval/golden-seed.js",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "af0527b4cb74f79a7e155fe7b50fbf3d3bda2c28",
+      "sourceMode": "100644",
+      "sourcePath": "eval/run-deep-recall-eval.js",
+      "targetPath": "eval/run-deep-recall-eval.js",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Reimplement the preserved contract as a bounded compatibility module; do not copy deployed source.",
+      "sourceBlob": "5f9baf6b659344368891ed6cb9eb9e6389948e2b",
+      "sourceMode": "100644",
+      "sourcePath": "index.js",
+      "targetPath": "index.js",
+      "testGate": "task-owned compatibility module and packed/runtime parity gates"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "1c15c97d4df48ab5ceff852ef5aca64ec0c3a3a1",
+      "sourceMode": "100644",
+      "sourcePath": "index.ts",
+      "targetPath": "index.ts",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "11"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "b04f9b680e822df077229340c599c8b8887b5c0a",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/audit-service.js",
+      "targetPath": "lib/core/audit-service.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Reimplement the preserved contract as a bounded compatibility module; do not copy deployed source.",
+      "sourceBlob": "9c10a7074ba2b2d528bdc3b7448a18776ff35f1b",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/auto-capture-service.js",
+      "targetPath": "lib/compat/auto-capture-policy.js",
+      "testGate": "task-owned compatibility module and packed/runtime parity gates"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "0c70a4ff5cd7001c781835be1de27bd97570c87b",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/bm25.js",
+      "targetPath": "lib/core/bm25.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "5",
+        "7",
+        "11"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "3087622a8cf44404791df8e441454974e4c56a10",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/capture-service.js",
+      "targetPath": "lib/core/capture-service.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "48b58ed8f17074df67e8b12ff2eb284693c6b476",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/claude-project.js",
+      "targetPath": "lib/core/claude-project.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "481105c521d2b2ca220295a1c24c96adbfac6bcf",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/codex-mcp.js",
+      "targetPath": "lib/core/codex-mcp.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "09f17096485db1bab9c3d6b8e6d98f8cc6594903",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/codex-project.js",
+      "targetPath": "lib/core/codex-project.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "5",
+        "11"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "980012276fab4771987e295bfc06140153ef8cac",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/codex-service.js",
+      "targetPath": "lib/core/codex-service.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "4",
+        "7",
+        "9"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "c807f45c7448590ef6e8ec2d8957a8294927f5a5",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/config.js",
+      "targetPath": "lib/core/config.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "7"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "cf172a323c003b509ba0ab09c96994814a71a871",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/embedding-service.js",
+      "targetPath": "lib/core/embedding-service.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "fdd034f2bbfe7fe66748652b118497c0f30c2199",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/eval-harness.js",
+      "targetPath": "lib/core/eval-harness.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "7b2ed2b276f3d93ecd7e90d5e911f933bdc979b8",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/event-store.js",
+      "targetPath": "lib/core/event-store.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "4",
+        "11"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "14ca89bab6c4e531507dfa1adb0877e37b221279",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/host-memory-sync.js",
+      "targetPath": "lib/core/host-memory-sync.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in Git provenance; the superseded implementation must not enter candidate source.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Upstream 0.11 supersedes this local implementation or the implementation was one-time-only.",
+      "sourceBlob": "49e327050e9001baac5439403c76af7d06491886",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/host-trust.js",
+      "testGate": "retired implementation absence and obsolete-source fingerprint gates (Task 3)"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "335ad34b6831e23f9cee7358c4bf9ceeceee7226",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/http-routes.js",
+      "targetPath": "lib/core/http-routes.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in Git provenance; the superseded implementation must not enter candidate source.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Upstream 0.11 supersedes this local implementation or the implementation was one-time-only.",
+      "sourceBlob": "30cdd379f2ca5bd3568c0514920c012de8e30fb3",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/hygiene-migration.js",
+      "testGate": "retired implementation absence and obsolete-source fingerprint gates (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "d4f7f253ddcab999d764ef110290842701c26d04",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/llm-router.js",
+      "targetPath": "lib/core/llm-router.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "9",
+        "10",
+        "11",
+        "12"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "3a97fa8eea9846e10e2f333b1ef219ee1c0862ac",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/maintenance-service.js",
+      "targetPath": "lib/core/maintenance-service.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "5",
+        "11"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "6d9d392e974749996815f9aca5ec835fdb884cb6",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/memory-actions.js",
+      "targetPath": "lib/core/memory-actions.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Reimplement the preserved contract as a bounded compatibility module; do not copy deployed source.",
+      "sourceBlob": "d6f571bf5afd2b34b6e7dbe2c86894ad3f2a7faa",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/memory-llm-client.js",
+      "targetPath": "lib/compat/memory-llm-client.js",
+      "testGate": "task-owned compatibility module and packed/runtime parity gates"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "601dc5e9688009bdd1ccbcb56776238e52f87c17",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/memory-passport.js",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "79a47b0d753b1ed603ad1447705fa1c84e18f21b",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/metrics.js",
+      "targetPath": "lib/core/metrics.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "6"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "084feee1e64908f5f386539e262d78f72f1798d4",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/native-memory.js",
+      "targetPath": "lib/core/native-memory.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "6"
+      ],
+      "reason": "Reimplement the preserved contract as a bounded compatibility module; do not copy deployed source.",
+      "sourceBlob": "87e47a9ccb6e23ab04d3f3de22774f1988a4b9cf",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/native-metadata.js",
+      "targetPath": "lib/compat/native-metadata.js",
+      "testGate": "task-owned compatibility module and packed/runtime parity gates"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "6",
+        "11"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "6fd484b9b9d937c46a636fcfa2013be1c855271f",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/native-promotion.js",
+      "targetPath": "lib/core/native-promotion.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "6"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "cbef7d1d374d30817058adefef96f04e27469c3c",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/native-sync.js",
+      "targetPath": "lib/core/native-sync.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "11"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "c5fba47ce4ab1ab816002745f115c81c9a73a181",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/openclaw-import.js",
+      "targetPath": "lib/core/openclaw-import.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Reimplement the preserved contract as a bounded compatibility module; do not copy deployed source.",
+      "sourceBlob": "32975a9e9d2ba730626ab9951f6e1f725d3f392b",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/openclaw-memory-cli.js",
+      "targetPath": "lib/compat/openclaw-memory-cli.js",
+      "testGate": "task-owned compatibility module and packed/runtime parity gates"
+    },
+    {
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Reimplement the preserved contract as a bounded compatibility module; do not copy deployed source.",
+      "sourceBlob": "777284da08068a30ae7a7d0d0cad89a0807dcd26",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/openclaw-memory-runtime.js",
+      "targetPath": "lib/compat/openclaw-memory-runtime.js",
+      "testGate": "task-owned compatibility module and packed/runtime parity gates"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "8"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "a7c6f12ebc9e92466e51279837f8116fa032fad1",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/orchestrator.js",
+      "targetPath": "lib/core/orchestrator.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in Git provenance; the superseded implementation must not enter candidate source.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Upstream 0.11 supersedes this local implementation or the implementation was one-time-only.",
+      "sourceBlob": "b8f14e3502b7e2621825fb38c4212d50f55fe451",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/passport-bundle.js",
+      "testGate": "retired implementation absence and obsolete-source fingerprint gates (Task 3)"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "8"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "c1b3406dfa0926e7cf07ec1abca30d3d0b5c9552",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/person-service.js",
+      "targetPath": "lib/core/person-service.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "46a18a4a1b238d4f4b2e6c171f40a63dab00a4e7",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/policy.js",
+      "targetPath": "lib/core/policy.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "11"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "b670f397d45fdc4177426614f9ed3cec287e1d4e",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/projection-store.js",
+      "targetPath": "lib/core/projection-store.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Reimplement the preserved contract as a bounded compatibility module; do not copy deployed source.",
+      "sourceBlob": "00eb7145e692e3dd3f657da7f4384ff9e389a470",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/queue-review-service.js",
+      "targetPath": "lib/compat/queue-review-service.js",
+      "testGate": "task-owned compatibility module and packed/runtime parity gates"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "7"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "d7aaed7847ca642f6bc27557583395cf2c3d25af",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/recall-service.js",
+      "targetPath": "lib/core/recall-service.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "856c2024c98e791f213f8b42d2ad66588a8aa25f",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/review-queue.js",
+      "targetPath": "lib/core/review-queue.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "551bcc181fa557143b3e2b7768e68eb541f66045",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/runtime-guard.js",
+      "targetPath": "lib/core/runtime-guard.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "89d513135c24bfc99d202818f7025009e01d4a6b",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/sqlite.js",
+      "targetPath": "lib/core/sqlite.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "109dc68308e33a8571ee3d5c25642382f974b04c",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/standalone-client.js",
+      "targetPath": "lib/core/standalone-client.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "10"
+      ],
+      "reason": "Reimplement the preserved contract as a bounded compatibility module; do not copy deployed source.",
+      "sourceBlob": "446cdfe38c269a18bf5521705f1109a9ff1fae87",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/surface-refresh-service.js",
+      "targetPath": "lib/operator/surface-refresh-service.js",
+      "testGate": "task-owned compatibility module and packed/runtime parity gates"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "3a9f90dcfe4f7d6075b05dbf93bb08699e172a74",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/vault-mirror.js",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in Git provenance; the superseded implementation must not enter candidate source.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Upstream 0.11 supersedes this local implementation or the implementation was one-time-only.",
+      "sourceBlob": "c192b0b3f7deb3a5264a2e6837ead86ed2b84613",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/workspace-identity.js",
+      "testGate": "retired implementation absence and obsolete-source fingerprint gates (Task 3)"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "8"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "4a07c2d11cc6f167f31aaa414102c031c4e9c05c",
+      "sourceMode": "100644",
+      "sourcePath": "lib/core/world-model.js",
+      "targetPath": "lib/core/world-model.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "8a42d47c27224cc05dc388583b82081b7288c7d5",
+      "sourceMode": "100644",
+      "sourcePath": "memory_api/.env.example",
+      "targetPath": "memory_api/.env.example",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "abc13bff7644f79b6e8a4914b4aec06723dce9d2",
+      "sourceMode": "100644",
+      "sourcePath": "memory_api/README.md",
+      "targetPath": "memory_api/README.md",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "11"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "ecb5bbada3d24ae8303bb4bbbbc267d5477d6bd6",
+      "sourceMode": "100644",
+      "sourcePath": "memory_api/app.py",
+      "targetPath": "memory_api/app.py",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "11"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "8781be96c455dbb7ed24e2386845a5b8ceefed8f",
+      "sourceMode": "100644",
+      "sourcePath": "memory_api/requirements.txt",
+      "targetPath": "memory_api/requirements.txt",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "f76f30830d437b0f7c87e4d5edd5a9e9504b3016",
+      "sourceMode": "100644",
+      "sourcePath": "memory_api/static/index.html",
+      "targetPath": "memory_api/static/index.html",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "59114cc241c3d48859f39fc1519da34d8c4a2e05",
+      "sourceMode": "100644",
+      "sourcePath": "openclaw.plugin.json",
+      "targetPath": "openclaw.plugin.json",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "5f1a1f878b2d9b9640776d82a2649e673339b6de",
+      "sourceMode": "100644",
+      "sourcePath": "package-lock.json",
+      "targetPath": "package-lock.json",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "ac4f51cefd1aa6c96236c4dd66f0bdd446d7afbb",
+      "sourceMode": "100644",
+      "sourcePath": "package.json",
+      "targetPath": "package.json",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "506dfa6396c6a898ffebec1db715201e03fe2a89",
+      "sourceMode": "100644",
+      "sourcePath": "release-notes/v0.4.0.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "513fecac5ce2716f6c6cb2fc4ec4dd8cea8a699d",
+      "sourceMode": "100644",
+      "sourcePath": "release-notes/v0.4.2.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "8d7b3f6d7a123386d3c5eadd2f1a7dfc8c3b3da3",
+      "sourceMode": "100644",
+      "sourcePath": "release-notes/v0.4.3.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "7e9c8f0eeb063f53231eeec06eae2b588ee8e09b",
+      "sourceMode": "100644",
+      "sourcePath": "release-notes/v0.5.0.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "3c3cf7957462cc3b47cc98d421bbe41c4bab77a2",
+      "sourceMode": "100644",
+      "sourcePath": "release-notes/v0.5.1.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "18142c3daf95112498da48bb95732298d0cc6849",
+      "sourceMode": "100644",
+      "sourcePath": "release-notes/v0.5.2.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "6132cfc1f500319cf31ac8761296baedb6d23c3d",
+      "sourceMode": "100644",
+      "sourcePath": "release-notes/v0.5.3.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "47a2cfb152b312056c22164e2b5d16a65017f797",
+      "sourceMode": "100644",
+      "sourcePath": "release-notes/v0.6.0-launch-post.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "07c772ba113a779725386808e16d4f351a439c71",
+      "sourceMode": "100644",
+      "sourcePath": "release-notes/v0.6.0.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "a30ad10de19b64edd63e53344fa5182a8538a7de",
+      "sourceMode": "100644",
+      "sourcePath": "release-notes/v0.6.1.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "bc2228692c034d75529a658c7227ab18926bdb9a",
+      "sourceMode": "100644",
+      "sourcePath": "release-notes/v0.7.0-cross-memory-pivot.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "85da6e898898c7a51dacf425f085bc47b06ed2c7",
+      "sourceMode": "100644",
+      "sourcePath": "release-notes/v0.7.1-destination-audit.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "9",
+        "10"
+      ],
+      "reason": "Reimplement the preserved contract as a bounded compatibility module; do not copy deployed source.",
+      "sourceBlob": "56e521cba392e6a3aafe0225e4892ac6eba7dddd",
+      "sourceMode": "100755",
+      "sourcePath": "scripts/auto-capture-worker.js",
+      "targetPath": "scripts/auto-capture-worker.js",
+      "testGate": "task-owned compatibility module and packed/runtime parity gates"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "54ac6502e58adefd199fc8d4036ca13fb14551d3",
+      "sourceMode": "100644",
+      "sourcePath": "scripts/build-claude-desktop-bundle.js",
+      "targetPath": "scripts/build-claude-desktop-bundle.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Reimplement the preserved contract as a bounded compatibility module; do not copy deployed source.",
+      "sourceBlob": "8e770adc5b879b19faaf89fa073484703ac986cb",
+      "sourceMode": "100644",
+      "sourcePath": "scripts/build-runtime-js.js",
+      "targetPath": "scripts/build-runtime-js.js",
+      "testGate": "task-owned compatibility module and packed/runtime parity gates"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "43c1551f56d1dc17424f0d613fc4aaddc1ae7bd1",
+      "sourceMode": "100644",
+      "sourcePath": "scripts/claude-desktop-launcher.sh",
+      "targetPath": "scripts/claude-desktop-launcher.sh",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "13"
+      ],
+      "reason": "Reimplement the preserved contract as a bounded compatibility module; do not copy deployed source.",
+      "sourceBlob": "1c4a6971e8f88db80896a7e9ab5d79f5ed18b81d",
+      "sourceMode": "100755",
+      "sourcePath": "scripts/demo-memory-passport.sh",
+      "targetPath": "scripts/demo-handoff.sh",
+      "testGate": "task-owned compatibility module and packed/runtime parity gates"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "c679566769df6e531a729b3cbdebbc85b3c0c244",
+      "sourceMode": "100644",
+      "sourcePath": "scripts/eval-compare.js",
+      "targetPath": "scripts/eval-compare.js",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "8c4de5850295ef0e50b2514a4292268c8e4fa350",
+      "sourceMode": "100644",
+      "sourcePath": "scripts/eval-runner.js",
+      "targetPath": "scripts/eval-runner.js",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "112b201fc6597cd7db13ea11afdc44aeb07f1985",
+      "sourceMode": "100755",
+      "sourcePath": "scripts/gigabrain-claude-setup.js",
+      "targetPath": "scripts/gigabrain-claude-setup.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "4c3a6d43fb556650aa3739300c3f4473a13342f7",
+      "sourceMode": "100755",
+      "sourcePath": "scripts/gigabrain-codex-checkpoint.js",
+      "targetPath": "scripts/gigabrain-codex-checkpoint.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "308b0d8947ccd9f975e5e61b09f2d1f9f0e4d12b",
+      "sourceMode": "100755",
+      "sourcePath": "scripts/gigabrain-codex-setup.js",
+      "targetPath": "scripts/gigabrain-codex-setup.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "46c230b3cb99badaa0b9038a41c3f61cadb8af27",
+      "sourceMode": "100755",
+      "sourcePath": "scripts/gigabrain-hermes-setup.js",
+      "targetPath": "scripts/gigabrain-hermes-setup.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in Git provenance; the superseded implementation must not enter candidate source.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Upstream 0.11 supersedes this local implementation or the implementation was one-time-only.",
+      "sourceBlob": "744d889f6c6608402880e7a49d0bcbca058b371a",
+      "sourceMode": "100755",
+      "sourcePath": "scripts/gigabrain-hygiene-20260425.js",
+      "testGate": "retired implementation absence and obsolete-source fingerprint gates (Task 3)"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "77a6472dbe8e59fa1e86f73e49883142d5553d31",
+      "sourceMode": "100755",
+      "sourcePath": "scripts/gigabrain-mcp.js",
+      "targetPath": "scripts/gigabrain-mcp.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "5",
+        "7",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "a46618e72831b6147e0c18f73505e3ab43afbbfc",
+      "sourceMode": "100755",
+      "sourcePath": "scripts/gigabrainctl.js",
+      "targetPath": "scripts/gigabrainctl.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "6b0898f8ae1fd42a9e1eb50a81039dca3185ed40",
+      "sourceMode": "100755",
+      "sourcePath": "scripts/graph-build.js",
+      "targetPath": "scripts/graph-build.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "f1f55fd102e2f23b03e6b942a3b6c4da962dd9be",
+      "sourceMode": "100755",
+      "sourcePath": "scripts/harmonize-memory.js",
+      "targetPath": "scripts/harmonize-memory.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "91bcf15501b89349a21d254cc57341f8d13c4412",
+      "sourceMode": "100644",
+      "sourcePath": "scripts/memory-studio-autoloop.js",
+      "targetPath": "scripts/memory-studio-autoloop.js",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "Preserve as protected development or evaluation tooling outside the public runtime package.",
+      "sourceBlob": "4e6665c141b1f6bb69250f617b676d026fdc8282",
+      "sourceMode": "100644",
+      "sourcePath": "scripts/memory-studio.js",
+      "targetPath": "scripts/memory-studio.js",
+      "testGate": "private tool inventory, smoke, and protected-hash gates (Task 2)"
+    },
+    {
+      "disposition": "upstream_owned",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Retain the audited upstream 0.11 implementation; deployed bytes remain forensic evidence only.",
+      "sourceBlob": "3d9af899b61284513582a56b24a1c15dcbdd6041",
+      "sourceMode": "100755",
+      "sourcePath": "scripts/migrate-v3.js",
+      "targetPath": "scripts/migrate-v3.js",
+      "testGate": "upstream adoption byte-identity gate (Task 3)"
+    },
+    {
+      "disposition": "core_patch",
+      "ownerTasks": [
+        "7",
+        "12"
+      ],
+      "reason": "A later task may apply only a focused, test-owned patch to the audited 0.11 target.",
+      "sourceBlob": "ccd14cce2db88afc2fa7e47c1bb7386355c0508e",
+      "sourceMode": "100644",
+      "sourcePath": "scripts/setup-first-run.js",
+      "targetPath": "scripts/setup-first-run.js",
+      "testGate": "task-owned red/green compatibility and source-first divergence gates"
+    },
+    {
+      "disposition": "compat_module",
+      "ownerTasks": [
+        "8"
+      ],
+      "reason": "Reimplement the preserved contract as a bounded compatibility module; do not copy deployed source.",
+      "sourceBlob": "56c5482d217740c46d3aa719db8f075b784050ab",
+      "sourceMode": "100644",
+      "sourcePath": "scripts/vault-export.js",
+      "targetPath": "scripts/vault-export.js",
+      "testGate": "task-owned compatibility module and packed/runtime parity gates"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "b63e385d1ffc1fca336302c319940ea3ee17f486",
+      "sourceMode": "100644",
+      "sourcePath": "site/README.md",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "6fa6d94f6d0ca4882c80d127988103d3e69f2865",
+      "sourceMode": "100644",
+      "sourcePath": "site/assets/passport-report-demo.png",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in prior Git history and the provenance bundle; do not ship in the candidate.",
+      "ownerTasks": [
+        "3",
+        "16"
+      ],
+      "reason": "The path has no current runtime or workflow dependency in the source-first candidate.",
+      "sourceBlob": "cb22c82ecfa398e9e6f3b60ebefb9d2763577bf5",
+      "sourceMode": "100644",
+      "sourcePath": "site/index.html",
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "960835780038c23ee8783ef1b8340cbce0fee539",
+      "sourceMode": "100644",
+      "sourcePath": "tests/helpers.js",
+      "targetPath": "tests/helpers.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "5569dce276bfe4f30bcf70d771e4eb0caeeefa06",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-audit-maintenance-test.js",
+      "targetPath": "tests/integration-audit-maintenance-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "3c7d3497665c5c41a55d7095d960e37d5e62ad18",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-bridge-contract-routes-test.js",
+      "targetPath": "tests/integration-bridge-contract-routes-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "76faaa1b55c103bb74cb3dc6b3e0564333e82507",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-claude-desktop-bundle-test.js",
+      "targetPath": "tests/integration-claude-desktop-bundle-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "fb38dbf514a4bb7843e778cbd0b19fd68a88ff91",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-claude-setup-test.js",
+      "targetPath": "tests/integration-claude-setup-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "cc29b21867f9f96417bc3d84302a2d88e0f9eddf",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-codex-mcp-test.js",
+      "targetPath": "tests/integration-codex-mcp-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "ebea114b513a12acc4a742e79913db78c6085c30",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-codex-setup-test.js",
+      "targetPath": "tests/integration-codex-setup-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "59497317734e7f2296c34d4847615b02f8241472",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-eval-gate-test.js",
+      "targetPath": "tests/integration-eval-gate-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "c9caeb3f3b7b929afd4be02559751fd1680c5c2e",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-eval-tools-test.js",
+      "targetPath": "tests/integration-eval-tools-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "5480491cf798a66d67563616ec8bab409df4cb19",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-memory-api-security-test.js",
+      "targetPath": "tests/integration-memory-api-security-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "e4a8270b274f253d0d0f32d224d7cdc5aca3fa1e",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-memorybench-overlay-test.js",
+      "targetPath": "tests/integration-memorybench-overlay-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "88785d93f4cc132af60011644a9870f7d314e8a8",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-migration-and-api-test.js",
+      "targetPath": "tests/integration-migration-and-api-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "f1e4aa93261fc12017ce5a7c4fdb5976cba4d1b7",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-native-recall-test.js",
+      "targetPath": "tests/integration-native-recall-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "43011955890949246ebdc3f921bc6796360c4a0f",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-nightly-cli-test.js",
+      "targetPath": "tests/integration-nightly-cli-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "4c25167ceddde05d8cc48eb7db2e781d7f375ff6",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-openclaw-hooks-test.js",
+      "targetPath": "tests/integration-openclaw-hooks-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "bb4353204c4b343ecb852d14116613da07e4b37b",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-packaged-claude-setup-test.js",
+      "targetPath": "tests/integration-packaged-claude-setup-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "a49fdba84e756124b7c99958849d9a86f85be2c3",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-packaged-codex-setup-test.js",
+      "targetPath": "tests/integration-packaged-codex-setup-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "66865801fc6a4e7988affe9ec57d8a0bcdfa029c",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-packaged-passport-test.js",
+      "targetPath": "tests/integration-packaged-passport-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "4c590290b2d6aaec78ec2cf0b7f28e561b573eba",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-packaged-sync-hosts-test.js",
+      "targetPath": "tests/integration-packaged-sync-hosts-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "cb2698a79a5bcc4055ae9b0f67415c1eab44fa8b",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-setup-first-run-test.js",
+      "targetPath": "tests/integration-setup-first-run-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "769b94e8a1f388c5a7072ab0b862c589fe9984b0",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-standalone-path-resolution-test.js",
+      "targetPath": "tests/integration-standalone-path-resolution-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "35f957712e04cd5916a53ed368ac4957e60b73bc",
+      "sourceMode": "100644",
+      "sourcePath": "tests/integration-vault-cli-test.js",
+      "targetPath": "tests/integration-vault-cli-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "73cee9f2e7462f198ffb85ece9e76815c2398f13",
+      "sourceMode": "100644",
+      "sourcePath": "tests/packaged-install-helpers.js",
+      "targetPath": "tests/packaged-install-helpers.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "a9d0b307d56b608267f2b5697976a1eac75d3d64",
+      "sourceMode": "100644",
+      "sourcePath": "tests/performance-nightly-test.js",
+      "targetPath": "tests/performance-nightly-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "1df0d97d4e5dfd9158ab3dd795d6ac31397a5a61",
+      "sourceMode": "100644",
+      "sourcePath": "tests/regression-memory-behavior-test.js",
+      "targetPath": "tests/regression-memory-behavior-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "7320113255084a809de709ead085bd4e122ab2f4",
+      "sourceMode": "100644",
+      "sourcePath": "tests/regression-native-promotion-reconcile-test.js",
+      "targetPath": "tests/regression-native-promotion-reconcile-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "4701e3fd1d3f72d3a98144baa597e8537cf66b39",
+      "sourceMode": "100644",
+      "sourcePath": "tests/release-live-codex-cli-test.js",
+      "targetPath": "tests/release-live-codex-cli-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "5c63e183e98852f8b8f209ba6ebd413d66d441ae",
+      "sourceMode": "100644",
+      "sourcePath": "tests/release-live-openclaw-install-test.js",
+      "targetPath": "tests/release-live-openclaw-install-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "b78cd8cf8eeb90422bffdb46d82de531689b112d",
+      "sourceMode": "100755",
+      "sourcePath": "tests/run-all.js",
+      "targetPath": "tests/run-all.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "ab9825ae2baf896713113513a4964cda8b60037e",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-audit-hardening-regression-test.js",
+      "targetPath": "tests/unit-audit-hardening-regression-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "940dc1139751a020a2c1bb846b8fe59ca83bc5d3",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-auto-capture-service-test.js",
+      "targetPath": "tests/unit-auto-capture-service-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "e7fdec19de342d7ddce3bfd2b02bae133a4f302d",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-belief-trust-test.js",
+      "targetPath": "tests/unit-belief-trust-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "72f1664664423798044eaeb7bbade464f4d46799",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-bm25-test.js",
+      "targetPath": "tests/unit-bm25-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "3cc8d4b78d677db1ed70aa5fd5abdc7016404a80",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-capture-service-test.js",
+      "targetPath": "tests/unit-capture-service-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "3eb16268b3f9072c5474144f938a491e468d0412",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-codex-service-test.js",
+      "targetPath": "tests/unit-codex-service-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "58ad058b9f0fadb1ff23d8c90410746a6a973371",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-config-test.js",
+      "targetPath": "tests/unit-config-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "48440b664df99f6729b2408519b8fa2c4463b8ef",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-embedding-service-test.js",
+      "targetPath": "tests/unit-embedding-service-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "d1cb4c4b4cff76ef8a1d85fa2efc456d1b55086a",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-eval-harness-test.js",
+      "targetPath": "tests/unit-eval-harness-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "39d3a2ca52b18db04a8b2a84e32f54e3a14970be",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-host-memory-sync-test.js",
+      "targetPath": "tests/unit-host-memory-sync-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "27ae85222836c5530697c159b910ffe606f89f9a",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-host-trust-test.js",
+      "targetPath": "tests/unit-host-trust-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "adadc8d2b1085f60cafa350d39f794e567982ef1",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-http-routes-test.js",
+      "targetPath": "tests/unit-http-routes-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "b690b69695920bc83bf2ccc1ad94fd4ced09e22b",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-hygiene-migration-test.js",
+      "targetPath": "tests/unit-hygiene-migration-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "a8a0723175b863033203e4f67f1081dcef305ade",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-llm-router-test.js",
+      "targetPath": "tests/unit-llm-router-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "94d735bc221d2bb4bc7ad43e54087345e6d5ad08",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-memory-actions-test.js",
+      "targetPath": "tests/unit-memory-actions-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "44469c42481edf42830a6a505fec82c771be38c0",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-memory-llm-client-test.js",
+      "targetPath": "tests/unit-memory-llm-client-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "8313fcd9b3d9035faee23a2a329ce36afd56594f",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-memory-passport-test.js",
+      "targetPath": "tests/unit-memory-passport-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "63ff66fa556a98857c4a01cb129cb655a18105b5",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-memory-studio-test.js",
+      "targetPath": "tests/unit-memory-studio-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "38af0d99f0b5ca526f0901518213a699080118ba",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-native-promotion-test.js",
+      "targetPath": "tests/unit-native-promotion-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "0ec2285c077cf8d60600b21e291414c841d3ba80",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-native-sync-query-test.js",
+      "targetPath": "tests/unit-native-sync-query-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "ed47cc94f9dbe77fb33e9fb93ebecd04b93cae0b",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-openclaw-import-test.js",
+      "targetPath": "tests/unit-openclaw-import-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "9f1d069ade0943591edb0caef421783b25f68840",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-openclaw-memory-runtime-test.js",
+      "targetPath": "tests/unit-openclaw-memory-runtime-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "de74a15790d8563ae75605697710412df8b0b632",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-orchestrator-test.js",
+      "targetPath": "tests/unit-orchestrator-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "30b90cc0798b2bee0b59e99763557b05550f6474",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-package-metadata-test.js",
+      "targetPath": "tests/unit-package-metadata-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "73983fa04b53e332449be168ddc2a9fcf7b4c8ea",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-passport-bundle-test.js",
+      "targetPath": "tests/unit-passport-bundle-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "973d784287a770ce358e9fecc490c50532b7ad3b",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-person-service-test.js",
+      "targetPath": "tests/unit-person-service-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "1e73aa62c05c67900a71c4acbd759f79ab02bf31",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-plugin-runtime-test.js",
+      "targetPath": "tests/unit-plugin-runtime-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "1824ff53c503b7011dc86db96f90aed174212fff",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-policy-test.js",
+      "targetPath": "tests/unit-policy-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "6939af7713cae44395468fff4b43d64241ca971f",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-projection-store-test.js",
+      "targetPath": "tests/unit-projection-store-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "822d489f6090ae80c0a0c18da45c7e6e2374d0b7",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-queue-review-service-test.js",
+      "targetPath": "tests/unit-queue-review-service-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "4d5618c7213d86ca4a5f9a0cf35b86a2d4f9283e",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-recall-service-test.js",
+      "targetPath": "tests/unit-recall-service-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "2bd2a08c4f61b755ea47423342afbc38d3a2d630",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-review-queue-test.js",
+      "targetPath": "tests/unit-review-queue-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "6e5acc92794badfa44559ffbaf8068d2d5296664",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-runtime-guard-test.js",
+      "targetPath": "tests/unit-runtime-guard-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "3933d08e12898c35876e42adda168cef6a082708",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-sqlite-test.js",
+      "targetPath": "tests/unit-sqlite-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "555bb22047e8d0c9da5be89db895984082503874",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-standalone-client-test.js",
+      "targetPath": "tests/unit-standalone-client-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "405a28a89432f67de1ca5dff7a2f64392171ec00",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-surface-refresh-service-test.js",
+      "targetPath": "tests/unit-surface-refresh-service-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "12a7319b09075e3d9b1af271d57d3877fe41f211",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-vault-mirror-test.js",
+      "targetPath": "tests/unit-vault-mirror-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "639f4ae290f7ebaae06dc93bcb7df5872a1ec653",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-world-model-custom-slots-test.js",
+      "targetPath": "tests/unit-world-model-custom-slots-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    },
+    {
+      "disposition": "private_dev_only",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "Restore through the complete private test inventory with scanner-clean synthetic fixtures.",
+      "sourceBlob": "8a66610ade20d691b653055b2de287686d3da298",
+      "sourceMode": "100644",
+      "sourcePath": "tests/unit-world-model-test.js",
+      "targetPath": "tests/unit-world-model-test.js",
+      "testGate": "full deployed test inventory and expected-failure protocol (Task 2)"
+    }
+  ],
+  "deployedSource": {
+    "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+    "commitCount": 47,
+    "commitManifestSha256": "cfe081bb434bcd4bf2ee47c7c8c1b463d9ab9792974debedb8f0ae206259e688",
+    "fileCount": 208,
+    "fileManifestSha256": "4e960bb350d48634ebf47f09d00036a942fff33933fe3b25786e9513b671bf2f",
+    "tree": "2ea1117367407f87e5b9702ba65f7346f2c6390f"
+  },
+  "obsoleteSourceFingerprints": [
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "6710ba877dff4a6418d5265d1f05f6f29854154cae5ee4124d34cf238787dc97",
+      "sourcePath": "index.ts",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "73f038dd0cad88a0bd0f5343806684a98268348ec9d4eebc70579b9414b28d5b",
+      "sourcePath": "lib/core/audit-service.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "acfc3506b792f75aa51ba83ee6d9b6efa1e8a73369bd510e51ab840b15fa0f43",
+      "sourcePath": "lib/core/capture-service.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "a8a8627cca4f4f7c71fa29d6aefa65e73d3d64e85cf08ec00bfa69ba6d1d9178",
+      "sourcePath": "lib/core/claude-project.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "7ad2fa82959363532094e591b382bea1e237a6d43218a1c493702e22eab61b4c",
+      "sourcePath": "lib/core/codex-mcp.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "3b534430e52853e0acb6ad451634005cea0b62dfa7940b7ce61f05d573680a86",
+      "sourcePath": "lib/core/codex-project.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "b3c51c3edbea282541f603020ba5d5ba9952a264a108d4f763ba9bbe77e01101",
+      "sourcePath": "lib/core/codex-service.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "6dca436656ab498e78aa2ff676fe9dfbca5cfc04e3ddfcc098ccbc57dae989bf",
+      "sourcePath": "lib/core/config.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "0931351b1d6b5b9a42c5be40651cc6d5b6aa3fe4596526aca05be690ba1ea73a",
+      "sourcePath": "lib/core/embedding-service.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "aab7d0a8207e92c300bf19e23db37a827308dde56586708c19dc13922eaa27cd",
+      "sourcePath": "lib/core/event-store.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "c8d7d7c46a3ddeabb959bae2ac8cea5bf26e3de089a271c67d4b174e2195b446",
+      "sourcePath": "lib/core/host-memory-sync.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "21f743aa2347aa15b09523b4a4ce96be5ba28365db0b652b0446bb932ad733d5",
+      "sourcePath": "lib/core/http-routes.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "ee38cacc9f9fcb8f9b12b00bb8803aaec284142afc7d10616036eaa12fd60b37",
+      "sourcePath": "lib/core/llm-router.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "e1421778fdb8530776baaa399fdb1785c7e0b3b45f8eb20e6c99085cf002e027",
+      "sourcePath": "lib/core/maintenance-service.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "1a89f0070e7f4106cda805761eae95cdcc4511368bdde2c8702e1e34bcafd760",
+      "sourcePath": "lib/core/memory-actions.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "e58dfdd0e66e2de79388e4151a0ce73198812f26f929430dede0943290efb659",
+      "sourcePath": "lib/core/memory-passport.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "8d31e4c55dc90bf4e36f4851c0a6dd9e87ac8c64f51c3e935f2f26adcd2fb4b9",
+      "sourcePath": "lib/core/native-memory.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "4b6414fb56019b2d8c041be124fe60a490ee22084e2d709890cadb526b0d5ccc",
+      "sourcePath": "lib/core/native-promotion.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "e16f9f462bd5f7c4dbb8fa0576a34a0b2703fd4b091e2d6967ebbd7d94a8995f",
+      "sourcePath": "lib/core/native-sync.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "b19ae88b179322eaaca50ea1d5aaced877445af2b8ff6832848881aac027f612",
+      "sourcePath": "lib/core/orchestrator.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "4f8c408ff21c9216d33d3786a8e3e57639ef31f58c6c8ce8ce4209456de21418",
+      "sourcePath": "lib/core/person-service.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "e99179492ea2770edee900c0438f1c765e3b994d63b28d31c03396e1b5cacc18",
+      "sourcePath": "lib/core/policy.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "235f8cda81f41f174138c7f173e3e3706c46f323eea1a5af77086fb15527af57",
+      "sourcePath": "lib/core/projection-store.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "1ce3bd6a8af77dc0932fefdfb62173b0221f8d1f4eee2436913a8108e6d63823",
+      "sourcePath": "lib/core/recall-service.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "a31a4f762b23d4bd30e8d43c2c60fbd6be4af7d21b12ab6b09db1f48814a7b65",
+      "sourcePath": "lib/core/review-queue.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "1a6dabe1cf22c693c12eff97efa6ee1e528809e48cf30f33d16146e993d7fbfa",
+      "sourcePath": "lib/core/runtime-guard.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "ce5c95b6347fed5ccd29964b141bc4c6efe1ada794503609a6c39b2f11357485",
+      "sourcePath": "lib/core/sqlite.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "11a581add08860ed34aa4737268fba9b1e5980054085eca5775962f4a0f3c0dd",
+      "sourcePath": "lib/core/standalone-client.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "6a075e853db604efe2645bc5e93ba9ac0dbd8999a187f009a0fd52eb76e3d424",
+      "sourcePath": "lib/core/vault-mirror.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "9c5696e5342d395a3fc99bf71b8bc11e48da4af473fab8881a2f9929347f7819",
+      "sourcePath": "lib/core/world-model.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "73f3de9d5bbd4b012f76f8e7da8687a0a2b284a73ba97927a8fc437329d1ebbd",
+      "sourcePath": "memory_api/app.py",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "f0b0ed650bf2c5d48834c9dc6186164d12e298cd0144830169b734f0b3c40944",
+      "sourcePath": "scripts/build-claude-desktop-bundle.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "57ad7e3709269ff5b809b92bd7a302c23b1c7a682afb10bbc00324958bea12b1",
+      "sourcePath": "scripts/claude-desktop-launcher.sh",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "607898b6ad2c5ee95849fd2165a4a8ff6f88cc976153937699c4feeb9669b365",
+      "sourcePath": "scripts/demo-memory-passport.sh",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "182d6ad88d75c36cce8e9cb3ad1914f576c2976303c9ade3a2d422796699e669",
+      "sourcePath": "scripts/eval-compare.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "84624c288463d3ef455c8fa98f9abbf4fff1306dba9d4656726ae14cfdddeec5",
+      "sourcePath": "scripts/eval-runner.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "db6ed7a3b8b201fe03d03de1419b054de1bd5d3493fe5ad95cace0329c62e15d",
+      "sourcePath": "scripts/gigabrain-claude-setup.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "1e0ec84535d6aad1df1648118bc215b00409caa759bb1a97153c7e05d7fd93dc",
+      "sourcePath": "scripts/gigabrain-codex-checkpoint.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "e51ae71916f3bc6b2de44b771931bf7505ffe73df4e82038f6cde798b0c8bdc3",
+      "sourcePath": "scripts/gigabrain-codex-setup.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "fd00cf20802b7a4fc8a35da99dd6a10b96d23e74c77c0134599ef689712fc200",
+      "sourcePath": "scripts/gigabrain-mcp.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "84734fc5461ac7b454da41c9b7d164aa816f813b348bfb0faa0628175bd9f2e4",
+      "sourcePath": "scripts/gigabrainctl.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "6ca598b04d77afdac81f8f5454cb96ab3fb5f5c81bfea51d956fae02b75ebe7a",
+      "sourcePath": "scripts/memory-studio-autoloop.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "6e77918112f8b5ff481382fb92b2318944a5dd56389f5fea81743b2505723053",
+      "sourcePath": "scripts/memory-studio.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "7aad147caca4485851c4009e4e9ee7365cfacf15a9c6f289220447273cf670dd",
+      "sourcePath": "scripts/setup-first-run.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Exact v0.7.1 implementation bytes may remain only in Git history.",
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reject byte-for-byte copying of obsolete v0.7.1 implementation into candidate source.",
+      "sha256": "8509c4df4c58510219d2f91bea6d0b334b60ffde8f63708bb1d66811346cdb65",
+      "sourcePath": "scripts/vault-export.js",
+      "testGate": "obsolete-source fingerprint and upstream-adoption gate"
+    }
+  ],
+  "obsoleteSourceManifestSha256": "2f9eca0903c8c134fc731b37ee5b56aca5e77d5387c2c3f9d79844b5d84a94ff",
+  "preTagToolCount": 9,
+  "preTagToolManifestSha256": "8d213d472fc662239cf94348a9f427d1a9226d3bc84271cb5c0036061ee479ee",
+  "preTagTools": [
+    {
+      "disposition": "private_dev_only",
+      "historicalDisposition": "Protected development tooling excluded from the public runtime package.",
+      "id": "deep-recall-evaluation",
+      "ownerTasks": [
+        "2",
+        "14"
+      ],
+      "reason": "The exact cases and hashes remain an active quality contract.",
+      "sourcePaths": [
+        "eval/baseline.json",
+        "eval/cases.jsonl",
+        "eval/golden-seed.js",
+        "eval/run-deep-recall-eval.js",
+        "scripts/eval-compare.js",
+        "scripts/eval-runner.js"
+      ],
+      "testGate": "23-of-23 recall, zero-leak, and protected-source hash gates"
+    },
+    {
+      "disposition": "compat_module",
+      "id": "demo-passport-alias",
+      "ownerTasks": [
+        "13"
+      ],
+      "reason": "Preserve the package demo command as an alias to reviewed Handoff behavior.",
+      "sourcePaths": [
+        "scripts/demo-memory-passport.sh"
+      ],
+      "targetPaths": [
+        "scripts/demo-handoff.sh"
+      ],
+      "testGate": "Handoff demo alias and package inventory gate"
+    },
+    {
+      "disposition": "operator_only",
+      "id": "hermes-nimbus-destination-docs",
+      "ownerTasks": [
+        "3",
+        "12"
+      ],
+      "reason": "Private setup and trust documentation remains operator-owned with synthetic fixtures.",
+      "sourcePaths": [
+        "docs/audits/destination-audit-2026-05.md",
+        "docs/nimbus-memory-bridge.md",
+        "docs/setup-hermes.md"
+      ],
+      "targetPaths": [
+        "docs/audits/destination-audit-2026-05.md",
+        "docs/nimbus-memory-bridge.md",
+        "docs/setup-hermes.md"
+      ],
+      "testGate": "setup, host-trust, and package documentation gates"
+    },
+    {
+      "disposition": "private_dev_only",
+      "historicalDisposition": "Private development tooling excluded from the public runtime package.",
+      "id": "memory-studio-autoloop",
+      "ownerTasks": [
+        "2"
+      ],
+      "reason": "No service or unit depends on Memory Studio; preserve only as private development tooling.",
+      "sourcePaths": [
+        "bench/memorybench/memory-studio-lib.js",
+        "bench/memorybench/memory-studio-presets.json",
+        "bench/memorybench/memory-studio-program.md",
+        "scripts/memory-studio-autoloop.js",
+        "scripts/memory-studio.js",
+        "tests/unit-memory-studio-test.js"
+      ],
+      "testGate": "Memory Studio private smoke and package-exclusion gate"
+    },
+    {
+      "disposition": "private_dev_only",
+      "historicalDisposition": "Protected benchmark tooling with an explicitly inventoried overlay test.",
+      "id": "memorybench-harness-overlay",
+      "ownerTasks": [
+        "2",
+        "15"
+      ],
+      "reason": "No production dependency exists; preserve the benchmark harness outside the runtime package.",
+      "sourcePaths": [
+        "bench/memorybench/README.md",
+        "bench/memorybench/compare.js",
+        "bench/memorybench/install-official-provider.js",
+        "bench/memorybench/provider/gigabrain/index.ts",
+        "bench/memorybench/provider/gigabrain/prompts.ts",
+        "bench/memorybench/run-official-memorybench.js",
+        "bench/memorybench/run.js",
+        "tests/integration-memorybench-overlay-test.js"
+      ],
+      "testGate": "MemoryBench smoke and explicit private-test inventory gate"
+    },
+    {
+      "disposition": "retired",
+      "historicalDisposition": "Retain only in old Git history and the provenance bundle.",
+      "id": "old-launch-and-release-material",
+      "ownerTasks": [
+        "1",
+        "16"
+      ],
+      "reason": "Historical launch copy and release notes have no candidate runtime or workflow dependency.",
+      "sourcePaths": [
+        "docs/launch/gtm-brief.md",
+        "docs/launch/pilot-offer.md",
+        "docs/launch/x-posts.md",
+        "docs/release/v0.7.1-batchlog.md",
+        "release-notes/v0.4.0.md",
+        "release-notes/v0.4.2.md",
+        "release-notes/v0.4.3.md",
+        "release-notes/v0.5.0.md",
+        "release-notes/v0.5.1.md",
+        "release-notes/v0.5.2.md",
+        "release-notes/v0.5.3.md",
+        "release-notes/v0.6.0-launch-post.md",
+        "release-notes/v0.6.0.md",
+        "release-notes/v0.6.1.md",
+        "release-notes/v0.7.0-cross-memory-pivot.md",
+        "release-notes/v0.7.1-destination-audit.md",
+        "site/README.md",
+        "site/assets/passport-report-demo.png",
+        "site/index.html"
+      ],
+      "testGate": "retired path absence and release package inventory gate"
+    },
+    {
+      "disposition": "operator_only",
+      "id": "operations-job-runbook",
+      "ownerTasks": [
+        "12",
+        "16"
+      ],
+      "reason": "Preserve and update the operational runbook for candidate descriptors and timers.",
+      "sourcePaths": [
+        "docs/ops/gigabrain-jobs.md"
+      ],
+      "targetPaths": [
+        "docs/ops/gigabrain-jobs.md"
+      ],
+      "testGate": "operator runbook and unit/timer parity review"
+    },
+    {
+      "disposition": "private_dev_only",
+      "historicalDisposition": "Private release-safety tests restored through the complete inventory.",
+      "id": "setup-install-package-release-tests",
+      "ownerTasks": [
+        "2",
+        "15"
+      ],
+      "reason": "Release safety requires these tests against the isolated immutable canary.",
+      "sourcePaths": [
+        "tests/integration-claude-setup-test.js",
+        "tests/integration-codex-setup-test.js",
+        "tests/integration-packaged-claude-setup-test.js",
+        "tests/integration-packaged-codex-setup-test.js",
+        "tests/integration-packaged-passport-test.js",
+        "tests/integration-packaged-sync-hosts-test.js",
+        "tests/integration-setup-first-run-test.js",
+        "tests/release-live-codex-cli-test.js",
+        "tests/release-live-openclaw-install-test.js",
+        "tests/unit-package-metadata-test.js"
+      ],
+      "testGate": "complete test inventory plus isolated release-live canary gates"
+    },
+    {
+      "disposition": "compat_module",
+      "id": "vault-export-compatibility",
+      "ownerTasks": [
+        "8"
+      ],
+      "reason": "Retain the CLI alias as a compatibility wrapper around the reviewed generated-surface workflow.",
+      "sourcePaths": [
+        "scripts/vault-export.js"
+      ],
+      "targetPaths": [
+        "scripts/vault-export.js"
+      ],
+      "testGate": "vault CLI compatibility and generated-surface gates"
+    }
+  ],
+  "schemaVersion": 1,
+  "upstreamAllowlist": "upstream-source-allowlist.json"
+}

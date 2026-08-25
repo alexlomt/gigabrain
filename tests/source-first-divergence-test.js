@@ -22,6 +22,19 @@ for (const [label, requiredPath] of [
   );
 }
 
+const realMap = JSON.parse(readFileSync(mapPath, "utf8"));
+const realAllowlist = JSON.parse(readFileSync(allowlistPath, "utf8"));
+assert.equal(realMap.deployedSource.commit, "43cd4b41518b5e35b3872722fcceaac535a1ff64");
+assert.equal(realMap.deployedCommits.length, 47);
+assert.equal(realMap.deployedFiles.length, 208);
+assert.equal(realMap.preTagTools.length, 9);
+assert.equal(realMap.candidateChanges.length, 7);
+assert.equal(realAllowlist.entries.length, 151);
+assert.deepEqual(
+  realMap.deployedCommits.map((row) => row.sequence),
+  Array.from({ length: 47 }, (_, index) => index + 1),
+);
+
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
 function canonicalize(value) {
@@ -67,7 +80,7 @@ function makeFixture(mutate = () => {}) {
 
   git(fixtureRepo, ["init", "--quiet"]);
   git(fixtureRepo, ["config", "user.name", "Source First Test"]);
-  git(fixtureRepo, ["config", "user.email", "source-first-test@example.invalid"]);
+  git(fixtureRepo, ["config", "user.email", "source-first-test@example.com"]);
   writeFileSync(path.join(fixtureRepo, "lib", "upstream.js"), "export const upstream = true;\n");
   writeFileSync(path.join(fixtureRepo, "lib", "core.js"), "export const core = true;\n");
   commitAll(fixtureRepo, "fixture base");
@@ -279,6 +292,12 @@ expectFailure("private literal marker in source", "PRIVATE_LITERAL", ({ allowlis
   });
 });
 
+expectFailure("private literal marker in defaults", "PRIVATE_LITERAL", ({ fixtureRepo, map }) => {
+  writeFileSync(path.join(fixtureRepo, "config", "meta.json"), '{"value":"SOURCE_FIRST_PRIVATE_LITERAL"}\n');
+  commitAll(fixtureRepo, "private default fixture");
+  map.candidateChanges[0].contentSha256 = blobIdentity(path.join(fixtureRepo, "config", "meta.json"));
+});
+
 expectFailure("obsolete implementation copied in", "OBSOLETE_SOURCE_COPY", ({ allowlist, fixtureRepo, legacyBytes, map }) => {
   writeFileSync(path.join(fixtureRepo, "lib", "core.js"), legacyBytes);
   commitAll(fixtureRepo, "obsolete source fixture");
@@ -317,6 +336,7 @@ expectFailure("stale allowlist row", "STALE_ALLOWLIST_ROW", ({ allowlist }) => {
     path: "lib/not-in-base.js",
     type: "blob",
   });
+  allowlist.entries.sort((left, right) => left.path.localeCompare(right.path, "en"));
   allowlist.entryCount = allowlist.entries.length;
   allowlist.manifestSha256 = sha256(canonicalJson(allowlist.entries));
 });
@@ -344,6 +364,21 @@ expectFailure("unexpected bytes in a classified delta", "UNEXPECTED_DIFF", ({ fi
     const result = runGuard(fixture, ["--base", "HEAD"]);
     assert.notEqual(result.status, 0, "invalid base: guard unexpectedly passed");
     assert.match(result.stderr, /SOURCE_FIRST_DIVERGENCE INVALID_BASE\b/);
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+}
+
+{
+  const fixture = makeFixture();
+  try {
+    writeFileSync(
+      path.join(fixture.policyDir, "source-first-port-map.json"),
+      JSON.stringify(fixture.map),
+    );
+    const result = runGuard(fixture);
+    assert.notEqual(result.status, 0, "non-canonical map: guard unexpectedly passed");
+    assert.match(result.stderr, /SOURCE_FIRST_DIVERGENCE NON_CANONICAL_JSON\b/);
   } finally {
     rmSync(fixture.root, { recursive: true, force: true });
   }
