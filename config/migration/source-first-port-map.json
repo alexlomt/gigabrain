@@ -8,85 +8,113 @@
       "changeType": "added",
       "contentSha256": "canonical-self",
       "disposition": "operator_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2A",
+        "testPath": "tests/source-first-divergence-test.js"
+      },
       "ownerTasks": [
         "2A"
       ],
       "reason": "Canonical source-first policy map and forensic disposition ledger.",
       "targetMode": "100644",
-      "targetPath": "config/migration/source-first-port-map.json",
-      "testGate": "canonical map schema and divergence fixture gate"
+      "targetPath": "config/migration/source-first-port-map.json"
     },
     {
       "changeType": "added",
       "contentSha256": "07b2cf6901cd0f56d239c1bbff10acf99c34732592f2d2c99fdea2fedd4bab52",
       "disposition": "operator_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2A",
+        "testPath": "tests/source-first-divergence-test.js"
+      },
       "ownerTasks": [
         "2A"
       ],
       "reason": "Exact path, mode, type, and blob allowlist for untouched upstream source.",
       "targetMode": "100644",
-      "targetPath": "config/migration/upstream-source-allowlist.json",
-      "testGate": "upstream byte-identity and stale-row gate"
+      "targetPath": "config/migration/upstream-source-allowlist.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "26656a2cce4da509311ef9e6d3b2e6afdf7af1dba653f36411eb9bf8add7b5cb",
+      "contentSha256": "9ea61b7bfaa4b9345c4fd350be63854226efe97e08de48ef9aac0460891c7b79",
       "disposition": "operator_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "1",
+        "testPath": "tests/source-first-divergence-test.js"
+      },
       "ownerTasks": [
         "1"
       ],
       "reason": "Audited release and package provenance for the clean compatibility base.",
       "targetMode": "100644",
-      "targetPath": "docs/migration/v0.11-base-provenance.md",
-      "testGate": "provenance document and source SHA gate"
+      "targetPath": "docs/migration/v0.11-base-provenance.md"
     },
     {
       "changeType": "modified",
       "contentSha256": "42cb6e61fff22e53cdd2afe99ee375c3d46836f85172dfbc51ebf0d14831ad93",
       "disposition": "core_patch",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "1",
+        "testPath": "tests/source-first-divergence-test.js"
+      },
       "ownerTasks": [
         "1"
       ],
       "reason": "Task 1 compatibility-version metadata only; dependency semantics remain upstream-owned.",
       "targetMode": "100644",
-      "targetPath": "package-lock.json",
-      "testGate": "package metadata semantic-delta and dual-toolchain gates"
+      "targetPath": "package-lock.json"
     },
     {
       "changeType": "modified",
       "contentSha256": "433a88c648f4f962d392df2212ef74aad8ce9a802356bea6eaea6f29620de636",
       "disposition": "core_patch",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "1",
+        "testPath": "tests/source-first-divergence-test.js"
+      },
       "ownerTasks": [
         "1"
       ],
       "reason": "Task 1 compatibility-version metadata only; package behavior remains upstream-owned.",
       "targetMode": "100644",
-      "targetPath": "package.json",
-      "testGate": "package metadata semantic-delta and dual-toolchain gates"
+      "targetPath": "package.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "98b3ccc89f8f6688ef82dd9d2ac6006a279a4018fce13be313759107c107e40e",
+      "contentSha256": "ecf2a3a9012c83787627654e6a2d3aaf7aff3315c2700368b2faa66d23600034",
       "disposition": "operator_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2A",
+        "testPath": "tests/source-first-divergence-test.js"
+      },
       "ownerTasks": [
         "2A"
       ],
       "reason": "Fail-closed source-first policy guard; no runtime source behavior.",
       "targetMode": "100644",
-      "targetPath": "scripts/check-source-first-divergence.mjs",
-      "testGate": "source-first divergence synthetic fixture matrix"
+      "targetPath": "scripts/check-source-first-divergence.mjs"
     },
     {
       "changeType": "added",
-      "contentSha256": "882389cb639e9350833ad7bd2cbc862d8c9ed9fc9a92b6d00e5f74d615872068",
+      "contentSha256": "d47fc9f6f914aa47d1d1928cf7176ef88f0d2a09ebb2229d1fd93f031c96f3f2",
       "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2A",
+        "testPath": "tests/source-first-divergence-test.js"
+      },
       "ownerTasks": [
         "2A"
       ],
       "reason": "Synthetic regression coverage for source-first policy failures.",
       "targetMode": "100644",
-      "targetPath": "tests/source-first-divergence-test.js",
-      "testGate": "source-first divergence synthetic fixture matrix"
+      "targetPath": "tests/source-first-divergence-test.js"
     }
   ],
   "deployedCommits": [
@@ -122,6 +150,9 @@
       "sourcePaths": [
         "docs/configuration.md"
       ],
+      "targetPaths": [
+        "docs/configuration.md"
+      ],
       "testGate": "schema/docs parity gate"
     },
     {
@@ -138,6 +169,11 @@
       "sourcePaths": [
         "lib/core/host-memory-sync.js",
         "lib/core/host-trust.js",
+        "tests/run-all.js",
+        "tests/unit-host-trust-test.js"
+      ],
+      "targetPaths": [
+        "lib/core/host-memory-sync.js",
         "tests/run-all.js",
         "tests/unit-host-trust-test.js"
       ],
@@ -160,6 +196,12 @@
         "tests/run-all.js",
         "tests/unit-passport-bundle-test.js"
       ],
+      "targetPaths": [
+        "lib/core/projection-store.js",
+        "scripts/gigabrainctl.js",
+        "tests/run-all.js",
+        "tests/unit-passport-bundle-test.js"
+      ],
       "testGate": "Handoff fidelity and full-database-only migration gate"
     },
     {
@@ -173,6 +215,10 @@
       "reason": "Use upstream custom-slot support and keep operator patterns outside source.",
       "sequence": 5,
       "sourcePaths": [
+        "lib/core/world-model.js",
+        "tests/unit-world-model-custom-slots-test.js"
+      ],
+      "targetPaths": [
         "lib/core/world-model.js",
         "tests/unit-world-model-custom-slots-test.js"
       ],
@@ -190,6 +236,13 @@
       "reason": "Preserve the quality contract as protected evaluation data and compatibility tests.",
       "sequence": 6,
       "sourcePaths": [
+        ".gitignore",
+        "eval/baseline.json",
+        "eval/run-deep-recall-eval.js",
+        "tests/integration-eval-gate-test.js",
+        "tests/run-all.js"
+      ],
+      "targetPaths": [
         ".gitignore",
         "eval/baseline.json",
         "eval/run-deep-recall-eval.js",
@@ -232,6 +285,9 @@
       "sourcePaths": [
         "lib/core/world-model.js"
       ],
+      "targetPaths": [
+        "lib/core/world-model.js"
+      ],
       "testGate": "belief/custom-slot inventory and arbitration gates"
     },
     {
@@ -247,6 +303,9 @@
       "reason": "Preserve exact test ownership in the complete private inventory.",
       "sequence": 9,
       "sourcePaths": [
+        "tests/run-all.js"
+      ],
+      "targetPaths": [
         "tests/run-all.js"
       ],
       "testGate": "belief/custom-slot inventory and arbitration gates"
@@ -267,6 +326,11 @@
         "lib/core/codex-service.js",
         "scripts/gigabrainctl.js"
       ],
+      "targetPaths": [
+        "lib/core/codex-mcp.js",
+        "lib/core/codex-service.js",
+        "scripts/gigabrainctl.js"
+      ],
       "testGate": "all-scope deny/default packaged tests"
     },
     {
@@ -281,6 +345,9 @@
       "reason": "Transplant the packaged privacy regression without copying runtime code.",
       "sequence": 11,
       "sourcePaths": [
+        "tests/integration-packaged-sync-hosts-test.js"
+      ],
+      "targetPaths": [
         "tests/integration-packaged-sync-hosts-test.js"
       ],
       "testGate": "all-scope deny/default packaged tests"
@@ -299,6 +366,9 @@
       "sourcePaths": [
         "package-lock.json"
       ],
+      "targetPaths": [
+        "package-lock.json"
+      ],
       "testGate": "dependency lock/audit and dual-toolchain gates"
     },
     {
@@ -313,6 +383,15 @@
       "reason": "Retain upstream safe boundaries and port only regression fixtures.",
       "sequence": 13,
       "sourcePaths": [
+        "lib/core/event-store.js",
+        "lib/core/http-routes.js",
+        "lib/core/memory-actions.js",
+        "lib/core/native-memory.js",
+        "lib/core/native-promotion.js",
+        "lib/core/projection-store.js",
+        "lib/core/review-queue.js"
+      ],
+      "targetPaths": [
         "lib/core/event-store.js",
         "lib/core/http-routes.js",
         "lib/core/memory-actions.js",
@@ -343,6 +422,12 @@
         "lib/core/world-model.js",
         "tests/unit-orchestrator-test.js"
       ],
+      "targetPaths": [
+        "lib/core/orchestrator.js",
+        "lib/core/person-service.js",
+        "lib/core/world-model.js",
+        "tests/unit-orchestrator-test.js"
+      ],
       "testGate": "workspace identity, compound entity, and scope matrix"
     },
     {
@@ -356,6 +441,9 @@
       "reason": "Preserve the allowed-root writer contract through focused native writer tests.",
       "sequence": 15,
       "sourcePaths": [
+        "lib/core/native-memory.js"
+      ],
+      "targetPaths": [
         "lib/core/native-memory.js"
       ],
       "testGate": "native writer containment gate"
@@ -373,6 +461,9 @@
       "sourcePaths": [
         "memory_api/app.py"
       ],
+      "targetPaths": [
+        "memory_api/app.py"
+      ],
       "testGate": "Node/Python projection, document, and API coherence gate"
     },
     {
@@ -386,6 +477,9 @@
       "reason": "Retain only provider and path behavior relevant to the live contract.",
       "sequence": 17,
       "sourcePaths": [
+        "memory_api/app.py"
+      ],
+      "targetPaths": [
         "memory_api/app.py"
       ],
       "testGate": "Node/Python projection, document, and API coherence gate"
@@ -425,6 +519,13 @@
         "memory_api/app.py",
         "tests/integration-openclaw-hooks-test.js"
       ],
+      "targetPaths": [
+        "index.ts",
+        "memory_api/.env.example",
+        "memory_api/README.md",
+        "memory_api/app.py",
+        "tests/integration-openclaw-hooks-test.js"
+      ],
       "testGate": "Node/Python projection, document, and API coherence gate"
     },
     {
@@ -440,6 +541,9 @@
       "sourcePaths": [
         "memory_api/app.py"
       ],
+      "targetPaths": [
+        "memory_api/app.py"
+      ],
       "testGate": "Node/Python projection, document, and API coherence gate"
     },
     {
@@ -453,6 +557,15 @@
       "reason": "Use upstream timeline support and preserve private-source package coverage.",
       "sequence": 21,
       "sourcePaths": [
+        "README.md",
+        "lib/core/http-routes.js",
+        "memory_api/README.md",
+        "package.json",
+        "tests/run-all.js",
+        "tests/unit-http-routes-test.js",
+        "tests/unit-package-metadata-test.js"
+      ],
+      "targetPaths": [
         "README.md",
         "lib/core/http-routes.js",
         "memory_api/README.md",
@@ -480,6 +593,13 @@
         "tests/run-all.js",
         "tests/unit-native-promotion-test.js"
       ],
+      "targetPaths": [
+        "lib/core/maintenance-service.js",
+        "lib/core/native-promotion.js",
+        "tests/regression-native-promotion-reconcile-test.js",
+        "tests/run-all.js",
+        "tests/unit-native-promotion-test.js"
+      ],
       "testGate": "Node/Python projection, document, and API coherence gate"
     },
     {
@@ -498,6 +618,12 @@
         "memory_api/README.md",
         "memory_api/app.py"
       ],
+      "targetPaths": [
+        "README.md",
+        "lib/core/capture-service.js",
+        "memory_api/README.md",
+        "memory_api/app.py"
+      ],
       "testGate": "Node/Python projection, document, and API coherence gate"
     },
     {
@@ -511,6 +637,10 @@
       "reason": "Retain the bounded API timeout as an isolated setting with a test.",
       "sequence": 24,
       "sourcePaths": [
+        "memory_api/README.md",
+        "memory_api/app.py"
+      ],
+      "targetPaths": [
         "memory_api/README.md",
         "memory_api/app.py"
       ],
@@ -534,6 +664,13 @@
         "lib/core/native-sync.js",
         "tests/unit-native-promotion-test.js"
       ],
+      "targetPaths": [
+        "lib/compat/native-metadata.js",
+        "lib/core/native-memory.js",
+        "lib/core/native-promotion.js",
+        "lib/core/native-sync.js",
+        "tests/unit-native-promotion-test.js"
+      ],
       "testGate": "metadata, gate, reconcile, and compound taxonomy fixtures"
     },
     {
@@ -548,6 +685,11 @@
       "reason": "Port behavioral fixtures and retain upstream logic instead of copying regexes.",
       "sequence": 26,
       "sourcePaths": [
+        "lib/core/person-service.js",
+        "tests/unit-person-service-test.js",
+        "tests/unit-world-model-test.js"
+      ],
+      "targetPaths": [
         "lib/core/person-service.js",
         "tests/unit-person-service-test.js",
         "tests/unit-world-model-test.js"
@@ -569,6 +711,10 @@
         "lib/core/native-promotion.js",
         "tests/unit-native-promotion-test.js"
       ],
+      "targetPaths": [
+        "lib/core/native-promotion.js",
+        "tests/unit-native-promotion-test.js"
+      ],
       "testGate": "metadata, gate, reconcile, and compound taxonomy fixtures"
     },
     {
@@ -586,6 +732,10 @@
         "index.ts",
         "tests/integration-openclaw-hooks-test.js"
       ],
+      "targetPaths": [
+        "index.ts",
+        "tests/integration-openclaw-hooks-test.js"
+      ],
       "testGate": "metadata, gate, reconcile, and compound taxonomy fixtures"
     },
     {
@@ -600,6 +750,10 @@
       "reason": "Preserve duplicate suppression through native writer tests.",
       "sequence": 29,
       "sourcePaths": [
+        "lib/core/capture-service.js",
+        "tests/unit-capture-service-test.js"
+      ],
+      "targetPaths": [
         "lib/core/capture-service.js",
         "tests/unit-capture-service-test.js"
       ],
@@ -621,6 +775,11 @@
         "tests/unit-capture-service-test.js",
         "tests/unit-codex-service-test.js"
       ],
+      "targetPaths": [
+        "lib/core/native-memory.js",
+        "tests/unit-capture-service-test.js",
+        "tests/unit-codex-service-test.js"
+      ],
       "testGate": "metadata, gate, reconcile, and compound taxonomy fixtures"
     },
     {
@@ -636,6 +795,11 @@
       "reason": "Translate golden fixtures onto the 0.11 Borda, RRF, and relevance-floor pipeline.",
       "sequence": 31,
       "sourcePaths": [
+        "lib/core/person-service.js",
+        "lib/core/recall-service.js",
+        "tests/unit-recall-service-test.js"
+      ],
+      "targetPaths": [
         "lib/core/person-service.js",
         "lib/core/recall-service.js",
         "tests/unit-recall-service-test.js"
@@ -677,6 +841,35 @@
         "lib/core/world-model.js",
         "openclaw.plugin.json",
         "scripts/gigabrain-hygiene-20260425.js",
+        "scripts/gigabrainctl.js",
+        "tests/helpers.js",
+        "tests/run-all.js",
+        "tests/unit-capture-service-test.js",
+        "tests/unit-config-test.js",
+        "tests/unit-hygiene-migration-test.js",
+        "tests/unit-native-sync-query-test.js",
+        "tests/unit-orchestrator-test.js",
+        "tests/unit-projection-store-test.js",
+        "tests/unit-queue-review-service-test.js",
+        "tests/unit-world-model-test.js"
+      ],
+      "targetPaths": [
+        "index.ts",
+        "lib/compat/openclaw-memory-cli.js",
+        "lib/compat/openclaw-memory-runtime.js",
+        "lib/compat/queue-review-service.js",
+        "lib/core/capture-service.js",
+        "lib/core/config.js",
+        "lib/core/maintenance-service.js",
+        "lib/core/memory-actions.js",
+        "lib/core/native-sync.js",
+        "lib/core/orchestrator.js",
+        "lib/core/person-service.js",
+        "lib/core/projection-store.js",
+        "lib/core/recall-service.js",
+        "lib/core/review-queue.js",
+        "lib/core/world-model.js",
+        "openclaw.plugin.json",
         "scripts/gigabrainctl.js",
         "tests/helpers.js",
         "tests/run-all.js",
@@ -736,6 +929,36 @@
         "tests/unit-orchestrator-test.js",
         "tests/unit-queue-review-service-test.js"
       ],
+      "targetPaths": [
+        "index.ts",
+        "lib/compat/auto-capture-policy.js",
+        "lib/compat/memory-llm-client.js",
+        "lib/compat/openclaw-memory-runtime.js",
+        "lib/compat/queue-review-service.js",
+        "lib/core/capture-service.js",
+        "lib/core/config.js",
+        "lib/core/embedding-service.js",
+        "lib/core/llm-router.js",
+        "lib/core/maintenance-service.js",
+        "lib/core/native-promotion.js",
+        "lib/core/native-sync.js",
+        "lib/core/orchestrator.js",
+        "lib/core/recall-service.js",
+        "openclaw.plugin.json",
+        "scripts/auto-capture-worker.js",
+        "scripts/gigabrainctl.js",
+        "tests/integration-openclaw-hooks-test.js",
+        "tests/regression-native-promotion-reconcile-test.js",
+        "tests/run-all.js",
+        "tests/unit-auto-capture-service-test.js",
+        "tests/unit-config-test.js",
+        "tests/unit-embedding-service-test.js",
+        "tests/unit-hygiene-migration-test.js",
+        "tests/unit-memory-llm-client-test.js",
+        "tests/unit-openclaw-memory-runtime-test.js",
+        "tests/unit-orchestrator-test.js",
+        "tests/unit-queue-review-service-test.js"
+      ],
       "testGate": "flush, embedding, capture, provider, queue, and surface gates"
     },
     {
@@ -749,6 +972,9 @@
       "reason": "Keep generated summaries outside every native-promotion source glob.",
       "sequence": 34,
       "sourcePaths": [
+        "lib/core/maintenance-service.js"
+      ],
+      "targetPaths": [
         "lib/core/maintenance-service.js"
       ],
       "testGate": "generated-output exclusion and nightly gate"
@@ -772,6 +998,13 @@
         "tests/integration-openclaw-hooks-test.js",
         "tests/unit-auto-capture-service-test.js"
       ],
+      "targetPaths": [
+        "index.ts",
+        "lib/compat/auto-capture-policy.js",
+        "lib/compat/memory-llm-client.js",
+        "tests/integration-openclaw-hooks-test.js",
+        "tests/unit-auto-capture-service-test.js"
+      ],
       "testGate": "scope, prelude, and auto-capture privacy fixtures"
     },
     {
@@ -786,6 +1019,13 @@
       "reason": "Replace the hand-maintained runtime blob with deterministic build parity.",
       "sequence": 36,
       "sourcePaths": [
+        "index.js",
+        "lib/core/world-model.js",
+        "package.json",
+        "scripts/build-runtime-js.js",
+        "tests/unit-world-model-test.js"
+      ],
+      "targetPaths": [
         "index.js",
         "lib/core/world-model.js",
         "package.json",
@@ -808,6 +1048,10 @@
       "sequence": 37,
       "sourcePaths": [
         "lib/core/vault-mirror.js",
+        "memory_api/app.py",
+        "scripts/gigabrainctl.js"
+      ],
+      "targetPaths": [
         "memory_api/app.py",
         "scripts/gigabrainctl.js"
       ],
@@ -836,6 +1080,16 @@
         "tests/unit-orchestrator-test.js",
         "tests/unit-person-service-test.js"
       ],
+      "targetPaths": [
+        "index.js",
+        "lib/compat/auto-capture-policy.js",
+        "lib/core/person-service.js",
+        "lib/core/recall-service.js",
+        "lib/core/world-model.js",
+        "tests/unit-auto-capture-service-test.js",
+        "tests/unit-orchestrator-test.js",
+        "tests/unit-person-service-test.js"
+      ],
       "testGate": "Paperclip wake/noise, entity, and recall quality fixtures"
     },
     {
@@ -853,6 +1107,11 @@
         "scripts/auto-capture-worker.js",
         "tests/unit-auto-capture-service-test.js"
       ],
+      "targetPaths": [
+        "lib/compat/auto-capture-policy.js",
+        "scripts/auto-capture-worker.js",
+        "tests/unit-auto-capture-service-test.js"
+      ],
       "testGate": "queue crash, retry, stale, and packet-scrub tests"
     },
     {
@@ -866,6 +1125,10 @@
       "reason": "Retain the threshold in generated schema and worker tests.",
       "sequence": 40,
       "sourcePaths": [
+        "lib/core/config.js",
+        "openclaw.plugin.json"
+      ],
+      "targetPaths": [
         "lib/core/config.js",
         "openclaw.plugin.json"
       ],
@@ -888,6 +1151,13 @@
         "tests/run-all.js",
         "tests/unit-surface-refresh-service-test.js"
       ],
+      "targetPaths": [
+        "lib/operator/surface-refresh-service.js",
+        "scripts/auto-capture-worker.js",
+        "scripts/gigabrainctl.js",
+        "tests/run-all.js",
+        "tests/unit-surface-refresh-service-test.js"
+      ],
       "testGate": "mutation-only refresh and no-op hash gate"
     },
     {
@@ -901,6 +1171,14 @@
       "reason": "Preserve exact model identity, instruction, dimensions, and cache validation.",
       "sequence": 42,
       "sourcePaths": [
+        "eval/golden-seed.js",
+        "lib/core/config.js",
+        "lib/core/embedding-service.js",
+        "openclaw.plugin.json",
+        "scripts/gigabrainctl.js",
+        "tests/unit-embedding-service-test.js"
+      ],
+      "targetPaths": [
         "eval/golden-seed.js",
         "lib/core/config.js",
         "lib/core/embedding-service.js",
@@ -934,6 +1212,19 @@
         "tests/unit-config-test.js",
         "tests/unit-native-promotion-test.js"
       ],
+      "targetPaths": [
+        "docs/configuration.md",
+        "index.ts",
+        "lib/compat/auto-capture-policy.js",
+        "lib/core/capture-service.js",
+        "lib/core/config.js",
+        "lib/core/native-promotion.js",
+        "scripts/auto-capture-worker.js",
+        "tests/integration-openclaw-hooks-test.js",
+        "tests/unit-auto-capture-service-test.js",
+        "tests/unit-config-test.js",
+        "tests/unit-native-promotion-test.js"
+      ],
       "testGate": "flush exclusion and daily metadata gate/reconcile tests"
     },
     {
@@ -948,6 +1239,13 @@
       "reason": "Manually port the fail-closed metadata gate before native sync.",
       "sequence": 44,
       "sourcePaths": [
+        "lib/core/config.js",
+        "lib/core/maintenance-service.js",
+        "lib/core/native-promotion.js",
+        "openclaw.plugin.json",
+        "tests/unit-native-promotion-test.js"
+      ],
+      "targetPaths": [
         "lib/core/config.js",
         "lib/core/maintenance-service.js",
         "lib/core/native-promotion.js",
@@ -973,6 +1271,12 @@
         "tests/run-all.js",
         "tests/unit-audit-hardening-regression-test.js"
       ],
+      "targetPaths": [
+        "lib/core/native-memory.js",
+        "lib/core/review-queue.js",
+        "tests/run-all.js",
+        "tests/unit-audit-hardening-regression-test.js"
+      ],
       "testGate": "symlink, path, and prototype-pollution regressions"
     },
     {
@@ -988,6 +1292,9 @@
       "sourcePaths": [
         "index.js"
       ],
+      "targetPaths": [
+        "index.js"
+      ],
       "testGate": "deterministic index.js rebuild and packed-entry parity"
     },
     {
@@ -1001,6 +1308,9 @@
       "reason": "Preserve and harden locking with cross-runtime concurrency tests.",
       "sequence": 47,
       "sourcePaths": [
+        "lib/core/native-memory.js"
+      ],
+      "targetPaths": [
         "lib/core/native-memory.js"
       ],
       "testGate": "Node/Node and Node/Python lock concurrency gate"
@@ -3570,7 +3880,7 @@
   "deployedSource": {
     "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
     "commitCount": 47,
-    "commitManifestSha256": "cfe081bb434bcd4bf2ee47c7c8c1b463d9ab9792974debedb8f0ae206259e688",
+    "commitManifestSha256": "1e4e971504a9b6ad74779b2336a6d633b16e7c4813993656919ce61439587dff",
     "fileCount": 208,
     "fileManifestSha256": "4e960bb350d48634ebf47f09d00036a942fff33933fe3b25786e9513b671bf2f",
     "tree": "2ea1117367407f87e5b9702ba65f7346f2c6390f"

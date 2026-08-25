@@ -25,13 +25,14 @@ const POLICY_INFRASTRUCTURE = new Set([
   "config/migration/upstream-source-allowlist.json",
   "scripts/check-source-first-divergence.mjs",
 ]);
+const ACTIVE_GATE_KINDS = new Set(["active_test"]);
 
 // These values are filled from the reviewed forensic snapshot. They deliberately
 // bind counts and manifest hashes rather than source bytes or private literals.
 const AUTHORITATIVE = {
   deployedCommit: "43cd4b41518b5e35b3872722fcceaac535a1ff64",
   deployedCommitCount: 47,
-  deployedCommitManifestSha256: "cfe081bb434bcd4bf2ee47c7c8c1b463d9ab9792974debedb8f0ae206259e688",
+  deployedCommitManifestSha256: "1e4e971504a9b6ad74779b2336a6d633b16e7c4813993656919ce61439587dff",
   deployedFileCount: 208,
   deployedFileManifestSha256: "4e960bb350d48634ebf47f09d00036a942fff33933fe3b25786e9513b671bf2f",
   deployedTree: "2ea1117367407f87e5b9702ba65f7346f2c6390f",
@@ -115,7 +116,7 @@ function validatePathList(value) {
   }
 }
 
-function validateDispositionRow(row) {
+function validateDispositionRow(row, { requireTestGate = true } = {}) {
   if (!DISPOSITIONS.has(row.disposition)) fail("UNKNOWN_DISPOSITION", row.disposition);
   if (!Array.isArray(row.ownerTasks) || row.ownerTasks.length === 0) fail("MISSING_OWNER");
   const owners = new Set();
@@ -124,19 +125,43 @@ function validateDispositionRow(row) {
     owners.add(owner);
   }
   nonEmptyString(row.reason);
-  nonEmptyString(row.testGate, "MISSING_TEST_GATE");
+  if (requireTestGate) nonEmptyString(row.testGate, "MISSING_TEST_GATE");
 }
 
-function validateHistoricalTarget(row) {
+function validateHistoricalTarget(row, { rowKind = "row" } = {}) {
   const hasHistory = typeof row.historicalDisposition === "string" && row.historicalDisposition.length > 0;
   const hasTarget = typeof row.targetPath === "string" && row.targetPath.length > 0;
   const hasTargets = Array.isArray(row.targetPaths) && row.targetPaths.length > 0;
   const hasSources = Array.isArray(row.sourcePaths) && row.sourcePaths.length > 0;
+  if (row.disposition === "retired") {
+    if (!hasHistory) {
+      fail(rowKind === "commit" ? "MISSING_COMMIT_HISTORY" : "MISSING_PATH_DISPOSITION");
+    }
+  }
+  if (rowKind === "commit" && row.disposition !== "retired" && !hasTarget && !hasTargets) {
+    fail("MISSING_COMMIT_TARGET");
+  }
   if (!hasHistory && !hasTarget && !hasTargets && !hasSources) fail("MISSING_PATH_DISPOSITION");
   if (hasHistory) nonEmptyString(row.historicalDisposition);
   if (hasTarget) validatePath(row.targetPath);
   if (hasTargets) validatePathList(row.targetPaths);
   if (hasSources) validatePathList(row.sourcePaths);
+}
+
+function validateCandidateGate(row) {
+  const hasLegacyGate = Object.hasOwn(row, "testGate");
+  const hasActiveGate = Object.hasOwn(row, "gate");
+  if (hasLegacyGate === hasActiveGate) fail("MISSING_TEST_GATE");
+  if (hasLegacyGate) {
+    nonEmptyString(row.testGate, "MISSING_TEST_GATE");
+    return;
+  }
+  exactKeys(row.gate, ["kind", "ownerSourceFirstTaskId", "testPath"]);
+  if (!ACTIVE_GATE_KINDS.has(row.gate.kind)) fail("MISSING_TEST_GATE");
+  if (typeof row.gate.ownerSourceFirstTaskId !== "string" || !TASK.test(row.gate.ownerSourceFirstTaskId)) {
+    fail("MISSING_TEST_GATE");
+  }
+  validatePath(row.gate.testPath);
 }
 
 function validateAuditedBase(value) {
@@ -227,7 +252,7 @@ function validateMap(map) {
     if (row.sequence !== index + 1) fail("COMMIT_SEQUENCE");
     nonEmptyString(row.contract);
     if (Object.hasOwn(row, "criticality")) nonEmptyString(row.criticality);
-    validateHistoricalTarget(row);
+    validateHistoricalTarget(row, { rowKind: "commit" });
   }
 
   if (!Array.isArray(map.preTagTools)) fail("SCHEMA");
@@ -274,6 +299,7 @@ function validateMap(map) {
   if (!Array.isArray(map.candidateChanges)) fail("SCHEMA");
   const candidatePaths = new Set();
   for (const row of map.candidateChanges) {
+    if (Object.hasOwn(row, "scanExemptions")) fail("INVALID_SCAN_EXEMPTION");
     exactKeys(row, [
       "changeType",
       "contentSha256",
@@ -282,9 +308,9 @@ function validateMap(map) {
       "reason",
       "targetMode",
       "targetPath",
-      "testGate",
-    ]);
-    validateDispositionRow(row);
+    ], ["gate", "testGate"]);
+    validateDispositionRow(row, { requireTestGate: false });
+    validateCandidateGate(row);
     validatePath(row.targetPath);
     if (candidatePaths.has(row.targetPath)) fail("DUPLICATE_ROW", row.targetPath);
     candidatePaths.add(row.targetPath);
@@ -430,6 +456,13 @@ function validatePrivateAndObsolete(map, head, candidateRow) {
   }
   if (bytes.includes(0)) return;
   const text = bytes.toString("utf8");
+  const operatorPatterns = [
+    /["']operatorRules["']\s*:/,
+    /["']privateRules["']\s*:/,
+    /\boperatorRules\s*=/,
+    /\bprivateRules\s*=/,
+  ];
+  if (operatorPatterns.some((pattern) => pattern.test(text))) fail("OPERATOR_LITERAL", candidateRow.targetPath);
   const privatePatterns = [
     /SOURCE_FIRST_PRIVATE_LITERAL/,
     /\boperator[_-]?private\b/i,
@@ -437,6 +470,44 @@ function validatePrivateAndObsolete(map, head, candidateRow) {
     /\/(?:home|Users)\/[A-Za-z0-9._-]+\//,
   ];
   if (privatePatterns.some((pattern) => pattern.test(text))) fail("PRIVATE_LITERAL", candidateRow.targetPath);
+}
+
+function validatePolicyAuthority({ allowlistPath, base, head, map, mapPath }) {
+  const repoRoot = path.resolve(gitText(["rev-parse", "--show-toplevel"]));
+  const authoritativeBaseExists = git(
+    ["cat-file", "-e", `${AUTHORITATIVE_BASE}^{commit}`],
+    { allowFailure: true },
+  ).status === 0;
+
+  if (authoritativeBaseExists) {
+    const canonicalMap = path.join(repoRoot, "config", "migration", "source-first-port-map.json");
+    const canonicalAllowlist = path.join(repoRoot, "config", "migration", "upstream-source-allowlist.json");
+    if (
+      mapPath !== canonicalMap ||
+      allowlistPath !== canonicalAllowlist ||
+      base !== AUTHORITATIVE_BASE ||
+      map.auditedBase.commit !== AUTHORITATIVE_BASE
+    ) {
+      fail("NON_AUTHORITATIVE_POLICY");
+    }
+    return;
+  }
+
+  // Synthetic repositories exercise the generic policy schema without the
+  // production root of trust. They still may not redefine HEAD as their own
+  // audited authority, which would reduce the guard to an empty-diff check.
+  if (base === head && map.auditedBase.commit === head) fail("NON_AUTHORITATIVE_POLICY");
+}
+
+function validateActiveGates(map, headByPath) {
+  for (const row of map.candidateChanges) {
+    if (!row.gate) continue;
+    if (!row.ownerTasks.includes(row.gate.ownerSourceFirstTaskId)) {
+      fail("GATE_OWNER_MISMATCH", row.targetPath);
+    }
+    const gateEntry = headByPath.get(row.gate.testPath);
+    if (!gateEntry || gateEntry.type !== "blob") fail("ACTIVE_GATE_MISSING", row.gate.testPath);
+  }
 }
 
 function isSourceOrDefault(targetPath) {
@@ -473,10 +544,11 @@ function main() {
   validateAuthoritativeSnapshot(map);
 
   const base = resolveCommit(options.base);
+  const head = resolveCommit("HEAD");
+  validatePolicyAuthority({ allowlistPath, base, head, map, mapPath });
   if (base !== map.auditedBase.commit || allowlist.auditedBase.commit !== base) fail("INVALID_BASE");
   const baseTreeId = gitText(["rev-parse", `${base}^{tree}`]);
   if (baseTreeId !== map.auditedBase.tree || allowlist.auditedBase.tree !== baseTreeId) fail("INVALID_BASE");
-  const head = resolveCommit("HEAD");
   if (git(["merge-base", "--is-ancestor", base, head], { allowFailure: true }).status !== 0) fail("INVALID_BASE");
 
   if (git(["status", "--porcelain=v1", "-z", "--untracked-files=all"], { binary: true }).stdout.length > 0) {
@@ -508,6 +580,7 @@ function main() {
 
   const diff = readDiff(base, head);
   const headByPath = new Map(readTree(head).map((entry) => [entry.path, entry]));
+  validateActiveGates(map, headByPath);
   const seenDiffs = new Set();
   const statusToChange = { A: "added", D: "deleted", M: "modified", T: "modified" };
   for (const actual of diff) {
