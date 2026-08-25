@@ -1,0 +1,17 @@
+[
+  {
+    "files": [
+      {
+        "mode": 420,
+        "path": "package.json",
+        "size": 100
+      },
+      {
+        "mode": 420,
+        "path": "index.js",
+        "size": 200
+      }
+    ],
+    "name": "synthetic-package"
+  }
+]
