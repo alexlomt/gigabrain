@@ -16,6 +16,29 @@ export async function run() {
     private_memorybench_overlay: 1,
   });
   const repoRoot = path.resolve(import.meta.dirname, "..");
+  const deployed = JSON.parse(readFileSync(
+    path.join(repoRoot, "config", "migration", "deployed-test-inventory.json"),
+    "utf8",
+  ));
+  const deployedNormal = deployed.tests.filter((row) => row.class === "normal_registered");
+  const missingNormalTargets = deployedNormal
+    .filter((row) => !existsSync(path.join(repoRoot, row.syntheticTarget)))
+    .map((row) => row.syntheticTarget);
+  assert.deepEqual(
+    missingNormalTargets,
+    [],
+    `DEPLOYED_NORMAL_TARGET_MISSING ${missingNormalTargets.join(",")}`,
+  );
+  const registered = new Set(inventory.NORMAL_TEST_DESCRIPTORS.map((row) => row.file));
+  const unregisteredNormalTargets = deployedNormal
+    .map((row) => row.syntheticTarget.replace(/^tests\//, ""))
+    .filter((target) => !registered.has(target));
+  assert.deepEqual(
+    unregisteredNormalTargets,
+    [],
+    `DEPLOYED_NORMAL_TARGET_UNREGISTERED ${unregisteredNormalTargets.join(",")}`,
+  );
+  assert.equal(inventory.DEPLOYED_NORMAL_TEST_FILES.length, 62);
   const baseline = JSON.parse(readFileSync(path.join(repoRoot, "eval", "baseline.json"), "utf8"));
   assert.deepEqual(baseline.thresholds, {
     maxInstructionLeaks: 0,

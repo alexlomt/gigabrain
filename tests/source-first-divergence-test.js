@@ -83,6 +83,11 @@ function makeFixture(mutate = () => {}) {
   git(fixtureRepo, ["config", "user.email", "source-first-test@example.com"]);
   writeFileSync(path.join(fixtureRepo, "lib", "upstream.js"), "export const upstream = true;\n");
   writeFileSync(path.join(fixtureRepo, "lib", "core.js"), "export const core = true;\n");
+  mkdirSync(path.join(fixtureRepo, "tests"), { recursive: true });
+  writeFileSync(
+    path.join(fixtureRepo, "tests", "unregistered-test.js"),
+    "export async function run() { return true; }\n",
+  );
   commitAll(fixtureRepo, "fixture base");
 
   const base = git(fixtureRepo, ["rev-parse", "HEAD"]);
@@ -242,6 +247,44 @@ function expectFailure(name, code, mutate, extraArgs = []) {
 }
 
 expectPass("exact classified delta", () => {});
+
+expectFailure("candidate prose cannot stand in for test evidence", "UNSTRUCTURED_GATE", () => {});
+
+expectFailure("active gate cannot point to an unrelated blob", "GATE_NOT_TEST", ({ map }) => {
+  delete map.candidateChanges[0].testGate;
+  map.candidateChanges[0].gate = {
+    kind: "active_test",
+    ownerSourceFirstTaskId: "2A",
+    testPath: "config/meta.json",
+  };
+});
+
+expectFailure("active gate test must be registered", "GATE_UNREGISTERED", ({ map }) => {
+  delete map.candidateChanges[0].testGate;
+  map.candidateChanges[0].gate = {
+    kind: "active_test",
+    ownerSourceFirstTaskId: "2A",
+    testPath: "tests/unregistered-test.js",
+  };
+});
+
+expectFailure("removed upstream ownership requires core patch", "UPSTREAM_PATCH_NOT_CORE", ({ allowlist, fixtureRepo, map }) => {
+  writeFileSync(path.join(fixtureRepo, "lib", "core.js"), "export const core = false;\n");
+  commitAll(fixtureRepo, "non-core upstream patch fixture");
+  allowlist.entries = allowlist.entries.filter((entry) => entry.path !== "lib/core.js");
+  allowlist.entryCount = allowlist.entries.length;
+  allowlist.manifestSha256 = sha256(canonicalJson(allowlist.entries));
+  map.candidateChanges.push({
+    changeType: "modified",
+    contentSha256: blobIdentity(path.join(fixtureRepo, "lib", "core.js")),
+    disposition: "operator_only",
+    ownerTasks: ["2A"],
+    reason: "Synthetic non-core upstream patch fixture.",
+    targetMode: "100644",
+    targetPath: "lib/core.js",
+    testGate: "synthetic prose",
+  });
+});
 
 expectFailure(
   "canonical alternate policy cannot redefine production authority",

@@ -17,6 +17,22 @@ export async function run() {
   assert.deepEqual(parser.parseNpmPackInventory(fixture("npm-pack-npm10.json")), ["index.js", "package.json"]);
   assert.deepEqual(parser.parseNpmPackInventory(fixture("npm-pack-npm12.json")), ["index.js", "package.json"]);
   assert.throws(
+    () => parser.parseNpmPackInventory('[{"files":[{"path":"index.js"}]}]'),
+    /npm pack report name is required/,
+  );
+  assert.throws(
+    () => parser.parseNpmPackInventory('{"synthetic-key":{"name":"different-name","files":[{"path":"index.js"}]}}'),
+    /npm 12 package key did not match report name/,
+  );
+  assert.throws(
+    () => parser.parseNpmPackInventory('[{"name":"one","files":[{"path":"index.js"}]},{"name":"two"}]'),
+    /npm pack inventory did not contain a file list for every report/,
+  );
+  assert.throws(
+    () => parser.parseNpmPackInventory('{"synthetic-package":true}'),
+    /npm pack report was not an object/,
+  );
+  assert.throws(
     () => parser.parseNpmPackInventory(fixture("npm-pack-invalid.json")),
     /npm pack inventory did not contain a file list/,
   );
