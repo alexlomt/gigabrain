@@ -243,6 +243,74 @@ function expectFailure(name, code, mutate, extraArgs = []) {
 
 expectPass("exact classified delta", () => {});
 
+expectFailure(
+  "canonical alternate policy cannot redefine production authority",
+  "NON_AUTHORITATIVE_POLICY",
+  ({ allowlist, fixtureRepo, map }) => {
+    const head = git(fixtureRepo, ["rev-parse", "HEAD"]);
+    const tree = git(fixtureRepo, ["rev-parse", "HEAD^{tree}"]);
+    const headRows = git(fixtureRepo, ["ls-tree", "-r", head])
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => {
+        const match = /^(\d+) (\w+) ([0-9a-f]{40})\t(.+)$/.exec(line);
+        assert(match);
+        return { blob: match[3], mode: match[1], path: match[4], type: match[2] };
+      });
+    allowlist.auditedBase = { commit: head, tree };
+    allowlist.entries = headRows;
+    allowlist.entryCount = headRows.length;
+    allowlist.manifestSha256 = sha256(canonicalJson(headRows));
+    map.auditedBase = { commit: head, tree };
+    map.candidateChanges = [];
+  },
+  ["--base", "HEAD"],
+);
+
+expectFailure("nonexistent active candidate gate", "ACTIVE_GATE_MISSING", ({ map }) => {
+  delete map.candidateChanges[0].testGate;
+  map.candidateChanges[0].gate = {
+    kind: "active_test",
+    ownerSourceFirstTaskId: "2A",
+    testPath: "tests/not-present.js",
+  };
+});
+
+expectFailure("unowned active candidate gate", "GATE_OWNER_MISMATCH", ({ map }) => {
+  delete map.candidateChanges[0].testGate;
+  map.candidateChanges[0].gate = {
+    kind: "active_test",
+    ownerSourceFirstTaskId: "9",
+    testPath: "tests/source-first-divergence-test.js",
+  };
+});
+
+expectFailure("preserved commit without target", "MISSING_COMMIT_TARGET", ({ map }) => {
+  const row = map.deployedCommits[0];
+  row.disposition = "compat_module";
+  delete row.historicalDisposition;
+  row.sourcePaths = ["legacy/source.js"];
+  map.deployedSource.commitManifestSha256 = sha256(canonicalJson(map.deployedCommits));
+});
+
+expectFailure("retired commit without history", "MISSING_COMMIT_HISTORY", ({ map }) => {
+  delete map.deployedCommits[0].historicalDisposition;
+  map.deployedSource.commitManifestSha256 = sha256(canonicalJson(map.deployedCommits));
+});
+
+expectFailure("operator rules in committed defaults", "OPERATOR_LITERAL", ({ fixtureRepo, map }) => {
+  writeFileSync(
+    path.join(fixtureRepo, "config", "meta.json"),
+    '{"defaults":{"operatorRules":{"aliases":["synthetic-example"]}}}\n',
+  );
+  commitAll(fixtureRepo, "operator defaults fixture");
+  map.candidateChanges[0].contentSha256 = blobIdentity(path.join(fixtureRepo, "config", "meta.json"));
+});
+
+expectFailure("unbound synthetic exemption", "INVALID_SCAN_EXEMPTION", ({ map }) => {
+  map.candidateChanges[0].scanExemptions = ["synthetic_operator_rules_fixture"];
+});
+
 expectFailure("unclassified file", "UNCLASSIFIED_DIFF", ({ fixtureRepo }) => {
   writeFileSync(path.join(fixtureRepo, "unclassified.js"), "export default true;\n");
   commitAll(fixtureRepo, "unclassified delta");
