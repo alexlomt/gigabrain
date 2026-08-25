@@ -23,7 +23,7 @@ const run = async () => {
   try {
     fs.mkdirSync(path.join(root, 'scripts'), { recursive: true });
     fs.mkdirSync(path.join(root, 'docs'), { recursive: true });
-    for (const script of ['check-no-pii.mjs', 'privacy-policy.mjs']) {
+    for (const script of ['check-no-pii.mjs', 'npm-pack-inventory.mjs', 'privacy-policy.mjs']) {
       fs.copyFileSync(path.join(repoRoot, 'scripts', script), path.join(root, 'scripts', script));
     }
 

@@ -1,156 +1,197 @@
 #!/usr/bin/env node
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const testsRoot = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(testsRoot, "..");
+const args = process.argv.slice(2);
 const PUBLIC_TEST_FILES = [
-  'integration-remote-mcp-test.js',
-  'unit-bitemporal-test.js',
-  'unit-bm25-test.js',
-  'unit-capture-service-test.js',
-  'unit-checkpoint-migration-test.js',
-  'unit-claim-promotion-auth-test.js',
-  'unit-cloud-inbox-test.js',
-  'unit-config-test.js',
-  'unit-control-plane-test.js',
-  'unit-cross-store-merge-test.js',
-  'unit-event-store-test.js',
-  'unit-git-wiki-test.js',
-  'unit-handoff-pii-redaction-test.js',
-  'unit-host-memory-sync-test.js',
-  'unit-http-routes-test.js',
-  'unit-lifecycle-hooks-test.js',
-  'unit-pii-scanner-test.js',
-  'unit-plugin-runtime-test.js',
-  'unit-policy-test.js',
-  'unit-projection-store-test.js',
-  'unit-public-mirror-test.js',
-  'unit-recall-service-test.js',
-  'unit-remote-mcp-auth-test.js',
-  'unit-runtime-guard-test.js',
-  'unit-safe-boundaries-test.js',
-  'unit-sqlite-test.js',
-  'unit-standalone-client-test.js',
-  'unit-transcript-harvester-test.js',
-  'unit-utility-hardening-test.js',
+  "integration-remote-mcp-test.js",
+  "unit-bitemporal-test.js",
+  "unit-bm25-test.js",
+  "unit-capture-service-test.js",
+  "unit-checkpoint-migration-test.js",
+  "unit-claim-promotion-auth-test.js",
+  "unit-cloud-inbox-test.js",
+  "unit-config-test.js",
+  "unit-control-plane-test.js",
+  "unit-cross-store-merge-test.js",
+  "unit-event-store-test.js",
+  "unit-git-wiki-test.js",
+  "unit-handoff-pii-redaction-test.js",
+  "unit-host-memory-sync-test.js",
+  "unit-http-routes-test.js",
+  "unit-lifecycle-hooks-test.js",
+  "unit-pii-scanner-test.js",
+  "unit-plugin-runtime-test.js",
+  "unit-policy-test.js",
+  "unit-projection-store-test.js",
+  "unit-public-mirror-test.js",
+  "unit-recall-service-test.js",
+  "unit-remote-mcp-auth-test.js",
+  "unit-runtime-guard-test.js",
+  "unit-safe-boundaries-test.js",
+  "unit-sqlite-test.js",
+  "unit-standalone-client-test.js",
+  "unit-transcript-harvester-test.js",
+  "unit-utility-hardening-test.js",
 ];
 
-const root = path.dirname(fileURLToPath(import.meta.url));
-const args = process.argv.slice(2);
-
-const loadFullTestFiles = async () => {
-  const inventoryPath = path.join(root, 'full-test-inventory.js');
-  if (!fs.existsSync(inventoryPath)) return null;
-  const inventory = await import(pathToFileURL(inventoryPath).href);
-  if (!Array.isArray(inventory.FULL_TEST_FILES)
-      || inventory.FULL_TEST_FILES.some((file) => typeof file !== 'string' || file.length === 0)) {
-    throw new Error('Source test inventory is invalid.');
+function discoverTests(directory = testsRoot, prefix = "") {
+  const discovered = [];
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      discovered.push(...discoverTests(path.join(directory, entry.name), relative));
+    } else if (entry.isFile() && entry.name.endsWith("-test.js")) {
+      discovered.push(relative);
+    }
   }
-  return inventory.FULL_TEST_FILES;
-};
+  return discovered.sort((left, right) => left.localeCompare(right, "en"));
+}
 
-const readFilters = () => {
+function readFilters() {
   const filters = [];
   for (let index = 0; index < args.length; index += 1) {
-    const value = String(args[index] || '');
-    if (value === '--filter' && args[index + 1]) {
+    const value = String(args[index] || "");
+    if (value === "--filter" && args[index + 1]) {
       filters.push(String(args[index + 1]));
       index += 1;
-      continue;
-    }
-    if (value.startsWith('--filter=')) {
-      filters.push(value.split('=').slice(1).join('='));
+    } else if (value.startsWith("--filter=")) {
+      filters.push(value.slice("--filter=".length));
     }
   }
   return filters
-    .flatMap((item) => String(item || '').split(','))
+    .flatMap((item) => item.split(","))
     .map((item) => item.trim())
     .filter(Boolean);
-};
+}
 
-const run = async () => {
-  const fullTestFiles = await loadFullTestFiles();
-  const separatelyRun = new Set([
-    'release-live-codex-cli-test.js',
-    'release-live-openclaw-install-test.js',
-  ]);
-  const discovered = fs.readdirSync(root)
-    .filter((file) => (
-      (file.endsWith('-test.js') || Boolean(fullTestFiles?.includes(file)))
-      && !separatelyRun.has(file)
-    ))
-    .sort();
-  const exactInventory = (registered) => {
-    const expected = [...registered].sort();
-    return expected.length === discovered.length
-      && expected.every((file, index) => file === discovered[index]);
-  };
-  let inventoryMode;
-  let testFiles;
-  if (fullTestFiles && exactInventory(fullTestFiles)) {
-    inventoryMode = 'full';
-    testFiles = fullTestFiles;
-  } else if (exactInventory(PUBLIC_TEST_FILES)) {
-    inventoryMode = 'public';
-    testFiles = PUBLIC_TEST_FILES;
-  } else {
-    const publicSet = new Set(PUBLIC_TEST_FILES);
-    const missingFromPublic = PUBLIC_TEST_FILES.filter((file) => !discovered.includes(file));
-    const unexpectedForPublic = discovered.filter((file) => !publicSet.has(file));
-    const details = [
-      'Test inventory matches neither the full nor public suite.',
-    ];
-    if (fullTestFiles) {
-      const fullSet = new Set(fullTestFiles);
-      const missingFromFull = fullTestFiles.filter((file) => !discovered.includes(file));
-      const unexpectedForFull = discovered.filter((file) => !fullSet.has(file));
-      details.push(
-        `Full missing: ${missingFromFull.join(', ') || 'none'}`,
-        `Full unexpected: ${unexpectedForFull.join(', ') || 'none'}`,
-      );
-    }
-    details.push(
-      `Public missing: ${missingFromPublic.join(', ') || 'none'}`,
-      `Public unexpected: ${unexpectedForPublic.join(', ') || 'none'}`,
-    );
-    throw new Error(details.join('\n'));
+async function runModuleTest(file) {
+  const modulePath = pathToFileURL(path.join(testsRoot, file)).href;
+  const testModule = await import(modulePath);
+  if (typeof testModule.run !== "function") throw new Error(`TEST_RUNNER_MISSING_EXPORT ${file}`);
+  await testModule.run();
+}
+
+function runScriptTest(file) {
+  const result = spawnSync(process.execPath, [path.join(testsRoot, file)], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    env: { ...process.env, LC_ALL: "C" },
+    maxBuffer: 32 * 1024 * 1024,
+    timeout: 180_000,
+  });
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    const output = String(result.stderr || result.stdout || "").trim();
+    throw new Error(`SCRIPT_TEST_FAILED ${file}${output ? `: ${output}` : ""}`);
   }
-  if (args.includes('--inventory-only')) {
-    fs.writeSync(1, `${JSON.stringify({ ok: true, inventoryMode, tests: testFiles }, null, 2)}\n`);
+}
+
+async function execute(descriptor) {
+  if (descriptor.runner === "script") return runScriptTest(descriptor.file);
+  if (descriptor.runner === "module") return runModuleTest(descriptor.file);
+  throw new Error(`TEST_RUNNER_UNKNOWN ${descriptor.file}`);
+}
+
+async function main() {
+  const discovered = discoverTests();
+  const fullInventoryPath = path.join(testsRoot, "full-test-inventory.js");
+  const publicMatches = discovered.length === PUBLIC_TEST_FILES.length
+    && [...discovered].sort().every((file, index) => file === [...PUBLIC_TEST_FILES].sort()[index]);
+  let inventory = null;
+  if (fs.existsSync(fullInventoryPath)) {
+    inventory = await import(pathToFileURL(fullInventoryPath).href);
+    try {
+      inventory.validatePhysicalInventory(discovered, inventory.PHYSICAL_TEST_DESCRIPTORS);
+    } catch (error) {
+      if (!publicMatches) {
+        throw new Error(`Test inventory matches neither the full nor public suite.\n${error.message}`);
+      }
+      inventory = null;
+    }
+  } else if (!publicMatches) {
+    throw new Error("Test inventory matches neither the full nor public suite.");
+  }
+  const inventoryMode = inventory ? "private-compatibility" : "public";
+  const releaseLive = args.includes("--release-live");
+  const releaseAcceptance = args.includes("--release-acceptance")
+    || process.env.GIGABRAIN_RELEASE_ACCEPTANCE === "1";
+  if (!inventory && releaseLive) throw new Error("Release-live inventory is unavailable in the public suite.");
+  let expectedFailures = new Map();
+  if (inventory) {
+    const expectedDocument = JSON.parse(
+      fs.readFileSync(path.join(testsRoot, "compat", "expected-failures.json"), "utf8"),
+    );
+    if (expectedDocument.schemaVersion !== 1) throw new Error("EXPECTED_FAILURE_SCHEMA_VERSION");
+    expectedFailures = inventory.validateExpectedFailureManifest(
+      expectedDocument.entries,
+      inventory.NORMAL_TEST_DESCRIPTORS,
+      releaseAcceptance,
+    );
+  }
+  const publicDescriptors = PUBLIC_TEST_FILES.map((file) => ({ file, ownerTask: "upstream", runner: "module" }));
+  const descriptors = inventory
+    ? (releaseLive ? inventory.RELEASE_LIVE_TEST_DESCRIPTORS : inventory.NORMAL_TEST_DESCRIPTORS)
+    : publicDescriptors;
+  const filters = readFilters();
+  const selected = filters.length === 0
+    ? descriptors
+    : descriptors.filter((row) => filters.some((filter) => row.file.includes(filter)));
+  if (selected.length === 0 && !args.includes("--inventory-only")) {
+    throw new Error(`No tests matched filter(s): ${filters.join(", ")}`);
+  }
+  if (args.includes("--inventory-only")) {
+    const output = inventory ? {
+      deployedClasses: { isolated_release_live: 2, normal_registered: 62, private_memorybench_overlay: 1 },
+      expectedFailures: expectedFailures.size,
+      inventoryMode,
+      normalTests: inventory.NORMAL_TEST_DESCRIPTORS.length,
+      ok: true,
+      physicalTests: inventory.PHYSICAL_TEST_DESCRIPTORS.length,
+      releaseLiveTests: inventory.RELEASE_LIVE_TEST_DESCRIPTORS.length,
+    } : {
+      inventoryMode,
+      ok: true,
+      tests: PUBLIC_TEST_FILES,
+    };
+    process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
     return;
   }
-  const filters = readFilters();
-  const selectedFiles = filters.length === 0
-    ? testFiles
-    : testFiles.filter((file) => filters.some((filter) => file.includes(filter)));
-  if (selectedFiles.length === 0) {
-    throw new Error(`No tests matched filter(s): ${filters.join(', ')}`);
-  }
+
   const results = [];
-  for (const file of selectedFiles) {
-    const modulePath = pathToFileURL(path.join(root, file)).href;
-    const testModule = await import(modulePath);
-    if (typeof testModule.run !== 'function') {
-      throw new Error(`Test file ${file} does not export run()`);
-    }
+  for (const descriptor of selected) {
     const started = Date.now();
-    await testModule.run();
-    const elapsedMs = Date.now() - started;
-    results.push({
-      test: file,
-      elapsedMs,
-    });
+    let failure = null;
+    try {
+      await execute(descriptor);
+    } catch (error) {
+      failure = error;
+    }
+    const expected = expectedFailures.get(descriptor.file);
+    if (expected) {
+      const status = inventory.classifyExpectedOutcome(expected, failure);
+      results.push({ elapsedMs: Date.now() - started, status, test: descriptor.file });
+      continue;
+    }
+    if (failure) throw failure;
+    results.push({ elapsedMs: Date.now() - started, status: "passed", test: descriptor.file });
   }
-  fs.writeSync(1, `${JSON.stringify({
-    ok: true,
-    suite: 'gigabrain-v3',
-    inventoryMode,
+  process.stdout.write(`${JSON.stringify({
     filters,
+    inventoryMode,
+    ok: true,
+    releaseLive,
+    suite: "gigabrain-v0.11-source-first",
     tests: results,
   }, null, 2)}\n`);
-};
+}
 
-run().catch((err) => {
-  console.error(err instanceof Error ? err.stack || err.message : String(err));
+main().catch((error) => {
+  console.error(error instanceof Error ? error.stack || error.message : String(error));
   process.exit(1);
 });

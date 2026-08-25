@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "thresholds": {
+    "maxInstructionLeaks": 0,
+    "maxJunkWrapperLeaks": 0,
+    "maxMemoryMdPrivacyLeaks": 0,
+    "maxProvenanceLeaks": 0,
+    "maxTranscriptLeaks": 0,
+    "minCasePassRate": 0.9
+  }
+}

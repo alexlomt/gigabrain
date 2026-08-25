@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -14,6 +15,28 @@ export async function run() {
     isolated_release_live: 2,
     private_memorybench_overlay: 1,
   });
+  const repoRoot = path.resolve(import.meta.dirname, "..");
+  const baseline = JSON.parse(readFileSync(path.join(repoRoot, "eval", "baseline.json"), "utf8"));
+  assert.deepEqual(baseline.thresholds, {
+    maxInstructionLeaks: 0,
+    maxJunkWrapperLeaks: 0,
+    maxMemoryMdPrivacyLeaks: 0,
+    maxProvenanceLeaks: 0,
+    maxTranscriptLeaks: 0,
+    minCasePassRate: 0.9,
+  });
+  const evalResult = JSON.parse(execFileSync(
+    process.execPath,
+    [path.join(repoRoot, "eval", "run-deep-recall-eval.js")],
+    { encoding: "utf8", timeout: 10_000 },
+  ));
+  assert.equal(evalResult.ok, true);
+  assert.equal(evalResult.caseCount, 2);
+  assert.doesNotThrow(() => execFileSync(
+    "git",
+    ["add", "--dry-run", "--pathspec-from-file=config/migration/task2-stage-paths.txt"],
+    { cwd: repoRoot, stdio: "ignore", timeout: 10_000 },
+  ));
 
   const descriptors = [{ file: "compat/example-test.js", ownerTask: "8", runner: "module" }];
   const entry = { test: "compat/example-test.js", ownerTask: "8", signature: "EXPECTED red" };

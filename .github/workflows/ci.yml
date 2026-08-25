@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - 'codex/**'
+      - 'upgrade/**'
   pull_request:
 
 permissions:
@@ -63,3 +64,71 @@ jobs:
 
       - name: Test Memory API security
         run: python -m unittest tests/memory_api_security_test.py
+
+  private-compatibility-node:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - node: '22.22.0'
+            npm: '10.9.4'
+          - node: '26.7.0'
+            npm: '12.0.2'
+    steps:
+      - name: Checkout full source-first history
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup exact compatibility Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+
+      - name: Setup exact compatibility npm
+        env:
+          EXPECTED_NODE: ${{ matrix.node }}
+          EXPECTED_NPM: ${{ matrix.npm }}
+        run: |
+          npm install --global "npm@$EXPECTED_NPM"
+          test "$(node --version)" = "v$EXPECTED_NODE"
+          test "$(npm --version)" = "$EXPECTED_NPM"
+
+      - name: Enforce source-first divergence
+        run: >-
+          node scripts/check-source-first-divergence.mjs
+          --base ef624f97cc616a9e00b6df653eded455fbd30e01
+          --map config/migration/source-first-port-map.json
+
+      - name: Install compatibility dependencies
+        run: npm ci --ignore-scripts --legacy-peer-deps
+
+      - name: Run full private compatibility inventory
+        run: node tests/run-all.js
+
+      - name: Scan npm pack inventory
+        run: node scripts/check-no-pii.mjs
+
+  private-compatibility-python-floor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup documented Python floor
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.10'
+
+      - name: Install Memory API dependencies
+        run: python -m pip install --disable-pip-version-check -r memory_api/requirements.txt
+
+      - name: Test Memory API security on Python 3.10
+        run: python -m unittest -v tests.memory_api_security_test

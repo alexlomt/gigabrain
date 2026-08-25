@@ -5,6 +5,54 @@
   },
   "candidateChanges": [
     {
+      "changeType": "modified",
+      "contentSha256": "35edadadd0a0a51c82973088d85a717052a3a603dc66c36f42805689ccd46aa9",
+      "disposition": "operator_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Exact private-fork Node/npm and Python-floor compatibility matrix.",
+      "targetMode": "100644",
+      "targetPath": ".github/workflows/ci.yml"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "39a3f022e9d17e077211ecbc031ad4eadcda8fee8634f8368f490331d0ffa118",
+      "disposition": "operator_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Exact unignore rules make the reviewed migration pathspec contract directly stageable.",
+      "targetMode": "100644",
+      "targetPath": ".gitignore"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "af65324b95e75273067689719a9e143ac4b1497379422efde83be890151bdd46",
+      "disposition": "operator_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Exact 65-test deployed evidence inventory without public old-to-synthetic hash mappings.",
+      "targetMode": "100644",
+      "targetPath": "config/migration/deployed-test-inventory.json"
+    },
+    {
       "changeType": "added",
       "contentSha256": "canonical-self",
       "disposition": "operator_only",
@@ -14,7 +62,8 @@
         "testPath": "tests/source-first-divergence-test.js"
       },
       "ownerTasks": [
-        "2A"
+        "2A",
+        "2B"
       ],
       "reason": "Canonical source-first policy map and forensic disposition ledger.",
       "targetMode": "100644",
@@ -22,7 +71,23 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "07b2cf6901cd0f56d239c1bbff10acf99c34732592f2d2c99fdea2fedd4bab52",
+      "contentSha256": "b68be72acdfaba944cf45ca840513eb91dc6d6eb1140fd0cf8e044679ac8c341",
+      "disposition": "operator_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Reviewed wildcard-free Task 2 staging contract.",
+      "targetMode": "100644",
+      "targetPath": "config/migration/task2-stage-paths.txt"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "45dbe7dde52fbff16360f926d97d1000524e9af802f309aeecfb55e1514f129d",
       "disposition": "operator_only",
       "gate": {
         "kind": "active_test",
@@ -30,7 +95,8 @@
         "testPath": "tests/source-first-divergence-test.js"
       },
       "ownerTasks": [
-        "2A"
+        "2A",
+        "2B"
       ],
       "reason": "Exact path, mode, type, and blob allowlist for untouched upstream source.",
       "targetMode": "100644",
@@ -53,6 +119,70 @@
       "targetPath": "docs/migration/v0.11-base-provenance.md"
     },
     {
+      "changeType": "added",
+      "contentSha256": "af83a8c47714fb2b179804a07362d02c432f74e5c1a6cb57a20c78c0d55ca31b",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean deterministic recall/privacy fixture with aggregate-only thresholds.",
+      "targetMode": "100644",
+      "targetPath": "eval/baseline.json"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "701077cb2a2738ffab75111f5a16bf6f72b151fb76595d015f3786d1b75c7b7c",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean deterministic recall/privacy fixture with aggregate-only thresholds.",
+      "targetMode": "100644",
+      "targetPath": "eval/cases.jsonl"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "12cc799e4c757222d7c6e3760ceb23560861ef4474ca13ce5fe06993682d1774",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean deterministic recall/privacy fixture with aggregate-only thresholds.",
+      "targetMode": "100644",
+      "targetPath": "eval/golden-seed.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "6c83bead68063e9dfbb3805453e3512f93f10e13f80d0d2638b5f8abf5b020df",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean deterministic recall/privacy fixture with aggregate-only thresholds.",
+      "targetMode": "100644",
+      "targetPath": "eval/run-deep-recall-eval.js"
+    },
+    {
       "changeType": "modified",
       "contentSha256": "42cb6e61fff22e53cdd2afe99ee375c3d46836f85172dfbc51ebf0d14831ad93",
       "disposition": "core_patch",
@@ -70,7 +200,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "433a88c648f4f962d392df2212ef74aad8ce9a802356bea6eaea6f29620de636",
+      "contentSha256": "af8d98eddbd98d0ae9b44ccf3df0bfb24c115288635717b9319472927cdcaa87",
       "disposition": "core_patch",
       "gate": {
         "kind": "active_test",
@@ -78,11 +208,60 @@
         "testPath": "tests/source-first-divergence-test.js"
       },
       "ownerTasks": [
-        "1"
+        "1",
+        "2B"
       ],
       "reason": "Task 1 compatibility-version metadata only; package behavior remains upstream-owned.",
       "targetMode": "100644",
       "targetPath": "package.json"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "f6abffb81f3f615c675bdbca9739ca752c2c1f681d1fe6fdf807ddcfac4c1bf3",
+      "disposition": "operator_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/npm-pack-parser-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Public mirror and npm inventory include the shared pack parser dependency.",
+      "targetMode": "100644",
+      "targetPath": "public-release-manifest.json"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "ea2f44118ce15ec49f052a553c7a8eb34eb3c421e03511076ec589e2732f2262",
+      "disposition": "core_patch",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/npm-pack-parser-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Fail-closed npm 10/npm 12 package inventory parsing for the PII scanner.",
+      "targetMode": "100644",
+      "targetPath": "scripts/check-no-pii.mjs"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "943f78992ccf65d2c3449d282a6dc7046d2beebc7397dd53767a4828f7ff3fa1",
+      "disposition": "core_patch",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/npm-pack-parser-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Fail-closed npm 10/npm 12 package inventory parsing for release scanners.",
+      "targetMode": "100644",
+      "targetPath": "scripts/check-public-mirror.mjs"
     },
     {
       "changeType": "added",
@@ -102,7 +281,471 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "d47fc9f6f914aa47d1d1928cf7176ef88f0d2a09ebb2229d1fd93f031c96f3f2",
+      "contentSha256": "4ce70e9c2ec483fc2b6c735d44cd1f24c2e25cdb50df56a94e0e2e2dbc869eb8",
+      "disposition": "operator_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/npm-pack-parser-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Fail-closed npm 10/npm 12 package inventory parsing for the PII scanner.",
+      "targetMode": "100644",
+      "targetPath": "scripts/npm-pack-inventory.mjs"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "8dd9dc08af93ae32da1aa2c8d8729590fcbce420892d8772364d520efb4eae25",
+      "disposition": "operator_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/private-test-restoration-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Hash-bound reviewed private-test restoration utility.",
+      "targetMode": "100644",
+      "targetPath": "scripts/restore-private-tests.mjs"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "f5cd323df90477f3ca175b681083997fe335fce8451eb92fe099f8dee04a1c24",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/auto-capture-worker-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "57cd29a9cef6b4477cba071e8ff8f826fa9bb2817bbcc7237e6734928d7ea95a",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/checkpoint-promotion-isolation-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "d1bcc8086bbd74bd584bab2e323b37c6970af370f7f181c70734956a875196c2",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/contract-test-helpers.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "e61b95cc2fb335751bbdc0e3228c24fc464b5f1c0690b55d06e0a6188b7bebac",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/embedding-identity-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "30b4831b97ef06e61ff56c1bd964ad15d549cc67e4526ad0121c574cdd1bedcd",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/expected-failures.json"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "a451bc192173ebfbeba77943f60060f6b10afa831613f4a7d009b8a36325e89d",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/full-registry-migration-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "50e19f1c76722aac7ba88b5ef5b053b2185be05e5e80f1d187f9e4243081a4ba",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/generated-surface-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "d0d2d7f4797a559d8dc1909defc77dac04371b37f447c756e3c480f912d88d6e",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/memory-api-projection-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "0037b52e3c435574a1e67ccf57506c3e0da26f93c315cd77e32c21c1848a42ae",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/native-lock-concurrency-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "c1ab52e37caf0430a646bf815e4752f6c62d81a583b0ed3fd60e736d6f98ab85",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/native-metadata-promotion-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "a9b61a0f47f7bd65ad33e9898dcf0855deccaa5f1491d3c67a89ea24174bd6c1",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/observational-diagnostics-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "4a64d96303dcb57606dad98b9f774c8167728c735193c0cbc00a2f017b15af2f",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/openclaw-hooks-and-flush-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "6f8f1d1cca5ba053ad81413904230bdc5b94ba5a178770715447f0e09a8fc8b1",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/openclaw-memory-runtime-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "0499f50a3bb4b8dbaded67f262e3172c04174c7fbfe0419208b21fc0b7be05bc",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/rollback-restore-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "2150a49a103f66a0e4903b7fba5982dcefc10a1d7583fb5c1dc755d9798c396c",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/scope-visibility-matrix-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "ee424a9f4e9895344567534638095ee07711a2400fcd11af980009476053b723",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/npm-pack-parser-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Synthetic npm pack JSON shape used by the fail-closed parser regression gate.",
+      "targetMode": "100644",
+      "targetPath": "tests/fixtures/npm-pack-invalid.json"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "a3329f08ff21c1834dd167ab3a28b600a1c549419b6e8276749e263c71f4d229",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/npm-pack-parser-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Synthetic npm pack JSON shape used by the fail-closed parser regression gate.",
+      "targetMode": "100644",
+      "targetPath": "tests/fixtures/npm-pack-npm10.json"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "083f35f7a6d220f886cc6706b614610a072547513d30d8368c0252bd2d01153a",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/npm-pack-parser-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Synthetic npm pack JSON shape used by the fail-closed parser regression gate.",
+      "targetMode": "100644",
+      "targetPath": "tests/fixtures/npm-pack-npm12.json"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "ca66769b78ebbf6e6769970e1a87731cf20ad3942f12b0853ebe1aa5c66724a2",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure.",
+      "targetMode": "100644",
+      "targetPath": "tests/full-test-inventory-contract-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "915d709b8a02591d3d8a6691ab8524cbc092c8550b34820fce10887a7f01e24e",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure.",
+      "targetMode": "100644",
+      "targetPath": "tests/full-test-inventory.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "ce625641fbea9ca59ba38edac5aca60603d2a3412ed2c091ba20d90b7ce52c4e",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Isolated-canary release-live contract that cannot inspect or mutate the production host.",
+      "targetMode": "100644",
+      "targetPath": "tests/isolated-release-live-helpers.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "54984f38980192cceb7187641745fd63218beb217a257fb101cf6c33d8d26422",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/memory_api_security_test.py"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure.",
+      "targetMode": "100644",
+      "targetPath": "tests/memory_api_security_test.py"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "f8973f77f87c081327407de57cd3b76fdb6593ab7f724dcdff68ca1e9a2a219e",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure.",
+      "targetMode": "100644",
+      "targetPath": "tests/npm-pack-parser-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "ef37c1780697c7ca8c88e640be624b6c303479ee81699a276c8ee9ee0a484809",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure.",
+      "targetMode": "100644",
+      "targetPath": "tests/private-test-restoration-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "cde75711b8792f1f656ac7a7d0d663ae63766aa71df5648354a994f587143a35",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Isolated-canary release-live contract that cannot inspect or mutate the production host.",
+      "targetMode": "100644",
+      "targetPath": "tests/release-live-codex-cli-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "bc3cfc5aed50eca43255ab9d7e7fd6c0636b18c2d1745e599855cfb6dc562538",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Isolated-canary release-live contract that cannot inspect or mutate the production host.",
+      "targetMode": "100644",
+      "targetPath": "tests/release-live-openclaw-install-test.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "be73532fb2ed5bef47f30b4ea96f2ebb190219e82564599240622a849ed6ffc8",
+      "disposition": "core_patch",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/full-test-inventory-contract-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure.",
+      "targetMode": "100755",
+      "targetPath": "tests/run-all.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "bb2e0a79bb1205f9874b3cd9eb12734e78d5c0210bce4271156d6d1ee5eedc13",
       "disposition": "private_dev_only",
       "gate": {
         "kind": "active_test",
@@ -110,11 +753,44 @@
         "testPath": "tests/source-first-divergence-test.js"
       },
       "ownerTasks": [
-        "2A"
+        "2A",
+        "2B"
       ],
       "reason": "Synthetic regression coverage for source-first policy failures.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "9d80f8feed44a2377799077553e7fc2dbe8b41c15cdb2852a297e07b84a26102",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/npm-pack-parser-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure.",
+      "targetMode": "100644",
+      "targetPath": "tests/unit-pii-scanner-test.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "929539e9e6a5ca62070b08a0d149545b5b4fb852547e0ad87ee18e607e0f8a2b",
+      "disposition": "private_dev_only",
+      "gate": {
+        "kind": "active_test",
+        "ownerSourceFirstTaskId": "2B",
+        "testPath": "tests/npm-pack-parser-test.js"
+      },
+      "ownerTasks": [
+        "2B"
+      ],
+      "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure.",
+      "targetMode": "100644",
+      "targetPath": "tests/unit-public-mirror-test.js"
     }
   ],
   "deployedCommits": [

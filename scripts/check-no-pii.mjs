@@ -10,6 +10,8 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { parseNpmPackInventory } from './npm-pack-inventory.mjs';
+
 import {
   BANNED_IDENTIFIER_HASHES,
   BANNED_TOKEN_HASHES,
@@ -60,12 +62,7 @@ const npmPackFiles = () => {
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
-  const jsonStart = Math.max(0, output.lastIndexOf('\n[') + 1);
-  const report = JSON.parse(output.slice(jsonStart));
-  if (!Array.isArray(report) || !Array.isArray(report[0]?.files)) {
-    throw new Error('npm pack inventory did not contain a file list');
-  }
-  return report[0].files.map((entry) => String(entry?.path || '')).filter(Boolean);
+  return parseNpmPackInventory(output);
 };
 
 const gitFiles = execSync('git ls-files --cached --others --exclude-standard', { encoding: 'utf8' })

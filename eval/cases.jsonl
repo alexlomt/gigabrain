@@ -1,0 +1,2 @@
+{"expectedTokens":["harbour","blue"],"forbiddenMarkers":["synthetic-secret-marker"],"id":"synthetic-shared-recall","query":"What colour is the harbour project marker?","scope":"shared","syntheticAnswer":"The harbour project marker is blue."}
+{"expectedTokens":["orchard","weekly"],"forbiddenMarkers":["synthetic-private-wrapper"],"id":"synthetic-profile-recall","query":"How often is the orchard review?","scope":"profile:synthetic","syntheticAnswer":"The orchard review is weekly."}

@@ -29,12 +29,6 @@
       "type": "blob"
     },
     {
-      "blob": "bcaf3d1b868a88fdea8297cde1d87163cfdabe1c",
-      "mode": "100644",
-      "path": ".github/workflows/ci.yml",
-      "type": "blob"
-    },
-    {
       "blob": "9ca3084d32c2d9fb0a5d35de1a33f5cb33300d8a",
       "mode": "100644",
       "path": ".github/workflows/codeql.yml",
@@ -50,12 +44,6 @@
       "blob": "359e26f0419d71832499059d0222123fd475e878",
       "mode": "100644",
       "path": ".github/workflows/public-mirror.yml",
-      "type": "blob"
-    },
-    {
-      "blob": "2cf473d6f77d5d7f67176106fe4452fce11728d8",
-      "mode": "100644",
-      "path": ".gitignore",
       "type": "blob"
     },
     {
@@ -599,12 +587,6 @@
       "type": "blob"
     },
     {
-      "blob": "3ba94316cf1121874ada3dff0e00dd31314b3883",
-      "mode": "100644",
-      "path": "public-release-manifest.json",
-      "type": "blob"
-    },
-    {
       "blob": "2886ac7a9d976ecd1bbfe172c054f0e52e0cb7b2",
       "mode": "100644",
       "path": "scripts/audit-github-surface.mjs",
@@ -620,18 +602,6 @@
       "blob": "2fd811c4c8785b530151ca33c33caa9fd728ea26",
       "mode": "100644",
       "path": "scripts/build-public-mirror.mjs",
-      "type": "blob"
-    },
-    {
-      "blob": "dc512294443770e7d475747d2c8cff150892e58d",
-      "mode": "100644",
-      "path": "scripts/check-no-pii.mjs",
-      "type": "blob"
-    },
-    {
-      "blob": "2d5f0e74422ac9002098dcd370a510e77f77634e",
-      "mode": "100644",
-      "path": "scripts/check-public-mirror.mjs",
       "type": "blob"
     },
     {
@@ -731,18 +701,6 @@
       "type": "blob"
     },
     {
-      "blob": "c9c4bcd152eb56f5c3b517fca739b8eefe32cf15",
-      "mode": "100644",
-      "path": "tests/memory_api_security_test.py",
-      "type": "blob"
-    },
-    {
-      "blob": "ededcf8261660ee1a519858f1bd63ca311e63d02",
-      "mode": "100755",
-      "path": "tests/run-all.js",
-      "type": "blob"
-    },
-    {
       "blob": "598acf7e95a25364a28056fabb944105a1ce8219",
       "mode": "100644",
       "path": "tests/unit-bitemporal-test.js",
@@ -833,12 +791,6 @@
       "type": "blob"
     },
     {
-      "blob": "f283bbdfd1be1ddcb624ef8a1834e98c409dcef4",
-      "mode": "100644",
-      "path": "tests/unit-pii-scanner-test.js",
-      "type": "blob"
-    },
-    {
       "blob": "a61b72f134b5cbd314c122c39cafde687761fe53",
       "mode": "100644",
       "path": "tests/unit-plugin-runtime-test.js",
@@ -854,12 +806,6 @@
       "blob": "2fd7285fea01db943187de27b87034f394afd35c",
       "mode": "100644",
       "path": "tests/unit-projection-store-test.js",
-      "type": "blob"
-    },
-    {
-      "blob": "edd7dde07d145bcfcc06325d0fb82d8e2b8079b7",
-      "mode": "100644",
-      "path": "tests/unit-public-mirror-test.js",
       "type": "blob"
     },
     {
@@ -911,7 +857,7 @@
       "type": "blob"
     }
   ],
-  "entryCount": 151,
-  "manifestSha256": "6472a6acecd11ac133b760383c921ddabcbb055a386e9255215abf1eb1e91bad",
+  "entryCount": 142,
+  "manifestSha256": "d4bc1d0fbec4b163c477fbece841ccdc5f96329fc047e746415406df62b45496",
   "schemaVersion": 1
 }

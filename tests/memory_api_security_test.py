@@ -448,7 +448,8 @@ class MemoryApiSecurityTest(unittest.TestCase):
 
     def test_duplicate_memory_id_detection_uses_sqlite_error_code(self):
         opaque_error = sqlite3.IntegrityError("opaque constraint message")
-        opaque_error.sqlite_errorcode = sqlite3.SQLITE_CONSTRAINT_PRIMARYKEY
+        primary_key_code = getattr(sqlite3, "SQLITE_CONSTRAINT_PRIMARYKEY", 1555)
+        opaque_error.sqlite_errorcode = primary_key_code
         self.assertTrue(self.module._is_duplicate_memory_id_error(opaque_error))
 
     def test_recall_proxy_is_loopback_only(self):

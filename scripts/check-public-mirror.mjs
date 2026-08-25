@@ -7,6 +7,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { readRegularFileNoFollowSync } from '../lib/core/safe-fs.js';
+import { parseNpmPackReports } from './npm-pack-inventory.mjs';
 
 const MANIFEST_SCHEMA_VERSION = 1;
 const SHA256_RE = /^[a-f0-9]{64}$/;
@@ -630,7 +631,7 @@ const readNpmInventory = (root) => {
     );
     let parsed;
     try {
-      parsed = JSON.parse(stdout);
+      parsed = parseNpmPackReports(stdout);
     } catch {
       throw new Error('npm package inventory returned invalid JSON');
     }

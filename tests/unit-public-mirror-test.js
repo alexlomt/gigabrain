@@ -335,11 +335,12 @@ const testBenchmarkEvidenceSchemaAndDigest = () => {
 
 const testCoordinatorBuildsFreshCandidate = () => {
   const checkerPath = 'scripts/check-public-mirror.mjs';
+  const parserPath = 'scripts/npm-pack-inventory.mjs';
   const safeFsPath = 'lib/core/safe-fs.js';
-  const files = ['LICENSE', safeFsPath, checkerPath, 'index.js', 'package.json', 'public-release-manifest.json'];
+  const files = ['LICENSE', safeFsPath, checkerPath, parserPath, 'index.js', 'package.json', 'public-release-manifest.json'];
   const manifest = baseManifest({
     files,
-    requiredFiles: ['LICENSE', safeFsPath, checkerPath, 'package.json', 'public-release-manifest.json'],
+    requiredFiles: ['LICENSE', safeFsPath, checkerPath, parserPath, 'package.json', 'public-release-manifest.json'],
     omitScripts: ['private:fixture'],
     setScripts: { test: 'node index.js --smoke' },
   });
@@ -358,9 +359,10 @@ const testCoordinatorBuildsFreshCandidate = () => {
   const rebuiltDestination = path.join(testTempRoot, `gigabrain-rebuilt-candidate-${crypto.randomUUID()}`);
   try {
     write(root, checkerPath, fs.readFileSync(new URL('../scripts/check-public-mirror.mjs', import.meta.url)));
+    write(root, parserPath, fs.readFileSync(new URL('../scripts/npm-pack-inventory.mjs', import.meta.url)));
     write(root, safeFsPath, fs.readFileSync(new URL('../lib/core/safe-fs.js', import.meta.url)));
     write(root, 'tasks/private.md', 'must not be copied\n');
-    runCommand('git', ['add', checkerPath, safeFsPath, 'tasks/private.md'], root);
+    runCommand('git', ['add', checkerPath, parserPath, safeFsPath, 'tasks/private.md'], root);
     runCommand('git', ['commit', '-qm', 'add synthetic source-only material'], root);
     const result = buildPublicMirror({
       source: root,
@@ -393,11 +395,12 @@ const testCoordinatorBuildsFreshCandidate = () => {
 
 const testCoordinatorRejectsPartialPackageTransform = () => {
   const checkerPath = 'scripts/check-public-mirror.mjs';
+  const parserPath = 'scripts/npm-pack-inventory.mjs';
   const safeFsPath = 'lib/core/safe-fs.js';
-  const files = ['LICENSE', safeFsPath, checkerPath, 'index.js', 'package.json', 'public-release-manifest.json'];
+  const files = ['LICENSE', safeFsPath, checkerPath, parserPath, 'index.js', 'package.json', 'public-release-manifest.json'];
   const manifest = baseManifest({
     files,
-    requiredFiles: ['LICENSE', safeFsPath, checkerPath, 'package.json', 'public-release-manifest.json'],
+    requiredFiles: ['LICENSE', safeFsPath, checkerPath, parserPath, 'package.json', 'public-release-manifest.json'],
     omitScripts: ['private:first', 'private:second'],
   });
   const packageJson = {
@@ -414,8 +417,9 @@ const testCoordinatorRejectsPartialPackageTransform = () => {
   const destination = path.join(testTempRoot, `gigabrain-partial-transform-${crypto.randomUUID()}`);
   try {
     write(root, checkerPath, fs.readFileSync(new URL('../scripts/check-public-mirror.mjs', import.meta.url)));
+    write(root, parserPath, fs.readFileSync(new URL('../scripts/npm-pack-inventory.mjs', import.meta.url)));
     write(root, safeFsPath, fs.readFileSync(new URL('../lib/core/safe-fs.js', import.meta.url)));
-    runCommand('git', ['add', checkerPath, safeFsPath], root);
+    runCommand('git', ['add', checkerPath, parserPath, safeFsPath], root);
     runCommand('git', ['commit', '-qm', 'add synthetic checker'], root);
     assert.throws(
       () => buildPublicMirror({ source: root, destination }),
