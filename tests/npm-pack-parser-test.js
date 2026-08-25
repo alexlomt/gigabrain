@@ -32,6 +32,16 @@ export async function run() {
     () => parser.parseNpmPackInventory('{"synthetic-package":true}'),
     /npm pack report was not an object/,
   );
+  for (const pathValue of [123, true, {}, null, ["index.js"]]) {
+    assert.throws(
+      () => parser.parseNpmPackInventory(JSON.stringify([{
+        files: [{ path: pathValue }],
+        name: "synthetic-package",
+      }])),
+      /npm pack file path must be a string/,
+      `non-string npm pack path must fail closed: ${JSON.stringify(pathValue)}`,
+    );
+  }
   assert.throws(
     () => parser.parseNpmPackInventory(fixture("npm-pack-invalid.json")),
     /npm pack inventory did not contain a file list/,
