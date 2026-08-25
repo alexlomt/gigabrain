@@ -1,6 +1,6 @@
 {
   "name": "@legendaryvibecoder/gigabrain",
-  "version": "0.11.0",
+  "version": "0.11.0-openclaw.1",
   "type": "module",
   "description": "Local-first memory control plane for agents — cross-host recall, provenance, dedupe, audit, native sync",
   "author": "Legendary Vibecoder",
