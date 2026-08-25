@@ -33,6 +33,7 @@ config/migration/*
 !config/migration/source-first-port-map.json
 !config/migration/source-first-test-registry.json
 !config/migration/task2-stage-paths.txt
+!config/migration/task3-stage-paths.txt
 !config/migration/upstream-source-allowlist.json
 eval/harness-cases.jsonl
 lib/obsidian-cli-adapter.js

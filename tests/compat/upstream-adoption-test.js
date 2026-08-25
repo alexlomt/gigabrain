@@ -185,10 +185,18 @@ async function adoptionAndRetirementContract() {
   assert.equal(allowlist.adoptionContractCount, allowlist.adoptionContracts.length);
   assert.equal(
     allowlist.adoptionContractManifestSha256,
+    "e25eb05c00029eb2af2b5f89db51ee999c38fef3ef80e74964c44ce551fa35b2",
+  );
+  assert.equal(
+    allowlist.adoptionContractManifestSha256,
     sha256(canonicalJson(allowlist.adoptionContracts)),
   );
   assert.ok(Array.isArray(portMap.retirementContracts));
   assert.equal(portMap.retirementContractCount, portMap.retirementContracts.length);
+  assert.equal(
+    portMap.retirementContractManifestSha256,
+    "3b27549ec17312bbb9d9e6ca6be00015ada38fba2a8faf5b48f73d9b89efef6b",
+  );
   assert.equal(
     portMap.retirementContractManifestSha256,
     sha256(canonicalJson(portMap.retirementContracts)),

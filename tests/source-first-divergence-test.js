@@ -28,8 +28,18 @@ assert.equal(realMap.deployedSource.commit, "43cd4b41518b5e35b3872722fcceaac535a
 assert.equal(realMap.deployedCommits.length, 47);
 assert.equal(realMap.deployedFiles.length, 208);
 assert.equal(realMap.preTagTools.length, 9);
-assert.equal(realMap.candidateChanges.length, 104);
+assert.equal(realMap.candidateChanges.length, 106);
+assert.equal(realMap.retirementContractCount, 8);
+assert.equal(
+  realMap.retirementContractManifestSha256,
+  "3b27549ec17312bbb9d9e6ca6be00015ada38fba2a8faf5b48f73d9b89efef6b",
+);
 assert.equal(realAllowlist.entries.length, 142);
+assert.equal(realAllowlist.adoptionContractCount, 11);
+assert.equal(
+  realAllowlist.adoptionContractManifestSha256,
+  "e25eb05c00029eb2af2b5f89db51ee999c38fef3ef80e74964c44ce551fa35b2",
+);
 assert.deepEqual(
   realMap.deployedCommits.map((row) => row.sequence),
   Array.from({ length: 47 }, (_, index) => index + 1),
@@ -101,6 +111,26 @@ function makeFixture(mutate = () => {}) {
   commitAll(fixtureRepo, "allowed fixture delta");
 
   const legacyBytes = Buffer.from('export const legacy = "synthetic-obsolete-v0.7";\n');
+  const retiredBytes = Buffer.from('export const retired = "synthetic-task3-retired";\n');
+  const adoptionContracts = [
+    {
+      id: "synthetic-upstream",
+      paths: ["lib/upstream.js"],
+    },
+  ];
+  const retirementContracts = [
+    {
+      enforcement: "forbidden_bytes",
+      evidence: [{
+        commit: "5".repeat(40),
+        path: "legacy/task3-retired.js",
+        sha256: sha256(retiredBytes),
+      }],
+      forbiddenPaths: ["legacy/task3-retired.js"],
+      id: "synthetic-retired",
+      replacementPaths: ["lib/upstream.js"],
+    },
+  ];
   const deployedFiles = [
     {
       disposition: "retired",
@@ -188,6 +218,9 @@ function makeFixture(mutate = () => {}) {
 
   const fixture = {
     allowlist: {
+      adoptionContractCount: adoptionContracts.length,
+      adoptionContractManifestSha256: sha256(canonicalJson(adoptionContracts)),
+      adoptionContracts,
       auditedBase: { commit: base, tree },
       entries: baseRows,
       entryCount: baseRows.length,
@@ -212,6 +245,9 @@ function makeFixture(mutate = () => {}) {
       preTagToolCount: preTagTools.length,
       preTagToolManifestSha256: sha256(canonicalJson(preTagTools)),
       preTagTools,
+      retirementContractCount: retirementContracts.length,
+      retirementContractManifestSha256: sha256(canonicalJson(retirementContracts)),
+      retirementContracts,
       schemaVersion: 1,
       testRegistry: "source-first-test-registry.json",
       upstreamAllowlist: "upstream-source-allowlist.json",
@@ -220,6 +256,7 @@ function makeFixture(mutate = () => {}) {
     fixtureRepo,
     legacyBytes,
     policyDir,
+    retiredBytes,
     registry,
     root,
   };
@@ -228,6 +265,10 @@ function makeFixture(mutate = () => {}) {
 
   fixture.allowlist.entryCount ??= fixture.allowlist.entries.length;
   fixture.allowlist.manifestSha256 ??= sha256(canonicalJson(fixture.allowlist.entries));
+  fixture.allowlist.adoptionContractCount ??= fixture.allowlist.adoptionContracts.length;
+  fixture.allowlist.adoptionContractManifestSha256 ??= sha256(canonicalJson(fixture.allowlist.adoptionContracts));
+  fixture.map.retirementContractCount ??= fixture.map.retirementContracts.length;
+  fixture.map.retirementContractManifestSha256 ??= sha256(canonicalJson(fixture.map.retirementContracts));
   fixture.registry.entryCount ??= fixture.registry.entries.length;
   fixture.registry.manifestSha256 ??= sha256(canonicalJson(fixture.registry.entries));
   writeFileSync(path.join(policyDir, "upstream-source-allowlist.json"), canonicalJson(fixture.allowlist));
@@ -281,6 +322,63 @@ function expectFailure(name, code, mutate, extraArgs = []) {
 }
 
 expectPass("exact classified delta", () => {});
+
+expectFailure("adoption contracts are hash-bound", "ADOPTION_CONTRACT_MANIFEST", ({ allowlist }) => {
+  allowlist.adoptionContracts[0].id = "changed-without-manifest-refresh";
+});
+
+expectFailure("retirement contracts are hash-bound", "RETIREMENT_CONTRACT_MANIFEST", ({ map }) => {
+  map.retirementContracts[0].id = "changed-without-manifest-refresh";
+});
+
+expectFailure("adopted modules must be upstream allowlisted", "ADOPTION_PATH_NOT_UPSTREAM", ({ allowlist }) => {
+  allowlist.adoptionContracts[0].paths = ["lib/not-upstream.js"];
+  allowlist.adoptionContractManifestSha256 = sha256(canonicalJson(allowlist.adoptionContracts));
+});
+
+expectFailure(
+  "retired implementation path cannot reappear",
+  "RETIRED_PATH_PRESENT",
+  ({ fixtureRepo }) => {
+    mkdirSync(path.join(fixtureRepo, "legacy"), { recursive: true });
+    writeFileSync(path.join(fixtureRepo, "legacy", "task3-retired.js"), "export default false;\n");
+    commitAll(fixtureRepo, "retired path fixture");
+  },
+);
+
+expectFailure(
+  "retired implementation bytes cannot move to a new path",
+  "RETIRED_BYTES_PRESENT",
+  ({ fixtureRepo, retiredBytes }) => {
+    writeFileSync(path.join(fixtureRepo, "retired-copy.js"), retiredBytes);
+    commitAll(fixtureRepo, "retired byte copy fixture");
+  },
+);
+
+expectFailure(
+  "retirement replacement must be an adopted upstream path",
+  "RETIREMENT_REPLACEMENT_NOT_ADOPTED",
+  ({ map }) => {
+    map.retirementContracts[0].replacementPaths = ["lib/core.js"];
+    map.retirementContractManifestSha256 = sha256(canonicalJson(map.retirementContracts));
+  },
+);
+
+expectFailure(
+  "upstream identity evidence must match the audited base",
+  "UPSTREAM_IDENTITY_EVIDENCE_MISMATCH",
+  ({ map }) => {
+    const contract = map.retirementContracts[0];
+    contract.enforcement = "upstream_identity";
+    contract.evidence = [{
+      commit: "5".repeat(40),
+      path: "lib/upstream.js",
+      sha256: "0".repeat(64),
+    }];
+    contract.forbiddenPaths = [];
+    map.retirementContractManifestSha256 = sha256(canonicalJson(map.retirementContracts));
+  },
+);
 
 expectFailure("candidate prose cannot stand in for test evidence", "UNSTRUCTURED_GATE", ({ map }) => {
   delete map.candidateChanges[0].gate;

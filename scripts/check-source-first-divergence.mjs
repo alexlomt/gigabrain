@@ -28,6 +28,7 @@ const POLICY_INFRASTRUCTURE = new Set([
 ]);
 const TEST_RUNNERS = new Set(["node", "python"]);
 const EXPECTED_OUTCOMES = new Set(["pass", "xfail"]);
+const RETIREMENT_ENFORCEMENTS = new Set(["forbidden_bytes", "upstream_identity"]);
 
 // These values are filled from the reviewed forensic snapshot. They deliberately
 // bind counts and manifest hashes rather than source bytes or private literals.
@@ -118,6 +119,17 @@ function validatePathList(value) {
   }
 }
 
+function validatePossiblyEmptyPathList(value) {
+  if (!Array.isArray(value)) fail("SCHEMA");
+  const seen = new Set();
+  for (const item of value) {
+    validatePath(item);
+    if (seen.has(item)) fail("DUPLICATE_ROW", item);
+    seen.add(item);
+  }
+  ensureSorted(value, (item) => item);
+}
+
 function validateDispositionRow(row, { requireTestGate = true } = {}) {
   if (!DISPOSITIONS.has(row.disposition)) fail("UNKNOWN_DISPOSITION", row.disposition);
   if (!Array.isArray(row.ownerTasks) || row.ownerTasks.length === 0) fail("MISSING_OWNER");
@@ -191,6 +203,9 @@ function validateMap(map) {
     "preTagToolCount",
     "preTagToolManifestSha256",
     "preTagTools",
+    "retirementContractCount",
+    "retirementContractManifestSha256",
+    "retirementContracts",
     "schemaVersion",
     "testRegistry",
     "upstreamAllowlist",
@@ -292,6 +307,39 @@ function validateMap(map) {
   if (!Number.isSafeInteger(map.preTagToolCount) || map.preTagToolCount < 0) fail("SCHEMA");
   if (!SHA256.test(map.preTagToolManifestSha256)) fail("SCHEMA");
 
+  if (!Array.isArray(map.retirementContracts)) fail("SCHEMA");
+  if (!Number.isSafeInteger(map.retirementContractCount) || map.retirementContractCount < 0) fail("SCHEMA");
+  if (!SHA256.test(map.retirementContractManifestSha256)) fail("SCHEMA");
+  const retirementIds = new Set();
+  for (const row of map.retirementContracts) {
+    exactKeys(row, ["enforcement", "evidence", "forbiddenPaths", "id", "replacementPaths"]);
+    nonEmptyString(row.id);
+    if (retirementIds.has(row.id)) fail("DUPLICATE_ROW", row.id);
+    retirementIds.add(row.id);
+    if (!RETIREMENT_ENFORCEMENTS.has(row.enforcement)) fail("SCHEMA");
+    if (!Array.isArray(row.evidence) || row.evidence.length === 0) fail("SCHEMA");
+    const evidenceKeys = new Set();
+    for (const evidence of row.evidence) {
+      exactKeys(evidence, ["commit", "path", "sha256"]);
+      if (!FULL_SHA1.test(evidence.commit) || !SHA256.test(evidence.sha256)) fail("SCHEMA");
+      validatePath(evidence.path);
+      const evidenceKey = `${evidence.commit}\0${evidence.path}`;
+      if (evidenceKeys.has(evidenceKey)) fail("DUPLICATE_ROW", evidenceKey);
+      evidenceKeys.add(evidenceKey);
+    }
+    ensureSorted(row.evidence, (evidence) => `${evidence.commit}\0${evidence.path}`);
+    validatePossiblyEmptyPathList(row.forbiddenPaths);
+    validatePathList(row.replacementPaths);
+    ensureSorted(row.replacementPaths, (item) => item);
+  }
+  ensureSorted(map.retirementContracts, (row) => row.id);
+  checkManifest(
+    map.retirementContracts,
+    map.retirementContractCount,
+    map.retirementContractManifestSha256,
+    "RETIREMENT_CONTRACT_MANIFEST",
+  );
+
   if (!Array.isArray(map.candidateChanges)) fail("SCHEMA");
   const candidatePaths = new Set();
   for (const row of map.candidateChanges) {
@@ -337,7 +385,16 @@ function validateMap(map) {
 }
 
 function validateAllowlist(allowlist) {
-  exactKeys(allowlist, ["auditedBase", "entries", "entryCount", "manifestSha256", "schemaVersion"]);
+  exactKeys(allowlist, [
+    "adoptionContractCount",
+    "adoptionContractManifestSha256",
+    "adoptionContracts",
+    "auditedBase",
+    "entries",
+    "entryCount",
+    "manifestSha256",
+    "schemaVersion",
+  ]);
   if (allowlist.schemaVersion !== 1) fail("SCHEMA_VERSION");
   validateAuditedBase(allowlist.auditedBase);
   if (!Number.isSafeInteger(allowlist.entryCount) || allowlist.entryCount < 0) fail("SCHEMA");
@@ -352,6 +409,58 @@ function validateAllowlist(allowlist) {
   }
   ensureSorted(allowlist.entries, (row) => row.path);
   checkManifest(allowlist.entries, allowlist.entryCount, allowlist.manifestSha256, "ALLOWLIST_MANIFEST");
+  if (!Array.isArray(allowlist.adoptionContracts)) fail("SCHEMA");
+  if (!Number.isSafeInteger(allowlist.adoptionContractCount) || allowlist.adoptionContractCount < 0) fail("SCHEMA");
+  if (!SHA256.test(allowlist.adoptionContractManifestSha256)) fail("SCHEMA");
+  const adoptionIds = new Set();
+  for (const row of allowlist.adoptionContracts) {
+    exactKeys(row, ["id", "paths"]);
+    nonEmptyString(row.id);
+    if (adoptionIds.has(row.id)) fail("DUPLICATE_ROW", row.id);
+    adoptionIds.add(row.id);
+    validatePathList(row.paths);
+    ensureSorted(row.paths, (item) => item);
+    for (const adoptedPath of row.paths) {
+      if (!seen.has(adoptedPath)) fail("ADOPTION_PATH_NOT_UPSTREAM", adoptedPath);
+    }
+  }
+  ensureSorted(allowlist.adoptionContracts, (row) => row.id);
+  checkManifest(
+    allowlist.adoptionContracts,
+    allowlist.adoptionContractCount,
+    allowlist.adoptionContractManifestSha256,
+    "ADOPTION_CONTRACT_MANIFEST",
+  );
+}
+
+function validateAdoptionAndRetirement({ allowlist, base, head, headByPath, map }) {
+  const adoptedPaths = new Set(allowlist.adoptionContracts.flatMap((row) => row.paths));
+  const forbiddenHashes = new Set();
+  for (const contract of map.retirementContracts) {
+    for (const replacementPath of contract.replacementPaths) {
+      if (!adoptedPaths.has(replacementPath)) {
+        fail("RETIREMENT_REPLACEMENT_NOT_ADOPTED", replacementPath);
+      }
+    }
+    for (const forbiddenPath of contract.forbiddenPaths) {
+      if (headByPath.has(forbiddenPath)) fail("RETIRED_PATH_PRESENT", forbiddenPath);
+    }
+    for (const evidence of contract.evidence) {
+      if (contract.enforcement === "forbidden_bytes") {
+        forbiddenHashes.add(evidence.sha256);
+      } else if (
+        !adoptedPaths.has(evidence.path)
+        || sha256(blobAt(base, evidence.path)) !== evidence.sha256
+      ) {
+        fail("UPSTREAM_IDENTITY_EVIDENCE_MISMATCH", evidence.path);
+      }
+    }
+  }
+  for (const entry of headByPath.values()) {
+    if (entry.type === "blob" && forbiddenHashes.has(sha256(blobAt(head, entry.path)))) {
+      fail("RETIRED_BYTES_PRESENT", entry.path);
+    }
+  }
 }
 
 function validateTestRegistry(registry) {
@@ -669,6 +778,7 @@ function main() {
 
   const diff = readDiff(base, head);
   const headByPath = new Map(readTree(head).map((entry) => [entry.path, entry]));
+  validateAdoptionAndRetirement({ allowlist, base, head, headByPath, map });
   validateActiveGates(map, testRegistry, headByPath, head);
   const seenDiffs = new Set();
   const statusToChange = { A: "added", D: "deleted", M: "modified", T: "modified" };

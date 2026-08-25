@@ -20,13 +20,14 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "af5fd4cc8427936137431a063119b19cbd60ac630700de4f75f2cf4c7d5867ee",
+      "contentSha256": "2f061dde5d8bcce217b8c2138079c2f6d470239baf5bd46a250c2e2caf2fddc8",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "full-test-inventory"
+        "registrationId": "upstream-adoption"
       },
       "ownerTasks": [
-        "2B"
+        "2B",
+        "3"
       ],
       "reason": "Exact unignore rules make the reviewed migration pathspec contract directly stageable.",
       "targetMode": "100644",
@@ -55,7 +56,8 @@
       },
       "ownerTasks": [
         "2A",
-        "2B"
+        "2B",
+        "3"
       ],
       "reason": "Canonical source-first policy map and forensic disposition ledger.",
       "targetMode": "100644",
@@ -63,7 +65,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "974628665ca19113a58d8c6d6ad7b7863cdbcd3bb248199b2ef53fd8ed851917",
+      "contentSha256": "ca234a36e98e86e2a8aff4c5c161c07b89b9a5bb99a309194c859e1f8abd263b",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -92,18 +94,47 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "45dbe7dde52fbff16360f926d97d1000524e9af802f309aeecfb55e1514f129d",
+      "contentSha256": "1adf57246b8d0959c4e0211b9127cb07aac869c13c46abe62914ad0932f535da",
       "disposition": "operator_only",
       "gate": {
-        "registrationId": "source-first-policy"
+        "registrationId": "upstream-adoption"
+      },
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Reviewed wildcard-free exact Task 3 staging contract.",
+      "targetMode": "100644",
+      "targetPath": "config/migration/task3-stage-paths.txt"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "08b2d9dc8bc3ae015974c5e183a7a2c04e2c44d1dad9cf8ffb891403bfadc62d",
+      "disposition": "operator_only",
+      "gate": {
+        "registrationId": "upstream-adoption"
       },
       "ownerTasks": [
         "2A",
-        "2B"
+        "2B",
+        "3"
       ],
-      "reason": "Exact path, mode, type, and blob allowlist for untouched upstream source.",
+      "reason": "Hash-bound adoption capabilities plus exact path, mode, type and blob ownership for untouched upstream source.",
       "targetMode": "100644",
       "targetPath": "config/migration/upstream-source-allowlist.json"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "f751d85337e36b86c952222bcd2cc0e2e8991e9481e057ae4cb8f69ea76ed81c",
+      "disposition": "operator_only",
+      "gate": {
+        "registrationId": "upstream-adoption"
+      },
+      "ownerTasks": [
+        "3"
+      ],
+      "reason": "Public value-free source-first disposition, replacement and test evidence for superseded implementations.",
+      "targetMode": "100644",
+      "targetPath": "docs/migration/retired-local-implementations.md"
     },
     {
       "changeType": "added",
@@ -248,15 +279,16 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "16aea79ba9a0dfe8deabc2019617e4f825482afbd91043119770c2d3c7805132",
+      "contentSha256": "4c2102f09bc8a2f391f78f68342c50f58d049aa0a5b67ff93abb25369d9a1852",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
       },
       "ownerTasks": [
-        "2A"
+        "2A",
+        "3"
       ],
-      "reason": "Fail-closed source-first policy guard; no runtime source behavior.",
+      "reason": "Fail-closed source-first policy guard including hash-bound adoption and retirement contracts; no runtime source behavior.",
       "targetMode": "100644",
       "targetPath": "scripts/check-source-first-divergence.mjs"
     },
@@ -363,7 +395,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "05258eef0d4cc8e9a49009ed4f9dac92c3b3d4ebddb43d96ef2ed3fc5625d609",
+      "contentSha256": "30b4831b97ef06e61ff56c1bd964ad15d549cc67e4526ad0121c574cdd1bedcd",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "upstream-adoption"
@@ -528,7 +560,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "32d4fb2a8f668bd6663a080071685742a66073a8a5064454867ae2f27a7bdc4e",
+      "contentSha256": "4d3ffc1e71540fc72a1828c49694e8e2a029cecad9133bcba3cb450c8849ca2d",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "upstream-adoption"
@@ -1061,7 +1093,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "c68159af256a9f293dbcc6845442d72b15dcb251c0936b561bcf0d3b8a42355a",
+      "contentSha256": "f0d0cee5ff4fc59c6abee4323abc553b9bd619415d9cb10d2279c51da7e4cc7a",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -5929,6 +5961,169 @@
         "scripts/vault-export.js"
       ],
       "testGate": "vault CLI compatibility and generated-surface gates"
+    }
+  ],
+  "retirementContractCount": 8,
+  "retirementContractManifestSha256": "3b27549ec17312bbb9d9e6ca6be00015ada38fba2a8faf5b48f73d9b89efef6b",
+  "retirementContracts": [
+    {
+      "enforcement": "forbidden_bytes",
+      "evidence": [
+        {
+          "commit": "cee6c263ce4f1aee0c7465340d75cdb23a602fd4",
+          "path": "lib/core/world-model.js",
+          "sha256": "f3d508bafb0d29412f5a1d1173fcc8b5658bc415571eae9c8afa7fa0e58cb5f5"
+        }
+      ],
+      "forbiddenPaths": [],
+      "id": "belief-trust",
+      "replacementPaths": [
+        "lib/core/adaptive-trust.js",
+        "lib/core/belief-arbitration.js",
+        "lib/core/host-trust.js",
+        "lib/core/world-model.js"
+      ]
+    },
+    {
+      "enforcement": "forbidden_bytes",
+      "evidence": [
+        {
+          "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+          "path": "lib/core/vault-mirror.js",
+          "sha256": "809ce6ebdcb3dbda9c3ec31b46ff7f1417389db415f25c52409fe2964dd407af"
+        }
+      ],
+      "forbiddenPaths": [
+        "lib/core/vault-mirror.js"
+      ],
+      "id": "broad-vault-mirror",
+      "replacementPaths": [
+        "lib/core/vault-sync.js"
+      ]
+    },
+    {
+      "enforcement": "forbidden_bytes",
+      "evidence": [
+        {
+          "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+          "path": "index.js",
+          "sha256": "b89b743582c897450258a4ac8d225c1bb4667613fc97157c3f2d8b4fcf2451c7"
+        }
+      ],
+      "forbiddenPaths": [],
+      "id": "hand-edited-runtime-blob",
+      "replacementPaths": [
+        "index.ts"
+      ]
+    },
+    {
+      "enforcement": "forbidden_bytes",
+      "evidence": [
+        {
+          "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+          "path": "lib/core/host-trust.js",
+          "sha256": "a7af4347a7a97a22b732b3463a9e37085149152f8cc0196ccccf32305c43137d"
+        }
+      ],
+      "forbiddenPaths": [],
+      "id": "host-trust",
+      "replacementPaths": [
+        "lib/core/adaptive-trust.js",
+        "lib/core/host-trust.js"
+      ]
+    },
+    {
+      "enforcement": "forbidden_bytes",
+      "evidence": [
+        {
+          "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+          "path": "lib/core/hygiene-migration.js",
+          "sha256": "4b4bf7830d37adbf0f67dc63c9587175194300d88318a004a797150a6bf50929"
+        },
+        {
+          "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+          "path": "scripts/gigabrain-hygiene-20260425.js",
+          "sha256": "8628532346dd028ae6aaeffeff17fb3716c2cf15b4a3de2608ecc3b63f83ff11"
+        }
+      ],
+      "forbiddenPaths": [
+        "lib/core/hygiene-migration.js",
+        "scripts/gigabrain-hygiene-20260425.js"
+      ],
+      "id": "one-time-hygiene",
+      "replacementPaths": [
+        "lib/core/maintenance-service.js",
+        "lib/core/native-promotion.js"
+      ]
+    },
+    {
+      "enforcement": "forbidden_bytes",
+      "evidence": [
+        {
+          "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+          "path": "lib/core/memory-passport.js",
+          "sha256": "e58dfdd0e66e2de79388e4151a0ce73198812f26f929430dede0943290efb659"
+        },
+        {
+          "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+          "path": "lib/core/passport-bundle.js",
+          "sha256": "cd343bbff3353553ac8c7a0c7807d7169ba59fb684882364f47a1fd80cede197"
+        },
+        {
+          "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+          "path": "scripts/demo-memory-passport.sh",
+          "sha256": "607898b6ad2c5ee95849fd2165a4a8ff6f88cc976153937699c4feeb9669b365"
+        }
+      ],
+      "forbiddenPaths": [
+        "lib/core/memory-passport.js",
+        "lib/core/passport-bundle.js"
+      ],
+      "id": "passport",
+      "replacementPaths": [
+        "lib/core/handoff-bundle.js",
+        "lib/core/handoff-record.js"
+      ]
+    },
+    {
+      "enforcement": "forbidden_bytes",
+      "evidence": [
+        {
+          "commit": "48d99770c0f600d6216d1ebbdf8a6a6703c7c081",
+          "path": "lib/core/config.js",
+          "sha256": "50b0989d1aa22296840cee33393fea9907f807244cf13e8e196057627c2a81af"
+        },
+        {
+          "commit": "48d99770c0f600d6216d1ebbdf8a6a6703c7c081",
+          "path": "lib/core/embedding-service.js",
+          "sha256": "4c0e4c524d035344c5bdb49e2765932c35ad7bce7ec8e8b33a3b4171bda5f685"
+        },
+        {
+          "commit": "48d99770c0f600d6216d1ebbdf8a6a6703c7c081",
+          "path": "openclaw.plugin.json",
+          "sha256": "0f85d1be87ba7b0cd13921f151208fe177530f0f0b1f51646e50cbc05b29f4a9"
+        }
+      ],
+      "forbiddenPaths": [],
+      "id": "remote-embedding-provider",
+      "replacementPaths": [
+        "lib/core/embedding-service.js"
+      ]
+    },
+    {
+      "enforcement": "upstream_identity",
+      "evidence": [
+        {
+          "commit": "239bc7048b233061e3adc5cd95e7aae44ad7dc62",
+          "path": "lib/core/workspace-identity.js",
+          "sha256": "6547000e988f8ba0d1d754f2a9b6a8b105e66da7f136cbcb6b12a6dc15aabfa9"
+        }
+      ],
+      "forbiddenPaths": [],
+      "id": "workspace-identity",
+      "replacementPaths": [
+        "lib/core/workspace-identity.js"
+      ]
     }
   ],
   "schemaVersion": 1,

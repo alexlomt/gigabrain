@@ -815,12 +815,16 @@
     },
     {
       "coveredPaths": [
+        ".gitignore",
+        "config/migration/task3-stage-paths.txt",
+        "config/migration/upstream-source-allowlist.json",
+        "docs/migration/retired-local-implementations.md",
         "tests/compat/expected-failures.json",
         "tests/compat/upstream-adoption-test.js",
         "tests/full-test-inventory.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_UPSTREAM_ADOPTION missing hash-bound adoption and retirement contract",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "upstream-adoption",
       "ownerSourceFirstTaskId": "3",
       "runner": "node",
@@ -828,6 +832,6 @@
     }
   ],
   "entryCount": 72,
-  "manifestSha256": "d6f6019e23a6dc6f1d9539baf7869a7502d845367aed3a5efdf35a2651f37048",
+  "manifestSha256": "ab54ee30a96191e62c09c321f143c81b25c1a9a7214eaf1c40ab04de875bc620",
   "schemaVersion": 1
 }

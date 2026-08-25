@@ -1,4 +1,84 @@
 {
+  "adoptionContractCount": 11,
+  "adoptionContractManifestSha256": "e25eb05c00029eb2af2b5f89db51ee999c38fef3ef80e74964c44ce551fa35b2",
+  "adoptionContracts": [
+    {
+      "id": "active-boundary-retention",
+      "paths": [
+        "lib/core/maintenance-service.js",
+        "lib/core/native-promotion.js"
+      ]
+    },
+    {
+      "id": "all-scope-guard",
+      "paths": [
+        "lib/core/agent-memory-policy.js",
+        "lib/core/codex-mcp.js",
+        "lib/core/codex-service.js",
+        "scripts/gigabrainctl.js"
+      ]
+    },
+    {
+      "id": "custom-slot-framework",
+      "paths": [
+        "lib/core/world-model.js"
+      ]
+    },
+    {
+      "id": "handoff-v2",
+      "paths": [
+        "lib/core/handoff-bundle.js",
+        "lib/core/handoff-record.js"
+      ]
+    },
+    {
+      "id": "observational-recall",
+      "paths": [
+        "lib/core/embedding-service.js",
+        "lib/core/multi-hop-recall.js",
+        "lib/core/recall-service.js"
+      ]
+    },
+    {
+      "id": "runtime-source-entry",
+      "paths": [
+        "index.ts"
+      ]
+    },
+    {
+      "id": "safe-filesystem-url",
+      "paths": [
+        "lib/core/safe-fs.js",
+        "lib/core/url-safety.js"
+      ]
+    },
+    {
+      "id": "timeline",
+      "paths": [
+        "lib/core/http-routes.js"
+      ]
+    },
+    {
+      "id": "trust-arbitration",
+      "paths": [
+        "lib/core/adaptive-trust.js",
+        "lib/core/belief-arbitration.js",
+        "lib/core/host-trust.js"
+      ]
+    },
+    {
+      "id": "vault-read-only",
+      "paths": [
+        "lib/core/vault-sync.js"
+      ]
+    },
+    {
+      "id": "workspace-identity",
+      "paths": [
+        "lib/core/workspace-identity.js"
+      ]
+    }
+  ],
   "auditedBase": {
     "commit": "ef624f97cc616a9e00b6df653eded455fbd30e01",
     "tree": "2a7affea1439f4250bcf9a3078ecf0cb36cc3358"

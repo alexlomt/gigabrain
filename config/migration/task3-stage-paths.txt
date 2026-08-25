@@ -1,0 +1,11 @@
+.gitignore
+config/migration/source-first-port-map.json
+config/migration/source-first-test-registry.json
+config/migration/task3-stage-paths.txt
+config/migration/upstream-source-allowlist.json
+docs/migration/retired-local-implementations.md
+scripts/check-source-first-divergence.mjs
+tests/compat/expected-failures.json
+tests/compat/upstream-adoption-test.js
+tests/full-test-inventory.js
+tests/source-first-divergence-test.js
