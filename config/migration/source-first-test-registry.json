@@ -119,10 +119,11 @@
     },
     {
       "coveredPaths": [
+        "scripts/build-runtime-js.js",
         "tests/compat/generated-surface-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_GENERATED_SURFACE missing deterministic generated runtime surface",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-generated-surface",
       "ownerSourceFirstTaskId": "5",
       "runner": "node",
@@ -174,10 +175,12 @@
     },
     {
       "coveredPaths": [
+        "lib/compat/flush-plan.js",
+        "lib/compat/openclaw-adapter.js",
         "tests/compat/openclaw-hooks-and-flush-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_OPENCLAW_HOOKS missing prompt-build and compaction-flush hooks",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-openclaw-hooks-and-flush",
       "ownerSourceFirstTaskId": "5",
       "runner": "node",
@@ -185,10 +188,36 @@
     },
     {
       "coveredPaths": [
+        "lib/compat/openclaw-memory-runtime.js",
+        "lib/core/safe-fs.js",
+        "tests/compat/openclaw-memory-authorization-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "compat-openclaw-memory-authorization",
+      "ownerSourceFirstTaskId": "5",
+      "relevanceEvidence": [
+        {
+          "binding": "readContainedRegularFileNoFollowSync",
+          "mode": "import",
+          "symbol": "readContainedRegularFileNoFollowSync",
+          "targetPath": "lib/core/safe-fs.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/compat/openclaw-memory-authorization-test.js",
+      "testSha256": "2bdb601858757559a81389857b95b47f9540fd7266641940b88e83be9b4e8751"
+    },
+    {
+      "coveredPaths": [
+        "lib/compat/openclaw-adapter.js",
+        "lib/compat/openclaw-memory-cli.js",
+        "lib/compat/openclaw-memory-runtime.js",
+        "lib/compat/scope-policy.js",
         "tests/compat/openclaw-memory-runtime-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_OPENCLAW_MEMORY_RUNTIME missing governed OpenClaw runtime adapter",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-openclaw-memory-runtime",
       "ownerSourceFirstTaskId": "5",
       "runner": "node",
@@ -206,6 +235,95 @@
       "ownerSourceFirstTaskId": "4",
       "runner": "node",
       "testPath": "tests/compat/operator-rules-migration-test.js"
+    },
+    {
+      "coveredPaths": [
+        ".gitignore",
+        ".npmignore",
+        "config/migration/task5-stage-paths.txt",
+        "index.js",
+        "index.ts",
+        "package.json",
+        "scripts/build-runtime-js.js",
+        "tests/compat/packed-entry-smoke-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "compat-packed-entry",
+      "ownerSourceFirstTaskId": "5",
+      "relevanceEvidence": [
+        {
+          "binding": "gitIgnore",
+          "mode": "read",
+          "targetPath": ".gitignore"
+        },
+        {
+          "binding": "npmIgnore",
+          "mode": "read",
+          "targetPath": ".npmignore"
+        },
+        {
+          "binding": "stageContract",
+          "mode": "read",
+          "targetPath": "config/migration/task5-stage-paths.txt"
+        },
+        {
+          "binding": "generatedEntrySource",
+          "mode": "read",
+          "targetPath": "index.js"
+        },
+        {
+          "binding": "sourceEntry",
+          "mode": "read",
+          "targetPath": "index.ts"
+        },
+        {
+          "binding": "packageJson",
+          "mode": "read",
+          "targetPath": "package.json"
+        },
+        {
+          "binding": "buildScript",
+          "mode": "read",
+          "targetPath": "scripts/build-runtime-js.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/compat/packed-entry-smoke-test.js",
+      "testSha256": "1cbb7ca547f8edab2242c45a52ba8e090dec667bafcfc395fd072731906b2c21"
+    },
+    {
+      "coveredPaths": [
+        "lib/compat/openclaw-memory-cli.js",
+        "lib/compat/release-provenance.js",
+        "lib/core/codex-mcp.js",
+        "lib/core/codex-service.js",
+        "lib/core/http-routes.js",
+        "tests/compat/release-provenance-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "compat-release-provenance",
+      "ownerSourceFirstTaskId": "5",
+      "relevanceEvidence": [
+        {
+          "binding": "runDoctor",
+          "mode": "import",
+          "resultBinding": "doctor",
+          "symbol": "runDoctor",
+          "targetPath": "lib/core/codex-service.js"
+        },
+        {
+          "binding": "createMemoryHttpHandler",
+          "mode": "import",
+          "resultBinding": "handler",
+          "symbol": "createMemoryHttpHandler",
+          "targetPath": "lib/core/http-routes.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/compat/release-provenance-test.js",
+      "testSha256": "bf6c40e0c0797f8d814c1c253a7df77c7c42287e0da31018c9851b7cf7457d51"
     },
     {
       "coveredPaths": [
@@ -240,6 +358,123 @@
       "runner": "node",
       "testPath": "tests/compat/scope-visibility-matrix-test.js",
       "testSha256": "742547ebb7f3841c39b61f11141bfaeea8973b38ff9d90cab00fc39ec5de5daf"
+    },
+    {
+      "coveredPaths": [
+        "lib/compat/write-policy.js",
+        "lib/core/capture-service.js",
+        "lib/core/codex-mcp.js",
+        "lib/core/codex-service.js",
+        "lib/core/control-plane.js",
+        "lib/core/http-routes.js",
+        "lib/core/maintenance-service.js",
+        "lib/core/memory-actions.js",
+        "lib/core/native-memory.js",
+        "lib/core/remote-mcp.js",
+        "lib/core/sqlite.js",
+        "lib/core/transcript-harvester.js",
+        "lib/core/wiki-project.js",
+        "scripts/gigabrain-mcp.js",
+        "scripts/gigabrainctl.js",
+        "scripts/setup-first-run.js",
+        "tests/compat/write-mode-gate-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "compat-write-mode-gate",
+      "ownerSourceFirstTaskId": "5",
+      "relevanceEvidence": [
+        {
+          "binding": "captureFromEvent",
+          "mode": "import",
+          "symbol": "captureFromEvent",
+          "targetPath": "lib/core/capture-service.js"
+        },
+        {
+          "binding": "createMcpServer",
+          "mode": "import",
+          "symbol": "createMcpServer",
+          "targetPath": "lib/core/codex-mcp.js"
+        },
+        {
+          "binding": "runRemember",
+          "mode": "import",
+          "symbol": "runRemember",
+          "targetPath": "lib/core/codex-service.js"
+        },
+        {
+          "binding": "appendMemoryReceipt",
+          "mode": "import",
+          "symbol": "appendMemoryReceipt",
+          "targetPath": "lib/core/control-plane.js"
+        },
+        {
+          "binding": "createMemoryHttpHandler",
+          "mode": "import",
+          "symbol": "createMemoryHttpHandler",
+          "targetPath": "lib/core/http-routes.js"
+        },
+        {
+          "binding": "runMaintenance",
+          "mode": "import",
+          "symbol": "runMaintenance",
+          "targetPath": "lib/core/maintenance-service.js"
+        },
+        {
+          "binding": "applyMemoryActions",
+          "mode": "import",
+          "symbol": "applyMemoryActions",
+          "targetPath": "lib/core/memory-actions.js"
+        },
+        {
+          "binding": "writeNativeMemoryEntry",
+          "mode": "import",
+          "symbol": "writeNativeMemoryEntry",
+          "targetPath": "lib/core/native-memory.js"
+        },
+        {
+          "binding": "resolveRemoteMcpOptions",
+          "mode": "import",
+          "symbol": "resolveRemoteMcpOptions",
+          "targetPath": "lib/core/remote-mcp.js"
+        },
+        {
+          "binding": "openDatabase",
+          "mode": "import",
+          "symbol": "openDatabase",
+          "targetPath": "lib/core/sqlite.js"
+        },
+        {
+          "binding": "harvestTranscripts",
+          "mode": "import",
+          "symbol": "harvestTranscripts",
+          "targetPath": "lib/core/transcript-harvester.js"
+        },
+        {
+          "binding": "projectWiki",
+          "mode": "import",
+          "symbol": "projectWiki",
+          "targetPath": "lib/core/wiki-project.js"
+        },
+        {
+          "binding": "gigabrainMcpSource",
+          "mode": "read",
+          "targetPath": "scripts/gigabrain-mcp.js"
+        },
+        {
+          "binding": "gigabrainCtlSource",
+          "mode": "read",
+          "targetPath": "scripts/gigabrainctl.js"
+        },
+        {
+          "binding": "setupSource",
+          "mode": "read",
+          "targetPath": "scripts/setup-first-run.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/compat/write-mode-gate-test.js",
+      "testSha256": "b9e2fe873f40f63b3c769782b1e0bcc8fd2aca383ac7da31e8000daef3066745"
     },
     {
       "coveredPaths": [
@@ -951,6 +1186,24 @@
     },
     {
       "coveredPaths": [
+        "tests/unit-plugin-runtime-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "task5-unit-plugin-runtime",
+      "ownerSourceFirstTaskId": "5",
+      "relevanceEvidence": [
+        {
+          "mode": "self",
+          "targetPath": "tests/unit-plugin-runtime-test.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/unit-plugin-runtime-test.js",
+      "testSha256": "da0416575e8259fc4617de34d9ba84c3dc8c27f925b8733149939b4b3fb6e3c9"
+    },
+    {
+      "coveredPaths": [
         ".gitignore",
         "config/migration/retirement-evidence-attestation.json",
         "config/migration/task3-stage-paths.txt",
@@ -969,7 +1222,7 @@
       "testPath": "tests/compat/upstream-adoption-test.js"
     }
   ],
-  "entryCount": 76,
-  "manifestSha256": "56b2e1efa5569dfd9dcd6747caa35dcc8ef89a245bb08e75da6a79199d53045b",
+  "entryCount": 81,
+  "manifestSha256": "4af717d476dd0bc354c98997c494a3b1fda3a6901148bc6d6833eb0299bdacdf",
   "schemaVersion": 1
 }

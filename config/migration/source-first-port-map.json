@@ -20,19 +20,34 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "1f76c4651d7357fc3eaf25b7b938a668edf89929ed06639ec34039bcb0205918",
+      "contentSha256": "f9c65b6ef0e20792007fc4f1478445e3c6c31afce949456430e4bc8604da7e5a",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "upstream-adoption"
+        "registrationId": "compat-packed-entry"
       },
       "ownerTasks": [
         "2B",
         "3",
-        "4"
+        "4",
+        "5"
       ],
-      "reason": "Exact unignore rules make the reviewed migration pathspec contract directly stageable.",
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": ".gitignore"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "f7a9488745eda78a94d8f8f489980ce38d63bd7a997d7b7b6117b4aa458a8652",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-packed-entry"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": ".npmignore"
     },
     {
       "changeType": "added",
@@ -73,15 +88,16 @@
         "2A",
         "2B",
         "3",
-        "4"
+        "4",
+        "5"
       ],
-      "reason": "Canonical source-first policy map extended with exact Task 4 paths, hashes, ownership and gates.",
+      "reason": "Canonical source-first policy map extended with exact Task 5 paths, hashes, ownership and gates.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-port-map.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "3e7c8f4b386c4124e3ac680646a40e20aa51841d0bb2c31ed44d5670a547fe58",
+      "contentSha256": "7b7c39a0cee54c72b3c861bc55ae52f694267912cf05a671189d9ab118b8cb00",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -89,9 +105,10 @@
       "ownerTasks": [
         "2A",
         "3",
-        "4"
+        "4",
+        "5"
       ],
-      "reason": "Canonical source-first registry extended with passing Task 4 config, scope, rule, dedupe and trust contracts.",
+      "reason": "Canonical source-first registry extended with passing Task 5 adapter, authorization, policy, provenance and package contracts.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -136,6 +153,20 @@
       "reason": "Reviewed wildcard-free exact Task 4 staging contract.",
       "targetMode": "100644",
       "targetPath": "config/migration/task4-stage-paths.txt"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "50ccb853a251894c8d6f3325166bc844a12b2db68002c371b71cc2e6839e2f73",
+      "disposition": "operator_only",
+      "gate": {
+        "registrationId": "compat-packed-entry"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "config/migration/task5-stage-paths.txt"
     },
     {
       "changeType": "added",
@@ -253,31 +284,173 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "0f701cbfa540ad3354b02b6c29abd921b9d793c4ae1eb613f7982a62d32fe4d3",
+      "contentSha256": "2a0994613cad6b0ffb1940b94e9997a4586454f10dabdcbce3f359873cbed0e8",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-scope-visibility-matrix"
+        "registrationId": "compat-packed-entry"
       },
       "ownerTasks": [
-        "4"
+        "5"
       ],
-      "reason": "Fail-closed Task 4 scope normalization, visibility and trusted event-scope authority.",
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "index.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "03e7f96337a96e3c720d6fa2544e287bd53b7b48582b81992faffa0d0010e60f",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-packed-entry"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "index.ts"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "001bab029d82be8649f3c2c43bd04801719504b2e5e3e0f1738dc229bf993286",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-openclaw-hooks-and-flush"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/compat/flush-plan.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "68f34e9d05f1279387f13c854bfa4fef475adcafa9c782da3d4c63715cd2d4e0",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-openclaw-memory-runtime"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/compat/openclaw-adapter.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "f4e654a83f8d4113e1f6a969158c443445082178d6ba8cc5a2dca22021ee9e24",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-openclaw-memory-runtime"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/compat/openclaw-memory-cli.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "af9256edbe37f8e2f38480cefd02a92dd90524a3da11105b21100cc77f58bf0a",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-openclaw-memory-authorization"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/compat/openclaw-memory-runtime.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "7ba4bd40bfda157020564c475f79f0e7fb2ce07e4df569ee1721dcca6636ec8c",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-release-provenance"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/compat/release-provenance.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "0a7747b1f1f6c8ac4e4cf642177400cb0ddce570ec3802734ec90a8ed4a98723",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-openclaw-memory-runtime"
+      },
+      "ownerTasks": [
+        "4",
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "lib/compat/scope-policy.js"
     },
     {
-      "changeType": "modified",
-      "contentSha256": "3ea85e12913c2221020004bac3b5861a81ccb4ff90b1823ded648aa89eb037e9",
+      "changeType": "added",
+      "contentSha256": "d9eeca6c16aba6d03ab36cf54bef6b7aa6cdb9bf81e464f1f44ff36d0cc58265",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-scope-visibility-matrix"
+        "registrationId": "compat-write-mode-gate"
       },
       "ownerTasks": [
-        "4"
+        "5"
       ],
-      "reason": "Fail-closed Task 4 scope normalization, visibility and trusted event-scope authority.",
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/compat/write-policy.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "53a4557f68969202e3cabb5fddfab202cb200768b38b0b09603f9ac0547fb382",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "4",
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/capture-service.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "109324b800c27a08210e6d561f9f89cce157875694e948e5d4007a308e2b0588",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/codex-mcp.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "875a43519122905aa4b8b8e6c7380eee65c08ad61189f640c830dc7e9a4ff833",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-release-provenance"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/codex-service.js"
     },
     {
       "changeType": "modified",
@@ -292,6 +465,20 @@
       "reason": "Canonical Task 4 configuration, schema generation, disabled automation and host-sync gate behavior.",
       "targetMode": "100644",
       "targetPath": "lib/core/config.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "dcbdd0e1e3dbaebf3c6be67f06fca5b427284e4250ba8d394e45f6cc3000533e",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/control-plane.js"
     },
     {
       "changeType": "modified",
@@ -323,31 +510,131 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "521d43108a6829f9acfcf5dfb4d3e5fecefaba9594b0268b4b93d50e47a690a4",
+      "contentSha256": "aa4d354fe9ba6661db70f74f187d7c5f038c2ec0b409343e3eb597add02d18f8",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "restored-integration-audit-maintenance"
+        "registrationId": "compat-release-provenance"
       },
       "ownerTasks": [
-        "4"
+        "5"
       ],
-      "reason": "Nightly host sync identifies its automatic trigger so the separate disabled-by-default gate is enforced.",
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/http-routes.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "204ed85ddca35cb638352735403d053a14fad8e2267ebeaad92bf4bb92d4462a",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "4",
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/maintenance-service.js"
     },
     {
       "changeType": "modified",
-      "contentSha256": "4c456ec281e2160a13ef7bf01bbb38dde71d861dff085b89ed70ee74306aef03",
+      "contentSha256": "dcfdbb1e38c171412178b212ffef660dca97a49dc1f7d4412608d9addec36fa1",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "restored-unit-memory-actions"
+        "registrationId": "compat-write-mode-gate"
       },
       "ownerTasks": [
-        "4"
+        "4",
+        "5"
       ],
-      "reason": "Fail-closed Task 4 scope normalization, visibility and trusted event-scope authority.",
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/memory-actions.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "49d45e6ee8b271038a94b4cb6e78f0024ba4e7db4a27203d9bd7061191ab7ed0",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/native-memory.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "806e83dd4074ea5396902eb78be2255a1b9fe6e7366146d6129aa0e461cc8740",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/remote-mcp.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "b9f5d5044e7759c6e1f2bbde383a566402169d29a7b299eb5bdb7d0e2c9c2866",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-openclaw-memory-authorization"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/safe-fs.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "107e4c5bfd72306f8fb226c750488917265ef905076236da81401bd38e794ee5",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/sqlite.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "c13c1218dc0dd38ff348fabb2bfc73e2965fa11c42a684bf8c8b2946e7840fcb",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/transcript-harvester.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "cb65b05b46d17b4ed68fbd9c6976d22b776f38baa61e98a7d21efd0cc5aaa6a5",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/wiki-project.js"
     },
     {
       "changeType": "modified",
@@ -379,16 +666,17 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "af8d98eddbd98d0ae9b44ccf3df0bfb24c115288635717b9319472927cdcaa87",
+      "contentSha256": "72e7efbe68ea50945b6eecdf6ee6c67e68e781d098fc4acbeac9854654dc9d04",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "npm-pack-schema"
+        "registrationId": "compat-packed-entry"
       },
       "ownerTasks": [
         "1",
-        "2B"
+        "2B",
+        "5"
       ],
-      "reason": "Task 1 compatibility-version metadata only; package behavior remains upstream-owned.",
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "package.json"
     },
@@ -435,6 +723,20 @@
       "targetPath": "scripts/build-operator-rules-migration.js"
     },
     {
+      "changeType": "added",
+      "contentSha256": "d26270acdd99e4e39982dc3062f11f060c914d6b8279fb033c08639e9f4477d4",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-packed-entry"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "scripts/build-runtime-js.js"
+    },
+    {
       "changeType": "modified",
       "contentSha256": "ea2f44118ce15ec49f052a553c7a8eb34eb3c421e03511076ec589e2732f2262",
       "disposition": "core_patch",
@@ -477,6 +779,34 @@
       "reason": "Fail-closed source-first policy guard including hash-bound adoption and retirement contracts; no runtime source behavior.",
       "targetMode": "100644",
       "targetPath": "scripts/check-source-first-divergence.mjs"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "2ae7ee2b31ba1207bbef421a6cd985b25b9654fa69163c88ae89a1c508840496",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100755",
+      "targetPath": "scripts/gigabrain-mcp.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "290de2b0b74f80453e6d97e0ea1f04d9058ab165694bb22207a48b69f5d0f2b8",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100755",
+      "targetPath": "scripts/gigabrainctl.js"
     },
     {
       "changeType": "added",
@@ -522,15 +852,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "85adfb512b6c51710abf1c4f1841162bf047b965c474109bbee2661516f0f06b",
+      "contentSha256": "1bd472bda3a0368ec2af4446086ea229bed884ba259526488c7e2245cb82f521",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-config-schema-parity"
+        "registrationId": "compat-write-mode-gate"
       },
       "ownerTasks": [
-        "4"
+        "4",
+        "5"
       ],
-      "reason": "Canonical Task 4 configuration, schema generation, disabled automation and host-sync gate behavior.",
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "scripts/setup-first-run.js"
     },
@@ -637,17 +968,18 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "4c4784ef7d2df1373c7377afb3a77a38b4b37d21f98b9a1490567eefbeef46ae",
+      "contentSha256": "c28e0c9c7d6a64451b9b5451f85c02bf9a0db3cf345ec124891d06937d2cbeb4",
       "disposition": "private_dev_only",
       "gate": {
-        "registrationId": "upstream-adoption"
+        "registrationId": "full-test-inventory"
       },
       "ownerTasks": [
         "2B",
         "3",
-        "4"
+        "4",
+        "5"
       ],
-      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior. Task 4 contracts are registered and removed from expected failures after GREEN.",
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -668,7 +1000,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "5cde8e07d60512f5e3bb37e95a3b5e7a90a9b3ca46cb2003d79fb8b81aafd585",
+      "contentSha256": "42dc138df05f3fb3decb1f7634e45415282a6f1f802d9beed0dfe3cc58d3d22a",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-generated-surface"
@@ -677,7 +1009,7 @@
         "2B",
         "5"
       ],
-      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/generated-surface-test.js"
     },
@@ -743,7 +1075,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "0095c1228ee9e44d62b2677b37e131bec053c4bbc6c11ccec0049600f2f0ef02",
+      "contentSha256": "b30abf1698d352b83cd11feaf66b8b564b063ec3990ecf05ced633234354765c",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-openclaw-hooks-and-flush"
@@ -752,13 +1084,27 @@
         "2B",
         "5"
       ],
-      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/openclaw-hooks-and-flush-test.js"
     },
     {
       "changeType": "added",
-      "contentSha256": "1adf43d48216f099969f7c6a90ce5e8f9f1e69c08fe819d7af0a46fbde9715c6",
+      "contentSha256": "2bdb601858757559a81389857b95b47f9540fd7266641940b88e83be9b4e8751",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-openclaw-memory-authorization"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/openclaw-memory-authorization-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "11a5ee7af67b4e01f7329ac222bf5d0669b9765cccc59524044c17aa12fb3034",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-openclaw-memory-runtime"
@@ -767,7 +1113,7 @@
         "2B",
         "5"
       ],
-      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/openclaw-memory-runtime-test.js"
     },
@@ -784,6 +1130,34 @@
       "reason": "Scanner-clean passing Task 4 behavioral compatibility contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/operator-rules-migration-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "1cbb7ca547f8edab2242c45a52ba8e090dec667bafcfc395fd072731906b2c21",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-packed-entry"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/packed-entry-smoke-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "bf6c40e0c0797f8d814c1c253a7df77c7c42287e0da31018c9851b7cf7457d51",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-release-provenance"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/release-provenance-test.js"
     },
     {
       "changeType": "added",
@@ -817,18 +1191,33 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "10e29b14a8ff9d11ab29e38a10a8b0dc02366b075c5da723e9616ec7832e4858",
+      "contentSha256": "9a444ecb162375e7c756c087052a89824796649bf3a7b99bb4056296505b14ba",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "upstream-adoption"
       },
       "ownerTasks": [
         "3",
-        "4"
+        "4",
+        "5"
       ],
-      "reason": "Byte-identity, retired-byte/path, release-tree and package-behavior adoption contract.",
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/upstream-adoption-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "b9e2fe873f40f63b3c769782b1e0bcc8fd2aca383ac7da31e8000daef3066745",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/write-mode-gate-test.js"
     },
     {
       "changeType": "added",
@@ -889,17 +1278,18 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "27735541ad820e6c66d4d43ab3d94837f076b3aa98516af5f65fe1425ef9f03f",
+      "contentSha256": "a929af6d83f7e34a57d13a9e71d5b7f8261c686cb34cc5f9b9d5f8eba1ff79fe",
       "disposition": "private_dev_only",
       "gate": {
-        "registrationId": "upstream-adoption"
+        "registrationId": "full-test-inventory"
       },
       "ownerTasks": [
         "2B",
         "3",
-        "4"
+        "4",
+        "5"
       ],
-      "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure. Task 4 contracts are registered and removed from expected failures after GREEN.",
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory.js"
     },
@@ -1639,15 +2029,16 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "c00002220502808c048ad6ccc5638ff8ca3124db6ee564479320f39fa27cfac5",
+      "contentSha256": "df5ae4fba17c9210ee9ecb38831de6fbc6ce741b3adf16c0494cfad60c3c6eb2",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "restored-unit-package-metadata"
       },
       "ownerTasks": [
-        "2B"
+        "2B",
+        "5"
       ],
-      "reason": "Scanner-clean restored compatibility assertion or its private test infrastructure.",
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "tests/unit-package-metadata-test.js"
     },
@@ -1692,6 +2083,20 @@
       "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure.",
       "targetMode": "100644",
       "targetPath": "tests/unit-pii-scanner-test.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "da0416575e8259fc4617de34d9ba84c3dc8c27f925b8733149939b4b3fb6e3c9",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "task5-unit-plugin-runtime"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "targetMode": "100644",
+      "targetPath": "tests/unit-plugin-runtime-test.js"
     },
     {
       "changeType": "modified",
