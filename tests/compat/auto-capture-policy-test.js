@@ -190,6 +190,29 @@ export async function run() {
       );
     }
 
+    const safePriorTurn = "The synthetic harbour review has approved owners, acceptance checks, and a durable weekly operating cadence.";
+    for (const [reason, content] of [
+      ["test_event", "We will run unit tests and publish a temporary diagnostics status update."],
+      ["test_event", "We are running unit tests for the fixture."],
+      ["tool_event", "We will publish a temporary diagnostics status update for the fixture."],
+    ]) {
+      assert.deepEqual(
+        classify({ content, mode: "auto", role: "user", scope: "profile:main" }),
+        { action: "reject", reason: "excluded_content" },
+      );
+      assert.deepEqual(
+        prepare({
+          config: activeConfig(),
+          context: { agentId: "main" },
+          event: { messages: [
+            { role: "user", content: safePriorTurn },
+            { role: "user", content },
+          ] },
+        }),
+        { eligible: false, reason },
+      );
+    }
+
     assert.deepEqual(
       prepare({
         config: activeConfig(),

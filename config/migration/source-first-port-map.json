@@ -100,7 +100,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "02f13a7eeb40be2e288b93b7330277ae1d077e525765e07968bc0081494dc007",
+      "contentSha256": "bd2e49f85fe30a1b6caef5c5d02e7c697f2ce8cc6d2ebeeb6512340915846c62",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -114,7 +114,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with the Task 9A fix-round 2 RED test hash and existing behavioral relevance evidence.",
+      "reason": "Source-first registry with the Task 9A fix-round 3 RED test hash and existing behavioral relevance evidence.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -1148,7 +1148,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "318c53489bffab93b9094b4a20a350e3ae345c8cf804111aa53fe6445b5e6b8c",
+      "contentSha256": "c15b0db63a79698900b6be91a64d2c02e17fe63fb559b1efe1cd1595228203cd",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-policy"
@@ -1156,7 +1156,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9A fix-round 2 RED contract for execution chatter and wake-specific authorization boilerplate handling.",
+      "reason": "Task 9A fix-round 3 RED contract for natural conversational unit-test and diagnostics chatter.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-policy-test.js"
     },
