@@ -198,6 +198,19 @@ export async function run() {
       "Objective: Produce a durable weekly synthetic harbour review summary with acceptance checks and owner confirmation.",
     ].join("\n");
     assert.equal(sanitizePaperclipWake(canonicalBulletedWake), canonicalWakeText);
+    assert.equal(
+      sanitizePaperclipWake([
+        "Paperclip wake:",
+        "- **Issue:** PC-315",
+        "- **Reason:** assignment updated",
+        "- **Objective:** Preserve the explicit synthetic review decision without scheduler chatter.",
+      ].join("\n")),
+      [
+        "Issue: PC-315",
+        "Reason: assignment updated",
+        "Objective: Preserve the explicit synthetic review decision without scheduler chatter.",
+      ].join("\n"),
+    );
 
     const canonicalDecision = prepare({
       config: activeConfig(),
