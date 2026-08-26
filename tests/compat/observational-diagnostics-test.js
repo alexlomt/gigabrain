@@ -36,6 +36,22 @@ const runCli = (args) => spawnSync(process.execPath, [path.join(repoRoot, "scrip
   timeout: 30_000,
 });
 
+const verifyDirectReadHelpers = (fixture) => {
+  const db = new DatabaseSync(fixture.dbPath, { readOnly: true });
+  try {
+    const directMetrics = captureSnapshotMetrics(db, fixture.dbPath, { ensure: false });
+    const directMemory = getCurrentMemory(db, "diagnostic-memory", { ensure: false });
+    const directSources = listMemorySources({ db, config: fixture.config });
+    const directTranscript = transcriptStatus({ db, config: fixture.config });
+    assert.equal(directMetrics.totals.all, 1);
+    assert.equal(directMemory.memory_id, "diagnostic-memory");
+    assert.equal(Array.isArray(directSources.sources), true);
+    assert.equal(Array.isArray(directTranscript.sources), true);
+  } finally {
+    db.close();
+  }
+};
+
 const makeFixture = () => {
   const root = mkdtempSync(path.join(tmpdir(), "gigabrain-task5-observational-"));
   const workspace = path.join(root, "workspace");
@@ -144,21 +160,7 @@ export async function run() {
         });
       }
 
-      await check("direct observational helpers", () => {
-        const db = new DatabaseSync(fixture.dbPath, { readOnly: true });
-        try {
-          const directMetrics = captureSnapshotMetrics(db, fixture.dbPath, { ensure: false });
-          const directMemory = getCurrentMemory(db, "diagnostic-memory", { ensure: false });
-          const directSources = listMemorySources({ db, config: fixture.config });
-          const directTranscript = transcriptStatus({ db, config: fixture.config });
-          assert.equal(directMetrics.totals.all, 1);
-          assert.equal(directMemory.memory_id, "diagnostic-memory");
-          assert.equal(Array.isArray(directSources.sources), true);
-          assert.equal(Array.isArray(directTranscript.sources), true);
-        } finally {
-          db.close();
-        }
-      });
+      await check("direct observational helpers", () => verifyDirectReadHelpers(fixture));
 
       await check("memory status", () => runMemoryStatus({ config: fixture.config, options: { agent: "project:diagnostic" }, io }));
       await check("memory search", () => runMemorySearch({ config: fixture.config, query: "harbour", options: { agent: "project:diagnostic" }, io }));
