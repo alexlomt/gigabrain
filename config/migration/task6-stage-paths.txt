@@ -1,0 +1,8 @@
+config/migration/source-first-port-map.json
+config/migration/source-first-test-registry.json
+config/migration/task6-stage-paths.txt
+tests/compat/checkpoint-promotion-isolation-test.js
+tests/compat/expected-failures.json
+tests/compat/native-lock-concurrency-test.js
+tests/compat/native-metadata-promotion-test.js
+tests/source-first-divergence-test.js

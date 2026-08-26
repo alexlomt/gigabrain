@@ -32,7 +32,8 @@
       "id": "compat-checkpoint-promotion-isolation",
       "ownerSourceFirstTaskId": "6",
       "runner": "node",
-      "testPath": "tests/compat/checkpoint-promotion-isolation-test.js"
+      "testPath": "tests/compat/checkpoint-promotion-isolation-test.js",
+      "testSha256": "37331d85881cc871e27e3d3bf07582c0865b53d35ab08c43f694c9cb369bc634"
     },
     {
       "coveredPaths": [
@@ -148,10 +149,12 @@
       "id": "compat-native-lock-concurrency",
       "ownerSourceFirstTaskId": "6",
       "runner": "node",
-      "testPath": "tests/compat/native-lock-concurrency-test.js"
+      "testPath": "tests/compat/native-lock-concurrency-test.js",
+      "testSha256": "7e526073d95e44dc09577583f14e2358393a2bc7ca3fe16d4efa954cb7198559"
     },
     {
       "coveredPaths": [
+        "config/migration/task6-stage-paths.txt",
         "tests/compat/native-metadata-promotion-test.js"
       ],
       "expectedOutcome": "xfail",
@@ -159,7 +162,8 @@
       "id": "compat-native-metadata-promotion",
       "ownerSourceFirstTaskId": "6",
       "runner": "node",
-      "testPath": "tests/compat/native-metadata-promotion-test.js"
+      "testPath": "tests/compat/native-metadata-promotion-test.js",
+      "testSha256": "be3ba4a254eeedad4b7b927ad32048a520ff6daae98457dc6323357024736c35"
     },
     {
       "coveredPaths": [
@@ -1430,6 +1434,6 @@
     }
   ],
   "entryCount": 83,
-  "manifestSha256": "b36ed8c9e1714b6fef4741e4168035e8602de134518583c88b9040b2672c2f12",
+  "manifestSha256": "ecf6287019574b121b0418ee40c29de773153af03977e10019bd205a0077727d",
   "schemaVersion": 1
 }

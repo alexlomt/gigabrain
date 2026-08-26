@@ -89,15 +89,16 @@
         "2B",
         "3",
         "4",
-        "5"
+        "5",
+        "6"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Strict Task 5 source-first evidence plus exact Task 6 red-gate ownership and staging metadata.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-port-map.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "ebce14ba4cb3b55ca1a5a3b5729ff54231c324e7cd869e3a955e54ca5582ca41",
+      "contentSha256": "3a8eea617a8b31c61a3f366d817eb4bc58d669ece70f7ed82f5090874702fa73",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -106,9 +107,10 @@
         "2A",
         "3",
         "4",
-        "5"
+        "5",
+        "6"
       ],
-      "reason": "Task 5 source-first lexical evidence isolation and immutable exact-HEAD execution gate.",
+      "reason": "Task 5 source-first registry plus exact Task 6 xfail signatures, owners, hashes, and staging coverage.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -167,6 +169,20 @@
       "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "config/migration/task5-stage-paths.txt"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "2a494c3894730a4e116ae7f2684360fd91abb9a1c8c1fbccb9bd4fbe655b974a",
+      "disposition": "operator_only",
+      "gate": {
+        "registrationId": "compat-native-metadata-promotion"
+      },
+      "ownerTasks": [
+        "6"
+      ],
+      "reason": "Reviewed wildcard-free exact Task 6 corrective red staging contract.",
+      "targetMode": "100644",
+      "targetPath": "config/migration/task6-stage-paths.txt"
     },
     {
       "changeType": "added",
@@ -1044,7 +1060,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "35463e6e7fcff477b45c72fd7df62e155eccc6697da19b62efafac05d0959e5e",
+      "contentSha256": "37331d85881cc871e27e3d3bf07582c0865b53d35ab08c43f694c9cb369bc634",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-checkpoint-promotion-isolation"
@@ -1053,7 +1069,7 @@
         "2B",
         "6"
       ],
-      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "reason": "Substantive Task 6 checkpoint-isolation red compatibility contract; no runtime behavior.",
       "targetMode": "100644",
       "targetPath": "tests/compat/checkpoint-promotion-isolation-test.js"
     },
@@ -1139,9 +1155,10 @@
         "2B",
         "3",
         "4",
-        "5"
+        "5",
+        "6"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Exact expected-failure ownership metadata including the three Task 6 red contracts; no runtime behavior.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1192,7 +1209,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "c81bdcadb4f48cb8e088e4e22e06ac35b0118f71050a836a52d3e582419c7e6e",
+      "contentSha256": "7e526073d95e44dc09577583f14e2358393a2bc7ca3fe16d4efa954cb7198559",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-native-lock-concurrency"
@@ -1201,13 +1218,13 @@
         "2B",
         "6"
       ],
-      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "reason": "Substantive Task 6 cross-process native-lock red compatibility contract; no runtime behavior.",
       "targetMode": "100644",
       "targetPath": "tests/compat/native-lock-concurrency-test.js"
     },
     {
       "changeType": "added",
-      "contentSha256": "b1d5a8d3c94796819d9b8d4ced7d0740ea5417de26705b050c757d24012ab10f",
+      "contentSha256": "be3ba4a254eeedad4b7b927ad32048a520ff6daae98457dc6323357024736c35",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-native-metadata-promotion"
@@ -1216,7 +1233,7 @@
         "2B",
         "6"
       ],
-      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "reason": "Substantive Task 6 typed-native-metadata red compatibility contract; no runtime behavior.",
       "targetMode": "100644",
       "targetPath": "tests/compat/native-metadata-promotion-test.js"
     },
@@ -1935,7 +1952,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "6b5a17a25e5de64cb784c15c21f507a3e689c1e57221bd6685497a68c3956687",
+      "contentSha256": "e23d0c3fa66c1ac5112b3f6bc20de06c3567a373c23e57ea71c04a2a2ee1e3f7",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1945,9 +1962,10 @@
         "2B",
         "3",
         "4",
-        "5"
+        "5",
+        "6"
       ],
-      "reason": "Task 5 source-first lexical evidence isolation and immutable exact-HEAD execution gate.",
+      "reason": "Task 5 source-first contract plus the exact Task 6 corrective red staging path and candidate-change count.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },
