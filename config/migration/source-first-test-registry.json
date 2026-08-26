@@ -674,8 +674,8 @@
         "lib/core/world-model.js",
         "tests/compat/world-model-shadow-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_WORLD_MODEL_SHADOW missing protected non-consuming shadow semantics",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-world-model-shadow",
       "ownerSourceFirstTaskId": "8",
       "relevanceEvidence": [
@@ -1571,6 +1571,6 @@
     }
   ],
   "entryCount": 87,
-  "manifestSha256": "9dbb6ccf3d146ab87b92a2e9cd67daacd0f440f8cbb825207634d1aaa4e17fe0",
+  "manifestSha256": "b02d4e14c58e76d17af04131dcb627107b673a4c14465cc23ad30666eb543f2a",
   "schemaVersion": 1
 }

@@ -99,7 +99,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "c567b0d1e117db3f17f6bb9d4814088ebe518dd0ac0deab0e34d986ed626af74",
+      "contentSha256": "cf897c89d05106ebcc7ba5a8e12f19ed08502a1bc3642a37817917b5e81870cc",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -848,7 +848,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "05e1ad2c8c73e8e1246a5881aeb995ab77b86de5018a10251e926fa4aa934ef1",
+      "contentSha256": "132b5fb03a62b892eb98a6d8cacdbfdcc13f2eec2fa9525fa9dcba0bd89cda3c",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-observational-core-patches"
@@ -857,7 +857,7 @@
         "5",
         "8"
       ],
-      "reason": "Task 5 observational behavior retained while Task 8 excludes vault projection, refreshes from eligible native state, and preserves every protected entity ID.",
+      "reason": "Task 5 observational behavior retained while Task 8 excludes vault projection, refreshes eligible native state, and marks already-protected entities for stable repeated rebuilds.",
       "targetMode": "100644",
       "targetPath": "lib/core/world-model.js"
     },
@@ -1243,7 +1243,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "13d38714797178b29c8eeff1f4d52b92a08dc97f9794dfea5a95d5a073eb1591",
+      "contentSha256": "b574f3efad59e20344368bc0f7b99ded36b503272f8c7e1f8eba934932f25ba1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1257,7 +1257,7 @@
         "7",
         "8"
       ],
-      "reason": "Expected-failure ownership while the Task 8 repeated protected-entity lifecycle regression is red.",
+      "reason": "Expected-failure ownership after the Task 8 repeated protected-entity lifecycle regression became a passing contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1549,7 +1549,7 @@
       "ownerTasks": [
         "8"
       ],
-      "reason": "Task 8 red regression for stable protected IDs and protection payload across repeated rebuilds.",
+      "reason": "Passing Task 8 stable protected-ID and protection-payload contract across repeated rebuilds.",
       "targetMode": "100644",
       "targetPath": "tests/compat/world-model-shadow-test.js"
     },

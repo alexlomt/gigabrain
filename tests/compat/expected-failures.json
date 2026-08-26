@@ -24,11 +24,6 @@
       "ownerTask": "14",
       "signature": "COMPAT_EXPECTED_ROLLBACK_RESTORE missing verified rollback restoration",
       "test": "compat/rollback-restore-test.js"
-    },
-    {
-      "ownerTask": "8",
-      "signature": "COMPAT_EXPECTED_WORLD_MODEL_SHADOW missing protected non-consuming shadow semantics",
-      "test": "compat/world-model-shadow-test.js"
     }
   ],
   "schemaVersion": 1
