@@ -412,18 +412,32 @@ export const runProtectedEntityLifecycleFixture = () => {
   const db = openDb(workspace.dbPath);
   try {
     const config = normalizeConfig(makeConfigObject(workspace.workspace).plugins.entries.gigabrain.config);
-    seedMemoryCurrent(db, [{
-      memory_id: "duplicate-protected-source",
-      type: "USER_FACT",
-      content: "Duplicate Protected works as a synthetic advisor.",
-      scope: "shared",
-      confidence: 0.97,
-      value_score: 0.92,
-      value_label: "core",
-      source_path: "MEMORY.md",
-      created_at: NOW,
-      updated_at: NOW,
-    }]);
+    seedMemoryCurrent(db, [
+      {
+        memory_id: "duplicate-protected-source",
+        type: "USER_FACT",
+        content: "Duplicate Protected works as a synthetic advisor.",
+        scope: "shared",
+        confidence: 0.97,
+        value_score: 0.92,
+        value_label: "core",
+        source_path: "MEMORY.md",
+        created_at: NOW,
+        updated_at: NOW,
+      },
+      {
+        memory_id: "ordinary-entity-source",
+        type: "ENTITY",
+        content: "Ordinary Concept is explicitly tracked as context.",
+        scope: "shared",
+        confidence: 0.9,
+        value_score: 0.7,
+        value_label: "useful",
+        source_path: "MEMORY.md",
+        created_at: NOW,
+        updated_at: NOW,
+      },
+    ]);
     ensureWorldModelStore(db);
     insertProtectedEntity(db, {
       entityId: "person:detached-protected",
@@ -438,26 +452,50 @@ export const runProtectedEntityLifecycleFixture = () => {
       displayName: "Duplicate Protected",
     });
     rebuildEntityMentions(db);
-    const rebuilt = rebuildWorldModel({ db, config, now: NOW });
-    assert.equal(rebuilt.ok, true);
-    assert.deepEqual(
-      db.prepare(`
-        SELECT entity_id
+    const protectedEntityIds = [
+      "person:detached-protected",
+      "person:duplicate-protected-a",
+      "person:duplicate-protected-b",
+    ];
+    const snapshots = [];
+    for (let rebuildNumber = 1; rebuildNumber <= 2; rebuildNumber += 1) {
+      const rebuilt = rebuildWorldModel({ db, config, now: NOW });
+      assert.equal(rebuilt.ok, true, `protected lifecycle rebuild ${rebuildNumber} must complete`);
+      snapshots.push(new Map(db.prepare(`
+        SELECT entity_id, payload
         FROM memory_entities
-        WHERE entity_id IN (?, ?, ?)
         ORDER BY entity_id
-      `).all(
-        "person:detached-protected",
-        "person:duplicate-protected-a",
-        "person:duplicate-protected-b",
-      ).map((row) => row.entity_id),
-      [
-        "person:detached-protected",
-        "person:duplicate-protected-a",
-        "person:duplicate-protected-b",
-      ],
-      "protected IDs must survive independently of exact-name mention extraction",
+      `).all().map((row) => [row.entity_id, JSON.parse(row.payload)])));
+    }
+    assert.deepEqual(
+      protectedEntityIds.filter((entityId) => snapshots[0].has(entityId)),
+      protectedEntityIds,
+      "protected IDs must survive the first rebuild independently of exact-name mention extraction",
     );
+    assert.deepEqual(
+      protectedEntityIds.filter((entityId) => snapshots[1].has(entityId)),
+      protectedEntityIds,
+      "protected IDs must remain stable across repeated rebuilds",
+    );
+    for (const [index, snapshot] of snapshots.entries()) {
+      for (const entityId of protectedEntityIds) {
+        assert.equal(
+          snapshot.get(entityId)?.rebuild_protected,
+          true,
+          `${entityId} must retain rebuild protection after rebuild ${index + 1}`,
+        );
+      }
+      assert.equal(
+        snapshot.has("topic:ordinary-concept"),
+        true,
+        `the ordinary-entity control must be present after rebuild ${index + 1}`,
+      );
+      assert.equal(
+        snapshot.get("topic:ordinary-concept")?.rebuild_protected,
+        undefined,
+        `ordinary entities must remain unprotected after rebuild ${index + 1}`,
+      );
+    }
     assert.equal(
       Number(db.prepare("SELECT COUNT(*) AS count FROM memory_entities WHERE normalized_name = ?").get("duplicate protected")?.count || 0),
       2,

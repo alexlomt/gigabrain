@@ -99,7 +99,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "ef86d60b784fd8df487d68a40eda45618f3d96d8c2303e6a309eca7c8bf8b922",
+      "contentSha256": "c567b0d1e117db3f17f6bb9d4814088ebe518dd0ac0deab0e34d986ed626af74",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1243,7 +1243,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "b574f3efad59e20344368bc0f7b99ded36b503272f8c7e1f8eba934932f25ba1",
+      "contentSha256": "13d38714797178b29c8eeff1f4d52b92a08dc97f9794dfea5a95d5a073eb1591",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1257,7 +1257,7 @@
         "7",
         "8"
       ],
-      "reason": "Expected-failure ownership after all Task 8 fix-round regressions became passing contracts.",
+      "reason": "Expected-failure ownership while the Task 8 repeated protected-entity lifecycle regression is red.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1541,7 +1541,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "55645e200e2090421d95bc6c39c8971f6041821865f53ad270e1f061929eeab2",
+      "contentSha256": "f7390445593f1545480dbc0ce7c9d71d565e3b88208e3f795d338d0facabca68",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-world-model-shadow"
@@ -1549,7 +1549,7 @@
       "ownerTasks": [
         "8"
       ],
-      "reason": "Passing Task 8 vault-boundary, native-readiness, all-protected-ID, native-row, and deterministic shadow rebuild contract.",
+      "reason": "Task 8 red regression for stable protected IDs and protection payload across repeated rebuilds.",
       "targetMode": "100644",
       "targetPath": "tests/compat/world-model-shadow-test.js"
     },
