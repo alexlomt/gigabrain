@@ -23,19 +23,22 @@ export async function run() {
     assert.equal(defaults.llm.queueReview.limit, 20);
     assert.equal(V3_CONFIG_SCHEMA.properties.llm.properties.queueReview.properties.limit.default, 20);
 
-    const source = readFileSync(path.join(repoRoot, "scripts", "gigabrainctl.js"), "utf8");
-    assert.match(source, /queue-review-service\.js/);
-    const maintainAt = source.indexOf("const maintain = runMaintenance(");
-    const reviewAt = source.indexOf("await reviewQueuedCandidates(", maintainAt);
-    const retentionAt = source.indexOf("applyQueueRetention(", reviewAt);
-    const harmonizeAt = source.indexOf("runNightlyHarmonize(", reviewAt);
+    const gigabrainCtlSource = readFileSync("scripts/gigabrainctl.js", "utf8");
+    assert.match(gigabrainCtlSource, /queue-review-service\.js/);
+    const maintainAt = gigabrainCtlSource.indexOf("const maintain = runMaintenance(");
+    const reviewAt = gigabrainCtlSource.indexOf("await reviewQueuedCandidates(", maintainAt);
+    const retentionAt = gigabrainCtlSource.indexOf("applyQueueRetention(", reviewAt);
+    const harmonizeAt = gigabrainCtlSource.indexOf("runNightlyHarmonize(", reviewAt);
     assert.ok(maintainAt >= 0 && reviewAt > maintainAt, "nightly review must follow the maintenance producer phase");
     assert.ok(retentionAt > reviewAt, "queue retention must follow queue review");
     assert.ok(harmonizeAt > retentionAt, "harmonize/audit must follow review and retention");
-    assert.match(source.slice(reviewAt, harmonizeAt), /dryRun\s*\?[^:]+:\s*applyQueueRetention/s);
-    assert.match(source.slice(reviewAt, harmonizeAt), /queueReview/);
+    assert.match(
+      gigabrainCtlSource.slice(reviewAt, harmonizeAt),
+      /const queueRetention = dryRun[\s\S]*\?[\s\S]*dry_run[\s\S]*:\s*applyQueueRetention/,
+    );
+    assert.match(gigabrainCtlSource.slice(reviewAt, harmonizeAt), /queueReview/);
 
-    const release = JSON.parse(readFileSync(path.join(repoRoot, "public-release-manifest.json"), "utf8"));
+    const release = JSON.parse(readFileSync("public-release-manifest.json", "utf8"));
     for (const list of [release.repository.files, release.npm.files]) {
       assert.equal(list.includes("lib/compat/queue-review-service.js"), true);
     }

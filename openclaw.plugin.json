@@ -1715,7 +1715,7 @@
               },
               "limit": {
                 "type": "number",
-                "default": 200
+                "default": 20
               },
               "minScore": {
                 "type": "number",
@@ -1745,7 +1745,7 @@
               },
               "limit": {
                 "type": "number",
-                "default": 200
+                "default": 20
               },
               "minConfidence": {
                 "type": "number",

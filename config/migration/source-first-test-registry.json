@@ -371,14 +371,44 @@
     },
     {
       "coveredPaths": [
+        "lib/compat/queue-review-service.js",
+        "lib/core/config.js",
+        "openclaw.plugin.json",
+        "public-release-manifest.json",
+        "scripts/gigabrainctl.js",
         "tests/compat/nightly-review-integration-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_NIGHTLY_QUEUE_REVIEW missing bounded nightly review integration",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-nightly-review-integration",
       "ownerSourceFirstTaskId": "9",
+      "relevanceEvidence": [
+        {
+          "binding": "normalizeConfig",
+          "mode": "import",
+          "symbol": "normalizeConfig",
+          "targetPath": "lib/core/config.js"
+        },
+        {
+          "binding": "release",
+          "mode": "read",
+          "targetPath": "public-release-manifest.json"
+        },
+        {
+          "binding": "reviewQueuedCandidates",
+          "mode": "import",
+          "symbol": "reviewQueuedCandidates",
+          "targetPath": "lib/compat/queue-review-service.js"
+        },
+        {
+          "binding": "gigabrainCtlSource",
+          "mode": "read",
+          "targetPath": "scripts/gigabrainctl.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/compat/nightly-review-integration-test.js"
+      "testPath": "tests/compat/nightly-review-integration-test.js",
+      "testSha256": "17591a3be8b3db40dbb03243aaef7a62e393e85c60c210745d622d3b29b43148"
     },
     {
       "coveredPaths": [
@@ -611,14 +641,24 @@
     },
     {
       "coveredPaths": [
+        "lib/compat/queue-review-service.js",
         "tests/compat/queue-review-service-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_QUEUE_REVIEW_SERVICE missing bounded durable queue review",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-queue-review-service",
       "ownerSourceFirstTaskId": "9",
+      "relevanceEvidence": [
+        {
+          "binding": "reviewQueuedCandidates",
+          "mode": "import",
+          "symbol": "reviewQueuedCandidates",
+          "targetPath": "lib/compat/queue-review-service.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/compat/queue-review-service-test.js"
+      "testPath": "tests/compat/queue-review-service-test.js",
+      "testSha256": "f5688e6bd9bf68211d4e3dad861fa4b0445d50f6b86d50b8f66dd3b5533db599"
     },
     {
       "coveredPaths": [
@@ -1724,6 +1764,6 @@
     }
   ],
   "entryCount": 92,
-  "manifestSha256": "c96ab76f83274c1375aec79dfd21fe3d0d58380b1c5dbc1aad6aae1304e8bdfa",
+  "manifestSha256": "4f9e8474191937feaf89083ca1fc4f2a6c2ed43428a8c9b28ce8ae73aa93933b",
   "schemaVersion": 1
 }

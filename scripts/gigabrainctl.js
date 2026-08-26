@@ -10,7 +10,7 @@ import { ensureSupportedNodeRuntime } from '../lib/core/runtime-guard.js';
 import { loadResolvedConfig } from '../lib/core/config.js';
 import { runMaintenance } from '../lib/core/maintenance-service.js';
 import { runAudit, runAuditRestore, runAuditReport, watchRun, bumpLocalCounters, exportLocalCounters, purgeNoopReviews } from '../lib/core/audit-service.js';
-import { listQueueEntries } from '../lib/core/review-queue.js';
+import { applyQueueRetention, listQueueEntries } from '../lib/core/review-queue.js';
 import { checkLegacyContainment, dropLegacyMemoriesTable, ensureProjectionStore, listAdjudications, listBeliefsAsOf, materializeProjectionFromMemories } from '../lib/core/projection-store.js';
 import { cloudInboxStaleness, exportMemoryBrief, getSyncStatus, listMemorySources, resolveHostRoots, syncHostMemories } from '../lib/core/host-memory-sync.js';
 import { importOpenClawRegistry } from '../lib/core/openclaw-import.js';
@@ -29,6 +29,7 @@ import { atomicWriteFileSync, readFileIfExistsSync } from '../lib/core/safe-fs.j
 import { migrateLegacyCheckpoints } from '../lib/core/checkpoint-migration.js';
 import { classifyNativeOrigins } from '../lib/core/native-sync.js';
 import { assertEntrypointAllowed, assertWriteAllowed, resolveWriteMode } from '../lib/compat/write-policy.js';
+import { reviewQueuedCandidates } from '../lib/compat/queue-review-service.js';
 import {
   ensureWorldModelReady,
   getEntityDetail,
@@ -1354,6 +1355,25 @@ const commandNightly = async () => {
       reviewVersion,
       runId,
     });
+    const queueReviewDb = openDatabase(dbPath, dryRun ? { readOnly: true, observational: true } : {});
+    let queueReview;
+    try {
+      queueReview = await reviewQueuedCandidates({
+        config,
+        db: queueReviewDb,
+        dryRun,
+        limit: config?.llm?.queueReview?.limit,
+        runId: maintain.runId,
+      });
+    } finally {
+      queueReviewDb.close();
+    }
+    const queueRetention = dryRun
+      ? { applied: false, reason: 'dry_run' }
+      : applyQueueRetention(
+        config.runtime.paths.reviewQueuePath,
+        config.runtime.reviewQueueRetention,
+      );
     const harmonize = runNightlyHarmonize({
       configPath,
       dbPath,
@@ -1411,6 +1431,8 @@ const commandNightly = async () => {
       runId: maintain.runId,
       lock,
       maintain,
+      queueReview,
+      queueRetention,
       harmonize,
       audit,
       review_purge: reviewPurge,

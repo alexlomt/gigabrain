@@ -295,7 +295,7 @@ Manual-import host classification is also exact and typed. A registered manual h
   "llm": {
     "queueReview": {
       "enabled": false,
-      "limit": 200,
+      "limit": 20,
       "minConfidence": 0.8,
       "profile": "memory_review",
       "allowedReasons": []
@@ -305,7 +305,7 @@ Manual-import host classification is also exact and typed. A registered manual h
 }
 ```
 
-These deployed-compatibility families are schema-valid but remain independently disabled unless deliberately configured. `nativePromotion.requireDailyMetadata` is the explicit gate for daily-note promotion metadata.
+These deployed-compatibility families remain independently disabled unless deliberately configured. Automatic capture and queue review use only the dedicated stateless memory LLM; that client accepts loopback Ollama only and never falls back through the OpenClaw gateway. Queue review has a hard ceiling of 20 rows per run even if a larger value is supplied. `nativePromotion.requireDailyMetadata` is the explicit gate for daily-note promotion metadata.
 
 ## LLM (optional)
 
