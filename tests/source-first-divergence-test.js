@@ -42,7 +42,7 @@ assert.equal(realMap.deployedSource.commit, "43cd4b41518b5e35b3872722fcceaac535a
 assert.equal(realMap.deployedCommits.length, 47);
 assert.equal(realMap.deployedFiles.length, 208);
 assert.equal(realMap.preTagTools.length, 9);
-assert.equal(realMap.candidateChanges.length, 164);
+assert.equal(realMap.candidateChanges.length, 166);
 assert.equal(realMap.retirementContractCount, 8);
 assert.equal(
   realMap.retirementContractManifestSha256,
@@ -59,10 +59,10 @@ assert.equal(
   "c672074c8da1111872ea2da78f6e6eafaff15926f3d6bad6f29d85382b852b0b",
 );
 assert.equal(realAllowlist.entries.length, 136);
-assert.equal(realAllowlist.adoptionContractCount, 10);
+assert.equal(realAllowlist.adoptionContractCount, 11);
 assert.equal(
   realAllowlist.adoptionContractManifestSha256,
-  "926f0b2bbdeecfd383b46163a1409fb910b65a132bf887e54bdbccbbdfe68e84",
+  "e25eb05c00029eb2af2b5f89db51ee999c38fef3ef80e74964c44ce551fa35b2",
 );
 assert.deepEqual(
   realMap.deployedCommits.map((row) => row.sequence),

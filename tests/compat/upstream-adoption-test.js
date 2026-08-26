@@ -271,7 +271,7 @@ async function adoptionAndRetirementContract() {
   assert.equal(allowlist.adoptionContractCount, allowlist.adoptionContracts.length);
   assert.equal(
     allowlist.adoptionContractManifestSha256,
-    "926f0b2bbdeecfd383b46163a1409fb910b65a132bf887e54bdbccbbdfe68e84",
+    "e25eb05c00029eb2af2b5f89db51ee999c38fef3ef80e74964c44ce551fa35b2",
   );
   assert.equal(
     allowlist.adoptionContractManifestSha256,
@@ -291,6 +291,7 @@ async function adoptionAndRetirementContract() {
   const expectedAdoptions = [
     "active-boundary-retention",
     "all-scope-guard",
+    "custom-slot-framework",
     "handoff-v2",
     "observational-recall",
     "runtime-source-entry",
@@ -331,44 +332,56 @@ async function adoptionAndRetirementContract() {
   const allowByPath = new Map(allowlist.entries.map((entry) => [entry.path, entry]));
   const candidateByPath = new Map(portMap.candidateChanges.map((entry) => [entry.targetPath, entry]));
   const registrationById = new Map(testRegistry.entries.map((entry) => [entry.id, entry]));
+  const verifiedCorePatchPaths = new Set();
+  for (const candidateChange of portMap.candidateChanges.filter((row) => row.disposition === "core_patch")) {
+    const relativePath = candidateChange.targetPath;
+    const registration = registrationById.get(candidateChange.gate?.registrationId);
+    assert.equal(candidateChange.contentSha256, sha256(readFileSync(path.join(repoRoot, relativePath))), `core patch hash: ${relativePath}`);
+    assert.ok(registration, `core patch registration missing: ${relativePath}`);
+    assert.equal(registration.expectedOutcome, "pass", `core patch gate is not passing: ${relativePath}`);
+    assert.match(String(registration.testSha256 || ""), SHA256, `core patch test hash missing: ${relativePath}`);
+    assert.equal(
+      registration.testSha256,
+      sha256(readFileSync(path.join(repoRoot, registration.testPath))),
+      `core patch test hash is stale: ${relativePath}`,
+    );
+    assert.ok(registration.coveredPaths.includes(relativePath), `core patch path is not covered: ${relativePath}`);
+    assert.ok(
+      registration.relevanceEvidence?.some((evidence) => evidence.targetPath === relativePath),
+      `core patch relevance evidence missing: ${relativePath}`,
+    );
+    assert.ok(candidateChange.ownerTasks.includes(registration.ownerSourceFirstTaskId));
+    verifiedCorePatchPaths.add(relativePath);
+  }
   const adoptedPaths = new Set();
   for (const contract of allowlist.adoptionContracts) {
     assert.ok(Array.isArray(contract.paths) && contract.paths.length > 0);
     assert.deepEqual(contract.paths, [...contract.paths].sort(compareText));
     for (const relativePath of contract.paths) {
       const allowEntry = allowByPath.get(relativePath);
-      assert.ok(allowEntry, `adopted path is not upstream allowlisted: ${relativePath}`);
       const upstream = gitBlob(BASE, relativePath);
       const candidate = readFileSync(path.join(repoRoot, relativePath));
       const candidateChange = candidateByPath.get(relativePath);
-      if (candidateChange?.disposition === "core_patch") {
-        const registration = registrationById.get(candidateChange.gate?.registrationId);
+      if (verifiedCorePatchPaths.has(relativePath)) {
         assert.equal(candidateChange.changeType, "modified", `adopted core patch type: ${relativePath}`);
-        assert.equal(candidateChange.contentSha256, sha256(candidate), `adopted core patch hash: ${relativePath}`);
-        assert.ok(registration, `adopted core patch registration missing: ${relativePath}`);
-        assert.equal(registration.expectedOutcome, "pass", `adopted core patch gate is not passing: ${relativePath}`);
-        assert.ok(registration.coveredPaths.includes(relativePath), `adopted core patch path is not covered: ${relativePath}`);
-        assert.ok(candidateChange.ownerTasks.includes(registration.ownerSourceFirstTaskId));
       } else {
+        assert.ok(allowEntry, `adopted path is neither byte-identical nor a verified core patch: ${relativePath}`);
         assert.deepEqual(candidate, upstream, `adopted module diverged from v0.11.0: ${relativePath}`);
       }
-      assert.equal(
-        execFileSync("git", ["rev-parse", `${BASE}:${relativePath}`], {
-          cwd: repoRoot,
-          encoding: "utf8",
-          timeout: 10_000,
-        }).trim(),
-        allowEntry.blob,
-      );
+      if (allowEntry) {
+        assert.equal(
+          execFileSync("git", ["rev-parse", `${BASE}:${relativePath}`], {
+            cwd: repoRoot,
+            encoding: "utf8",
+            timeout: 10_000,
+          }).trim(),
+          allowEntry.blob,
+        );
+      }
       adoptedPaths.add(relativePath);
     }
   }
-  const acceptedReplacementPaths = new Set([
-    ...adoptedPaths,
-    ...portMap.candidateChanges
-      .filter((row) => row.disposition === "core_patch")
-      .map((row) => row.targetPath),
-  ]);
+  const acceptedReplacementPaths = new Set([...adoptedPaths, ...verifiedCorePatchPaths]);
 
   const forbiddenHashes = new Set();
   const forbiddenPaths = new Set();

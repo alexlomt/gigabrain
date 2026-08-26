@@ -7,7 +7,7 @@
     {
       "changeType": "modified",
       "contentSha256": "35edadadd0a0a51c82973088d85a717052a3a603dc66c36f42805689ccd46aa9",
-      "disposition": "core_patch",
+      "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
       },
@@ -97,7 +97,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "1a27cb846129f17c169923878f84d166c44d3a589023da7daa4ad5e9a77dd794",
+      "contentSha256": "4697a597d2339c8df1a4d9707db3bfdd48b1ca8a9ba1269f72411b907d376fc4",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -170,7 +170,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "b33589379926633a789c72dde5b5cb6a785b127316c93797207bb95fa789c472",
+      "contentSha256": "a4a29140bd13347e9f534de7f74468e51115ff0c4bcebaa1070cd7d8eda1df10",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "upstream-adoption"
@@ -316,7 +316,7 @@
       "contentSha256": "d39cac8656f8cce6f0be640d9d67495f9b7fd2a23902a3e4c2cbc65304e07bea",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-openclaw-hooks-and-flush"
+        "registrationId": "compat-shipping-core-evidence"
       },
       "ownerTasks": [
         "5"
@@ -344,7 +344,7 @@
       "contentSha256": "68f34e9d05f1279387f13c854bfa4fef475adcafa9c782da3d4c63715cd2d4e0",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-openclaw-memory-runtime"
+        "registrationId": "compat-shipping-core-evidence"
       },
       "ownerTasks": [
         "5"
@@ -358,7 +358,7 @@
       "contentSha256": "f4e654a83f8d4113e1f6a969158c443445082178d6ba8cc5a2dca22021ee9e24",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-openclaw-memory-runtime"
+        "registrationId": "compat-shipping-core-evidence"
       },
       "ownerTasks": [
         "5"
@@ -372,7 +372,7 @@
       "contentSha256": "d466158d3a6adbf15f487f1989cf6992bc3788c8e33145ae5ed021c1cd9c1b76",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-openclaw-memory-authorization"
+        "registrationId": "compat-shipping-core-evidence"
       },
       "ownerTasks": [
         "5"
@@ -386,7 +386,7 @@
       "contentSha256": "8c595c56e719fe8a45f0e12634a73532e3e162d1d5930b65a6acab586ca6698f",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-release-provenance"
+        "registrationId": "compat-shipping-core-evidence"
       },
       "ownerTasks": [
         "5"
@@ -400,7 +400,7 @@
       "contentSha256": "0a7747b1f1f6c8ac4e4cf642177400cb0ddce570ec3802734ec90a8ed4a98723",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-openclaw-memory-runtime"
+        "registrationId": "compat-shipping-core-evidence"
       },
       "ownerTasks": [
         "4",
@@ -415,7 +415,7 @@
       "contentSha256": "f69fd3c2688b76b6bd28aa3515003261fe30fdc8749ea55b8057d7bd0b598c0b",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-write-mode-gate"
+        "registrationId": "compat-shipping-core-evidence"
       },
       "ownerTasks": [
         "5"
@@ -429,7 +429,7 @@
       "contentSha256": "3d3b7586b452c5a0a11994ce6456b656754d7544631efd19c5c326fb1cbc86d4",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-write-mode-gate"
+        "registrationId": "compat-observational-core-patches"
       },
       "ownerTasks": [
         "5"
@@ -615,7 +615,7 @@
       "contentSha256": "49863363f32fd71d2ec98efc0aa66c1497f422b60c5b7be67bc52d6661a79b54",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-write-mode-gate"
+        "registrationId": "compat-observational-core-patches"
       },
       "ownerTasks": [
         "5"
@@ -629,7 +629,7 @@
       "contentSha256": "3fc2dacd80a4ccd7fecfcd348e4bbdbd99cb60307c9f45baceaed971eb398b06",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-write-mode-gate"
+        "registrationId": "compat-observational-core-patches"
       },
       "ownerTasks": [
         "5"
@@ -643,7 +643,7 @@
       "contentSha256": "4f674eba2d25c6fa8b47befa3e934693fe70ef217ce80140f85ce098c4199acf",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-write-mode-gate"
+        "registrationId": "compat-observational-core-patches"
       },
       "ownerTasks": [
         "5"
@@ -671,7 +671,7 @@
       "contentSha256": "fdd13b7a1203deea96a4b0aa5155c46fcdcfdb365586b3e43c1b4ba30dc3f25f",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-write-mode-gate"
+        "registrationId": "compat-observational-core-patches"
       },
       "ownerTasks": [
         "5"
@@ -755,7 +755,7 @@
       "contentSha256": "cc032e4e83b1cb96966730db8fa417d0888cb4450b2cf00354525fcef5d756bb",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-write-mode-gate"
+        "registrationId": "compat-observational-core-patches"
       },
       "ownerTasks": [
         "5"
@@ -783,10 +783,11 @@
       "contentSha256": "42cb6e61fff22e53cdd2afe99ee375c3d46836f85172dfbc51ebf0d14831ad93",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "task1-provenance"
+        "registrationId": "compat-shipping-core-evidence"
       },
       "ownerTasks": [
-        "1"
+        "1",
+        "5"
       ],
       "reason": "Task 1 compatibility-version metadata only; dependency semantics remain upstream-owned.",
       "targetMode": "100644",
@@ -813,10 +814,11 @@
       "contentSha256": "f6abffb81f3f615c675bdbca9739ca752c2c1f681d1fe6fdf807ddcfac4c1bf3",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "npm-pack-schema"
+        "registrationId": "compat-shipping-core-evidence"
       },
       "ownerTasks": [
-        "2B"
+        "2B",
+        "5"
       ],
       "reason": "Public mirror and npm inventory include the shared pack parser dependency.",
       "targetMode": "100644",
@@ -827,10 +829,11 @@
       "contentSha256": "375cc252ec67d26114d88b1bffe06eabfc4263b643a71a2d5b059a77013c1806",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-config-schema-parity"
+        "registrationId": "compat-shipping-core-evidence"
       },
       "ownerTasks": [
-        "4"
+        "4",
+        "5"
       ],
       "reason": "Canonical Task 4 configuration, schema generation, disabled automation and host-sync gate behavior.",
       "targetMode": "100644",
@@ -869,10 +872,11 @@
       "contentSha256": "ea2f44118ce15ec49f052a553c7a8eb34eb3c421e03511076ec589e2732f2262",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "npm-pack-schema"
+        "registrationId": "compat-shipping-core-evidence"
       },
       "ownerTasks": [
-        "2B"
+        "2B",
+        "5"
       ],
       "reason": "Fail-closed npm 10/npm 12 package inventory parsing for the PII scanner.",
       "targetMode": "100644",
@@ -883,10 +887,11 @@
       "contentSha256": "943f78992ccf65d2c3449d282a6dc7046d2beebc7397dd53767a4828f7ff3fa1",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "npm-pack-schema"
+        "registrationId": "compat-shipping-core-evidence"
       },
       "ownerTasks": [
-        "2B"
+        "2B",
+        "5"
       ],
       "reason": "Fail-closed npm 10/npm 12 package inventory parsing for release scanners.",
       "targetMode": "100644",
@@ -894,7 +899,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "2cc13f1c2627380691485aae5cc3ffcfe2403b7b9a29464b8e68a4ccb2cc342a",
+      "contentSha256": "2fd0cbe6a677edf611679d2b1fbf006e4685dad4db43c8eed79bb37536dbf8ce",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1217,6 +1222,20 @@
     },
     {
       "changeType": "added",
+      "contentSha256": "c0b54acade574ca260bfb8e7facd64f597c9dd4e1ff14b9b94fc2d6c19c06b06",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-observational-core-patches"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Direct behavioral proof for Task 5 observational core patches and preserved upstream semantics.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/observational-core-patches-test.js"
+    },
+    {
+      "changeType": "added",
       "contentSha256": "48642a87453bee581a7972601e26efdd67201f74979093a315fd393e747b14c1",
       "disposition": "private_dev_only",
       "gate": {
@@ -1348,7 +1367,21 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "b8f5e86f998fa3b335d9d6a231e7fbaea5f2567fcaf2441a3aed99c203b88a35",
+      "contentSha256": "4a3cc929afa0970111225d3a5b6f2c68b0932be5374a72deb42104ab17c04163",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-shipping-core-evidence"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Direct behavioral and build-artifact evidence for shipping Task 5 core patches.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/shipping-core-evidence-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "bb62a1122e4bff2c79b5fabd874b74ffbeb347a86e4bd6832b98eacfe8da965c",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "upstream-adoption"
@@ -1436,7 +1469,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "66dff543accffaf7b5be75c7dd6a3441362a22ece3be55b2ee7417bbd4f5bbbc",
+      "contentSha256": "6c1c7b1de4f8c5cd034b9b6292937b9407c50711b2fe93884c7cb78b31979fd1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1749,7 +1782,7 @@
     {
       "changeType": "modified",
       "contentSha256": "54984f38980192cceb7187641745fd63218beb217a257fb101cf6c33d8d26422",
-      "disposition": "core_patch",
+      "disposition": "private_dev_only",
       "gate": {
         "registrationId": "python-security-floor"
       },
@@ -1889,7 +1922,7 @@
     {
       "changeType": "modified",
       "contentSha256": "be73532fb2ed5bef47f30b4ea96f2ebb190219e82564599240622a849ed6ffc8",
-      "disposition": "core_patch",
+      "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
       },
@@ -1902,7 +1935,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "e8a647bfa548f2e629ec1843410346c4c856a731d55dece8580fef70222f4c8f",
+      "contentSha256": "670b5f0b089a82d7d78b731dc4c1291c54eaa88f5bccce6d7cc35ff6c8ab8c7a",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2232,7 +2265,7 @@
     {
       "changeType": "modified",
       "contentSha256": "9d80f8feed44a2377799077553e7fc2dbe8b41c15cdb2852a297e07b84a26102",
-      "disposition": "core_patch",
+      "disposition": "private_dev_only",
       "gate": {
         "registrationId": "npm-pack-schema"
       },
@@ -2260,7 +2293,7 @@
     {
       "changeType": "modified",
       "contentSha256": "929539e9e6a5ca62070b08a0d149545b5b4fb852547e0ad87ee18e607e0f8a2b",
-      "disposition": "core_patch",
+      "disposition": "private_dev_only",
       "gate": {
         "registrationId": "npm-pack-schema"
       },

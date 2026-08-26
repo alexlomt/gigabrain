@@ -37,6 +37,13 @@ const POLICY_INFRASTRUCTURE = new Set([
 const TEST_RUNNERS = new Set(["node", "python"]);
 const EXPECTED_OUTCOMES = new Set(["pass", "xfail"]);
 const RETIREMENT_ENFORCEMENTS = new Set(["forbidden_bytes", "upstream_identity"]);
+const UPSTREAM_NON_RUNTIME_DISPOSITIONS = new Map([
+  [".github/workflows/ci.yml", "private_dev_only"],
+  ["tests/memory_api_security_test.py", "private_dev_only"],
+  ["tests/run-all.js", "private_dev_only"],
+  ["tests/unit-pii-scanner-test.js", "private_dev_only"],
+  ["tests/unit-public-mirror-test.js", "private_dev_only"],
+]);
 const RELEVANCE_EVIDENCE_MODES = new Set(["import", "read", "self", "spawn"]);
 const CANONICAL_REGISTRY_OWNERS = new Map([
   ["compat-generated-surface", "10"],
@@ -446,9 +453,6 @@ function validateAllowlist(allowlist) {
     adoptionIds.add(row.id);
     validatePathList(row.paths);
     ensureSorted(row.paths, (item) => item);
-    for (const adoptedPath of row.paths) {
-      if (!seen.has(adoptedPath)) fail("ADOPTION_PATH_NOT_UPSTREAM", adoptedPath);
-    }
   }
   ensureSorted(allowlist.adoptionContracts, (row) => row.id);
   checkManifest(
@@ -588,13 +592,23 @@ function validateRetirementEvidenceAttestation(attestation, map) {
   }
 }
 
-function validateAdoptionAndRetirement({ allowlist, attestation, base, head, headByPath, map }) {
-  const adoptedPaths = new Set([
-    ...allowlist.adoptionContracts.flatMap((row) => row.paths),
-    ...map.candidateChanges
-      .filter((row) => row.disposition === "core_patch")
-      .map((row) => row.targetPath),
-  ]);
+function validateAdoptionAndRetirement({
+  allowlist,
+  attestation,
+  base,
+  head,
+  headByPath,
+  map,
+  verifiedCorePatchPaths,
+}) {
+  const upstreamPaths = new Set(allowlist.entries.map((row) => row.path));
+  const adoptedPaths = new Set(allowlist.adoptionContracts.flatMap((row) => row.paths));
+  for (const adoptedPath of adoptedPaths) {
+    if (!upstreamPaths.has(adoptedPath) && !verifiedCorePatchPaths.has(adoptedPath)) {
+      fail("ADOPTION_PATH_NOT_UPSTREAM", adoptedPath);
+    }
+  }
+  const acceptedReplacementPaths = new Set([...adoptedPaths, ...verifiedCorePatchPaths]);
   const forbiddenHashes = new Set();
   const attestedByKey = new Map(attestation.entries.map((row) => [
     `${row.behaviorId}\0${row.commit}\0${row.path}`,
@@ -603,7 +617,7 @@ function validateAdoptionAndRetirement({ allowlist, attestation, base, head, hea
   const usedEvidence = new Set();
   for (const contract of map.retirementContracts) {
     for (const replacementPath of contract.replacementPaths) {
-      if (!adoptedPaths.has(replacementPath)) {
+      if (!acceptedReplacementPaths.has(replacementPath)) {
         fail("RETIREMENT_REPLACEMENT_NOT_ADOPTED", replacementPath);
       }
     }
@@ -1161,10 +1175,10 @@ function readExpectedFailures(head, headByPath) {
   return new Map(document.entries.map((entry) => [entry.test, entry]));
 }
 
-function validateActiveGates(map, registry, headByPath, head, allowlist) {
+function validateActiveGates(map, registry, headByPath, head) {
   const registrations = new Map(registry.entries.map((entry) => [entry.id, entry]));
-  const adoptedPaths = new Set(allowlist.entries.map((entry) => entry.path));
   const executedTests = new Map();
+  const verifiedCorePatchPaths = new Set();
   const used = new Set();
   const expectedFailures = readExpectedFailures(head, headByPath);
   for (const row of map.candidateChanges) {
@@ -1195,7 +1209,7 @@ function validateActiveGates(map, registry, headByPath, head, allowlist) {
     } else if (expected) {
       fail("GATE_SIGNATURE_MISMATCH", registration.testPath);
     }
-    if (row.disposition === "core_patch" && adoptedPaths.has(row.targetPath)) {
+    if (row.disposition === "core_patch") {
       if (registration.expectedOutcome !== "pass") fail("GATE_EXECUTION_FAILED", registration.testPath);
       if (!registration.testSha256) fail("GATE_EVIDENCE_MISSING", registration.testPath);
       if (sha256(blobAt(head, registration.testPath)) !== registration.testSha256) {
@@ -1229,6 +1243,7 @@ function validateActiveGates(map, registry, headByPath, head, allowlist) {
       ) {
         fail("GATE_DYNAMIC_EVIDENCE", row.targetPath);
       }
+      verifiedCorePatchPaths.add(row.targetPath);
     }
   }
   for (const registration of registry.entries) {
@@ -1239,6 +1254,7 @@ function validateActiveGates(map, registry, headByPath, head, allowlist) {
       }
     }
   }
+  return verifiedCorePatchPaths;
 }
 
 function isSourceOrDefault(targetPath) {
@@ -1324,11 +1340,19 @@ function main() {
     if (allowByPath.has(entry.path)) continue;
     const candidate = candidateByPath.get(entry.path);
     if (!candidate || candidate.changeType === "added") fail("ALLOWLIST_INCOMPLETE", entry.path);
-    if (candidate.disposition !== "core_patch") fail("UPSTREAM_PATCH_NOT_CORE", entry.path);
+    const reviewedNonRuntimeDisposition = UPSTREAM_NON_RUNTIME_DISPOSITIONS.get(entry.path);
+    if (reviewedNonRuntimeDisposition) {
+      if (candidate.disposition !== reviewedNonRuntimeDisposition) {
+        fail("UPSTREAM_NON_RUNTIME_DISPOSITION", entry.path);
+      }
+    } else if (candidate.disposition !== "core_patch") {
+      fail("UPSTREAM_PATCH_NOT_CORE", entry.path);
+    }
   }
 
   const diff = readDiff(base, head);
   const headByPath = new Map(readTree(head).map((entry) => [entry.path, entry]));
+  const verifiedCorePatchPaths = validateActiveGates(map, testRegistry, headByPath, head);
   validateAdoptionAndRetirement({
     allowlist,
     attestation: retirementEvidence,
@@ -1336,8 +1360,8 @@ function main() {
     head,
     headByPath,
     map,
+    verifiedCorePatchPaths,
   });
-  validateActiveGates(map, testRegistry, headByPath, head, allowlist);
   const seenDiffs = new Set();
   const statusToChange = { A: "added", D: "deleted", M: "modified", T: "modified" };
   for (const actual of diff) {

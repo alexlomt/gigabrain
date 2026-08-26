@@ -163,6 +163,66 @@
     },
     {
       "coveredPaths": [
+        "lib/core/adaptive-trust.js",
+        "lib/core/native-sync.js",
+        "lib/core/orchestrator.js",
+        "lib/core/person-service.js",
+        "lib/core/recall-service.js",
+        "lib/core/world-model.js",
+        "tests/compat/observational-core-patches-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "compat-observational-core-patches",
+      "ownerSourceFirstTaskId": "5",
+      "relevanceEvidence": [
+        {
+          "binding": "runAdaptiveTrust",
+          "mode": "import",
+          "symbol": "runAdaptiveTrust",
+          "targetPath": "lib/core/adaptive-trust.js"
+        },
+        {
+          "binding": "queryNativeChunks",
+          "mode": "import",
+          "symbol": "queryNativeChunks",
+          "targetPath": "lib/core/native-sync.js"
+        },
+        {
+          "binding": "orchestrateRecall",
+          "mode": "import",
+          "symbol": "orchestrateRecall",
+          "targetPath": "lib/core/orchestrator.js"
+        },
+        {
+          "binding": "resolveEntityKeysForQuery",
+          "mode": "import",
+          "symbol": "resolveEntityKeysForQuery",
+          "targetPath": "lib/core/person-service.js"
+        },
+        {
+          "binding": "recallForQuery",
+          "mode": "import",
+          "symbol": "recallForQuery",
+          "targetPath": "lib/core/recall-service.js"
+        },
+        {
+          "binding": "getEntityDetail",
+          "mode": "import",
+          "symbol": "getEntityDetail",
+          "targetPath": "lib/core/world-model.js"
+        },
+        {
+          "mode": "self",
+          "targetPath": "tests/compat/observational-core-patches-test.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/compat/observational-core-patches-test.js",
+      "testSha256": "c0b54acade574ca260bfb8e7facd64f597c9dd4e1ff14b9b94fc2d6c19c06b06"
+    },
+    {
+      "coveredPaths": [
         "lib/compat/observational-diagnostics.js",
         "lib/core/host-memory-sync.js",
         "lib/core/metrics.js",
@@ -399,8 +459,104 @@
     },
     {
       "coveredPaths": [
+        "lib/compat/flush-plan.js",
+        "lib/compat/openclaw-adapter.js",
+        "lib/compat/openclaw-memory-cli.js",
+        "lib/compat/openclaw-memory-runtime.js",
+        "lib/compat/release-provenance.js",
+        "lib/compat/scope-policy.js",
         "lib/compat/write-policy.js",
-        "lib/core/adaptive-trust.js",
+        "package-lock.json",
+        "public-release-manifest.json",
+        "scripts/build-openclaw-config-schema.mjs",
+        "scripts/check-no-pii.mjs",
+        "scripts/check-public-mirror.mjs",
+        "tests/compat/shipping-core-evidence-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "compat-shipping-core-evidence",
+      "ownerSourceFirstTaskId": "5",
+      "relevanceEvidence": [
+        {
+          "binding": "resolveGigabrainFlushPlan",
+          "mode": "import",
+          "symbol": "resolveGigabrainFlushPlan",
+          "targetPath": "lib/compat/flush-plan.js"
+        },
+        {
+          "binding": "extractPromptQuery",
+          "mode": "import",
+          "symbol": "extractPromptQuery",
+          "targetPath": "lib/compat/openclaw-adapter.js"
+        },
+        {
+          "binding": "createGigabrainMemoryCliRegistrar",
+          "mode": "import",
+          "symbol": "createGigabrainMemoryCliRegistrar",
+          "targetPath": "lib/compat/openclaw-memory-cli.js"
+        },
+        {
+          "binding": "parseVirtualPath",
+          "mode": "import",
+          "symbol": "parseVirtualPath",
+          "targetPath": "lib/compat/openclaw-memory-runtime.js"
+        },
+        {
+          "binding": "serializeReleaseProvenance",
+          "mode": "import",
+          "symbol": "serializeReleaseProvenance",
+          "targetPath": "lib/compat/release-provenance.js"
+        },
+        {
+          "binding": "normalizeAgentScope",
+          "mode": "import",
+          "symbol": "normalizeAgentScope",
+          "targetPath": "lib/compat/scope-policy.js"
+        },
+        {
+          "binding": "resolveWriteMode",
+          "mode": "import",
+          "symbol": "resolveWriteMode",
+          "targetPath": "lib/compat/write-policy.js"
+        },
+        {
+          "binding": "packageLockSource",
+          "mode": "read",
+          "targetPath": "package-lock.json"
+        },
+        {
+          "binding": "publicReleaseManifestSource",
+          "mode": "read",
+          "targetPath": "public-release-manifest.json"
+        },
+        {
+          "binding": "buildSchemaSource",
+          "mode": "read",
+          "targetPath": "scripts/build-openclaw-config-schema.mjs"
+        },
+        {
+          "binding": "piiScannerSource",
+          "mode": "read",
+          "targetPath": "scripts/check-no-pii.mjs"
+        },
+        {
+          "binding": "publicMirrorSource",
+          "mode": "read",
+          "targetPath": "scripts/check-public-mirror.mjs"
+        },
+        {
+          "mode": "self",
+          "targetPath": "tests/compat/shipping-core-evidence-test.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/compat/shipping-core-evidence-test.js",
+      "testSha256": "4a3cc929afa0970111225d3a5b6f2c68b0932be5374a72deb42104ab17c04163"
+    },
+    {
+      "coveredPaths": [
+        "lib/compat/write-policy.js",
         "lib/core/capture-service.js",
         "lib/core/codex-mcp.js",
         "lib/core/codex-service.js",
@@ -409,15 +565,10 @@
         "lib/core/maintenance-service.js",
         "lib/core/memory-actions.js",
         "lib/core/native-memory.js",
-        "lib/core/native-sync.js",
-        "lib/core/orchestrator.js",
-        "lib/core/person-service.js",
-        "lib/core/recall-service.js",
         "lib/core/remote-mcp.js",
         "lib/core/sqlite.js",
         "lib/core/transcript-harvester.js",
         "lib/core/wiki-project.js",
-        "lib/core/world-model.js",
         "scripts/gigabrain-mcp.js",
         "scripts/gigabrainctl.js",
         "scripts/harmonize-memory.js",
@@ -1278,7 +1429,7 @@
       "testPath": "tests/compat/upstream-adoption-test.js"
     }
   ],
-  "entryCount": 81,
-  "manifestSha256": "b6c5cfcc1217943457a7e7b6541c2bb877706d5fe9142c88d941fe15cd77b4b0",
+  "entryCount": 83,
+  "manifestSha256": "afe0baa36db355f4b5ee7fa0f3da56ef8c60f731b52022d479481ee1dc95b66b",
   "schemaVersion": 1
 }

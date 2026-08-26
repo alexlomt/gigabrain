@@ -1,6 +1,6 @@
 {
-  "adoptionContractCount": 10,
-  "adoptionContractManifestSha256": "926f0b2bbdeecfd383b46163a1409fb910b65a132bf887e54bdbccbbdfe68e84",
+  "adoptionContractCount": 11,
+  "adoptionContractManifestSha256": "e25eb05c00029eb2af2b5f89db51ee999c38fef3ef80e74964c44ce551fa35b2",
   "adoptionContracts": [
     {
       "id": "active-boundary-retention",
@@ -19,6 +19,12 @@
       ]
     },
     {
+      "id": "custom-slot-framework",
+      "paths": [
+        "lib/core/world-model.js"
+      ]
+    },
+    {
       "id": "handoff-v2",
       "paths": [
         "lib/core/handoff-bundle.js",
@@ -29,7 +35,8 @@
       "id": "observational-recall",
       "paths": [
         "lib/core/embedding-service.js",
-        "lib/core/multi-hop-recall.js"
+        "lib/core/multi-hop-recall.js",
+        "lib/core/recall-service.js"
       ]
     },
     {
@@ -54,6 +61,7 @@
     {
       "id": "trust-arbitration",
       "paths": [
+        "lib/core/adaptive-trust.js",
         "lib/core/belief-arbitration.js",
         "lib/core/host-trust.js"
       ]
