@@ -552,7 +552,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/shipping-core-evidence-test.js",
-      "testSha256": "ec36c84691e9c73036660d97aed57f16cdf9e78870a4f4456bdeab6dbcc8608d"
+      "testSha256": "a995599ee925eb97a7bfdfc878c02d73695b15f589467846b026034c94c7c5b2"
     },
     {
       "coveredPaths": [
@@ -1430,6 +1430,6 @@
     }
   ],
   "entryCount": 83,
-  "manifestSha256": "f2555a8898821517db9178048587a78be7352e1926d95dd3a06c8060a00f9de1",
+  "manifestSha256": "b36ed8c9e1714b6fef4741e4168035e8602de134518583c88b9040b2672c2f12",
   "schemaVersion": 1
 }
