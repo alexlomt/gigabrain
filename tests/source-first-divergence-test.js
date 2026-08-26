@@ -473,15 +473,15 @@ function configureRetirementReplacementCorePatch(fixture, {
 } = {}) {
   const targetPath = "lib/core.js";
   const absoluteTarget = path.join(fixture.fixtureRepo, targetPath);
-  writeFileSync(absoluteTarget, "export const core = false;\n");
+  writeFileSync(absoluteTarget, "export const core = () => false;\n");
   if (registeredGate) {
     const testPath = path.join(fixture.fixtureRepo, "tests", "registered-test.js");
     const assertion = failingTest ? "assert.equal(observed, true);" : "assert.equal(observed, false);";
     const body = evidence === "unrelated"
       ? "const unrelated = 2 + 2; assert.equal(unrelated, 4);"
       : evidence === "dead"
-        ? `if (false) { const observed = core; ${assertion} }`
-        : `const observed = core; ${assertion}`;
+        ? `if (false) { const observed = core(); ${assertion} }`
+        : `const observed = core(); ${assertion}`;
     writeFileSync(testPath, [
       'import assert from "node:assert/strict";',
       'import { core } from "../lib/core.js";',
