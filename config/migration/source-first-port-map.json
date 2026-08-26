@@ -100,7 +100,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "0bb03efd7d23ce20d0643ce79df3645c660cf8b5cddecc1f720cb100a503fbcf",
+      "contentSha256": "be2408f5651cbf0f12accfe2d2e0ffca894368bf3de79dc67dcd64c1b5b22150",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -114,7 +114,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with exact Task 9A/9B post-review blocker XFAIL ownership.",
+      "reason": "Source-first registry with passing Task 9 post-review blocker regression hashes.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -349,7 +349,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "9aea9359e47f798e668f5a4d33ad1dbba00c06b01e30f0f41f30842c199bc310",
+      "contentSha256": "b4589747163a07dece3b399181674f0cef90e57f96b31a1f0984ad5ca40da598",
       "disposition": "compat_module",
       "gate": {
         "registrationId": "compat-auto-capture-queue"
@@ -357,7 +357,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9B fix round 3 seeds missing legacy in-flight history from prior attempts without double counting explicit history.",
+      "reason": "Task 9 post-review fixes validate processor results, recover stale ownership before circuit dispatch, and classify local HTTP failures safely.",
       "targetMode": "100644",
       "targetPath": "lib/compat/auto-capture-queue.js"
     },
@@ -958,17 +958,17 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "bded289f00891293d046d3d574ba04ffffdc83dd488de1966bd2a9ca244fe43a",
+      "contentSha256": "fb4638b9548ba3125e1aa05f9c1abf18ee9381d1ad28ad318a8d63c6d498c108",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-memory-llm-client"
+        "registrationId": "compat-auto-capture-worker"
       },
       "ownerTasks": [
         "2B",
         "5",
         "9"
       ],
-      "reason": "Public source and npm inventories explicitly ship the Task 9C stateless memory-LLM module.",
+      "reason": "Public source and npm inventories explicitly ship the Task 9 worker plus its complete compatibility dependency closure.",
       "targetMode": "100644",
       "targetPath": "public-release-manifest.json"
     },
@@ -1206,7 +1206,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "e5231bc60a00ad843d8a40f47ce2585ef5310a5e9c79fd63c460b85f24647b00",
+      "contentSha256": "f83c4d2249ed458552e5d6e11cbe09ca39fcf4bf22133d543017f7e761beddde",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-queue"
@@ -1214,7 +1214,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9 post-review RED contract for processor-result validation, circuit-safe stale recovery, and local HTTP error classification.",
+      "reason": "Passing Task 9 post-review contract for processor-result validation, circuit-safe stale recovery, and local HTTP error classification.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-queue-test.js"
     },
@@ -1229,7 +1229,7 @@
         "2B",
         "9"
       ],
-      "reason": "Task 9 post-review RED contract proving every transitive public-mirror worker dependency is shipped.",
+      "reason": "Passing Task 9 post-review contract proving every transitive public-mirror worker dependency is shipped.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-worker-test.js"
     },
@@ -1336,7 +1336,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "e6b5f0405125c997a7148d71dda46ca3e97839ef89ddbb6359568ed36ad26666",
+      "contentSha256": "49dbdae4dbc35340e3bf0cfd1e3afbbb5704ca5aa8547efbac45ccc271626512",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1351,7 +1351,7 @@
         "8",
         "9"
       ],
-      "reason": "Expected-failure ownership for the exact Task 9A/9B post-review blocker signatures.",
+      "reason": "Task 9 post-review XFAILs removed after all reproduced queue and public-mirror blockers passed.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },

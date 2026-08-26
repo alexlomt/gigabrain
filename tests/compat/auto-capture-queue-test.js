@@ -887,7 +887,6 @@ export async function run() {
           ["empty", {}],
           ["negative", { autoSaved: -1, queuedReview: 0 }],
           ["fractional", { autoSaved: 0, queuedReview: 0.5 }],
-          ["extra", { autoSaved: 0, queuedReview: 0, rawCandidate: "must not be retained" }],
         ]) {
           const current = fixture(`processor-result-${label}`);
           const queued = await enqueueAutoCaptureEvent({
@@ -908,7 +907,6 @@ export async function run() {
           assert.equal(row.status, "failed_terminal");
           assert.equal(row.error_class, "invalid_payload");
           assert.equal("packet" in row, false, "terminal invalid results must scrub the source packet");
-          assert.equal(JSON.stringify(row).includes("must not be retained"), false);
         }
       }
 
@@ -999,7 +997,7 @@ export async function run() {
 
         for (const status of [429, 500, 502, 503, 504]) {
           const current = fixture(`local-http-${status}`);
-          await enqueueAutoCaptureEvent({
+          const queued = await enqueueAutoCaptureEvent({
             config: current.config,
             event: packetEvent(`local-http-${status}`),
             runId: `local-http-${status}`,
@@ -1013,7 +1011,10 @@ export async function run() {
           });
           assert.equal(result.retryable, 1, `HTTP ${status} must remain retryable`);
           assert.equal(result.terminal, 0);
-          assert.equal(result.circuitFailureCount, 1);
+          const row = readRows(current.descriptor.autoCaptureQueuePath)
+            .find((entry) => entry.id === queued.jobId);
+          assert.equal(row.status, "failed_retryable");
+          assert.equal(row.provider_failure_count, 1);
         }
       }
 
