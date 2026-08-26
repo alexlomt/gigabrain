@@ -279,6 +279,13 @@ export async function run() {
         && row.target <= 0
         && Number(row.evidence?.losses_total || 0) === 1
       )));
+      assert.doesNotThrow(() => runAdaptiveTrust({
+        db,
+        config,
+        dryRun: true,
+        ensure: false,
+        now: "2026-08-25T00:00:00.000Z",
+      }));
 
       const nativeRows = assertReadyPair(
         "native query",
@@ -289,6 +296,13 @@ export async function run() {
         (rows) => rows.map((row) => ({ id: row.chunk_id, score: row.score_total })),
       );
       assert.equal(nativeRows[0]?.chunk_id, "native:synthetic-harbour");
+      assert.doesNotThrow(() => queryNativeChunks({
+        db,
+        config,
+        ensure: false,
+        query: "synthetic harbour blue routing",
+        scope: "shared",
+      }));
 
       const entityKeys = assertReadyPair(
         "entity resolution",
@@ -298,6 +312,11 @@ export async function run() {
         () => resolveEntityKeysForQuery(db, "Who is Synthetic Harbour?", { fallbackTokens: true, scope: "shared" }),
       );
       assert.ok(entityKeys.includes("synthetic harbour"));
+      assert.doesNotThrow(() => resolveEntityKeysForQuery(
+        db,
+        "Who is Synthetic Harbour?",
+        { ensure: false, fallbackTokens: true, scope: "shared" },
+      ));
 
       const world = assertReadyPair(
         "world model",
@@ -321,6 +340,11 @@ export async function run() {
       );
       assert.equal(world.detail?.entity_id, "project:synthetic-harbour");
       assert.equal(world.matches[0]?.entity_id, "project:synthetic-harbour");
+      assert.doesNotThrow(() => getEntityDetail(
+        db,
+        "project:synthetic-harbour",
+        { ensure: false, scope: "shared" },
+      ));
 
       const recall = assertReadyPair(
         "observational recall and rank fusion",
@@ -349,6 +373,14 @@ export async function run() {
         }),
       );
       assert.equal(recall.results[0]?.memory_id, "synthetic-harbour-strong");
+      assert.doesNotThrow(() => recallForQuery({
+        db,
+        config,
+        ensure: false,
+        query: "synthetic harbour blue routing",
+        scope: "shared",
+        strategyContext: { strategy: "quick_context" },
+      }));
 
       const beforeObservationalOrchestration = snapshotState(db, workspace.root);
       const orchestration = orchestrateRecall({
@@ -364,6 +396,13 @@ export async function run() {
         "orchestration allowMaintenance:false must propagate ensure:false without writes",
       );
       assert.equal(orchestration.selectedEntityId, "project:synthetic-harbour");
+      assert.doesNotThrow(() => orchestrateRecall({
+        db,
+        config,
+        query: "Tell me about Synthetic Harbour",
+        scope: "shared",
+        scopeVisibility: { allowMaintenance: false, includeShared: true },
+      }));
       const defaultOrchestration = orchestrateRecall({
         db,
         config,

@@ -152,6 +152,7 @@ const COMPATIBILITY_TESTS = [
   ["compat/memory-api-projection-test.js", "11"],
   ["compat/native-lock-concurrency-test.js", "6"],
   ["compat/native-metadata-promotion-test.js", "6"],
+  ["compat/observational-core-patches-test.js", "5"],
   ["compat/observational-diagnostics-test.js", "5"],
   ["compat/openclaw-hooks-and-flush-test.js", "5"],
   ["compat/openclaw-memory-authorization-test.js", "5"],
