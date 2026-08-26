@@ -158,6 +158,7 @@
   },
   "devDependencies": {
     "ajv": "^8.18.0",
-    "ajv-formats": "^3.0.1"
+    "ajv-formats": "^3.0.1",
+    "acorn": "8.18.0"
   }
 }

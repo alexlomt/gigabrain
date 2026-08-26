@@ -2,10 +2,11 @@
 
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse as parseJavaScript } from "acorn";
 
 import {
   findRetiredStructuralFingerprintMatches,
@@ -739,12 +740,27 @@ function escapeRegex(value) {
 
 function maskJavaScriptNonCode(source) {
   const masked = source.split("");
+  const regexPrefixKeywords = new Set([
+    "await", "case", "delete", "do", "else", "in", "instanceof", "of", "return", "throw",
+    "typeof", "void", "yield",
+  ]);
+  let previous = { type: "start", value: "" };
   const blank = (index) => {
     if (source[index] !== "\n" && source[index] !== "\r") masked[index] = " ";
+  };
+  const regexMayStart = () => {
+    if (previous.type === "start") return true;
+    if (previous.type === "identifier") return regexPrefixKeywords.has(previous.value);
+    if (previous.type === "literal" || previous.type === "number") return false;
+    return ![")", "]", "}", "++", "--"].includes(previous.value);
   };
   for (let index = 0; index < source.length;) {
     const char = source[index];
     const next = source[index + 1];
+    if (/\s/.test(char)) {
+      index += 1;
+      continue;
+    }
     if (char === "/" && next === "/") {
       blank(index);
       blank(index + 1);
@@ -771,6 +787,31 @@ function maskJavaScriptNonCode(source) {
       }
       continue;
     }
+    if (char === "/" && next !== "=" && regexMayStart()) {
+      let inCharacterClass = false;
+      blank(index);
+      index += 1;
+      while (index < source.length) {
+        const current = source[index];
+        blank(index);
+        index += 1;
+        if (current === "\\" && index < source.length) {
+          blank(index);
+          index += 1;
+          continue;
+        }
+        if (current === "[") inCharacterClass = true;
+        else if (current === "]") inCharacterClass = false;
+        else if (current === "/" && !inCharacterClass) break;
+        else if (current === "\n" || current === "\r") break;
+      }
+      while (index < source.length && /[A-Za-z]/.test(source[index])) {
+        blank(index);
+        index += 1;
+      }
+      previous = { type: "literal", value: "regex" };
+      continue;
+    }
     if (char === '"' || char === "'" || char === "`") {
       const quote = char;
       blank(index);
@@ -786,8 +827,28 @@ function maskJavaScriptNonCode(source) {
         }
         if (current === quote) break;
       }
+      previous = { type: "literal", value: "string" };
       continue;
     }
+    if (/[A-Za-z_$]/.test(char)) {
+      const start = index;
+      index += 1;
+      while (index < source.length && /[A-Za-z0-9_$]/.test(source[index])) index += 1;
+      previous = { type: "identifier", value: source.slice(start, index) };
+      continue;
+    }
+    if (/[0-9]/.test(char)) {
+      index += 1;
+      while (index < source.length && /[A-Za-z0-9_.]/.test(source[index])) index += 1;
+      previous = { type: "number", value: "number" };
+      continue;
+    }
+    if ((char === "+" || char === "-") && next === char) {
+      previous = { type: "punctuator", value: `${char}${next}` };
+      index += 2;
+      continue;
+    }
+    previous = { type: "punctuator", value: char };
     index += 1;
   }
   return masked.join("");
@@ -929,7 +990,443 @@ function hasDynamicTargetBinding(record, evidence, source) {
   });
 }
 
+const AST_FUNCTION_TYPES = new Set([
+  "ArrowFunctionExpression",
+  "FunctionDeclaration",
+  "FunctionExpression",
+]);
+
+const isAstNode = (value) => Boolean(value && typeof value === "object" && typeof value.type === "string");
+
+const forEachAstChild = (node, callback) => {
+  for (const [key, value] of Object.entries(node || {})) {
+    if (["end", "loc", "range", "start", "type"].includes(key)) continue;
+    if (Array.isArray(value)) {
+      for (const child of value) if (isAstNode(child)) callback(child, key);
+    } else if (isAstNode(value)) callback(value, key);
+  }
+};
+
+const walkAst = (node, callback, parent = null, parentKey = "") => {
+  if (!isAstNode(node)) return;
+  if (callback(node, parent, parentKey) === false) return;
+  forEachAstChild(node, (child, key) => walkAst(child, callback, node, key));
+};
+
+const patternIdentifiers = (pattern, out = []) => {
+  if (!isAstNode(pattern)) return out;
+  if (pattern.type === "Identifier") out.push(pattern);
+  else if (pattern.type === "AssignmentPattern") patternIdentifiers(pattern.left, out);
+  else if (pattern.type === "RestElement") patternIdentifiers(pattern.argument, out);
+  else if (pattern.type === "ArrayPattern") {
+    for (const element of pattern.elements || []) patternIdentifiers(element, out);
+  } else if (pattern.type === "ObjectPattern") {
+    for (const property of pattern.properties || []) {
+      patternIdentifiers(property.type === "RestElement" ? property.argument : property.value, out);
+    }
+  }
+  return out;
+};
+
+const buildEvidenceModel = (source) => {
+  let ast;
+  try {
+    ast = parseJavaScript(source, {
+      allowHashBang: true,
+      ecmaVersion: "latest",
+      sourceType: "module",
+    });
+  } catch {
+    return null;
+  }
+  const scopes = [];
+  const nodeScopes = new WeakMap();
+  const declarationIdentifiers = new WeakSet();
+  const bindingByDeclaration = new WeakMap();
+  const allBindings = [];
+  const createScope = (parent, type, node) => {
+    const scope = { bindings: new Map(), node, parent, type };
+    scopes.push(scope);
+    return scope;
+  };
+  const programScope = createScope(null, "program", ast);
+  const nearestVarScope = (scope) => {
+    let current = scope;
+    while (current && !["function", "program"].includes(current.type)) current = current.parent;
+    return current || programScope;
+  };
+  const declarePattern = (pattern, scope, details) => {
+    for (const identifier of patternIdentifiers(pattern)) {
+      const binding = { ...details, declaration: identifier, name: identifier.name, scope };
+      scope.bindings.set(identifier.name, binding);
+      declarationIdentifiers.add(identifier);
+      bindingByDeclaration.set(identifier, binding);
+      nodeScopes.set(identifier, scope);
+      allBindings.push(binding);
+    }
+  };
+  const visitPatternExpressions = (pattern, scope, visit) => {
+    if (!isAstNode(pattern)) return;
+    if (pattern.type === "AssignmentPattern") {
+      visit(pattern.right, scope);
+      visitPatternExpressions(pattern.left, scope, visit);
+    } else if (pattern.type === "RestElement") visitPatternExpressions(pattern.argument, scope, visit);
+    else if (pattern.type === "ArrayPattern") {
+      for (const element of pattern.elements || []) visitPatternExpressions(element, scope, visit);
+    } else if (pattern.type === "ObjectPattern") {
+      for (const property of pattern.properties || []) {
+        if (property.computed) visit(property.key, scope);
+        visitPatternExpressions(property.type === "RestElement" ? property.argument : property.value, scope, visit);
+      }
+    }
+  };
+  const visit = (node, scope) => {
+    if (!isAstNode(node)) return;
+    nodeScopes.set(node, scope);
+    if (node.type === "Program") {
+      for (const child of node.body || []) visit(child, scope);
+      return;
+    }
+    if (node.type === "ImportDeclaration") {
+      for (const specifier of node.specifiers || []) {
+        const imported = specifier.type === "ImportSpecifier"
+          ? String(specifier.imported?.name || specifier.imported?.value || "")
+          : specifier.type === "ImportDefaultSpecifier" ? "default" : "*";
+        declarePattern(specifier.local, scope, {
+          imported,
+          kind: "import",
+          source: String(node.source?.value || ""),
+          specifier,
+        });
+      }
+      return;
+    }
+    if (node.type === "ExportNamedDeclaration" || node.type === "ExportDefaultDeclaration") {
+      if (node.declaration) visit(node.declaration, scope);
+      return;
+    }
+    if (AST_FUNCTION_TYPES.has(node.type)) {
+      let outerBinding = null;
+      if (node.type === "FunctionDeclaration" && node.id) {
+        declarePattern(node.id, scope, { functionNode: node, kind: "function", node });
+        outerBinding = bindingByDeclaration.get(node.id);
+      }
+      const functionScope = createScope(scope, "function", node);
+      nodeScopes.set(node, functionScope);
+      if (node.type === "FunctionExpression" && node.id) {
+        declarePattern(node.id, functionScope, { functionNode: node, kind: "function", node });
+      }
+      for (const parameter of node.params || []) {
+        declarePattern(parameter, functionScope, { functionNode: null, kind: "parameter", node: parameter });
+        visitPatternExpressions(parameter, functionScope, visit);
+      }
+      visit(node.body, functionScope);
+      if (outerBinding) outerBinding.functionNode = node;
+      return;
+    }
+    if (node.type === "BlockStatement") {
+      const blockScope = createScope(scope, "block", node);
+      nodeScopes.set(node, blockScope);
+      for (const child of node.body || []) visit(child, blockScope);
+      return;
+    }
+    if (["ForInStatement", "ForOfStatement", "ForStatement", "SwitchStatement"].includes(node.type)) {
+      const blockScope = createScope(scope, "block", node);
+      nodeScopes.set(node, blockScope);
+      forEachAstChild(node, (child) => visit(child, blockScope));
+      return;
+    }
+    if (node.type === "CatchClause") {
+      const catchScope = createScope(scope, "catch", node);
+      nodeScopes.set(node, catchScope);
+      if (node.param) declarePattern(node.param, catchScope, { functionNode: null, kind: "catch", node });
+      visit(node.body, catchScope);
+      return;
+    }
+    if (node.type === "VariableDeclaration") {
+      for (const declarator of node.declarations || []) {
+        const targetScope = node.kind === "var" ? nearestVarScope(scope) : scope;
+        declarePattern(declarator.id, targetScope, {
+          declarator,
+          functionNode: AST_FUNCTION_TYPES.has(declarator.init?.type) ? declarator.init : null,
+          init: declarator.init,
+          kind: node.kind,
+          node: declarator,
+        });
+      }
+      for (const declarator of node.declarations || []) {
+        visitPatternExpressions(declarator.id, scope, visit);
+        if (declarator.init) visit(declarator.init, scope);
+      }
+      return;
+    }
+    if (node.type === "ClassDeclaration" && node.id) {
+      declarePattern(node.id, scope, { functionNode: null, kind: "class", node });
+    }
+    forEachAstChild(node, (child) => visit(child, scope));
+  };
+  visit(ast, programScope);
+  const resolveIdentifier = (identifier) => {
+    if (identifier?.type !== "Identifier") return null;
+    if (declarationIdentifiers.has(identifier)) return bindingByDeclaration.get(identifier) || null;
+    let scope = nodeScopes.get(identifier) || null;
+    while (scope) {
+      if (scope.bindings.has(identifier.name)) return scope.bindings.get(identifier.name);
+      scope = scope.parent;
+    }
+    return null;
+  };
+  return {
+    allBindings,
+    ast,
+    bindingByDeclaration,
+    declarationIdentifiers,
+    nodeScopes,
+    programScope,
+    resolveIdentifier,
+    source,
+  };
+};
+
+const unwrapExpression = (node) => {
+  let current = node;
+  while (["AwaitExpression", "ChainExpression"].includes(current?.type)) current = current.expression;
+  return current;
+};
+
+const functionNodeForBinding = (binding) => {
+  if (AST_FUNCTION_TYPES.has(binding?.functionNode?.type)) return binding.functionNode;
+  const init = unwrapExpression(binding?.init);
+  return AST_FUNCTION_TYPES.has(init?.type) ? init : null;
+};
+
+const collectReachableFunctions = (model) => {
+  const root = functionNodeForBinding(model.programScope.bindings.get("run"));
+  if (!root) return [];
+  const reachable = new Set([root]);
+  const queue = [root];
+  while (queue.length > 0) {
+    const fn = queue.shift();
+    const inspect = (node) => {
+      if (node !== fn && AST_FUNCTION_TYPES.has(node.type)) {
+        if (!reachable.has(node)) {
+          reachable.add(node);
+          queue.push(node);
+        }
+        return false;
+      }
+      if (node.type === "CallExpression" && node.callee?.type === "Identifier") {
+        const helper = functionNodeForBinding(model.resolveIdentifier(node.callee));
+        if (helper && !reachable.has(helper)) {
+          reachable.add(helper);
+          queue.push(helper);
+        }
+      }
+      return true;
+    };
+    for (const parameter of fn.params || []) walkAst(parameter, inspect);
+    walkAst(fn.body, inspect);
+  }
+  return [...reachable];
+};
+
+const collectReachableNodes = (model) => {
+  const functions = collectReachableFunctions(model);
+  const nodes = [];
+  const seen = new WeakSet();
+  for (const fn of functions) {
+    const collect = (node) => {
+      if (node !== fn && AST_FUNCTION_TYPES.has(node.type)) return false;
+      if (!seen.has(node)) {
+        seen.add(node);
+        nodes.push(node);
+      }
+      return true;
+    };
+    for (const parameter of fn.params || []) walkAst(parameter, collect);
+    walkAst(fn.body, collect);
+  }
+  return nodes;
+};
+
+const literalString = (node) => node?.type === "Literal" && typeof node.value === "string"
+  ? node.value
+  : "";
+
+const rootIdentifier = (node) => {
+  let current = node;
+  while (current?.type === "MemberExpression") current = current.object;
+  return current?.type === "Identifier" ? current : null;
+};
+
+const isTrustedAssertCall = (node, model) => {
+  if (node?.type !== "CallExpression") return false;
+  const identifier = rootIdentifier(node.callee);
+  if (!identifier || identifier.name !== "assert") return false;
+  const binding = model.resolveIdentifier(identifier);
+  return binding?.kind === "import" && /^(?:node:)?assert(?:\/strict)?$/.test(binding.source);
+};
+
+const subtreeContainsBinding = (node, binding, model) => {
+  let found = false;
+  walkAst(node, (current, parent, parentKey) => {
+    if (found) return false;
+    if (current.type !== "Identifier" || current.name !== binding.name) return true;
+    if (
+      model.declarationIdentifiers.has(current)
+      || (parent?.type === "MemberExpression" && parentKey === "property" && !parent.computed)
+      || (parent?.type === "Property" && parentKey === "key" && !parent.computed && !parent.shorthand)
+    ) return true;
+    if (model.resolveIdentifier(current) === binding) found = true;
+    return !found;
+  });
+  return found;
+};
+
+const subtreeStringValues = (node) => {
+  const values = [];
+  walkAst(node, (current) => {
+    const value = literalString(current);
+    if (value) values.push(value);
+  });
+  return values;
+};
+
+const trustedContractHelperBinding = (binding, name) => Boolean(
+  binding?.kind === "import"
+  && binding.imported === name
+  && /(?:^|\/)contract-test-helpers\.js$/.test(binding.source),
+);
+
+const expectedDirectImportSource = (testPath, targetPath) => {
+  let relative = path.posix.relative(path.posix.dirname(testPath), targetPath);
+  if (!relative.startsWith(".")) relative = `./${relative}`;
+  return relative;
+};
+
+const targetBindingMatchesEvidence = (binding, evidence, testPath, model) => {
+  if (!binding || binding.name !== evidence.binding) return false;
+  if (binding.kind === "import") {
+    return binding.imported === evidence.symbol
+      && binding.source === expectedDirectImportSource(testPath, evidence.targetPath);
+  }
+  const init = unwrapExpression(binding.init);
+  if (init?.type !== "CallExpression" || init.callee?.type !== "Identifier") return false;
+  if (!trustedContractHelperBinding(model.resolveIdentifier(init.callee), "requireCallable")) return false;
+  if (literalString(init.arguments?.[1]) !== evidence.symbol || init.arguments?.[0]?.type !== "Identifier") return false;
+  const moduleBinding = model.resolveIdentifier(init.arguments[0]);
+  const moduleInit = unwrapExpression(moduleBinding?.init);
+  if (moduleInit?.type !== "CallExpression" || moduleInit.callee?.type !== "Identifier") return false;
+  return trustedContractHelperBinding(model.resolveIdentifier(moduleInit.callee), "importContractModule")
+    && literalString(moduleInit.arguments?.[0]) === evidence.targetPath;
+};
+
+const callMatchesImportEvidence = (node, evidence, testPath, model) => Boolean(
+  node?.type === "CallExpression"
+  && node.callee?.type === "Identifier"
+  && node.callee.name === evidence.binding
+  && targetBindingMatchesEvidence(model.resolveIdentifier(node.callee), evidence, testPath, model)
+);
+
+const targetImportIsPresent = (model, evidence, testPath) => {
+  const directSource = expectedDirectImportSource(testPath, evidence.targetPath);
+  let present = false;
+  walkAst(model.ast, (node) => {
+    if (present) return false;
+    if (node.type === "ImportDeclaration" && literalString(node.source) === directSource) present = true;
+    if (
+      node.type === "CallExpression"
+      && node.callee?.type === "Identifier"
+      && node.callee.name === "importContractModule"
+      && literalString(node.arguments?.[0]) === evidence.targetPath
+    ) present = true;
+    return !present;
+  });
+  return present;
+};
+
+const bindingWasMutatedBetween = (binding, start, end, nodes, model) => nodes.some((node) => {
+  if (node.start <= start || node.start >= end) return false;
+  if (node.type === "AssignmentExpression") {
+    return patternIdentifiers(node.left).some((identifier) => model.resolveIdentifier(identifier) === binding);
+  }
+  return node.type === "UpdateExpression"
+    && node.argument?.type === "Identifier"
+    && model.resolveIdentifier(node.argument) === binding;
+});
+
+const assessAstRelevanceEvidence = ({ evidence, source, testPath }) => {
+  const model = buildEvidenceModel(source);
+  if (!model) return "behavior_missing";
+  const nodes = collectReachableNodes(model);
+  const assertions = nodes.filter((node) => isTrustedAssertCall(node, model));
+  if (evidence.mode === "self") {
+    if (evidence.targetPath !== testPath) return "missing";
+    if (assertions.length === 0) return "behavior_missing";
+    return { assertionOffset: assertions[0].start, operationOffset: assertions[0].start, status: "ok" };
+  }
+  if (["read", "spawn"].includes(evidence.mode)) {
+    const operationNames = evidence.mode === "read"
+      ? new Set(["readFile", "readFileSync"])
+      : new Set(["execFile", "execFileSync", "spawn", "spawnSync"]);
+    let sawTargetOperation = false;
+    const candidates = [];
+    for (const binding of model.allBindings.filter((item) => item.name === evidence.binding && item.declarator)) {
+      if (!nodes.includes(binding.declarator) || !binding.init) continue;
+      let operation = null;
+      walkAst(binding.init, (node) => {
+        if (operation || node.type !== "CallExpression" || node.callee?.type !== "Identifier") return !operation;
+        const calleeBinding = model.resolveIdentifier(node.callee);
+        const trustedSource = evidence.mode === "read" ? "node:fs" : "node:child_process";
+        if (
+          operationNames.has(node.callee.name)
+          && calleeBinding?.kind === "import"
+          && [trustedSource, trustedSource.replace("node:", "")].includes(calleeBinding.source)
+          && subtreeStringValues(binding.init).includes(evidence.targetPath)
+        ) operation = node;
+        return !operation;
+      });
+      if (!operation) continue;
+      sawTargetOperation = true;
+      const assertion = assertions.find((item) => item.start > operation.end && subtreeContainsBinding(item, binding, model));
+      if (assertion) candidates.push({ assertionOffset: assertion.start, operationOffset: operation.start, status: "ok" });
+    }
+    if (candidates.length > 0) return candidates[0];
+    return sawTargetOperation ? "behavior_missing" : "missing";
+  }
+  if (evidence.mode !== "import") return "missing";
+  if (!targetImportIsPresent(model, evidence, testPath)) return "missing";
+  if (evidence.resultBinding) {
+    const candidates = [];
+    for (const binding of model.allBindings.filter((item) => item.name === evidence.resultBinding && item.declarator)) {
+      if (!nodes.includes(binding.declarator)) continue;
+      const operation = unwrapExpression(binding.init);
+      if (!callMatchesImportEvidence(operation, evidence, testPath, model)) continue;
+      const assertion = assertions.find((item) => (
+        item.start > operation.end
+        && subtreeContainsBinding(item, binding, model)
+        && !bindingWasMutatedBetween(binding, operation.end, item.start, nodes, model)
+      ));
+      if (assertion) candidates.push({ assertionOffset: assertion.start, operationOffset: operation.start, status: "ok" });
+    }
+    return candidates.length === 1 ? candidates[0] : "behavior_missing";
+  }
+  const candidates = [];
+  for (const assertion of assertions) {
+    walkAst(assertion, (node) => {
+      if (callMatchesImportEvidence(node, evidence, testPath, model)) {
+        candidates.push({ assertionOffset: assertion.start, operationOffset: node.start, status: "ok" });
+        return false;
+      }
+      return true;
+    });
+  }
+  return candidates[0] || "behavior_missing";
+};
+
 function assessStaticRelevanceEvidence({ evidence, source, testPath }) {
+  return assessAstRelevanceEvidence({ evidence, source, testPath });
+  /* istanbul ignore next -- retained until the AST gate is proven across the full registry. */
   const maskedSource = maskJavaScriptNonCode(source);
   const functions = collectReachableFunctionRecords(maskedSource);
   const allAssertions = functions.flatMap(assertionRecords);
@@ -1085,16 +1582,16 @@ function collectV8Coverage(coverageDir, { processId = null } = {}) {
   return { executed, rangesByPath, valid: documents > 0 };
 }
 
-function hasUnambiguousExecutedTargetSymbol(coverage, targetPath, symbol) {
+function hasUnambiguousExecutedTargetSymbol(coverage, targetPath, symbol, executionRoot = process.cwd()) {
   if (!coverage?.valid) return false;
-  const absoluteTarget = path.resolve(process.cwd(), targetPath);
+  const absoluteTarget = path.resolve(executionRoot, targetPath);
   const signatures = coverage.executed.get(absoluteTarget)?.get(symbol);
   return signatures instanceof Set && signatures.size === 1;
 }
 
-function isTestSourceOffsetExecuted(coverage, testPath, offset) {
+function isTestSourceOffsetExecuted(coverage, testPath, offset, executionRoot = process.cwd()) {
   if (!coverage?.valid || !Number.isSafeInteger(offset) || offset < 0) return false;
-  const absoluteTestPath = path.resolve(process.cwd(), testPath);
+  const absoluteTestPath = path.resolve(executionRoot, testPath);
   const containing = (coverage.rangesByPath.get(absoluteTestPath) || [])
     .filter((range) => range.startOffset <= offset && offset < range.endOffset);
   if (containing.length === 0) return false;
@@ -1103,8 +1600,30 @@ function isTestSourceOffsetExecuted(coverage, testPath, offset) {
   return mostSpecific.length > 0 && mostSpecific.every((range) => range.count > 0);
 }
 
-function executeRegisteredNodeTest(registration) {
+function materializeImmutableHeadCohort(head) {
+  const root = mkdtempSync(path.join(tmpdir(), "gigabrain-source-first-head-"));
+  try {
+    const archive = git(["archive", "--format=tar", head], { binary: true }).stdout;
+    const extracted = spawnSync("tar", ["-xf", "-", "-C", root], {
+      cwd: process.cwd(),
+      env: { ...process.env, LC_ALL: "C" },
+      input: archive,
+      maxBuffer: 32 * 1024 * 1024,
+      timeout: 20_000,
+    });
+    if (extracted.error || extracted.status !== 0) fail("GATE_EXECUTION_COHORT", head);
+    const nodeModules = path.join(process.cwd(), "node_modules");
+    if (existsSync(nodeModules)) symlinkSync(nodeModules, path.join(root, "node_modules"), "dir");
+    return root;
+  } catch (error) {
+    rmSync(root, { force: true, recursive: true });
+    throw error;
+  }
+}
+
+function executeRegisteredNodeTest(registration, head) {
   const coverageDir = mkdtempSync(path.join(tmpdir(), "gigabrain-source-first-coverage-"));
+  const executionRoot = materializeImmutableHeadCohort(head);
   const wrapper = [
     'import { pathToFileURL } from "node:url";',
     'const target = process.env.SOURCE_FIRST_GATE_TEST_PATH;',
@@ -1119,23 +1638,25 @@ function executeRegisteredNodeTest(registration) {
       "--eval",
       wrapper,
     ], {
-      cwd: process.cwd(),
+      cwd: executionRoot,
       encoding: "utf8",
       env: {
         ...process.env,
         LC_ALL: "C",
         NODE_V8_COVERAGE: coverageDir,
-        SOURCE_FIRST_GATE_TEST_PATH: path.resolve(process.cwd(), registration.testPath),
+        SOURCE_FIRST_GATE_TEST_PATH: path.resolve(executionRoot, registration.testPath),
       },
       maxBuffer: 16 * 1024 * 1024,
       timeout: 60_000,
     });
     return {
       coverage: collectV8Coverage(coverageDir, { processId: result.pid }),
+      executionRoot,
       ok: !result.error && result.status === 0,
     };
   } finally {
     rmSync(coverageDir, { force: true, recursive: true });
+    rmSync(executionRoot, { force: true, recursive: true });
   }
 }
 
@@ -1412,19 +1933,34 @@ function validateActiveGates(map, registry, headByPath, head) {
         if (registration.runner !== "node") {
           fail("GATE_EXECUTION_FAILED", registration.testPath);
         }
-        execution = executeRegisteredNodeTest(registration);
+        execution = executeRegisteredNodeTest(registration, head);
         if (!execution.ok) fail("GATE_EXECUTION_FAILED", registration.testPath);
         executedTests.set(executionKey, execution);
       }
       if (
         evidence.mode === "import"
-        && !hasUnambiguousExecutedTargetSymbol(execution.coverage, evidence.targetPath, evidence.symbol)
+        && !hasUnambiguousExecutedTargetSymbol(
+          execution.coverage,
+          evidence.targetPath,
+          evidence.symbol,
+          execution.executionRoot,
+        )
       ) {
         fail("GATE_DYNAMIC_EVIDENCE", row.targetPath);
       }
       if (
-        !isTestSourceOffsetExecuted(execution.coverage, registration.testPath, relevance.operationOffset)
-        || !isTestSourceOffsetExecuted(execution.coverage, registration.testPath, relevance.assertionOffset)
+        !isTestSourceOffsetExecuted(
+          execution.coverage,
+          registration.testPath,
+          relevance.operationOffset,
+          execution.executionRoot,
+        )
+        || !isTestSourceOffsetExecuted(
+          execution.coverage,
+          registration.testPath,
+          relevance.assertionOffset,
+          execution.executionRoot,
+        )
       ) {
         fail("GATE_DYNAMIC_EVIDENCE", row.targetPath);
       }
