@@ -12,9 +12,9 @@ export const EXPECTED_SIGNATURE = "COMPAT_EXPECTED_SESSION_BRIEF_SCOPE missing e
 
 const NOW = "2026-08-26T00:00:00.000Z";
 
-const preference = (memoryId, content, scope) => ({
+const memory = (memoryId, type, content, scope) => ({
   memory_id: memoryId,
-  type: "PREFERENCE",
+  type,
   content,
   scope,
   confidence: 0.96,
@@ -38,14 +38,19 @@ export async function run() {
       const config = normalizeConfig(makeConfigObject(workspace.workspace).plugins.entries.gigabrain.config);
       config.operatorRules.sessionBrief.excludePatterns = [{ pattern: "forbidden beacon", flags: "i" }];
       seedMemoryCurrent(db, [
-        preference("shared", "The user prefers shared compass mode.", "shared"),
-        preference("profile", "The user prefers private cedar mode.", "profile:synthetic"),
-        preference("agent", "The user prefers agent amber mode.", "synthetic-agent"),
-        preference("agent-excluded", "The user prefers forbidden beacon mode.", "synthetic-agent"),
-        preference("project", "The user prefers project violet mode.", "project:synthetic"),
+        memory("shared-location", "USER_FACT", "Mira Vexley lives in Shared Compass.", "shared"),
+        memory("shared-preference", "PREFERENCE", "Mira Vexley prefers shared compass mode.", "shared"),
+        memory("profile-location", "USER_FACT", "Indigo Quill lives in Private Cedar.", "profile:synthetic"),
+        memory("profile-preference", "PREFERENCE", "Indigo Quill prefers private cedar mode.", "profile:synthetic"),
+        memory("agent-location", "USER_FACT", "Sable North lives in Agent Amber.", "synthetic-agent"),
+        memory("agent-preference", "PREFERENCE", "Sable North prefers agent amber mode.", "synthetic-agent"),
+        memory("agent-excluded", "PREFERENCE", "Sable North prefers forbidden beacon mode.", "synthetic-agent"),
+        memory("project-location", "USER_FACT", "Rowan Pike lives in Project Violet.", "project:synthetic"),
+        memory("project-preference", "PREFERENCE", "Rowan Pike prefers project violet mode.", "project:synthetic"),
       ]);
       rebuildEntityMentions(db);
-      rebuildWorldModel({ db, config, now: NOW });
+      const rebuilt = rebuildWorldModel({ db, config, now: NOW });
+      assert.equal(rebuilt.ok, true);
 
       const rows = listSyntheses(db, { kind: "session_brief", limit: 50 });
       assert.equal(rows.some((row) => row.subject_type === "global"), false, "a mixed global brief is unsafe");

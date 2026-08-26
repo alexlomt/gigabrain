@@ -130,13 +130,21 @@
     },
     {
       "coveredPaths": [
+        "lib/core/person-service.js",
         "tests/compat/entity-taxonomy-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_ENTITY_TAXONOMY missing compound, title, and non-person entity contracts",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-entity-taxonomy",
       "ownerSourceFirstTaskId": "8",
       "relevanceEvidence": [
+        {
+          "binding": "splitNameCandidates",
+          "mode": "import",
+          "resultBinding": "titleFixture",
+          "symbol": "splitNameCandidates",
+          "targetPath": "lib/core/person-service.js"
+        },
         {
           "mode": "self",
           "targetPath": "tests/compat/entity-taxonomy-test.js"
@@ -144,7 +152,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/entity-taxonomy-test.js",
-      "testSha256": "1b15b4ec755c030756dcc50618f10e031a02bdf77f3769651128afe8fa6c9061"
+      "testSha256": "dba347bc0f312614b12ea2413f8113ef7663472fb5a7bb753bfca2407a952fcf"
     },
     {
       "coveredPaths": [
@@ -540,13 +548,21 @@
     },
     {
       "coveredPaths": [
+        "lib/core/world-model.js",
         "tests/compat/session-brief-scope-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_SESSION_BRIEF_SCOPE missing exact-scope session syntheses",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-session-brief-scope",
       "ownerSourceFirstTaskId": "8",
       "relevanceEvidence": [
+        {
+          "binding": "rebuildWorldModel",
+          "mode": "import",
+          "resultBinding": "rebuilt",
+          "symbol": "rebuildWorldModel",
+          "targetPath": "lib/core/world-model.js"
+        },
         {
           "mode": "self",
           "targetPath": "tests/compat/session-brief-scope-test.js"
@@ -554,7 +570,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/session-brief-scope-test.js",
-      "testSha256": "e2d3420a2bc8132cf28fc9dd9395c10c9ed20776e8ea7721036191a427c54020"
+      "testSha256": "55e4b748689e86c3b23472ad79b12ea56d9e822dac4771b3117c572291856139"
     },
     {
       "coveredPaths": [
@@ -655,13 +671,21 @@
     },
     {
       "coveredPaths": [
+        "lib/core/world-model.js",
         "tests/compat/world-model-shadow-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_WORLD_MODEL_SHADOW missing protected non-consuming shadow semantics",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-world-model-shadow",
       "ownerSourceFirstTaskId": "8",
       "relevanceEvidence": [
+        {
+          "binding": "rebuildWorldModel",
+          "mode": "import",
+          "resultBinding": "firstRebuild",
+          "symbol": "rebuildWorldModel",
+          "targetPath": "lib/core/world-model.js"
+        },
         {
           "mode": "self",
           "targetPath": "tests/compat/world-model-shadow-test.js"
@@ -669,7 +693,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/world-model-shadow-test.js",
-      "testSha256": "74f18fa4ebe6016c472891c98c6883b5c3a44f1470c231131f720765063c62e0"
+      "testSha256": "49eee9c470edeb0de5875636b491536eac8059667873ef84615ed86ab1a35348"
     },
     {
       "coveredPaths": [
@@ -1547,6 +1571,6 @@
     }
   ],
   "entryCount": 87,
-  "manifestSha256": "519323e22989d5e56f79dff383e6211d8dd8b0b215fda52a523aedcfaee212b3",
+  "manifestSha256": "ab558e1858b7b2114b2f4e4e9ac484269ef0c955004607fae81a1e0f3aaebb4b",
   "schemaVersion": 1
 }

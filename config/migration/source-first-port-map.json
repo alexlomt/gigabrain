@@ -99,7 +99,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "22d4bd7e273d57b529487ba077150f258e44e2bd139f8ad91d8fd9ab80535b1f",
+      "contentSha256": "6620e9d45238e1c5b2af8c02eeaf62633c300827d9790c1899bf8acb7b2838ee",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -734,15 +734,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "4f674eba2d25c6fa8b47befa3e934693fe70ef217ce80140f85ce098c4199acf",
+      "contentSha256": "553e97860c105f609cb17073b6c27fdee41175aa5b85abead89153b904740f71",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-observational-core-patches"
       },
       "ownerTasks": [
-        "5"
+        "5",
+        "8"
       ],
-      "reason": "Task 5 read-only CLI paths propagate ensure=false so observational commands never create schemas.",
+      "reason": "Task 5 observational behavior retained while Task 8 preserves compound, title, and protected non-person entity semantics.",
       "targetMode": "100644",
       "targetPath": "lib/core/person-service.js"
     },
@@ -847,15 +848,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "cc032e4e83b1cb96966730db8fa417d0888cb4450b2cf00354525fcef5d756bb",
+      "contentSha256": "b8a1c49a32e1ca29a6d2d5dfd9a196508d2c1b851b5b010ab7fa943bd1139c7b",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-observational-core-patches"
       },
       "ownerTasks": [
-        "5"
+        "5",
+        "8"
       ],
-      "reason": "Task 5 read-only CLI paths propagate ensure=false so observational commands never create schemas.",
+      "reason": "Task 5 observational behavior retained while Task 8 consumes protected rules and emits exact-scope deterministic world-model syntheses.",
       "targetMode": "100644",
       "targetPath": "lib/core/world-model.js"
     },
@@ -1227,7 +1229,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "1b15b4ec755c030756dcc50618f10e031a02bdf77f3769651128afe8fa6c9061",
+      "contentSha256": "dba347bc0f312614b12ea2413f8113ef7663472fb5a7bb753bfca2407a952fcf",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-entity-taxonomy"
@@ -1235,13 +1237,13 @@
       "ownerTasks": [
         "8"
       ],
-      "reason": "Task 8 synthetic red gate for compound, title, self-reference, and protected non-person entity behavior.",
+      "reason": "Passing Task 8 compound, title, self-reference, and protected non-person entity contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/entity-taxonomy-test.js"
     },
     {
       "changeType": "added",
-      "contentSha256": "db71bf88b5904e9185cabd716e0ed50dfbe21c30095103ab1b1c7fd11a2a499c",
+      "contentSha256": "b574f3efad59e20344368bc0f7b99ded36b503272f8c7e1f8eba934932f25ba1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1255,7 +1257,7 @@
         "7",
         "8"
       ],
-      "reason": "Expected-failure ownership including the exact Task 8 red signatures.",
+      "reason": "Expected-failure ownership after all Task 8 red gates became passing contracts.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1495,7 +1497,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "e2d3420a2bc8132cf28fc9dd9395c10c9ed20776e8ea7721036191a427c54020",
+      "contentSha256": "55e4b748689e86c3b23472ad79b12ea56d9e822dac4771b3117c572291856139",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-session-brief-scope"
@@ -1503,7 +1505,7 @@
       "ownerTasks": [
         "8"
       ],
-      "reason": "Task 8 synthetic red gate for exact-scope session syntheses and protected exclusions.",
+      "reason": "Passing Task 8 exact-scope session synthesis and protected-exclusion contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/session-brief-scope-test.js"
     },
@@ -1539,7 +1541,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "74f18fa4ebe6016c472891c98c6883b5c3a44f1470c231131f720765063c62e0",
+      "contentSha256": "49eee9c470edeb0de5875636b491536eac8059667873ef84615ed86ab1a35348",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-world-model-shadow"
@@ -1547,7 +1549,7 @@
       "ownerTasks": [
         "8"
       ],
-      "reason": "Task 8 synthetic red gate for deterministic shadow projection and protected non-slot rule consumption.",
+      "reason": "Passing Task 8 deterministic shadow projection and protected non-slot rule contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/world-model-shadow-test.js"
     },

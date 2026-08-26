@@ -6,11 +6,6 @@
       "test": "compat/auto-capture-worker-test.js"
     },
     {
-      "ownerTask": "8",
-      "signature": "COMPAT_EXPECTED_ENTITY_TAXONOMY missing compound, title, and non-person entity contracts",
-      "test": "compat/entity-taxonomy-test.js"
-    },
-    {
       "ownerTask": "14",
       "signature": "COMPAT_EXPECTED_FULL_MIGRATION missing source-first registry migration receipt",
       "test": "compat/full-registry-migration-test.js"
@@ -29,16 +24,6 @@
       "ownerTask": "14",
       "signature": "COMPAT_EXPECTED_ROLLBACK_RESTORE missing verified rollback restoration",
       "test": "compat/rollback-restore-test.js"
-    },
-    {
-      "ownerTask": "8",
-      "signature": "COMPAT_EXPECTED_SESSION_BRIEF_SCOPE missing exact-scope session syntheses",
-      "test": "compat/session-brief-scope-test.js"
-    },
-    {
-      "ownerTask": "8",
-      "signature": "COMPAT_EXPECTED_WORLD_MODEL_SHADOW missing protected non-consuming shadow semantics",
-      "test": "compat/world-model-shadow-test.js"
     }
   ],
   "schemaVersion": 1

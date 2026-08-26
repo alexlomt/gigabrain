@@ -74,8 +74,10 @@ export async function run() {
       assert.equal(trust.shadow, true);
       assert.deepEqual(sourceRows(dbA), sourceBefore, "shadow trust must not mutate source memories");
 
-      rebuildWorldModel({ db: dbA, config: configA, now: NOW });
-      rebuildWorldModel({ db: dbB, config: configB, now: NOW });
+      const firstRebuild = rebuildWorldModel({ db: dbA, config: configA, now: NOW });
+      const secondRebuild = rebuildWorldModel({ db: dbB, config: configB, now: NOW });
+      assert.equal(firstRebuild.ok, true);
+      assert.deepEqual(firstRebuild.counts, secondRebuild.counts);
       assert.deepEqual(sourceRows(dbA), sourceBefore, "world-model rebuild must preserve source memories");
       assert.deepEqual(sourceRows(dbB), sourceBefore, "identical shadow input must preserve source memories");
 

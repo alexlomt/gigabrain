@@ -86,7 +86,9 @@ export async function run() {
       ]);
 
       rebuildEntityMentions(db);
-      rebuildWorldModel({ db, config, now: NOW });
+      const rebuilt = rebuildWorldModel({ db, config, now: NOW });
+      assert.equal(rebuilt.ok, true);
+      assert.ok(rebuilt.counts.entities >= 7);
       const entities = listEntities(db, { includeHidden: true, limit: 200 });
       const names = entityNames(entities);
       const byName = new Map(entities.map((row) => [row.normalized_name, row]));
