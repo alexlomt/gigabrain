@@ -64,6 +64,11 @@
       "ownerTask": "5",
       "signature": "COMPAT_EXPECTED_SCOPE_VISIBILITY missing fail-closed scope visibility matrix",
       "test": "compat/scope-visibility-matrix-test.js"
+    },
+    {
+      "ownerTask": "3",
+      "signature": "COMPAT_EXPECTED_UPSTREAM_ADOPTION missing hash-bound adoption and retirement contract",
+      "test": "compat/upstream-adoption-test.js"
     }
   ],
   "schemaVersion": 1

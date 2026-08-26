@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
+  existsSync,
   lstatSync,
   mkdtempSync,
   readdirSync,
@@ -154,6 +155,82 @@ function assertRetiredAbsent(surface, files, forbiddenPaths, forbiddenHashes) {
   }
 }
 
+async function assertRetiredBehaviorAbsent(portMap) {
+  const [
+    hostTrust,
+    beliefArbitration,
+    worldModel,
+    handoffBundle,
+    handoffRecord,
+    vaultSync,
+    embeddingService,
+    maintenanceService,
+  ] = await Promise.all([
+    import("../../lib/core/host-trust.js"),
+    import("../../lib/core/belief-arbitration.js"),
+    import("../../lib/core/world-model.js"),
+    import("../../lib/core/handoff-bundle.js"),
+    import("../../lib/core/handoff-record.js"),
+    import("../../lib/core/vault-sync.js"),
+    import("../../lib/core/embedding-service.js"),
+    import("../../lib/core/maintenance-service.js"),
+  ]);
+
+  assert.ok(Object.hasOwn(hostTrust, "HUMAN"));
+  assert.equal(typeof hostTrust.isRegisteredAgent, "function");
+  assert.equal(hostTrust.isRegisteredAgent("synthetic-unregistered-agent"), false);
+  assert.equal(typeof worldModel.configureBeliefTrust, "undefined");
+  assert.equal(typeof beliefArbitration.runBeliefArbitration, "function");
+  const low = beliefArbitration.resolveArbiterSettings({
+    worldModel: { hostTrust: { synthetic_host: 0 } },
+  });
+  const high = beliefArbitration.resolveArbiterSettings({
+    worldModel: { hostTrust: { synthetic_host: 1 } },
+  });
+  assert.ok(Object.isFrozen(low) && Object.isFrozen(high));
+  assert.notEqual(low, high, "belief trust settings must not use retired module-global mutation");
+  assert.ok(
+    beliefArbitration.beliefHostTrustBonus({ source_host: "synthetic_host" }, low)
+      < beliefArbitration.beliefHostTrustBonus({ source_host: "synthetic_host" }, high),
+  );
+
+  for (const retiredPath of [
+    "lib/core/hygiene-migration.js",
+    "lib/core/memory-passport.js",
+    "lib/core/passport-bundle.js",
+    "lib/core/vault-mirror.js",
+    "scripts/gigabrain-hygiene-20260425.js",
+  ]) {
+    assert.equal(existsSync(path.join(repoRoot, retiredPath)), false, `retired behavior path exists: ${retiredPath}`);
+  }
+  assert.equal(typeof handoffBundle.exportPassportBundle, "function");
+  assert.equal(typeof handoffRecord.buildMemoryPassport, "function");
+  for (const retiredExport of [
+    "buildVaultSurface",
+    "inspectVaultHealth",
+    "syncVaultMirror",
+    "syncVaultPull",
+  ]) {
+    assert.equal(typeof vaultSync[retiredExport], "undefined");
+  }
+  assert.equal(typeof vaultSync.readVaultFileSafe, "function");
+  assert.equal(vaultSync.readVaultFileSafe("/synthetic/not-present.md", { maxFileBytes: 1024 }).evicted, true);
+  assert.equal(typeof embeddingService.DEFAULT_EMBEDDING_PROVIDER, "undefined");
+  assert.equal(typeof embeddingService.normalizeEmbeddingProvider, "undefined");
+  assert.equal(typeof maintenanceService.runHygieneMigration, "undefined");
+  assert.equal(typeof maintenanceService.HYGIENE_VERSION, "undefined");
+
+  const packageJson = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"));
+  assert.deepEqual(packageJson.openclaw?.extensions, ["./index.ts"]);
+  assert.equal(existsSync(path.join(repoRoot, "index.js")), false);
+  const forbiddenScriptPaths = new Set(portMap.retirementContracts.flatMap((row) => row.forbiddenPaths));
+  for (const script of Object.values(packageJson.scripts || {})) {
+    for (const forbiddenPath of forbiddenScriptPaths) {
+      assert.equal(String(script).includes(forbiddenPath), false);
+    }
+  }
+}
+
 function assertDependencyTreeIdentity() {
   const upstreamPackage = JSON.parse(gitBlob(BASE, "package.json").toString("utf8"));
   const candidatePackage = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"));
@@ -181,6 +258,11 @@ async function adoptionAndRetirementContract() {
     path.join(repoRoot, "config", "migration", "source-first-port-map.json"),
     "utf8",
   ));
+  const attestation = JSON.parse(readFileSync(
+    path.join(repoRoot, "config", "migration", "retirement-evidence-attestation.json"),
+    "utf8",
+  ));
+  const structural = await import("../../scripts/retirement-structural-fingerprint.mjs");
   assert.ok(Array.isArray(allowlist.adoptionContracts));
   assert.equal(allowlist.adoptionContractCount, allowlist.adoptionContracts.length);
   assert.equal(
@@ -227,6 +309,13 @@ async function adoptionAndRetirementContract() {
   ];
   assert.deepEqual(allowlist.adoptionContracts.map((row) => row.id), expectedAdoptions);
   assert.deepEqual(portMap.retirementContracts.map((row) => row.id), expectedRetirements);
+  assert.equal(attestation.entryCount, attestation.entries.length);
+  assert.equal(attestation.manifestSha256, sha256(canonicalJson(attestation.entries)));
+  assert.equal(attestation.structuralFingerprintCount, attestation.structuralFingerprints.length);
+  assert.equal(
+    attestation.structuralFingerprintManifestSha256,
+    sha256(canonicalJson(attestation.structuralFingerprints)),
+  );
 
   const allowByPath = new Map(allowlist.entries.map((entry) => [entry.path, entry]));
   const adoptedPaths = new Set();
@@ -262,6 +351,7 @@ async function adoptionAndRetirementContract() {
     }
     for (const evidence of contract.evidence) {
       assert.match(evidence.commit, FULL_SHA1);
+      assert.match(evidence.sourceBlob, FULL_SHA1);
       assert.match(evidence.sha256, SHA256);
       assert.ok(typeof evidence.path === "string" && evidence.path.length > 0);
       if (contract.enforcement === "forbidden_bytes") forbiddenHashes.add(evidence.sha256);
@@ -270,6 +360,22 @@ async function adoptionAndRetirementContract() {
   }
   assert.ok(forbiddenHashes.size > 0);
   assert.ok(forbiddenPaths.size > 0);
+
+  const attestedByKey = new Map(attestation.entries.map((row) => [
+    `${row.behaviorId}\0${row.commit}\0${row.path}`,
+    row,
+  ]));
+  for (const contract of portMap.retirementContracts) {
+    for (const evidence of contract.evidence) {
+      assert.deepEqual(
+        attestedByKey.get(`${contract.id}\0${evidence.commit}\0${evidence.path}`),
+        { behaviorId: contract.id, ...evidence },
+      );
+    }
+  }
+  assert.equal(attestedByKey.size, portMap.retirementContracts.flatMap((row) => row.evidence).length);
+
+  await assertRetiredBehaviorAbsent(portMap);
 
   assertDependencyTreeIdentity();
   assert.equal(isSafeEmbeddingBaseUrl("http://127.0.0.1:11434"), true);
@@ -290,6 +396,18 @@ async function adoptionAndRetirementContract() {
     assertRetiredAbsent("release archive", release, forbiddenPaths, forbiddenHashes);
     assertRetiredAbsent("npm package", packed, forbiddenPaths, forbiddenHashes);
     assertRetiredAbsent("public inventory", publicInventory.files, forbiddenPaths, forbiddenHashes);
+    for (const [surface, files] of [
+      ["source", source],
+      ["release archive", release],
+      ["npm package", packed],
+      ["public inventory", publicInventory.files],
+    ]) {
+      const matches = structural.findRetiredStructuralFingerprintMatches(
+        files,
+        attestation.structuralFingerprints,
+      );
+      assert.deepEqual(matches, [], `${surface} contains retired structural behavior`);
+    }
     for (const retiredPath of forbiddenPaths) {
       assert.equal(publicInventory.paths.includes(retiredPath), false);
     }

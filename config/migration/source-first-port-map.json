@@ -65,7 +65,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "ca234a36e98e86e2a8aff4c5c161c07b89b9a5bb99a309194c859e1f8abd263b",
+      "contentSha256": "5b687818e05ac225ee2e10509439dff5d48dd2d25a911f0f905116f16f4bd1b3",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -395,7 +395,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "30b4831b97ef06e61ff56c1bd964ad15d549cc67e4526ad0121c574cdd1bedcd",
+      "contentSha256": "05258eef0d4cc8e9a49009ed4f9dac92c3b3d4ebddb43d96ef2ed3fc5625d609",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "upstream-adoption"
@@ -560,7 +560,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "4d3ffc1e71540fc72a1828c49694e8e2a029cecad9133bcba3cb450c8849ca2d",
+      "contentSha256": "c4004161617452f6d783834779a3fbdd18082cbc4df8ae353e91acafc05e9c1e",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "upstream-adoption"
@@ -1093,7 +1093,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "f0d0cee5ff4fc59c6abee4323abc553b9bd619415d9cb10d2279c51da7e4cc7a",
+      "contentSha256": "6c246fb1d819ea6f6e53d800c5f261cf2f66a766162ec6a78c07eefb94f0fbe4",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"

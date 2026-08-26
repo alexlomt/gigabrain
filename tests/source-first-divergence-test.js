@@ -298,6 +298,25 @@ function registerFixtureCoverage(registry, targetPath) {
   registry.manifestSha256 = sha256(canonicalJson(registry.entries));
 }
 
+function addClassifiedFixtureFile({ fixtureRepo, map, registry }, targetPath, bytes) {
+  const absolutePath = path.join(fixtureRepo, targetPath);
+  mkdirSync(path.dirname(absolutePath), { recursive: true });
+  writeFileSync(absolutePath, bytes);
+  commitAll(fixtureRepo, `classified fixture ${targetPath}`);
+  map.candidateChanges.push({
+    changeType: "added",
+    contentSha256: blobIdentity(absolutePath),
+    disposition: "compat_module",
+    gate: { registrationId: "fixture-gate" },
+    ownerTasks: ["2A"],
+    reason: "Synthetic classified source-first fixture.",
+    targetMode: "100644",
+    targetPath,
+  });
+  map.candidateChanges.sort((left, right) => left.targetPath.localeCompare(right.targetPath, "en"));
+  registerFixtureCoverage(registry, targetPath);
+}
+
 function expectPass(name, mutate) {
   const fixture = makeFixture(mutate);
   try {
@@ -377,6 +396,82 @@ expectFailure(
     }];
     contract.forbiddenPaths = [];
     map.retirementContractManifestSha256 = sha256(canonicalJson(map.retirementContracts));
+  },
+);
+
+expectFailure(
+  "retirement evidence commit must be attested",
+  "RETIREMENT_EVIDENCE_MISMATCH",
+  ({ map }) => {
+    map.retirementContracts[0].evidence[0].commit = "6".repeat(40);
+    map.retirementContractManifestSha256 = sha256(canonicalJson(map.retirementContracts));
+  },
+);
+
+expectFailure(
+  "retirement evidence path must be attested",
+  "RETIREMENT_EVIDENCE_MISMATCH",
+  ({ map }) => {
+    map.retirementContracts[0].evidence[0].path = "legacy/fabricated-retired.js";
+    map.retirementContractManifestSha256 = sha256(canonicalJson(map.retirementContracts));
+  },
+);
+
+expectFailure(
+  "retirement evidence blob must be attested",
+  "RETIREMENT_EVIDENCE_MISMATCH",
+  ({ map }) => {
+    map.retirementContracts[0].evidence[0].sourceBlob = "7".repeat(40);
+    map.retirementContractManifestSha256 = sha256(canonicalJson(map.retirementContracts));
+  },
+);
+
+expectFailure(
+  "retirement evidence SHA-256 must be attested",
+  "RETIREMENT_EVIDENCE_MISMATCH",
+  ({ map }) => {
+    map.retirementContracts[0].evidence[0].sha256 = "8".repeat(64);
+    map.retirementContractManifestSha256 = sha256(canonicalJson(map.retirementContracts));
+  },
+);
+
+expectFailure(
+  "comment-modified retired source is structurally rejected",
+  "RETIRED_STRUCTURAL_FINGERPRINT",
+  (fixture) => {
+    addClassifiedFixtureFile(
+      fixture,
+      "lib/comment-modified-retired.js",
+      Buffer.concat([Buffer.from("// synthetic comment\n"), fixture.retiredBytes]),
+    );
+  },
+);
+
+expectFailure(
+  "wrapper around retired source is structurally rejected",
+  "RETIRED_STRUCTURAL_FINGERPRINT",
+  (fixture) => {
+    addClassifiedFixtureFile(
+      fixture,
+      "lib/wrapped-retired.js",
+      Buffer.concat([
+        Buffer.from("export const syntheticWrapperBefore = true;\n"),
+        fixture.retiredBytes,
+        Buffer.from("export const syntheticWrapperAfter = true;\n"),
+      ]),
+    );
+  },
+);
+
+expectFailure(
+  "retired logic transplanted to a renamed path is structurally rejected",
+  "RETIRED_STRUCTURAL_FINGERPRINT",
+  (fixture) => {
+    addClassifiedFixtureFile(
+      fixture,
+      "lib/renamed-transplant.js",
+      Buffer.concat([fixture.retiredBytes, Buffer.from("export const syntheticTail = null;\n")]),
+    );
   },
 );
 

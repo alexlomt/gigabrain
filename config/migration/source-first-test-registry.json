@@ -823,8 +823,8 @@
         "tests/compat/upstream-adoption-test.js",
         "tests/full-test-inventory.js"
       ],
-      "expectedOutcome": "pass",
-      "expectedSignature": null,
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_UPSTREAM_ADOPTION missing hash-bound adoption and retirement contract",
       "id": "upstream-adoption",
       "ownerSourceFirstTaskId": "3",
       "runner": "node",
@@ -832,6 +832,6 @@
     }
   ],
   "entryCount": 72,
-  "manifestSha256": "ab54ee30a96191e62c09c321f143c81b25c1a9a7214eaf1c40ab04de875bc620",
+  "manifestSha256": "e3d6749e301beef942f8d1877620c1f0e5e5601759ac830d2eb4181b349b5644",
   "schemaVersion": 1
 }
