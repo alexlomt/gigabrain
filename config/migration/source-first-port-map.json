@@ -94,13 +94,13 @@
         "8",
         "9"
       ],
-      "reason": "Source-first evidence plus exact Task 9A policy/hook red-gate ownership metadata.",
+      "reason": "Source-first evidence plus passing Task 9A policy/hook ownership and exact content hashes.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-port-map.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "ad01b24639c4a2a6f1aac2ceb5c5c847e6a4f9a0cf843709c1b41492e253619b",
+      "contentSha256": "cd3359546127c6c907e9dcb6a4a0964e0f03f4b3bbab4288623377fb045ba28a",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -114,7 +114,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with the exact Task 9A policy/hook XFAIL signature and ownership.",
+      "reason": "Source-first registry with the passing Task 9A policy/hook gate, exact test hash, and behavioral relevance evidence.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -305,31 +305,47 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "2a0994613cad6b0ffb1940b94e9997a4586454f10dabdcbce3f359873cbed0e8",
+      "contentSha256": "85882a1d1d7bfb33ce2689d0c882c0511e461a9513e698e7657d294910fbfef4",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-packed-entry"
+        "registrationId": "compat-auto-capture-policy"
       },
       "ownerTasks": [
-        "5"
+        "5",
+        "9"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 observational entry retained while Task 9A adds only the bounded enqueue-only auto-capture hook.",
       "targetMode": "100644",
       "targetPath": "index.js"
     },
     {
       "changeType": "modified",
-      "contentSha256": "03e7f96337a96e3c720d6fa2544e287bd53b7b48582b81992faffa0d0010e60f",
+      "contentSha256": "8131d23430b725263f86be75a51296284e914434156832091c0c75561d4b5a49",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-packed-entry"
+        "registrationId": "compat-auto-capture-policy"
       },
       "ownerTasks": [
-        "5"
+        "5",
+        "9"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 observational entry retained while Task 9A adds only the bounded enqueue-only auto-capture hook.",
       "targetMode": "100644",
       "targetPath": "index.ts"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "edae1b0afea07ae5df8e9ea39fa370165ccc15443e8220c8902ed77d743566f1",
+      "disposition": "compat_module",
+      "gate": {
+        "registrationId": "compat-auto-capture-policy"
+      },
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Task 9A bounded auto-capture classification, privacy sanitization, trusted-scope forcing, and injected enqueue policy.",
+      "targetMode": "100644",
+      "targetPath": "lib/compat/auto-capture-policy.js"
     },
     {
       "changeType": "added",
@@ -547,16 +563,17 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "0fb9f69c2297aaaaf9ed8f69316aa3265e89e9b28103a11e0c3c1c17e8d7edfa",
+      "contentSha256": "9c0f791e2437ee29e3d9e81d2e40d43c1c4f5203ea395e161b862571cfff831e",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-config-schema-parity"
+        "registrationId": "compat-auto-capture-policy"
       },
       "ownerTasks": [
         "4",
-        "7"
+        "7",
+        "9"
       ],
-      "reason": "Canonical Task 4 configuration plus Task 7 Qwen embedding parity defaults.",
+      "reason": "Canonical Task 4/7 configuration retained while Task 9A enforces exact auto-capture limits and local Ollama-only provider policy.",
       "targetMode": "100644",
       "targetPath": "lib/core/config.js"
     },
@@ -865,16 +882,17 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "3fc588698885ec3db924c1a4a60add3346f29b978e1fff064949af4379a65bb4",
+      "contentSha256": "14afc34a32456f8e3d4096c48ded58fb95938a417a60e170bdb62d36ceb4d5f8",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-config-schema-parity"
       },
       "ownerTasks": [
         "4",
-        "7"
+        "7",
+        "9"
       ],
-      "reason": "Canonical Task 4 configuration plus Task 7 Qwen embedding parity defaults.",
+      "reason": "Deterministically regenerated schema manifest after Task 9A exact auto-capture limits and local provider policy.",
       "targetMode": "100644",
       "targetPath": "openclaw.plugin.json"
     },
@@ -1259,7 +1277,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "b1e4089bc694dfa6ae6ceea3570a9b3cee90bb08885f05e8cebc0ea712aa56d5",
+      "contentSha256": "b574f3efad59e20344368bc0f7b99ded36b503272f8c7e1f8eba934932f25ba1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1274,7 +1292,7 @@
         "8",
         "9"
       ],
-      "reason": "Expected-failure ownership including the exact Task 9A policy/hook signature and retained Task 9B worker signature.",
+      "reason": "Task 9A policy/hook XFAIL removed after GREEN while the distinct Task 9B queue/worker XFAIL remains.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -2114,7 +2132,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "d8994555d287e9e6555458d4c3a25f77caca430fe0ba9a11df393314b5254c8e",
+      "contentSha256": "c81865b506c26ae9c509fbde8a93550e0e6d90ba714473f4fa9dce2117ff9663",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2129,7 +2147,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first policy contract with the classified Task 9A policy/hook RED test.",
+      "reason": "Source-first policy contract updated for the passing Task 9A policy/hook candidate set.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },

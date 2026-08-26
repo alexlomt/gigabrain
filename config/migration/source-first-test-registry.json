@@ -2,14 +2,43 @@
   "entries": [
     {
       "coveredPaths": [
+        "index.js",
+        "index.ts",
+        "lib/compat/auto-capture-policy.js",
+        "lib/core/config.js",
         "tests/compat/auto-capture-policy-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_AUTO_CAPTURE_POLICY missing bounded capture policy and enqueue-only hook",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-auto-capture-policy",
       "ownerSourceFirstTaskId": "9",
+      "relevanceEvidence": [
+        {
+          "binding": "generatedEntry",
+          "mode": "read",
+          "targetPath": "index.js"
+        },
+        {
+          "binding": "sourceEntry",
+          "mode": "read",
+          "targetPath": "index.ts"
+        },
+        {
+          "binding": "prepare",
+          "mode": "import",
+          "symbol": "prepareAutoCaptureEvent",
+          "targetPath": "lib/compat/auto-capture-policy.js"
+        },
+        {
+          "binding": "normalizeConfig",
+          "mode": "import",
+          "symbol": "normalizeConfig",
+          "targetPath": "lib/core/config.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/compat/auto-capture-policy-test.js"
+      "testPath": "tests/compat/auto-capture-policy-test.js",
+      "testSha256": "8fdcf0e8962b435676cc537bb7daf40b488471218136f1c46c4ffbfce48e2a0a"
     },
     {
       "coveredPaths": [
@@ -1582,6 +1611,6 @@
     }
   ],
   "entryCount": 88,
-  "manifestSha256": "f5f8c9eaaefdb236994101395fa46ada8ce9a7eb3500647c98eb8b88f45465bd",
+  "manifestSha256": "5a41beafa2ed4b384890739bdb768256ed7f96c1cab62b406d019745844ee598",
   "schemaVersion": 1
 }
