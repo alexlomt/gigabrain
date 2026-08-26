@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   chmodSync,
+  copyFileSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -460,13 +461,14 @@ export async function run() {
       {
         const current = fixture("processor-boundary");
         await enqueueAutoCaptureEvent({ config: current.config, event: packetEvent("pending"), runId: "worker-pending" });
-        const before = stateVector(current);
         const output = parseWorkerJson(runWorker(["--config", current.configPath, "--limit", "1"], current));
         assert.equal(output.ok, true);
-        assert.equal(output.reason, "processor_unavailable");
-        assert.equal(output.processed, 0);
-        assert.equal(output.mutated, false);
-        assert.deepEqual(stateVector(current), before, "9B worker must wait for the 9C/9D processor without consuming the job");
+        assert.equal(output.reason, "processed");
+        assert.equal(output.processed, 1, "the executable worker must dispatch through the real processor seam");
+        assert.equal(output.completed, 0);
+        assert.equal(output.retryable + output.terminal, 1);
+        assert.equal(output.mutated, true);
+        assert.notEqual(readFileSync(current.descriptor.autoCaptureQueuePath, "utf8").includes('"status":"pending"'), true);
       }
 
       {
@@ -533,6 +535,48 @@ export async function run() {
           assert.equal(releaseManifest.npm.files.includes(runtimePath), true, `release npm inventory omitted ${runtimePath}`);
         }
         assert.equal(releaseManifest.npm.packageFiles.includes("scripts/auto-capture-worker.js"), true);
+
+        const mirrorRoot = mkdtempSync(path.join(tmpdir(), "gigabrain-task9-public-mirror-"));
+        const mirrorFixture = fixture("public-mirror");
+        try {
+          for (const relativePath of releaseManifest.repository.files) {
+            const sourcePath = path.join(repoRoot, relativePath);
+            if (!existsSync(sourcePath) || !lstatSync(sourcePath).isFile()) continue;
+            const targetPath = path.join(mirrorRoot, relativePath);
+            mkdirSync(path.dirname(targetPath), { recursive: true });
+            copyFileSync(sourcePath, targetPath);
+            chmodSync(targetPath, lstatSync(sourcePath).mode & 0o777);
+          }
+          await enqueueAutoCaptureEvent({
+            config: mirrorFixture.config,
+            event: packetEvent("public-mirror"),
+            runId: "public-mirror",
+          });
+          const mirrorRun = spawnSync(process.execPath, [
+            path.join(mirrorRoot, "scripts", "auto-capture-worker.js"),
+            "--config",
+            mirrorFixture.configPath,
+            "--dry-run",
+            "--limit",
+            "1",
+          ], {
+            cwd: mirrorRoot,
+            encoding: "utf8",
+            env: {
+              ...process.env,
+              GIGABRAIN_RUNTIME_DESCRIPTOR: mirrorFixture.descriptorPath,
+              OPENCLAW_CONFIG: path.join(mirrorFixture.root, "ambient-config-must-not-be-used.json"),
+            },
+            timeout: 30_000,
+          });
+          assert.equal(mirrorRun.status, 0, mirrorRun.stderr || mirrorRun.stdout);
+          const mirrorOutput = JSON.parse(mirrorRun.stdout);
+          assert.equal(mirrorOutput.reason, "dry_run");
+          assert.equal(mirrorOutput.processable, 1);
+          assert.equal(mirrorOutput.mutated, false);
+        } finally {
+          rmSync(mirrorRoot, { recursive: true, force: true });
+        }
       }
     } finally {
       for (const current of fixtures) rmSync(current.root, { recursive: true, force: true });

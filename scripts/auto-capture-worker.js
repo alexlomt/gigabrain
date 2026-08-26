@@ -54,15 +54,17 @@ const main = async () => {
     process.stdout.write(USAGE);
     return;
   }
-  const [{ loadResolvedConfig }, { processAutoCaptureQueue }] = await Promise.all([
+  const [{ loadResolvedConfig }, { processAutoCaptureQueue }, { createAutoCaptureJobProcessor }] = await Promise.all([
     import('../lib/core/config.js'),
     import('../lib/compat/auto-capture-queue.js'),
+    import('../lib/compat/auto-capture-processor.js'),
   ]);
   const loaded = loadResolvedConfig({ configPath: parsed.configPath });
   const result = await processAutoCaptureQueue({
     config: loaded.config,
     dryRun: parsed.dryRun,
     limit: parsed.limit,
+    processJob: parsed.dryRun ? undefined : createAutoCaptureJobProcessor({ config: loaded.config }),
   });
   process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
 };

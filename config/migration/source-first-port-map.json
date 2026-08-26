@@ -100,7 +100,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "1f1c2a0a1827bf732d7db619f7a7ac7d500a7e66c68731154ac71b466c2d344e",
+      "contentSha256": "9893adc26cd61c765622d178aa492b629f2c48629ef2a9641c2246cb4024b441",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -114,7 +114,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with exact Task 9 auto-capture processor XFAIL ownership.",
+      "reason": "Source-first registry with the passing Task 9 auto-capture processor hash and worker relevance evidence.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -346,6 +346,20 @@
       "reason": "Task 9 privacy hardening centralizes credential and host-posture rejection and reports queue-full outcomes without content.",
       "targetMode": "100644",
       "targetPath": "lib/compat/auto-capture-policy.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "dce060afe825023418401ec68b521b9b70df85d8cd35f3c98a157f810f2a9daa",
+      "disposition": "compat_module",
+      "gate": {
+        "registrationId": "compat-auto-capture-worker"
+      },
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Task 9 processor provides bounded local extraction, deterministic explicit decisions, forced scope, threshold routing, and safe persistence seams.",
+      "targetMode": "100644",
+      "targetPath": "lib/compat/auto-capture-processor.js"
     },
     {
       "changeType": "added",
@@ -958,7 +972,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "fb4638b9548ba3125e1aa05f9c1abf18ee9381d1ad28ad318a8d63c6d498c108",
+      "contentSha256": "66c81e9dddc479c29861e244fc9f2d60d5a947970c4a96f9e4294782a04d013a",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-auto-capture-worker"
@@ -968,13 +982,13 @@
         "5",
         "9"
       ],
-      "reason": "Public source and npm inventories explicitly ship the Task 9 worker plus its complete compatibility dependency closure.",
+      "reason": "Public source and npm inventories explicitly ship the Task 9 worker, processor, and complete compatibility dependency closure.",
       "targetMode": "100644",
       "targetPath": "public-release-manifest.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "c98592a0d63838497bbe5d5876dce04dc4fac495e45ab317a26674d1fca1ce22",
+      "contentSha256": "72de91e52dac10b0c069fec5e94f8efbb45558b3f0a06f355dc45b045b29f7bc",
       "disposition": "compat_module",
       "gate": {
         "registrationId": "compat-auto-capture-worker"
@@ -982,7 +996,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9B worker retains observational CLI behavior and is explicitly shipped through package and release allowlists.",
+      "reason": "Task 9 worker dispatches bounded queue jobs through the real compatibility processor and retains observational help/dry-run behavior.",
       "targetMode": "100755",
       "targetPath": "scripts/auto-capture-worker.js"
     },
@@ -1220,7 +1234,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "f48949419c7af3dd1878a24db29bcbac02bfc579403b2ce55f3e31c7abd47694",
+      "contentSha256": "2c25dc62572ca67917b2cd399d0cfd61df3d5c97f810a806aa995cdbf8e032d8",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-worker"
@@ -1229,7 +1243,7 @@
         "2B",
         "9"
       ],
-      "reason": "Task 9 processor RED contract for bounded local extraction, deterministic decisions, forced scope, threshold routing, shadow no-op, and failure propagation.",
+      "reason": "Passing Task 9 processor contract for bounded local extraction, deterministic decisions, forced scope, threshold routing, shadow no-op, release materialization, and failure propagation.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-worker-test.js"
     },
@@ -1336,7 +1350,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "b574f3efad59e20344368bc0f7b99ded36b503272f8c7e1f8eba934932f25ba1",
+      "contentSha256": "49dbdae4dbc35340e3bf0cfd1e3afbbb5704ca5aa8547efbac45ccc271626512",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1351,7 +1365,7 @@
         "8",
         "9"
       ],
-      "reason": "Expected-failure ownership for the exact Task 9 auto-capture processor signature.",
+      "reason": "Task 9 processor XFAIL removed after the worker and processor contract passed.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -2205,7 +2219,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "863f164d4bc40f3337eaa33d371cb5d0e1a0ec1580be6384561da3227ded86e8",
+      "contentSha256": "94566f155da97d7f8998ac6e079f9cf2eb7e013be04203393c0ee693cb155ef2",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2220,7 +2234,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first policy contract updated for the passing Task 9C memory-LLM module and test candidate set.",
+      "reason": "Source-first policy contract updated for the passing Task 9 processor module and worker candidate set.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },
