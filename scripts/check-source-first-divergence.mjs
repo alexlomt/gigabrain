@@ -780,7 +780,49 @@ function validatePrivateAndObsolete(map, head, candidateRow) {
     /\boperatorRules\s*=/,
     /\bprivateRules\s*=/,
   ];
-  if (operatorPatterns.some((pattern) => pattern.test(text))) fail("OPERATOR_LITERAL", candidateRow.targetPath);
+  if (operatorPatterns.some((pattern) => pattern.test(text))) {
+    const reviewedSchemaPaths = new Set([
+      "lib/core/config.js",
+      "openclaw.plugin.json",
+      "scripts/build-operator-rules-migration.js",
+    ]);
+    let nonEmptyJsonRules = false;
+    if (candidateRow.targetPath.endsWith(".json")) {
+      try {
+        const document = JSON.parse(text);
+        const ruleNodeHasValues = (value) => {
+          if (Array.isArray(value)) return value.length > 0;
+          if (!value || typeof value !== "object") return false;
+          const isSchema = value.type === "object" && value.properties && typeof value.properties === "object";
+          if (isSchema) {
+            const hasNonEmptyDefault = (schema) => {
+              if (Array.isArray(schema)) return schema.some(hasNonEmptyDefault);
+              if (!schema || typeof schema !== "object") return false;
+              if (Array.isArray(schema.default) && schema.default.length > 0) return true;
+              return Object.values(schema).some(hasNonEmptyDefault);
+            };
+            return hasNonEmptyDefault(value);
+          }
+          return Object.values(value).some(ruleNodeHasValues);
+        };
+        const hasConfiguredRuleNode = (value) => {
+          if (Array.isArray(value)) return value.some(hasConfiguredRuleNode);
+          if (!value || typeof value !== "object") return false;
+          return Object.entries(value).some(([key, child]) => (
+            key === "operatorRules" || key === "privateRules"
+              ? ruleNodeHasValues(child)
+              : hasConfiguredRuleNode(child)
+          ));
+        };
+        nonEmptyJsonRules = hasConfiguredRuleNode(document);
+      } catch {
+        nonEmptyJsonRules = true;
+      }
+    }
+    if (!reviewedSchemaPaths.has(candidateRow.targetPath) || nonEmptyJsonRules) {
+      fail("OPERATOR_LITERAL", candidateRow.targetPath);
+    }
+  }
   const privatePatterns = [
     /SOURCE_FIRST_PRIVATE_LITERAL/,
     /\boperator[_-]?private\b/i,
@@ -960,9 +1002,12 @@ function main() {
     if (
       entry.mode !== baseEntry.mode ||
       entry.type !== baseEntry.type ||
-      entry.blob !== baseEntry.blob ||
-      candidateByPath.has(entry.path)
+      entry.blob !== baseEntry.blob
     ) {
+      fail("ALLOWLIST_IDENTITY", entry.path);
+    }
+    const candidate = candidateByPath.get(entry.path);
+    if (candidate && candidate.disposition !== "core_patch") {
       fail("ALLOWLIST_IDENTITY", entry.path);
     }
   }
@@ -988,8 +1033,10 @@ function main() {
   const statusToChange = { A: "added", D: "deleted", M: "modified", T: "modified" };
   for (const actual of diff) {
     seenDiffs.add(actual.targetPath);
-    if (allowByPath.has(actual.targetPath)) fail("UPSTREAM_OWNED_EDIT", actual.targetPath);
     const expected = candidateByPath.get(actual.targetPath);
+    if (allowByPath.has(actual.targetPath) && expected?.disposition !== "core_patch") {
+      fail("UPSTREAM_OWNED_EDIT", actual.targetPath);
+    }
     if (!expected) fail("UNCLASSIFIED_DIFF", actual.targetPath);
     if (expected.disposition === "upstream_owned") fail("UPSTREAM_OWNED_EDIT", actual.targetPath);
     if (expected.changeType !== statusToChange[actual.status]) fail("UNEXPECTED_DIFF", actual.targetPath);

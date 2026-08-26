@@ -13,6 +13,7 @@ lib/core/memory-actions.js
 openclaw.plugin.json
 scripts/build-openclaw-config-schema.mjs
 scripts/build-operator-rules-migration.js
+scripts/check-source-first-divergence.mjs
 scripts/setup-first-run.js
 tests/compat/config-schema-parity-test.js
 tests/compat/dedupe-scope-isolation-test.js

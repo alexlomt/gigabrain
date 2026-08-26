@@ -125,7 +125,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "d0d8f19e784ce68711960a21f472a48f7d303d7651678626965bbf16f9a61d5e",
+      "contentSha256": "bc58280964d54f369d27e9dbc3978eb4e5ba419dff5d8db73e70c02daf844f0d",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "compat-config-schema-parity"
@@ -464,14 +464,15 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "9f38f5fd452789a7ca7172466e686be7de2530a9e8193aabb9f30ade85138ce1",
+      "contentSha256": "8fe1e15420b294f10c720ab769837565608c5dd39cab31a5a74172851fbacc70",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
       },
       "ownerTasks": [
         "2A",
-        "3"
+        "3",
+        "4"
       ],
       "reason": "Fail-closed source-first policy guard including hash-bound adoption and retirement contracts; no runtime source behavior.",
       "targetMode": "100644",
@@ -1351,7 +1352,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "0b9bf614c41bdd22ac2faa2d7fe84f8b87651836e6fe2aa40a033fa577d6e19d",
+      "contentSha256": "70a8dc5966ff139d276a1cffdc699cc0b825fadfcfaeaf45032e0e14fa1162cd",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1425,7 +1426,7 @@
     {
       "changeType": "modified",
       "contentSha256": "5ed8a9e3b21798d05b5fba537469b90bc8a67bcd12433b18554c5721a5a30d56",
-      "disposition": "private_dev_only",
+      "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-config-schema-parity"
       },

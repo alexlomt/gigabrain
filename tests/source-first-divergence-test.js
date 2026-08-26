@@ -417,6 +417,24 @@ function expectFailure(name, code, mutate, extraArgs = []) {
 
 expectPass("exact classified delta", () => {});
 
+expectPass("hash-bound tested patch to adopted module", ({ fixtureRepo, map, registry }) => {
+  const targetPath = "lib/upstream.js";
+  writeFileSync(path.join(fixtureRepo, targetPath), "export const upstream = false;\n");
+  commitAll(fixtureRepo, "tested adopted core patch fixture");
+  map.candidateChanges.push({
+    changeType: "modified",
+    contentSha256: blobIdentity(path.join(fixtureRepo, targetPath)),
+    disposition: "core_patch",
+    gate: { registrationId: "fixture-gate" },
+    ownerTasks: ["2A"],
+    reason: "Synthetic hash-bound patch to an adopted module.",
+    targetMode: "100644",
+    targetPath,
+  });
+  map.candidateChanges.sort((left, right) => left.targetPath.localeCompare(right.targetPath, "en"));
+  registerFixtureCoverage(registry, targetPath);
+});
+
 expectFailure("adoption contracts are hash-bound", "ADOPTION_CONTRACT_MANIFEST", ({ allowlist }) => {
   allowlist.adoptionContracts[0].id = "changed-without-manifest-refresh";
 });
