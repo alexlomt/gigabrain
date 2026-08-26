@@ -910,6 +910,30 @@ export async function run() {
         }
       }
 
+      if (shouldRunFixCase("persistence-sensitive-boundary")) {
+        const sensitiveContents = [
+          "Remember that the synthetic database URL is postgres://alice:s3cret@db.invalid/app and must never be retained.",
+          "Remember that the synthetic endpoint is https://alice:s3cret@example.invalid/private and must never be retained.",
+          "Remember this synthetic environment value: GITHUB_TOKEN synthetic-secret-value",
+          "Remember this synthetic environment value: API_KEY synthetic-secret-value",
+          "Remember the synthetic host posture from /etc/ssh/sshd_config and the listening ports.",
+        ];
+        for (const [index, content] of sensitiveContents.entries()) {
+          const current = fixture(`persistence-sensitive-${index}`);
+          const before = stateVector(current);
+          const result = await enqueueAutoCaptureEvent({
+            config: current.config,
+            event: packetEvent(`persistence-sensitive-${index}`, {
+              messages: [{ role: "user", content }],
+            }),
+            runId: `persistence-sensitive-${index}`,
+          });
+          assert.deepEqual(result, { enqueued: false, jobId: null, reason: "sensitive" });
+          assert.deepEqual(stateVector(current), before);
+          assert.equal(existsSync(current.descriptor.autoCaptureQueuePath), false);
+        }
+      }
+
       if (shouldRunFixCase("open-circuit-stale-recovery")) {
         const current = fixture("open-circuit-stale-recovery");
         const ids = [];

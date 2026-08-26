@@ -100,7 +100,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "be2408f5651cbf0f12accfe2d2e0ffca894368bf3de79dc67dcd64c1b5b22150",
+      "contentSha256": "dca756e066b15a9804a200750287fbde1a3ff57a47ce5cfd95d5094149d635a0",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -114,7 +114,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with passing Task 9 post-review blocker regression hashes.",
+      "reason": "Source-first registry with exact Task 9 persistence-boundary privacy XFAIL ownership.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -1192,7 +1192,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "c15b0db63a79698900b6be91a64d2c02e17fe63fb559b1efe1cd1595228203cd",
+      "contentSha256": "0c7dacb55e94d078616fee87f09b9439a9c71ddb7ed9901ca3d62f01d2445624",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-policy"
@@ -1200,13 +1200,13 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9A fix-round 3 RED contract for natural conversational unit-test and diagnostics chatter.",
+      "reason": "Task 9 privacy RED contract for credential URL/userinfo, whitespace token forms, and content-free queue-full signaling.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-policy-test.js"
     },
     {
       "changeType": "added",
-      "contentSha256": "f83c4d2249ed458552e5d6e11cbe09ca39fcf4bf22133d543017f7e761beddde",
+      "contentSha256": "c6655bb41585e26e50382e65d75cc7760d27aa40363cc45f7d82263c4fb02334",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-queue"
@@ -1214,7 +1214,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Passing Task 9 post-review contract for processor-result validation, circuit-safe stale recovery, and local HTTP error classification.",
+      "reason": "Task 9 privacy RED contract requiring the direct persistence boundary to reject sensitive and host-posture packets.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-queue-test.js"
     },
@@ -1336,7 +1336,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "49dbdae4dbc35340e3bf0cfd1e3afbbb5704ca5aa8547efbac45ccc271626512",
+      "contentSha256": "fa705deb3776cf7a32e7a09c19f813f9382de406b944e84906e9811b96b90bb8",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1351,7 +1351,7 @@
         "8",
         "9"
       ],
-      "reason": "Task 9 post-review XFAILs removed after all reproduced queue and public-mirror blockers passed.",
+      "reason": "Expected-failure ownership for the exact Task 9 persistence-boundary privacy signatures.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },

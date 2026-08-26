@@ -54,6 +54,7 @@ export async function run() {
   const capture = await importContractModule("lib/compat/auto-capture-policy.js", EXPECTED_SIGNATURE);
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
     const classify = requireCallable(capture, "classifyAutoCaptureCandidate");
+    const containsSensitive = requireCallable(capture, "containsSensitiveAutoCaptureContent");
     const createHook = requireCallable(capture, "createAutoCaptureHook");
     const prepare = requireCallable(capture, "prepareAutoCaptureEvent");
     const sanitizePaperclipWake = requireCallable(capture, "sanitizePaperclipWake");
@@ -132,6 +133,43 @@ export async function run() {
           event: { messages: [{ role: "user", content }] },
         }),
         { eligible: false, reason: "sensitive" },
+      );
+    }
+    for (const content of [
+      "Remember that the synthetic database URL is postgres://alice:s3cret@db.invalid/app and must never be retained.",
+      "Remember that the synthetic endpoint is https://alice:s3cret@example.invalid/private and must never be retained.",
+      "Remember this synthetic environment value: GITHUB_TOKEN synthetic-secret-value",
+      "Remember this synthetic environment value: API_KEY synthetic-secret-value",
+    ]) {
+      assert.equal(containsSensitive(content), true);
+      assert.deepEqual(
+        classify({ content, mode: "auto", role: "user", scope: "profile:main" }),
+        { action: "reject", reason: "sensitive" },
+      );
+      assert.deepEqual(
+        prepare({
+          config: activeConfig(),
+          context: { agentId: "main" },
+          event: { messages: [{ role: "user", content }] },
+        }),
+        { eligible: false, reason: "sensitive" },
+      );
+    }
+    for (const content of [
+      "I don't remember whether the synthetic harbour review was approved.",
+      "Do you remember when the synthetic harbour review was approved?",
+    ]) {
+      assert.deepEqual(
+        classify({ content, mode: "auto", role: "user", scope: "profile:main" }),
+        { action: "reject", reason: "negated_or_question" },
+      );
+      assert.deepEqual(
+        prepare({
+          config: activeConfig(),
+          context: { agentId: "main" },
+          event: { messages: [{ role: "user", content }] },
+        }),
+        { eligible: false, reason: "negated_or_question" },
       );
     }
     for (const candidate of [
@@ -465,6 +503,29 @@ export async function run() {
     await new Promise((resolve) => setImmediate(resolve));
     assert.deepEqual(noOpCalls, []);
     assert.equal(queued.length, 1, "explicit memory_note capture must not be duplicated into auto-capture");
+
+    const rejectedWarnings = [];
+    const rejectedHandler = createHook({
+      config: activeConfig(),
+      enqueue: async () => ({ enqueued: false, jobId: null, reason: "queue_full" }),
+      logger: { warn: (message) => rejectedWarnings.push(String(message)) },
+    });
+    const rejectedContent = "Remember that the synthetic harbour capacity decision is durable but must not disappear silently when the queue is full.";
+    rejectedHandler({ messages: [{ role: "user", content: rejectedContent }] }, { agentId: "main" });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(rejectedWarnings.length, 1);
+    assert.match(rejectedWarnings[0], /auto-capture enqueue not accepted reason=queue_full/);
+    assert.equal(rejectedWarnings[0].includes("harbour"), false, "queue warnings must not include candidate content");
+
+    const duplicateWarnings = [];
+    const duplicateHandler = createHook({
+      config: activeConfig(),
+      enqueue: async () => ({ enqueued: false, jobId: "acq_synthetic", reason: "duplicate" }),
+      logger: { warn: (message) => duplicateWarnings.push(String(message)) },
+    });
+    duplicateHandler({ messages: [{ role: "user", content: rejectedContent }] }, { agentId: "main" });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(duplicateWarnings, [], "duplicate and disabled no-op outcomes must remain silent");
 
     const hookNames = [];
     gigabrainPlugin.register({

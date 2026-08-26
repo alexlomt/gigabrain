@@ -8,8 +8,8 @@
         "lib/core/config.js",
         "tests/compat/auto-capture-policy-test.js"
       ],
-      "expectedOutcome": "pass",
-      "expectedSignature": null,
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_AUTO_CAPTURE_POLICY missing bounded capture policy and enqueue-only hook",
       "id": "compat-auto-capture-policy",
       "ownerSourceFirstTaskId": "9",
       "relevanceEvidence": [
@@ -38,15 +38,15 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/auto-capture-policy-test.js",
-      "testSha256": "c15b0db63a79698900b6be91a64d2c02e17fe63fb559b1efe1cd1595228203cd"
+      "testSha256": "0c7dacb55e94d078616fee87f09b9439a9c71ddb7ed9901ca3d62f01d2445624"
     },
     {
       "coveredPaths": [
         "lib/compat/auto-capture-queue.js",
         "tests/compat/auto-capture-queue-test.js"
       ],
-      "expectedOutcome": "pass",
-      "expectedSignature": null,
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_AUTO_CAPTURE_QUEUE missing durable bounded queue state machine",
       "id": "compat-auto-capture-queue",
       "ownerSourceFirstTaskId": "9",
       "relevanceEvidence": [
@@ -59,7 +59,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/auto-capture-queue-test.js",
-      "testSha256": "f83c4d2249ed458552e5d6e11cbe09ca39fcf4bf22133d543017f7e761beddde"
+      "testSha256": "c6655bb41585e26e50382e65d75cc7760d27aa40363cc45f7d82263c4fb02334"
     },
     {
       "coveredPaths": [
@@ -1695,6 +1695,6 @@
     }
   ],
   "entryCount": 90,
-  "manifestSha256": "7dad8fbf441ae9a2aeb5063e48e675df16cfd76e33cc5d64c1e7a7e681ae68d5",
+  "manifestSha256": "bb9aaa21ba726b349ee2c66d750db0e356cf7d90b6f723a70b7bbf3ea52b86d9",
   "schemaVersion": 1
 }
