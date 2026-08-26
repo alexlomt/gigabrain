@@ -100,7 +100,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "3899a89af884ecb2b6875ed5e8006174bb1ea1eb00adcf925318a03a001612d6",
+      "contentSha256": "f016eb16289210379bc42a422d182fd58d136008b4b374186dbeb60b6dff73be",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -623,7 +623,7 @@
       "contentSha256": "715f9e2d0742c05259e5c56dcfc0ccbe357266572ee194cc2f56b8e2303e0499",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-nightly-review-integration"
+        "registrationId": "compat-config-schema-parity"
       },
       "ownerTasks": [
         "4",
@@ -942,7 +942,7 @@
       "contentSha256": "4304f832b671cb7f1d1840807f452c4e7b83062235d0db16a6779dd330ae857e",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-nightly-review-integration"
+        "registrationId": "compat-config-schema-parity"
       },
       "ownerTasks": [
         "4",
@@ -1250,7 +1250,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "2c25dc62572ca67917b2cd399d0cfd61df3d5c97f810a806aa995cdbf8e032d8",
+      "contentSha256": "845d5999a6c6c14ea4e9cd69cdd6bed2628d2e9a2bf9030942e18dc20ab7aaaa",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-worker"

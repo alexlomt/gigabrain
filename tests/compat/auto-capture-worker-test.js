@@ -189,6 +189,7 @@ const runWorker = (args, fixture) => spawnSync(process.execPath, [workerPath, ..
   env: {
     ...process.env,
     GIGABRAIN_RUNTIME_DESCRIPTOR: fixture.descriptorPath,
+    NODE_NO_WARNINGS: "1",
     OPENCLAW_CONFIG: path.join(fixture.root, "ambient-config-must-not-be-used.json"),
   },
   timeout: 30_000,
@@ -565,6 +566,7 @@ export async function run() {
             env: {
               ...process.env,
               GIGABRAIN_RUNTIME_DESCRIPTOR: mirrorFixture.descriptorPath,
+              NODE_NO_WARNINGS: "1",
               OPENCLAW_CONFIG: path.join(mirrorFixture.root, "ambient-config-must-not-be-used.json"),
             },
             timeout: 30_000,

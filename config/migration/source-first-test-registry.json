@@ -105,7 +105,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/auto-capture-worker-test.js",
-      "testSha256": "2c25dc62572ca67917b2cd399d0cfd61df3d5c97f810a806aa995cdbf8e032d8"
+      "testSha256": "845d5999a6c6c14ea4e9cd69cdd6bed2628d2e9a2bf9030942e18dc20ab7aaaa"
     },
     {
       "coveredPaths": [
@@ -1764,6 +1764,6 @@
     }
   ],
   "entryCount": 92,
-  "manifestSha256": "4f9e8474191937feaf89083ca1fc4f2a6c2ed43428a8c9b28ce8ae73aa93933b",
+  "manifestSha256": "11c6bfceaf8f03e1b1c9910764e6f689433d5d50a24e085c69ca16b06ca531a3",
   "schemaVersion": 1
 }
