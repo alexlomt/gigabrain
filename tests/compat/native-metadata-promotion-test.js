@@ -144,7 +144,7 @@ export async function run() {
       assert.equal(columns.get("origin_kind")?.notnull, 1);
       assert.equal(columns.get("origin_kind")?.dflt_value, "'legacy_unclassified'");
       assert.deepEqual(
-        legacyDb.prepare("SELECT memory_type, origin_kind FROM memory_native_chunks WHERE chunk_id='legacy'").get(),
+        { ...legacyDb.prepare("SELECT memory_type, origin_kind FROM memory_native_chunks WHERE chunk_id='legacy'").get() },
         { memory_type: null, origin_kind: "legacy_unclassified" },
       );
       assert.equal(
@@ -299,7 +299,8 @@ export async function run() {
       const promoted = promoteNativeChunks({ db, config, sourcePaths: [dailyAnnotated, dailyUnannotated], dryRun: false });
       assert.equal(promoted.promoted_inserted, 1, "only the exactly annotated human daily decision may promote");
       assert.equal(promoted.rejected_or_unlinked, 0);
-      const promotedId = rowsForSource(db, dailyAnnotated)[0].linked_memory_id;
+      const promotedId = rowsForSource(db, dailyAnnotated)
+        .find((row) => row.status === "active" && row.origin_kind === "human_native")?.linked_memory_id;
       assert.ok(promotedId);
       assert.equal(rowsForSource(db, dailyUnannotated)[0].linked_memory_id, null);
 
@@ -309,7 +310,7 @@ export async function run() {
       const repaired = promoteNativeChunks({ db, config, sourcePaths: [dailyAnnotated], dryRun: false });
       assert.equal(repaired.repaired_links, 1);
       assert.deepEqual(
-        db.prepare("SELECT type, scope, source_path FROM memory_current WHERE memory_id=?").get(promotedId),
+        { ...db.prepare("SELECT type, scope, source_path FROM memory_current WHERE memory_id=?").get(promotedId) },
         { type: "PREFERENCE", scope: "project:repaired", source_path: dailyAnnotated },
       );
 
@@ -321,9 +322,25 @@ export async function run() {
       assert.equal(rowsForSource(db, dailyAnnotated).find((row) => row.status === "active")?.linked_memory_id, null);
       assert.equal(db.prepare("SELECT status FROM memory_current WHERE memory_id=?").get(promotedId).status, "rejected");
 
+      writeFileSync(
+        dailyAnnotated,
+        `${readFileSync(dailyAnnotated, "utf8").trim()} <!-- gigabrain:scope=project:repaired type=PREFERENCE -->\n`,
+      );
+      syncNativeMemory({ db, config, sourcePaths: [dailyAnnotated], dryRun: false });
+      const relinked = promoteNativeChunks({ db, config, sourcePaths: [dailyAnnotated], dryRun: false });
+      assert.equal(relinked.relinked, 1, "a valid restored source must relink the rejected governed row");
+      assert.equal(
+        rowsForSource(db, dailyAnnotated).find((row) => row.status === "active")?.linked_memory_id,
+        promotedId,
+      );
+
       unlinkSync(dailyAnnotated);
       const removed = syncNativeMemory({ db, config, sourcePaths: [dailyAnnotated], dryRun: false });
       assert.equal(removed.removed_sources, 1);
+      const orphaned = promoteNativeChunks({ db, config, sourcePaths: [dailyAnnotated], dryRun: false });
+      assert.equal(orphaned.rejected_or_unlinked, 1, "orphaned promoted rows must be rejected and unlinked");
+      assert.equal(rowsForSource(db, dailyAnnotated).every((row) => row.linked_memory_id == null), true);
+      assert.equal(db.prepare("SELECT status FROM memory_current WHERE memory_id=?").get(promotedId).status, "rejected");
       assert.equal(JSON.stringify(rowsForSource(db, dailyUnrelated)), unrelatedBefore);
       assert.equal(currentRows(db).filter((row) => row.status === "active" && row.source_path === dailyUnannotated).length, 0);
     } finally {

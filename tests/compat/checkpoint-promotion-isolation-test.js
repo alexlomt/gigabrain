@@ -140,7 +140,8 @@ export async function run() {
         ensureNativeStore(db);
         syncNativeMemory({ db, config, sourcePaths: [filePath], dryRun: false });
         const chunks = db.prepare(`
-          SELECT content, memory_type, origin_kind, linked_memory_id, section
+          SELECT content, memory_type, origin_kind, linked_memory_id, section,
+                 source_kind, scope, status, first_seen_at, last_seen_at
           FROM memory_native_chunks
           WHERE source_path=? AND status='active'
           ORDER BY line_start
