@@ -719,7 +719,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/write-mode-gate-test.js",
-      "testSha256": "502651c001c7c8c28997686683ff18f5b94ae6d4e92c4604f5c60aae5a6f9c55"
+      "testSha256": "1ce71ce22bd7f113ffa46086bc2e9997e1235a1fbb4d944e52a04a5069f359a5"
     },
     {
       "coveredPaths": [
@@ -1468,6 +1468,6 @@
     }
   ],
   "entryCount": 83,
-  "manifestSha256": "b9c6034f77c16e88ae6ca9c51c5d2978e473c5df19b9d86eb50a85d59579669e",
+  "manifestSha256": "8afaeccd0e7f07bc4285f11983cb5b2718bc63d279fab1c02e46b8a24b7124da",
   "schemaVersion": 1
 }
