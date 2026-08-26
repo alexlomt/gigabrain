@@ -192,6 +192,7 @@
         {
           "binding": "promoteNativeChunks",
           "mode": "import",
+          "resultBinding": "promoted",
           "symbol": "promoteNativeChunks",
           "targetPath": "lib/core/native-promotion.js"
         }
@@ -1469,6 +1470,6 @@
     }
   ],
   "entryCount": 83,
-  "manifestSha256": "025bf17e8b86f574a2ce50ad225d07db2f508e0f1bdda7c6e4ede2c6ae20c105",
+  "manifestSha256": "dc78edc16312d85f684f67d5e76a678ae058ed00215289f7f37f413ccde83411",
   "schemaVersion": 1
 }
