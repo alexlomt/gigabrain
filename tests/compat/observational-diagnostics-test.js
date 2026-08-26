@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -107,6 +107,16 @@ export async function run() {
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
     const snapshotState = requireCallable(diagnostics, "snapshotObservationalState");
     const assertUnchanged = requireCallable(diagnostics, "assertObservationalStateUnchanged");
+    const cliSource = readFileSync("scripts/gigabrainctl.js", "utf8");
+    const metricsSource = readFileSync("lib/core/metrics.js", "utf8");
+    const projectionSource = readFileSync("lib/core/projection-store.js", "utf8");
+    const hostSyncSource = readFileSync("lib/core/host-memory-sync.js", "utf8");
+    const transcriptSource = readFileSync("lib/core/transcript-harvester.js", "utf8");
+    assert.match(cliSource, /readOnly:\s*true/);
+    assert.match(metricsSource, /options\.ensure !== false/);
+    assert.match(projectionSource, /options\.ensure !== false/);
+    assert.match(hostSyncSource, /hasTable\(db, 'memory_(?:source_links|host_sync_runs)'\)/);
+    assert.doesNotMatch(transcriptSource.match(/const transcriptStatus[\s\S]*?return \{/i)?.[0] || "", /ensureTranscriptStore/);
     const fixture = makeFixture();
     const stateOptions = {
       dbPath: fixture.dbPath,
@@ -161,6 +171,32 @@ export async function run() {
         const result = runCli([command, "--config", missingConfig, "--target", "project"]);
         assert.equal(existsSync(missingRoot), false, `${command} must not create a missing workspace`);
         assert.match(`${result.stdout}\n${result.stderr}`, /missing|does not exist|db_exists|unavailable/i);
+      }
+
+      const schemaRoot = path.join(fixture.root, "missing-schema-workspace");
+      mkdirSync(path.join(schemaRoot, "memory"), { recursive: true, mode: 0o700 });
+      const schemaDbPath = path.join(schemaRoot, "memory", "registry.sqlite");
+      new DatabaseSync(schemaDbPath).close();
+      const schemaConfigPath = path.join(fixture.root, "missing-schema-config.json");
+      writeFileSync(schemaConfigPath, `${JSON.stringify({
+        plugins: { entries: { gigabrain: { enabled: true, config: {
+          ...fixture.config,
+          runtime: { paths: {
+            workspaceRoot: schemaRoot,
+            memoryRoot: path.join(schemaRoot, "memory"),
+            registryPath: schemaDbPath,
+            outputDir: path.join(schemaRoot, "output"),
+            reviewQueuePath: path.join(schemaRoot, "output", "queue.jsonl"),
+          } },
+        } } } },
+      }, null, 2)}\n`, { mode: 0o600 });
+      const schemaState = { dbPath: schemaDbPath, roots: [schemaRoot], files: [schemaConfigPath] };
+      const beforeSchema = snapshotState(schemaState);
+      for (const command of ["doctor", "inventory"]) {
+        const result = runCli([command, "--config", schemaConfigPath, "--target", "project"]);
+        assert.equal(result.status, 0, String(result.stderr || result.stdout));
+        assert.match(`${result.stdout}\n${result.stderr}`, /schema is unavailable|projection_ready/i);
+        assert.equal(assertUnchanged(beforeSchema, snapshotState(schemaState), `${command} missing schema`), true);
       }
     } finally {
       rmSync(fixture.root, { recursive: true, force: true });

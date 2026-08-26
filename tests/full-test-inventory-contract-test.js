@@ -138,7 +138,8 @@ export async function run() {
   ]);
   for (const [file, owner] of canonicalCompatibilityOwners) {
     assert.equal(inventory.NORMAL_TEST_DESCRIPTORS.find((row) => row.file === file)?.ownerTask, owner);
-    assert.equal(expectedFailures.entries.find((row) => row.test === file)?.ownerTask, owner);
+    const expectedOwner = expectedFailures.entries.find((row) => row.test === file)?.ownerTask;
+    assert.equal(expectedOwner, file === "compat/generated-surface-test.js" ? owner : undefined);
     assert.equal(
       sourceRegistry.entries.find((row) => row.testPath === `tests/${file}`)?.ownerSourceFirstTaskId,
       owner,
@@ -163,6 +164,27 @@ export async function run() {
     /EXPECTED_FAILURE_STALE_OWNER/,
     "mutually consistent Task-5 generated-surface ownership must fail",
   );
+  for (const [file, wrongOwner] of [
+    ["compat/generated-surface-test.js", "5"],
+    ["compat/observational-diagnostics-test.js", "12"],
+  ]) {
+    const wrongDescriptors = inventory.NORMAL_TEST_DESCRIPTORS.map((row) => row.file === file
+      ? { ...row, ownerTask: wrongOwner }
+      : row);
+    const wrongRegistry = structuredClone(sourceRegistry);
+    wrongRegistry.entries.find((row) => row.testPath === `tests/${file}`).ownerSourceFirstTaskId = wrongOwner;
+    const wrongPortMap = structuredClone(portMap);
+    wrongPortMap.candidateChanges.find((row) => row.targetPath === `tests/${file}`).ownerTasks = [wrongOwner];
+    assert.throws(
+      () => inventory.validateCanonicalCompatibilityOwners({
+        descriptors: wrongDescriptors,
+        sourceRegistry: wrongRegistry,
+        portMap: wrongPortMap,
+      }),
+      /TEST_OWNER_CANONICAL/,
+      `mutually consistent wrong metadata must fail for ${file}`,
+    );
+  }
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {

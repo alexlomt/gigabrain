@@ -17,6 +17,7 @@ import {
 } from '../lib/core/projection-store.js';
 import { ensureNativeStore, syncNativeMemory } from '../lib/core/native-sync.js';
 import { ensurePersonStore, rebuildEntityMentions } from '../lib/core/person-service.js';
+import { assertWriteAllowed, resolveWriteMode } from '../lib/compat/write-policy.js';
 
 const args = process.argv.slice(2);
 
@@ -173,6 +174,9 @@ const main = () => {
   const loaded = loadOpenclawConfig(explicitConfigPath);
   const openclawConfig = loaded.config || {};
   const pluginConfig = resolveGigabrainConfig(openclawConfig);
+  if (apply) {
+    assertWriteAllowed({ mode: resolveWriteMode(pluginConfig), operation: 'package.migrate-v3' });
+  }
   const migrated = mapLegacyToV3(pluginConfig);
   const dbPath = path.resolve(readFlag('--db', migrated.runtime.paths.registryPath));
   const rollbackMetaPath = path.resolve(readFlag('--rollback-meta', path.join(migrated.runtime.paths.outputDir, 'gigabrain-v3-rollback-meta.json')));

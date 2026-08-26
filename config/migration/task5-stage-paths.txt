@@ -17,10 +17,13 @@ lib/core/capture-service.js
 lib/core/codex-mcp.js
 lib/core/codex-service.js
 lib/core/control-plane.js
+lib/core/host-memory-sync.js
 lib/core/http-routes.js
 lib/core/maintenance-service.js
 lib/core/memory-actions.js
+lib/core/metrics.js
 lib/core/native-memory.js
+lib/core/projection-store.js
 lib/core/remote-mcp.js
 lib/core/safe-fs.js
 lib/core/sqlite.js

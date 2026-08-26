@@ -35,6 +35,10 @@ const CANONICAL_EXPECTED_FAILURE_OWNERS = new Map([
   ["compat/full-registry-migration-test.js", "14"],
   ["compat/rollback-restore-test.js", "14"],
 ]);
+const CANONICAL_COMPATIBILITY_OWNERS = new Map([
+  ["compat/generated-surface-test.js", "10"],
+  ["compat/observational-diagnostics-test.js", "5"],
+]);
 
 export const DEPLOYED_CLASS_COUNTS = Object.freeze({
   normal_registered: 62,
@@ -253,6 +257,23 @@ export function classifyExpectedOutcome(entry, error) {
   return "xfail";
 }
 
+export function validateCanonicalCompatibilityOwners({
+  descriptors = NORMAL_TEST_DESCRIPTORS,
+  sourceRegistry = SOURCE_FIRST_TEST_REGISTRY,
+  portMap = sourceFirstMap,
+} = {}) {
+  for (const [file, owner] of CANONICAL_COMPATIBILITY_OWNERS) {
+    const testPath = `tests/${file}`;
+    const descriptorOwner = descriptors.find((row) => row.file === file)?.ownerTask;
+    const registrationOwner = sourceRegistry.entries.find((row) => row.testPath === testPath)?.ownerSourceFirstTaskId;
+    const candidateOwners = portMap.candidateChanges.find((row) => row.targetPath === testPath)?.ownerTasks || [];
+    if (descriptorOwner !== owner || registrationOwner !== owner || !candidateOwners.includes(owner)) {
+      throw new Error(`TEST_OWNER_CANONICAL ${file}`);
+    }
+  }
+  return true;
+}
+
 function validateRegisteredDeployedTargets() {
   const registered = new Set(NORMAL_TEST_DESCRIPTORS.map((row) => row.file));
   for (const file of DEPLOYED_NORMAL_TEST_FILES) {
@@ -302,3 +323,4 @@ function validateSourceFirstRegistrations() {
 validateDeployedInventory();
 validateRegisteredDeployedTargets();
 validateSourceFirstRegistrations();
+validateCanonicalCompatibilityOwners();

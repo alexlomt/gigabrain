@@ -26,7 +26,7 @@ import { runAdaptiveTrust } from '../lib/core/adaptive-trust.js';
 import { proposeToVaultInbox } from '../lib/core/vault-inbox.js';
 import { atomicWriteFileSync, readFileIfExistsSync } from '../lib/core/safe-fs.js';
 import { migrateLegacyCheckpoints } from '../lib/core/checkpoint-migration.js';
-import { assertWriteAllowed, resolveWriteMode } from '../lib/compat/write-policy.js';
+import { assertEntrypointAllowed, assertWriteAllowed, resolveWriteMode } from '../lib/compat/write-policy.js';
 import {
   ensureWorldModelReady,
   getEntityDetail,
@@ -128,8 +128,12 @@ const readBool = (name, fallback = false, list = flags) => {
 
 const wantsHelp = flags.includes('--help') || flags.includes('-h');
 
+const hasTableReadOnly = (db, tableName) => Boolean(db.prepare(`
+  SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1
+`).get(String(tableName || '')));
+
 const duplicateGroups = (db) => {
-  ensureProjectionStore(db);
+  if (!hasTableReadOnly(db, 'memory_current')) return 0;
   const row = db.prepare(`
     SELECT COUNT(*) AS c
     FROM (
@@ -190,16 +194,20 @@ const loadConfigAndDbPath = () => {
   const writeOperation = resolveCliWriteOperation();
   if (writeOperation) {
     assertWriteAllowed({ mode: resolveWriteMode(loaded.config), operation: writeOperation });
+  } else if (command === 'inventory') {
+    assertEntrypointAllowed({ mode: resolveWriteMode(loaded.config), operation: 'cli.inventory' });
   }
   const dbPath = path.resolve(readFlag('--db', loaded.config.runtime.paths.registryPath));
   // Fresh-install UX: node:sqlite's DatabaseSync throws a raw "unable to open
   // database file" when the registry's parent dir is missing. Ensure it exists
   // centrally so every command behaves like the sibling commands (sync-hosts,
   // import/export, handoff, vault-inbox) that already ensureDir before opening.
-  ensureDir(path.dirname(dbPath));
-  // The memory dir holds the registry, backups, and usage logs, so keep it
-  // owner-only on shared hosts.
-  try { fs.chmodSync(path.dirname(dbPath), 0o700); } catch { /* best-effort */ }
+  if (writeOperation) {
+    ensureDir(path.dirname(dbPath));
+    // The memory dir holds the registry, backups, and usage logs, so keep it
+    // owner-only on shared hosts.
+    try { fs.chmodSync(path.dirname(dbPath), 0o700); } catch { /* best-effort */ }
+  }
   return {
     configPath: loaded.configPath,
     source: loaded.source,
@@ -930,7 +938,11 @@ const commandVault = async () => {
     return;
   }
 
-  const db = openDatabase(dbPath);
+  if (subcommand === 'status' && !fs.existsSync(dbPath)) {
+    console.log(JSON.stringify({ ok: false, observational: true, command: 'vault', subcommand: 'status', diagnostic: 'registry does not exist', vaults: [] }, null, 2));
+    return;
+  }
+  const db = openDatabase(dbPath, subcommand === 'status' ? { readOnly: true, observational: true } : {});
   try {
     if (subcommand === 'sync') {
       const summary = syncVaultMemory({
@@ -950,8 +962,9 @@ const commandVault = async () => {
     }
 
     // status: read-only per-vault rollup of chunk counts + last sync + evicted.
-    ensureVaultStore(db);
-    const perVaultRows = db.prepare(`
+    try { db.exec('PRAGMA query_only = ON'); } catch { /* connection-local hardening */ }
+    const perVaultRows = hasTableReadOnly(db, 'memory_native_chunks')
+      ? db.prepare(`
       SELECT c.source_path AS source_path,
              COUNT(*) AS chunk_count,
              MAX(s.last_synced_at) AS last_synced_at
@@ -959,7 +972,8 @@ const commandVault = async () => {
       LEFT JOIN memory_native_sync_state s ON s.source_path = c.source_path
       WHERE c.source_kind = 'vault' AND c.status = 'active'
       GROUP BY c.source_path
-    `).all();
+    `).all()
+      : [];
     // Group source-level rollups under their configured vault root, then a
     // lightweight dry-run pass re-derives skipped_evicted per vault (the
     // eviction count is not persisted, so we recompute it read-only here).
@@ -971,24 +985,19 @@ const commandVault = async () => {
         const v = String(row.last_synced_at || '');
         return v > acc ? v : acc;
       }, '');
-      const probe = syncVaultMemory({
-        db,
-        config: { ...config, native: { ...config.native, vaults: [vault] } },
-        dryRun: true,
-        embed: false,
-      });
       return {
         path: root,
         glob: String(vault?.glob || '').trim() || null,
         chunk_count: chunkCount,
         source_count: owned.length,
         last_synced_at: lastSync || null,
-        skipped_evicted: Number(probe.skipped_evicted || 0),
+        skipped_evicted: null,
       };
     });
     const totalChunks = vaultStatus.reduce((acc, v) => acc + Number(v.chunk_count || 0), 0);
     console.log(JSON.stringify({
       ok: true,
+      observational: true,
       command: 'vault',
       subcommand: 'status',
       enabled: true,
@@ -1036,7 +1045,11 @@ const commandTranscript = async () => {
     return;
   }
 
-  const db = openDatabase(dbPath);
+  if (subcommand === 'status' && !fs.existsSync(dbPath)) {
+    console.log(JSON.stringify({ ok: false, observational: true, command: 'transcript', subcommand: 'status', diagnostic: 'registry does not exist', sources: [] }, null, 2));
+    return;
+  }
+  const db = openDatabase(dbPath, subcommand === 'status' ? { readOnly: true, observational: true } : {});
   try {
     if (subcommand === 'sync') {
       const summary = harvestTranscripts({
@@ -1057,10 +1070,11 @@ const commandTranscript = async () => {
       return;
     }
     // status
-    ensureTranscriptStore(db);
+    try { db.exec('PRAGMA query_only = ON'); } catch { /* connection-local hardening */ }
     const status = transcriptStatus({ db, config });
     console.log(JSON.stringify({
       ok: true,
+      observational: true,
       command: 'transcript',
       subcommand: 'status',
       ...status,
@@ -1320,16 +1334,21 @@ const commandNightly = async () => {
 };
 const commandInventory = async () => {
   const { dbPath } = loadConfigAndDbPath();
-  const db = openDatabase(dbPath);
+  if (!fs.existsSync(dbPath)) {
+    console.log(JSON.stringify({ ok: false, observational: true, dbPath, diagnostic: 'registry does not exist' }, null, 2));
+    return;
+  }
+  const db = openDatabase(dbPath, { readOnly: true, observational: true });
   try {
-    ensureProjectionStore(db);
-    const count = db.prepare('SELECT COUNT(*) AS c FROM memory_current').get()?.c || 0;
-    if (Number(count) === 0) {
-      materializeProjectionFromMemories(db);
+    try { db.exec('PRAGMA query_only = ON'); } catch { /* connection-local hardening */ }
+    if (!hasTableReadOnly(db, 'memory_current')) {
+      console.log(JSON.stringify({ ok: false, observational: true, dbPath, diagnostic: 'memory_current schema is unavailable' }, null, 2));
+      return;
     }
-    const metrics = captureSnapshotMetrics(db, dbPath);
+    const metrics = captureSnapshotMetrics(db, dbPath, { ensure: false });
     console.log(JSON.stringify({
       ok: true,
+      observational: true,
       dbPath,
       metrics,
       exact_duplicate_groups_active: duplicateGroups(db),
@@ -1358,37 +1377,52 @@ const commandDoctor = async () => {
   let metrics = null;
   let duplicates = null;
   let cloudInboxNudges = [];
-  const db = openDatabase(dbPath);
+  if (!fs.existsSync(dbPath)) {
+    checks.push({ name: 'projection_ready', ok: false, diagnostic: 'registry does not exist' });
+    console.log(JSON.stringify({
+      ok: false,
+      observational: true,
+      configKind: source,
+      configPath,
+      dbPath,
+      checks,
+      metrics,
+      cloud_inbox: cloudInboxNudges,
+    }, null, 2));
+    return;
+  }
+  const db = openDatabase(dbPath, { readOnly: true, observational: true });
   try {
-    ensureProjectionStore(db);
-    const count = db.prepare('SELECT COUNT(*) AS c FROM memory_current').get()?.c || 0;
-    if (Number(count) === 0) materializeProjectionFromMemories(db);
-    metrics = captureSnapshotMetrics(db, dbPath);
-    duplicates = duplicateGroups(db);
-    checks.push({ name: 'projection_ready', ok: true, total: metrics.totals.all });
-    checks.push({ name: 'exact_duplicates_active', ok: duplicates === 0, value: duplicates });
-    checks.push({
-      name: 'free_page_ratio_slo',
-      ok: Number(metrics.db.page.free_page_ratio || 0) < 0.2,
-      value: Number(metrics.db.page.free_page_ratio || 0),
-    });
-    // #6 cloud-inbox staleness nudge. Disabled (default) → [] (no check at all).
-    // When enabled, a configured cloud source whose NEWEST export is older than
-    // staleDays is surfaced as a non-fatal nudge to re-export from that cloud.
-    cloudInboxNudges = cloudInboxStaleness({ db, config });
-    const staleSources = cloudInboxNudges.filter((row) => row.status === 'stale');
-    if (config?.native?.cloudInbox?.enabled === true) {
+    try { db.exec('PRAGMA query_only = ON'); } catch { /* connection-local hardening */ }
+    if (!hasTableReadOnly(db, 'memory_current')) {
+      checks.push({ name: 'projection_ready', ok: false, diagnostic: 'memory_current schema is unavailable' });
+    } else {
+      metrics = captureSnapshotMetrics(db, dbPath, { ensure: false });
+      duplicates = duplicateGroups(db);
+      checks.push({ name: 'projection_ready', ok: true, total: metrics.totals.all });
+      checks.push({ name: 'exact_duplicates_active', ok: duplicates === 0, value: duplicates });
       checks.push({
-        name: 'cloud_inbox_fresh',
-        ok: staleSources.length === 0,
-        stale: staleSources.map((row) => `${row.vendor} (${row.age_days}d > ${row.stale_days}d)`),
+        name: 'free_page_ratio_slo',
+        ok: Number(metrics.db.page.free_page_ratio || 0) < 0.2,
+        value: Number(metrics.db.page.free_page_ratio || 0),
       });
+      // #6 cloud-inbox staleness nudge. Disabled (default) → [] (no check at all).
+      cloudInboxNudges = cloudInboxStaleness({ db, config });
+      const staleSources = cloudInboxNudges.filter((row) => row.status === 'stale');
+      if (config?.native?.cloudInbox?.enabled === true) {
+        checks.push({
+          name: 'cloud_inbox_fresh',
+          ok: staleSources.length === 0,
+          stale: staleSources.map((row) => `${row.vendor} (${row.age_days}d > ${row.stale_days}d)`),
+        });
+      }
     }
   } finally {
     db.close();
   }
   console.log(JSON.stringify({
     ok: checks.every((check) => check.ok),
+    observational: true,
     configKind: source,
     configPath,
     dbPath,

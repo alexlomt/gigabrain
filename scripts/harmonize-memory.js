@@ -11,6 +11,7 @@ import {
 } from '../lib/core/projection-store.js';
 import { ensureNativeStore, syncNativeMemory } from '../lib/core/native-sync.js';
 import { normalizeContent } from '../lib/core/policy.js';
+import { assertWriteAllowed, resolveWriteMode } from '../lib/compat/write-policy.js';
 
 const args = process.argv.slice(2);
 
@@ -185,6 +186,7 @@ const main = () => {
     workspaceRoot: workspaceOverride || undefined,
   });
   const config = loaded.config;
+  assertWriteAllowed({ mode: resolveWriteMode(config), operation: 'package.harmonize' });
   const dbPath = path.resolve(readFlag('--db', config?.runtime?.paths?.registryPath || ''));
   if (!dbPath) throw new Error('Could not resolve db path. Pass --db or configure gigabrain.runtime.paths.registryPath.');
 

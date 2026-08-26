@@ -129,9 +129,13 @@ export async function run() {
     }));
     const gigabrainCtlSource = readFileSync("scripts/gigabrainctl.js", "utf8");
     const gigabrainMcpSource = readFileSync("scripts/gigabrain-mcp.js", "utf8");
+    const harmonizeSource = readFileSync("scripts/harmonize-memory.js", "utf8");
+    const migrateV3Source = readFileSync("scripts/migrate-v3.js", "utf8");
     const setupSource = readFileSync("scripts/setup-first-run.js", "utf8");
     assert.match(gigabrainCtlSource, /assertWriteAllowed/);
     assert.match(gigabrainMcpSource, /writeMode/);
+    assert.match(harmonizeSource, /package\.harmonize/);
+    assert.match(migrateV3Source, /package\.migrate-v3/);
     assert.match(setupSource, /setup\.first_run/);
 
     const root = mkdtempSync(path.join(tmpdir(), "gigabrain-task5-native-only-"));

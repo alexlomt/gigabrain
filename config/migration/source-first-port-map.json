@@ -91,13 +91,13 @@
         "4",
         "5"
       ],
-      "reason": "Canonical source-first policy map extended with exact Task 5 paths, hashes, ownership and gates.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-port-map.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "7baa30f372135e046fd8392cc27bb6e948da5c4cf62f62902a55aded73e91970",
+      "contentSha256": "2aaf4d1df848b025bfd3e6be46276c7f8e2b28f1e92fde6ff3a334ead0eb02a2",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -108,7 +108,7 @@
         "4",
         "5"
       ],
-      "reason": "Canonical source-first registry extended with passing Task 5 adapter, authorization, policy, provenance and package contracts.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -156,7 +156,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "be4fd73a225707407369381ed4bcd59edc21fc40c5703ff7db96fc6ee6bb36cd",
+      "contentSha256": "b1fb1a89a8ff996dd741e7f6b478a61f03d3efc508c93067a11c189670557588",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "compat-packed-entry"
@@ -164,7 +164,7 @@
       "ownerTasks": [
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "config/migration/task5-stage-paths.txt"
     },
@@ -312,7 +312,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "001bab029d82be8649f3c2c43bd04801719504b2e5e3e0f1738dc229bf993286",
+      "contentSha256": "d39cac8656f8cce6f0be640d9d67495f9b7fd2a23902a3e4c2cbc65304e07bea",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-openclaw-hooks-and-flush"
@@ -320,9 +320,23 @@
       "ownerTasks": [
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "lib/compat/flush-plan.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "a3506cf665945a574d0e2330ea15a229c8cbe85e89e53620526705d83f0295ae",
+      "disposition": "compat_module",
+      "gate": {
+        "registrationId": "compat-observational-diagnostics"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "targetMode": "100644",
+      "targetPath": "lib/compat/observational-diagnostics.js"
     },
     {
       "changeType": "added",
@@ -354,7 +368,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "af9256edbe37f8e2f38480cefd02a92dd90524a3da11105b21100cc77f58bf0a",
+      "contentSha256": "d466158d3a6adbf15f487f1989cf6992bc3788c8e33145ae5ed021c1cd9c1b76",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-openclaw-memory-authorization"
@@ -362,13 +376,13 @@
       "ownerTasks": [
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "lib/compat/openclaw-memory-runtime.js"
     },
     {
       "changeType": "added",
-      "contentSha256": "7ba4bd40bfda157020564c475f79f0e7fb2ce07e4df569ee1721dcca6636ec8c",
+      "contentSha256": "8c595c56e719fe8a45f0e12634a73532e3e162d1d5930b65a6acab586ca6698f",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-release-provenance"
@@ -376,7 +390,7 @@
       "ownerTasks": [
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "lib/compat/release-provenance.js"
     },
@@ -397,7 +411,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "d9eeca6c16aba6d03ab36cf54bef6b7aa6cdb9bf81e464f1f44ff36d0cc58265",
+      "contentSha256": "698489ad109885fcf02a320ae491e8f3cfed73787174a27c45f7e37801db7417",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-write-mode-gate"
@@ -405,7 +419,7 @@
       "ownerTasks": [
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "lib/compat/write-policy.js"
     },
@@ -440,7 +454,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "875a43519122905aa4b8b8e6c7380eee65c08ad61189f640c830dc7e9a4ff833",
+      "contentSha256": "a21ade60054854bc6015c9e43a68d4181cd032f0c324e7cf17cc7591a8430a22",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-release-provenance"
@@ -448,7 +462,7 @@
       "ownerTasks": [
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "lib/core/codex-service.js"
     },
@@ -482,15 +496,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "79f9984e9acf01dd26326360bd88979c681fa2ea6dac72468d10a3caeb79908c",
+      "contentSha256": "7df0f99b4ea63d2e287ac4efff42f15cb04be91b95fdb078764c09ec5b0b6c9d",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-config-schema-parity"
+        "registrationId": "compat-observational-diagnostics"
       },
       "ownerTasks": [
-        "4"
+        "4",
+        "5"
       ],
-      "reason": "Canonical Task 4 configuration, schema generation, disabled automation and host-sync gate behavior.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "lib/core/host-memory-sync.js"
     },
@@ -610,15 +625,15 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "c13c1218dc0dd38ff348fabb2bfc73e2965fa11c42a684bf8c8b2946e7840fcb",
+      "contentSha256": "0b614a639fc591f4f51bd3cc7018045c770a563918427d181e666ab8a114553b",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-write-mode-gate"
+        "registrationId": "compat-observational-diagnostics"
       },
       "ownerTasks": [
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "lib/core/transcript-harvester.js"
     },
@@ -774,9 +789,10 @@
       "ownerTasks": [
         "2A",
         "3",
-        "4"
+        "4",
+        "5"
       ],
-      "reason": "Fail-closed source-first policy guard including hash-bound adoption and retirement contracts; no runtime source behavior.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "scripts/check-source-first-divergence.mjs"
     },
@@ -796,7 +812,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "290de2b0b74f80453e6d97e0ea1f04d9058ab165694bb22207a48b69f5d0f2b8",
+      "contentSha256": "3b35cec254f400f9fe818a33fb7c33006e1139ddb22493abe81efb7df7c7fe2c",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-write-mode-gate"
@@ -804,9 +820,37 @@
       "ownerTasks": [
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100755",
       "targetPath": "scripts/gigabrainctl.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "4517b7676004716542570fcd6550ad83e063accde7dc88b4c64369288fd6a894",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "targetMode": "100755",
+      "targetPath": "scripts/harmonize-memory.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "14808c4471501c224273e06653330373a8bcad802cc9d26e1d8b1d213197424a",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "targetMode": "100755",
+      "targetPath": "scripts/migrate-v3.js"
     },
     {
       "changeType": "added",
@@ -968,7 +1012,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "66ae7f466fd6f1fe3b082d120093334b1ac693f77367aa14ccef7c5aede162c1",
+      "contentSha256": "2e0d0b61bb4a9fdd8358f7d13115e1ae3cbe146effa5695bc3c63322b24696c5",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -979,7 +1023,7 @@
         "4",
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1060,7 +1104,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "9d43eee1d26656a6c3571b286943ad8c5c150537d4d5ed41bccc131575fc7517",
+      "contentSha256": "6aaae92feb19004f396714a71ed989d8b4c6519f6a72ef7b18925a507914f18e",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-observational-diagnostics"
@@ -1069,7 +1113,7 @@
         "2B",
         "5"
       ],
-      "reason": "Task 5 owns observational production CLI and memory adapter diagnostics.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "tests/compat/observational-diagnostics-test.js"
     },
@@ -1084,7 +1128,7 @@
         "2B",
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "tests/compat/openclaw-hooks-and-flush-test.js"
     },
@@ -1098,7 +1142,7 @@
       "ownerTasks": [
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "tests/compat/openclaw-memory-authorization-test.js"
     },
@@ -1147,7 +1191,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "857f5c5941c980bf4620799d60ac46eda27474b47b542b0bd8e825d3a5abce6b",
+      "contentSha256": "a6a8f9cc8760ab3ed0983d7581582f93d0aad9dce6cc5dac167926f3ba88974f",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-release-provenance"
@@ -1155,7 +1199,7 @@
       "ownerTasks": [
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "tests/compat/release-provenance-test.js"
     },
@@ -1207,7 +1251,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "2992d362c9a43aa0c4c328edf70f3c128727784f9db37e78ee0609fc195f2fcf",
+      "contentSha256": "b9a6cab0c5993a8066c791c16564d5940cbeb9e8a425d86f6e4c5adc41d1d808",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-write-mode-gate"
@@ -1215,7 +1259,7 @@
       "ownerTasks": [
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "tests/compat/write-mode-gate-test.js"
     },
@@ -1263,22 +1307,23 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "e5651a27bd657f25fec44684d06d6748b689973753f87aab1a75a2e11058d182",
+      "contentSha256": "d8d418fe95eb83c2d490194a563440c99cb0ed7a7b832e2c17094f7d4157e8d1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
       },
       "ownerTasks": [
         "2B",
-        "4"
+        "4",
+        "5"
       ],
-      "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory-contract-test.js"
     },
     {
       "changeType": "added",
-      "contentSha256": "43fed54f01564ced6c976a23e477ffba577b976a88f23361773cd8e4b9a08d16",
+      "contentSha256": "66dff543accffaf7b5be75c7dd6a3441362a22ece3be55b2ee7417bbd4f5bbbc",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1289,7 +1334,7 @@
         "4",
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory.js"
     },
@@ -1744,7 +1789,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "86795bb28c5934d80d90b80d4c18a9033c729b73b2ca5b23e1e77bf380943da9",
+      "contentSha256": "1916c7fa3745c60ba1d2cd6fcca25c0c278786892cfc5c8bb3ac17fab3c699f4",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1756,7 +1801,7 @@
         "4",
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },

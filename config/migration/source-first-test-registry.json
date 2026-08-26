@@ -163,14 +163,48 @@
     },
     {
       "coveredPaths": [
+        "lib/compat/observational-diagnostics.js",
+        "lib/core/host-memory-sync.js",
+        "lib/core/metrics.js",
+        "lib/core/projection-store.js",
+        "lib/core/transcript-harvester.js",
+        "scripts/gigabrainctl.js",
         "tests/compat/observational-diagnostics-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_OBSERVATIONAL_DIAGNOSTICS missing zero-write diagnostics guard",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-observational-diagnostics",
       "ownerSourceFirstTaskId": "5",
+      "relevanceEvidence": [
+        {
+          "binding": "hostSyncSource",
+          "mode": "read",
+          "targetPath": "lib/core/host-memory-sync.js"
+        },
+        {
+          "binding": "metricsSource",
+          "mode": "read",
+          "targetPath": "lib/core/metrics.js"
+        },
+        {
+          "binding": "projectionSource",
+          "mode": "read",
+          "targetPath": "lib/core/projection-store.js"
+        },
+        {
+          "binding": "transcriptSource",
+          "mode": "read",
+          "targetPath": "lib/core/transcript-harvester.js"
+        },
+        {
+          "binding": "cliSource",
+          "mode": "read",
+          "targetPath": "scripts/gigabrainctl.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/compat/observational-diagnostics-test.js"
+      "testPath": "tests/compat/observational-diagnostics-test.js",
+      "testSha256": "6aaae92feb19004f396714a71ed989d8b4c6519f6a72ef7b18925a507914f18e"
     },
     {
       "coveredPaths": [
@@ -178,8 +212,8 @@
         "lib/compat/openclaw-adapter.js",
         "tests/compat/openclaw-hooks-and-flush-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_OPENCLAW_HOOKS missing prompt-build and compaction-flush hooks",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-openclaw-hooks-and-flush",
       "ownerSourceFirstTaskId": "5",
       "runner": "node",
@@ -191,8 +225,8 @@
         "lib/core/safe-fs.js",
         "tests/compat/openclaw-memory-authorization-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_OPENCLAW_MEMORY_AUTHORIZATION missing caller-bound direct reads",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-openclaw-memory-authorization",
       "ownerSourceFirstTaskId": "5",
       "relevanceEvidence": [
@@ -301,8 +335,8 @@
         "lib/core/http-routes.js",
         "tests/compat/release-provenance-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_RELEASE_PROVENANCE missing immutable release identity round-trip",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-release-provenance",
       "ownerSourceFirstTaskId": "5",
       "relevanceEvidence": [
@@ -323,7 +357,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/release-provenance-test.js",
-      "testSha256": "857f5c5941c980bf4620799d60ac46eda27474b47b542b0bd8e825d3a5abce6b"
+      "testSha256": "a6a8f9cc8760ab3ed0983d7581582f93d0aad9dce6cc5dac167926f3ba88974f"
     },
     {
       "coveredPaths": [
@@ -376,18 +410,19 @@
         "lib/core/wiki-project.js",
         "scripts/gigabrain-mcp.js",
         "scripts/gigabrainctl.js",
+        "scripts/harmonize-memory.js",
+        "scripts/migrate-v3.js",
         "scripts/setup-first-run.js",
         "tests/compat/write-mode-gate-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_WRITE_MODE_GATE missing complete fail-closed writer policy",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-write-mode-gate",
       "ownerSourceFirstTaskId": "5",
       "relevanceEvidence": [
         {
           "binding": "captureFromEvent",
           "mode": "import",
-          "symbol": "captureFromEvent",
           "targetPath": "lib/core/capture-service.js"
         },
         {
@@ -467,6 +502,16 @@
           "targetPath": "scripts/gigabrainctl.js"
         },
         {
+          "binding": "harmonizeSource",
+          "mode": "read",
+          "targetPath": "scripts/harmonize-memory.js"
+        },
+        {
+          "binding": "migrateV3Source",
+          "mode": "read",
+          "targetPath": "scripts/migrate-v3.js"
+        },
+        {
           "binding": "setupSource",
           "mode": "read",
           "targetPath": "scripts/setup-first-run.js"
@@ -474,7 +519,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/write-mode-gate-test.js",
-      "testSha256": "2992d362c9a43aa0c4c328edf70f3c128727784f9db37e78ee0609fc195f2fcf"
+      "testSha256": "b9a6cab0c5993a8066c791c16564d5940cbeb9e8a425d86f6e4c5adc41d1d808"
     },
     {
       "coveredPaths": [
@@ -1223,6 +1268,6 @@
     }
   ],
   "entryCount": 81,
-  "manifestSha256": "bc256826d1cc963533284588dcbfc66685c51980f499e7ec15318eff8be4fb77",
+  "manifestSha256": "8a6b1659ecea3425fc73bbb51a13832519be35792e1a046e32a0f065231f6451",
   "schemaVersion": 1
 }

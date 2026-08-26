@@ -50,6 +50,7 @@ const makeRelease = () => {
   const root = mkdtempSync(path.join(tmpdir(), "gigabrain-task5-release-"));
   mkdirSync(path.join(root, "lib"), { recursive: true });
   writeFileSync(path.join(root, "lib", "fixture.js"), "export const fixture = true;\n", { mode: 0o644 });
+  chmodSync(path.join(root, "lib", "fixture.js"), 0o644);
   const manifest = {
     entries: [{
       mode: "100644",
@@ -183,6 +184,7 @@ export async function run() {
     });
     rejectFixture("unsorted entries", ({ manifest, root }) => {
       writeFileSync(path.join(root, "lib", "aaa.js"), "export const aaa = true;\n", { mode: 0o644 });
+      chmodSync(path.join(root, "lib", "aaa.js"), 0o644);
       manifest.entries.unshift({
         mode: "100644",
         relative_path: "lib/fixture.js",
