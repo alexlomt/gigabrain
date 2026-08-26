@@ -14,12 +14,13 @@ import {
 import { runMemoryDoctorRead, runMemoryGet, runMemorySearch, runMemoryStatus } from "../../lib/compat/openclaw-memory-cli.js";
 import { ensureControlPlaneStore } from "../../lib/core/control-plane.js";
 import { ensureEventStore } from "../../lib/core/event-store.js";
-import { ensureHostMemoryStore } from "../../lib/core/host-memory-sync.js";
+import { ensureHostMemoryStore, listMemorySources } from "../../lib/core/host-memory-sync.js";
+import { captureSnapshotMetrics } from "../../lib/core/metrics.js";
 import { ensureNativeStore } from "../../lib/core/native-sync.js";
 import { ensurePersonStore } from "../../lib/core/person-service.js";
-import { ensureProjectionStore, upsertCurrentMemory } from "../../lib/core/projection-store.js";
+import { ensureProjectionStore, getCurrentMemory, upsertCurrentMemory } from "../../lib/core/projection-store.js";
 import { runProvenance, runRecent, runSources, runSyncStatus } from "../../lib/core/codex-service.js";
-import { ensureTranscriptStore } from "../../lib/core/transcript-harvester.js";
+import { ensureTranscriptStore, transcriptStatus } from "../../lib/core/transcript-harvester.js";
 import { ensureVaultStore } from "../../lib/core/vault-sync.js";
 import { ensureWorldModelStore } from "../../lib/core/world-model.js";
 
@@ -142,6 +143,22 @@ export async function run() {
           assert.equal(result.status, 0, `${label}: ${String(result.stderr || result.stdout)}`);
         });
       }
+
+      await check("direct observational helpers", () => {
+        const db = new DatabaseSync(fixture.dbPath, { readOnly: true });
+        try {
+          const directMetrics = captureSnapshotMetrics(db, fixture.dbPath, { ensure: false });
+          const directMemory = getCurrentMemory(db, "diagnostic-memory", { ensure: false });
+          const directSources = listMemorySources({ db, config: fixture.config });
+          const directTranscript = transcriptStatus({ db, config: fixture.config });
+          assert.equal(directMetrics.totals.all, 1);
+          assert.equal(directMemory.memory_id, "diagnostic-memory");
+          assert.equal(Array.isArray(directSources.sources), true);
+          assert.equal(Array.isArray(directTranscript.sources), true);
+        } finally {
+          db.close();
+        }
+      });
 
       await check("memory status", () => runMemoryStatus({ config: fixture.config, options: { agent: "project:diagnostic" }, io }));
       await check("memory search", () => runMemorySearch({ config: fixture.config, query: "harbour", options: { agent: "project:diagnostic" }, io }));
