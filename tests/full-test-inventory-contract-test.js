@@ -135,11 +135,13 @@ export async function run() {
   const canonicalCompatibilityOwners = new Map([
     ["compat/generated-surface-test.js", "10"],
     ["compat/observational-diagnostics-test.js", "5"],
+    ["compat/setup-generated-surface-test.js", "10"],
+    ["compat/surface-noop-test.js", "10"],
   ]);
   for (const [file, owner] of canonicalCompatibilityOwners) {
     assert.equal(inventory.NORMAL_TEST_DESCRIPTORS.find((row) => row.file === file)?.ownerTask, owner);
     const expectedOwner = expectedFailures.entries.find((row) => row.test === file)?.ownerTask;
-    assert.equal(expectedOwner, file === "compat/generated-surface-test.js" ? owner : undefined);
+    assert.equal(expectedOwner, undefined);
     assert.equal(
       sourceRegistry.entries.find((row) => row.testPath === `tests/${file}`)?.ownerSourceFirstTaskId,
       owner,

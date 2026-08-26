@@ -43,6 +43,8 @@ const CANONICAL_COMPATIBILITY_OWNERS = new Map([
   ["compat/generated-surface-test.js", "10"],
   ["compat/observational-diagnostics-test.js", "5"],
   ["compat/session-brief-scope-test.js", "8"],
+  ["compat/setup-generated-surface-test.js", "10"],
+  ["compat/surface-noop-test.js", "10"],
   ["compat/world-model-shadow-test.js", "8"],
 ]);
 

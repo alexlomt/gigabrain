@@ -1842,7 +1842,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "d8d418fe95eb83c2d490194a563440c99cb0ed7a7b832e2c17094f7d4157e8d1",
+      "contentSha256": "e7236c44aeff1840e2e99d57cbdef515e566d57099bb6d17ad206a34eb925286",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1858,7 +1858,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "45d754ffd95197683d6a2e7f461296df8d5ffb8e6ef62b7c033c2619cff45ab1",
+      "contentSha256": "8380a4372b472107f36862d766eaaa865289a268c3df9fab51b4f24734604d00",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
