@@ -9,6 +9,7 @@ lib/compat/flush-plan.js
 lib/compat/openclaw-adapter.js
 lib/compat/openclaw-memory-cli.js
 lib/compat/openclaw-memory-runtime.js
+lib/compat/observational-diagnostics.js
 lib/compat/release-provenance.js
 lib/compat/scope-policy.js
 lib/compat/write-policy.js
@@ -27,11 +28,15 @@ lib/core/transcript-harvester.js
 lib/core/wiki-project.js
 package.json
 scripts/build-runtime-js.js
+scripts/check-source-first-divergence.mjs
 scripts/gigabrain-mcp.js
 scripts/gigabrainctl.js
+scripts/harmonize-memory.js
+scripts/migrate-v3.js
 scripts/setup-first-run.js
 tests/compat/expected-failures.json
 tests/compat/generated-surface-test.js
+tests/compat/observational-diagnostics-test.js
 tests/compat/openclaw-hooks-and-flush-test.js
 tests/compat/openclaw-memory-authorization-test.js
 tests/compat/openclaw-memory-runtime-test.js
@@ -39,6 +44,7 @@ tests/compat/packed-entry-smoke-test.js
 tests/compat/release-provenance-test.js
 tests/compat/upstream-adoption-test.js
 tests/compat/write-mode-gate-test.js
+tests/full-test-inventory-contract-test.js
 tests/full-test-inventory.js
 tests/source-first-divergence-test.js
 tests/unit-package-metadata-test.js

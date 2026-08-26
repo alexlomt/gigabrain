@@ -39,6 +39,8 @@ const EXPECTED_OUTCOMES = new Set(["pass", "xfail"]);
 const RETIREMENT_ENFORCEMENTS = new Set(["forbidden_bytes", "upstream_identity"]);
 const RELEVANCE_EVIDENCE_MODES = new Set(["import", "read", "self", "spawn"]);
 const CANONICAL_REGISTRY_OWNERS = new Map([
+  ["compat-generated-surface", "10"],
+  ["compat-observational-diagnostics", "5"],
   ["compat-full-registry-migration", "14"],
   ["compat-rollback-restore", "14"],
 ]);

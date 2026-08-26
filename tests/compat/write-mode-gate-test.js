@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
 
 import { captureFromEvent } from "../../lib/core/capture-service.js";
 import { createMcpServer } from "../../lib/core/codex-mcp.js";
@@ -18,6 +21,7 @@ import { applyMemoryActions } from "../../lib/core/memory-actions.js";
 import { writeNativeMemoryEntry, writeNativeSessionCheckpoint } from "../../lib/core/native-memory.js";
 import { resolveRemoteMcpOptions } from "../../lib/core/remote-mcp.js";
 import { openDatabase } from "../../lib/core/sqlite.js";
+import { ensureProjectionStore, upsertCurrentMemory } from "../../lib/core/projection-store.js";
 import { harvestTranscripts } from "../../lib/core/transcript-harvester.js";
 import { projectWiki, reconcileWiki } from "../../lib/core/wiki-project.js";
 
@@ -31,73 +35,22 @@ import {
 export const OWNER_TASK = "5";
 export const EXPECTED_SIGNATURE = "COMPAT_EXPECTED_WRITE_MODE_GATE missing complete fail-closed writer policy";
 
-const EXPECTED_WRITERS = [
-  "actions.apply",
-  "capture.capture_from_event",
-  "cli.audit",
-  "cli.claim_decide",
-  "cli.claim_propose",
-  "cli.control_apply",
-  "cli.export_bundle",
-  "cli.handoff",
-  "cli.import",
-  "cli.import_bundle",
-  "cli.import_openclaw",
-  "cli.index",
-  "cli.maintain",
-  "cli.migrate",
-  "cli.nightly",
-  "cli.review_apply",
-  "cli.session_hook",
-  "cli.setup",
-  "cli.sync_hosts",
-  "cli.synthesis_build",
-  "cli.transcript_sync",
-  "cli.vault_sync",
-  "cli.watch",
-  "cli.watch_hook",
-  "cli.wiki_project",
-  "cli.wiki_reconcile",
-  "cli.world_rebuild",
-  "codex.arbitrate",
-  "codex.bootstrap",
-  "codex.checkpoint",
-  "codex.claim_decide",
-  "codex.claim_propose",
-  "codex.receipt_write",
-  "codex.remember",
-  "control.checkpoint_append",
-  "control.claim_decision_append",
-  "control.claim_proposal_append",
-  "control.receipt_append",
-  "host.sync",
-  "http.control_apply",
-  "http.suggestions",
-  "maintenance.run",
-  "mcp.local.arbitrate",
-  "mcp.local.checkpoint",
-  "mcp.local.claim_decide",
-  "mcp.local.claim_propose",
-  "mcp.local.receipt_write",
-  "mcp.local.remember",
-  "mcp.remote.arbitrate",
-  "mcp.remote.checkpoint",
-  "mcp.remote.claim_decide",
-  "mcp.remote.claim_propose",
-  "mcp.remote.receipt_write",
-  "mcp.remote.remember",
-  "native.checkpoint",
-  "native.entry",
-  "openclaw.agent_end.full_capture",
-  "openclaw.native_explicit_remember",
-  "projection.materialize",
-  "queue.append",
-  "queue.review",
-  "setup.first_run",
-  "transcript.harvest",
-  "wiki.project",
-  "wiki.reconcile",
-];
+const repoRoot = path.resolve(import.meta.dirname, "..", "..");
+const sha = (value) => createHash("sha256").update(value).digest("hex");
+const snapshotTree = (root) => {
+  if (!existsSync(root)) return "missing";
+  const rows = [];
+  const walk = (dir, prefix = "") => {
+    for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name, "en"))) {
+      const absolute = path.join(dir, entry.name);
+      const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) walk(absolute, relative);
+      else if (entry.isFile()) rows.push(`${relative}:${statSync(absolute).mode & 0o777}:${sha(readFileSync(absolute))}`);
+    }
+  };
+  walk(root);
+  return sha(rows.join("\n"));
+};
 
 export async function run() {
   const policy = await importContractModule("lib/compat/write-policy.js", EXPECTED_SIGNATURE);
@@ -105,12 +58,18 @@ export async function run() {
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
     const assertWriteAllowed = requireCallable(policy, "assertWriteAllowed");
     const assertWriterRegistryComplete = requireCallable(policy, "assertWriterRegistryComplete");
+    const discoverWriterEntrypoints = requireCallable(policy, "discoverWriterEntrypoints");
     const captureNative = requireCallable(runtime, "captureNativeExplicitRemember");
     const registry = policy.WRITER_REGISTRY;
-    assert.deepEqual(Object.keys(registry).sort(), EXPECTED_WRITERS);
-    assert.equal(assertWriterRegistryComplete(EXPECTED_WRITERS), true);
-    assert.throws(() => assertWriterRegistryComplete([...EXPECTED_WRITERS, "future.unclassified_writer"]), /GIGABRAIN_UNCLASSIFIED_WRITER/);
-    for (const operation of EXPECTED_WRITERS) {
+    const discovered = discoverWriterEntrypoints({ repoRoot });
+    assert.equal(assertWriterRegistryComplete(discovered), true);
+    const discoveredIds = new Set(discovered.map((entry) => entry.operation));
+    for (const required of ["package.migrate-v3", "package.harmonize", "cli.inventory"]) {
+      assert.equal(discoveredIds.has(required), true, `discovery must include ${required}`);
+      assert.ok(registry[required], `registry must classify ${required}`);
+    }
+    const operations = Object.keys(registry).sort();
+    for (const operation of operations.filter((item) => registry[item].access === "write")) {
       assert.throws(() => assertWriteAllowed({ mode: "read_only", operation }), /GIGABRAIN_WRITE_FORBIDDEN/);
       assert.doesNotThrow(() => assertWriteAllowed({ mode: "full", operation }));
       if (operation === "openclaw.native_explicit_remember") {
@@ -120,7 +79,19 @@ export async function run() {
       }
     }
     assert.throws(() => assertWriteAllowed({ mode: "full", operation: "future.unclassified_writer" }), /GIGABRAIN_UNCLASSIFIED_WRITER/);
-    assert.throws(() => assertWriteAllowed({ mode: "unexpected", operation: EXPECTED_WRITERS[0] }), /GIGABRAIN_INVALID_WRITE_MODE/);
+    assert.throws(() => assertWriteAllowed({ mode: "unexpected", operation: "capture.capture_from_event" }), /GIGABRAIN_INVALID_WRITE_MODE/);
+
+    const discoveryRoot = mkdtempSync(path.join(tmpdir(), "gigabrain-writer-discovery-"));
+    try {
+      mkdirSync(path.join(discoveryRoot, "scripts"), { recursive: true });
+      writeFileSync(path.join(discoveryRoot, "package.json"), JSON.stringify({ scripts: { "future-writer": "node scripts/future-writer.js" } }));
+      writeFileSync(path.join(discoveryRoot, "scripts", "future-writer.js"), "import { writeFileSync } from 'node:fs'; writeFileSync('state', 'changed');\n");
+      const future = discoverWriterEntrypoints({ repoRoot: discoveryRoot });
+      assert.equal(future.some((entry) => entry.operation === "package.future-writer"), true);
+      assert.throws(() => assertWriterRegistryComplete(future), /GIGABRAIN_UNCLASSIFIED_WRITER/);
+    } finally {
+      rmSync(discoveryRoot, { recursive: true, force: true });
+    }
 
     const readOnlyConfig = {
       compat: { writeMode: "read_only" },
@@ -209,6 +180,63 @@ export async function run() {
       }), /GIGABRAIN_NATIVE_NOTE_METADATA_REQUIRED/);
     } finally {
       rmSync(root, { recursive: true, force: true });
+    }
+
+    const entryRoot = mkdtempSync(path.join(tmpdir(), "gigabrain-task5-entrypoint-guard-"));
+    try {
+      const workspace = path.join(entryRoot, "workspace");
+      const memoryRoot = path.join(workspace, "memory");
+      const outputDir = path.join(workspace, "output");
+      mkdirSync(memoryRoot, { recursive: true, mode: 0o700 });
+      mkdirSync(outputDir, { recursive: true, mode: 0o700 });
+      const dbPath = path.join(memoryRoot, "registry.sqlite");
+      const db = new DatabaseSync(dbPath);
+      ensureProjectionStore(db);
+      upsertCurrentMemory(db, {
+        memory_id: "writer-guard-memory",
+        type: "CONTEXT",
+        content: "Writer guard fixture",
+        normalized: "writer guard fixture",
+        scope: "shared",
+        status: "active",
+        created_at: "2026-08-25T00:00:00.000Z",
+        updated_at: "2026-08-25T00:00:00.000Z",
+      });
+      db.close();
+      const configPath = path.join(entryRoot, "openclaw.json");
+      const entryConfig = {
+        enabled: true,
+        compat: { writeMode: "read_only" },
+        runtime: { paths: {
+          workspaceRoot: workspace,
+          memoryRoot,
+          registryPath: dbPath,
+          outputDir,
+          reviewQueuePath: path.join(outputDir, "queue.jsonl"),
+        } },
+        native: { enabled: true, memoryMdPath: path.join(workspace, "MEMORY.md"), includeFiles: [] },
+      };
+      writeFileSync(configPath, JSON.stringify({ plugins: { entries: { gigabrain: { enabled: true, config: entryConfig } } } }));
+      const before = snapshotTree(entryRoot);
+      for (const [label, script, args] of [
+        ["migrate-v3", "scripts/migrate-v3.js", ["--apply", "--config", configPath]],
+        ["harmonize", "scripts/harmonize-memory.js", ["--config", configPath]],
+      ]) {
+        const result = spawnSync(process.execPath, [path.join(repoRoot, script), ...args], { cwd: repoRoot, encoding: "utf8", timeout: 30_000 });
+        assert.notEqual(result.status, 0, `${label} must be rejected in read_only`);
+        assert.match(`${result.stdout}\n${result.stderr}`, /GIGABRAIN_WRITE_FORBIDDEN/);
+        assert.equal(snapshotTree(entryRoot), before, `${label} must reject before any state mutation`);
+      }
+      const inventory = spawnSync(process.execPath, [
+        path.join(repoRoot, "scripts", "gigabrainctl.js"),
+        "inventory",
+        "--config",
+        configPath,
+      ], { cwd: repoRoot, encoding: "utf8", timeout: 30_000 });
+      assert.equal(inventory.status, 0, String(inventory.stderr || inventory.stdout));
+      assert.equal(snapshotTree(entryRoot), before, "read_only inventory must be observational");
+    } finally {
+      rmSync(entryRoot, { recursive: true, force: true });
     }
   });
 }

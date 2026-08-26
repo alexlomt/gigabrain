@@ -30,6 +30,8 @@ const RESTORE_STATES = new Set([
   "upstream_replaced",
 ]);
 const CANONICAL_EXPECTED_FAILURE_OWNERS = new Map([
+  ["compat/generated-surface-test.js", "10"],
+  ["compat/observational-diagnostics-test.js", "5"],
   ["compat/full-registry-migration-test.js", "14"],
   ["compat/rollback-restore-test.js", "14"],
 ]);
@@ -142,11 +144,11 @@ const COMPATIBILITY_TESTS = [
   ["compat/dedupe-scope-isolation-test.js", "4"],
   ["compat/embedding-identity-test.js", "7"],
   ["compat/full-registry-migration-test.js", "14"],
-  ["compat/generated-surface-test.js", "5"],
+  ["compat/generated-surface-test.js", "10"],
   ["compat/memory-api-projection-test.js", "11"],
   ["compat/native-lock-concurrency-test.js", "6"],
   ["compat/native-metadata-promotion-test.js", "6"],
-  ["compat/observational-diagnostics-test.js", "12"],
+  ["compat/observational-diagnostics-test.js", "5"],
   ["compat/openclaw-hooks-and-flush-test.js", "5"],
   ["compat/openclaw-memory-authorization-test.js", "5"],
   ["compat/openclaw-memory-runtime-test.js", "5"],

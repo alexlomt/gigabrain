@@ -27,6 +27,31 @@ export async function run() {
     assert.match(plan.prompt, /do not (?:overwrite|edit|replace|delete)/i);
     assert.match(plan.systemPrompt, /memory\/2026-08-25\.md/);
 
+    const pinnedCfgPlan = resolvePlan(
+      { runtime: { timezone: "Asia/Tokyo" } },
+      {
+        cfg: {
+          agents: {
+            defaults: {
+              userTimezone: "America/Los_Angeles",
+              compaction: {
+                reserveTokensFloor: 22_000,
+                memoryFlush: {
+                  forceFlushTranscriptBytes: "3mb",
+                  softThresholdTokens: 4_500,
+                },
+              },
+            },
+          },
+        },
+        nowMs: Date.UTC(2026, 0, 1, 0, 30, 0),
+      },
+    );
+    assert.equal(pinnedCfgPlan.relativePath, "memory/2025-12-31.md", "host cfg timezone wins at the date boundary");
+    assert.equal(pinnedCfgPlan.forceFlushTranscriptBytes, 3 * 1024 * 1024);
+    assert.equal(pinnedCfgPlan.softThresholdTokens, 4_500);
+    assert.equal(pinnedCfgPlan.reserveTokensFloor, 22_000);
+
     const recalls = [];
     const preludes = [];
     const handler = createPromptBuildHandler({

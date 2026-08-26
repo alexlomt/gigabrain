@@ -131,6 +131,38 @@ export async function run() {
     /EXPECTED_FAILURE_STALE_OWNER/,
     "mutually consistent wrong owner labels must not bypass the canonical source-first plan",
   );
+
+  const canonicalCompatibilityOwners = new Map([
+    ["compat/generated-surface-test.js", "10"],
+    ["compat/observational-diagnostics-test.js", "5"],
+  ]);
+  for (const [file, owner] of canonicalCompatibilityOwners) {
+    assert.equal(inventory.NORMAL_TEST_DESCRIPTORS.find((row) => row.file === file)?.ownerTask, owner);
+    assert.equal(expectedFailures.entries.find((row) => row.test === file)?.ownerTask, owner);
+    assert.equal(
+      sourceRegistry.entries.find((row) => row.testPath === `tests/${file}`)?.ownerSourceFirstTaskId,
+      owner,
+    );
+    assert.equal(
+      portMap.candidateChanges.find((row) => row.targetPath === `tests/${file}`)?.ownerTasks.includes(owner),
+      true,
+    );
+  }
+  const generatedWrongDescriptor = [{
+    file: "compat/generated-surface-test.js",
+    ownerTask: "5",
+    runner: "module",
+  }];
+  const generatedWrongEntry = [{
+    test: "compat/generated-surface-test.js",
+    ownerTask: "5",
+    signature: "MUTUALLY_WRONG_GENERATED_OWNER",
+  }];
+  assert.throws(
+    () => inventory.validateExpectedFailureManifest(generatedWrongEntry, generatedWrongDescriptor, false),
+    /EXPECTED_FAILURE_STALE_OWNER/,
+    "mutually consistent Task-5 generated-surface ownership must fail",
+  );
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {

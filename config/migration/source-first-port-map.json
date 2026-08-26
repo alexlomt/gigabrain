@@ -97,7 +97,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "fc5212f1717c1f8fcba617369f8b3f43936e2457da3939914561eb88b39944e6",
+      "contentSha256": "7baa30f372135e046fd8392cc27bb6e948da5c4cf62f62902a55aded73e91970",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -156,7 +156,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "a8b49e8c9b1ea29249f2c102c0d9e3ef6c344a826d1e26e152c2b99744c0a551",
+      "contentSha256": "be4fd73a225707407369381ed4bcd59edc21fc40c5703ff7db96fc6ee6bb36cd",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "compat-packed-entry"
@@ -766,7 +766,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "50c8d40bdee700f3dfb95509d5010e7c540767bf0aae2f86492b5fb280198ef6",
+      "contentSha256": "c3bde357e285615bc6b95dc89a3dd591bbc53f794bcafdee01c890ecc158ea30",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -968,7 +968,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "c28e0c9c7d6a64451b9b5451f85c02bf9a0db3cf345ec124891d06937d2cbeb4",
+      "contentSha256": "66ae7f466fd6f1fe3b082d120093334b1ac693f77367aa14ccef7c5aede162c1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1000,16 +1000,16 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "42dc138df05f3fb3decb1f7634e45415282a6f1f802d9beed0dfe3cc58d3d22a",
+      "contentSha256": "744e819e444284483c5d2c95d5fbb217dc5817656232b849be5c2b27042d1d45",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-generated-surface"
       },
       "ownerTasks": [
-        "2B",
-        "5"
+        "10",
+        "2B"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 10 owns the real generated operator-surface compatibility contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/generated-surface-test.js"
     },
@@ -1060,22 +1060,22 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "a82d760c092528b626154014e26d367d10e3f08294b9ba019a696c8ff59d24e2",
+      "contentSha256": "9d43eee1d26656a6c3571b286943ad8c5c150537d4d5ed41bccc131575fc7517",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-observational-diagnostics"
       },
       "ownerTasks": [
-        "12",
-        "2B"
+        "2B",
+        "5"
       ],
-      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "reason": "Task 5 owns observational production CLI and memory adapter diagnostics.",
       "targetMode": "100644",
       "targetPath": "tests/compat/observational-diagnostics-test.js"
     },
     {
       "changeType": "added",
-      "contentSha256": "b30abf1698d352b83cd11feaf66b8b564b063ec3990ecf05ced633234354765c",
+      "contentSha256": "353e0ef84c1f577d07ccd04e56693886b1b472ce6bfbdbec9e4921f0cf23377f",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-openclaw-hooks-and-flush"
@@ -1090,7 +1090,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "2bdb601858757559a81389857b95b47f9540fd7266641940b88e83be9b4e8751",
+      "contentSha256": "da674da29b8717d7113ebf3e148357997ac17aa5877dfee3fefe3972a676aec0",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-openclaw-memory-authorization"
@@ -1147,7 +1147,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "bf6c40e0c0797f8d814c1c253a7df77c7c42287e0da31018c9851b7cf7457d51",
+      "contentSha256": "857f5c5941c980bf4620799d60ac46eda27474b47b542b0bd8e825d3a5abce6b",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-release-provenance"
@@ -1207,7 +1207,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "b9e2fe873f40f63b3c769782b1e0bcc8fd2aca383ac7da31e8000daef3066745",
+      "contentSha256": "2992d362c9a43aa0c4c328edf70f3c128727784f9db37e78ee0609fc195f2fcf",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-write-mode-gate"
@@ -1263,7 +1263,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "dbf6763f3a6fa47d922415173537c35adb3f2f93e9f2d321f5b5770ecca4160f",
+      "contentSha256": "e5651a27bd657f25fec44684d06d6748b689973753f87aab1a75a2e11058d182",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1278,7 +1278,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "a929af6d83f7e34a57d13a9e71d5b7f8261c686cb34cc5f9b9d5f8eba1ff79fe",
+      "contentSha256": "43fed54f01564ced6c976a23e477ffba577b976a88f23361773cd8e4b9a08d16",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"

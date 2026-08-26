@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -26,19 +26,7 @@ const canonicalize = (value) => Array.isArray(value)
     : value;
 const canonicalJson = (value) => `${JSON.stringify(canonicalize(value), null, 2)}\n`;
 
-const makeRelease = () => {
-  const root = mkdtempSync(path.join(tmpdir(), "gigabrain-task5-release-"));
-  mkdirSync(path.join(root, "lib"), { recursive: true });
-  writeFileSync(path.join(root, "lib", "fixture.js"), "export const fixture = true;\n");
-  const manifest = {
-    entries: [{
-      mode: "100644",
-      relative_path: "lib/fixture.js",
-      sha256: sha(readFileSync(path.join(root, "lib", "fixture.js"))),
-      type: "file",
-    }],
-    schema_id: "gigabrain-release-manifest.1",
-  };
+const writeReleaseDocuments = (root, manifest, releaseOverrides = {}) => {
   const manifestBytes = canonicalJson(manifest);
   writeFileSync(path.join(root, "RELEASE.manifest.json"), manifestBytes);
   const release = {
@@ -52,9 +40,27 @@ const makeRelease = () => {
     schema_checksum: sha("synthetic-schema"),
     schema_id: "gigabrain-schema.3",
     upstream_version: "0.11.0",
+    ...releaseOverrides,
   };
   writeFileSync(path.join(root, "RELEASE.json"), canonicalJson(release));
-  return { root, release };
+  return release;
+};
+
+const makeRelease = () => {
+  const root = mkdtempSync(path.join(tmpdir(), "gigabrain-task5-release-"));
+  mkdirSync(path.join(root, "lib"), { recursive: true });
+  writeFileSync(path.join(root, "lib", "fixture.js"), "export const fixture = true;\n", { mode: 0o644 });
+  const manifest = {
+    entries: [{
+      mode: "100644",
+      relative_path: "lib/fixture.js",
+      sha256: sha(readFileSync(path.join(root, "lib", "fixture.js"))),
+      type: "file",
+    }],
+    schema_id: "gigabrain-release-manifest.1",
+  };
+  const release = writeReleaseDocuments(root, manifest);
+  return { manifest, root, release };
 };
 
 export async function run() {
@@ -88,7 +94,7 @@ export async function run() {
         const roundTrip = attach({ ok: true, surface }, loaded);
         assert.deepEqual(roundTrip.release, serialized, `${surface} must preserve every release field`);
       }
-      const workspace = path.join(fixture.root, "workspace");
+      const workspace = `${fixture.root}-workspace`;
       mkdirSync(path.join(workspace, "memory"), { recursive: true });
       const config = {
         enabled: true,
@@ -126,11 +132,101 @@ export async function run() {
       assert.deepEqual(healthPayload.release, serialized);
       const codexMcpSource = readFileSync("lib/core/codex-mcp.js", "utf8");
       assert.match(codexMcpSource, /local_integrity_root/);
-      const manifestPath = path.join(fixture.root, "RELEASE.manifest.json");
-      writeFileSync(manifestPath, `${readFileSync(manifestPath, "utf8")} `);
-      assert.throws(() => load(fixture.root), /GIGABRAIN_RELEASE_MANIFEST_MISMATCH/);
     } finally {
       rmSync(fixture.root, { recursive: true, force: true });
+      rmSync(`${fixture.root}-workspace`, { recursive: true, force: true });
+    }
+
+    const rejectFixture = (label, mutate) => {
+      const candidate = makeRelease();
+      let extraCleanup = () => {};
+      try {
+        extraCleanup = mutate(candidate) || extraCleanup;
+        assert.throws(
+          () => load(candidate.root),
+          /GIGABRAIN_RELEASE_(?:MANIFEST|PAYLOAD|PROVENANCE)/,
+          label,
+        );
+      } finally {
+        extraCleanup();
+        rmSync(candidate.root, { recursive: true, force: true });
+      }
+    };
+
+    rejectFixture("modified payload", ({ root }) => {
+      writeFileSync(path.join(root, "lib", "fixture.js"), "tampered\n");
+    });
+    rejectFixture("missing payload", ({ root }) => {
+      unlinkSync(path.join(root, "lib", "fixture.js"));
+    });
+    rejectFixture("chmod payload", ({ root }) => {
+      chmodSync(path.join(root, "lib", "fixture.js"), 0o600);
+    });
+    rejectFixture("symlink payload", ({ root }) => {
+      const outside = `${root}-outside`;
+      writeFileSync(outside, "outside\n");
+      unlinkSync(path.join(root, "lib", "fixture.js"));
+      symlinkSync(outside, path.join(root, "lib", "fixture.js"));
+      return () => rmSync(outside, { force: true });
+    });
+    rejectFixture("path traversal", ({ manifest, root }) => {
+      manifest.entries[0].relative_path = "../outside.js";
+      writeReleaseDocuments(root, manifest);
+    });
+    rejectFixture("absolute path", ({ manifest, root }) => {
+      manifest.entries[0].relative_path = "/tmp/outside.js";
+      writeReleaseDocuments(root, manifest);
+    });
+    rejectFixture("duplicate entry", ({ manifest, root }) => {
+      manifest.entries.push({ ...manifest.entries[0] });
+      writeReleaseDocuments(root, manifest);
+    });
+    rejectFixture("unsorted entries", ({ manifest, root }) => {
+      writeFileSync(path.join(root, "lib", "aaa.js"), "export const aaa = true;\n", { mode: 0o644 });
+      manifest.entries.unshift({
+        mode: "100644",
+        relative_path: "lib/fixture.js",
+        sha256: manifest.entries[0].sha256,
+        type: "file",
+      });
+      manifest.entries[1] = {
+        mode: "100644",
+        relative_path: "lib/aaa.js",
+        sha256: sha(readFileSync(path.join(root, "lib", "aaa.js"))),
+        type: "file",
+      };
+      writeReleaseDocuments(root, manifest);
+    });
+    rejectFixture("invalid type", ({ manifest, root }) => {
+      manifest.entries[0].type = "symlink";
+      writeReleaseDocuments(root, manifest);
+    });
+    rejectFixture("invalid mode", ({ manifest, root }) => {
+      manifest.entries[0].mode = "100777";
+      writeReleaseDocuments(root, manifest);
+    });
+    rejectFixture("invalid digest", ({ manifest, root }) => {
+      manifest.entries[0].sha256 = "0".repeat(64);
+      writeReleaseDocuments(root, manifest);
+    });
+    rejectFixture("unmanifested payload", ({ root }) => {
+      writeFileSync(path.join(root, "lib", "extra.js"), "unmanifested\n", { mode: 0o644 });
+    });
+    rejectFixture("removed manifest entry", ({ manifest, root }) => {
+      manifest.entries = [];
+      writeReleaseDocuments(root, manifest);
+    });
+    rejectFixture("unmanifested top-level payload", ({ root }) => {
+      writeFileSync(path.join(root, "UNLISTED.txt"), "unmanifested\n", { mode: 0o644 });
+    });
+
+    const excluded = makeRelease();
+    try {
+      mkdirSync(path.join(excluded.root, "runtime"), { recursive: true });
+      writeFileSync(path.join(excluded.root, "runtime", "ignored.json"), "{}\n");
+      assert.doesNotThrow(() => load(excluded.root), "canonical runtime-data exclusions remain outside the payload");
+    } finally {
+      rmSync(excluded.root, { recursive: true, force: true });
     }
   });
 }

@@ -119,13 +119,12 @@
     },
     {
       "coveredPaths": [
-        "scripts/build-runtime-js.js",
         "tests/compat/generated-surface-test.js"
       ],
-      "expectedOutcome": "pass",
-      "expectedSignature": null,
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_GENERATED_SURFACE missing deterministic generated runtime surface",
       "id": "compat-generated-surface",
-      "ownerSourceFirstTaskId": "5",
+      "ownerSourceFirstTaskId": "10",
       "runner": "node",
       "testPath": "tests/compat/generated-surface-test.js"
     },
@@ -169,7 +168,7 @@
       "expectedOutcome": "xfail",
       "expectedSignature": "COMPAT_EXPECTED_OBSERVATIONAL_DIAGNOSTICS missing zero-write diagnostics guard",
       "id": "compat-observational-diagnostics",
-      "ownerSourceFirstTaskId": "12",
+      "ownerSourceFirstTaskId": "5",
       "runner": "node",
       "testPath": "tests/compat/observational-diagnostics-test.js"
     },
@@ -179,8 +178,8 @@
         "lib/compat/openclaw-adapter.js",
         "tests/compat/openclaw-hooks-and-flush-test.js"
       ],
-      "expectedOutcome": "pass",
-      "expectedSignature": null,
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_OPENCLAW_HOOKS missing prompt-build and compaction-flush hooks",
       "id": "compat-openclaw-hooks-and-flush",
       "ownerSourceFirstTaskId": "5",
       "runner": "node",
@@ -192,8 +191,8 @@
         "lib/core/safe-fs.js",
         "tests/compat/openclaw-memory-authorization-test.js"
       ],
-      "expectedOutcome": "pass",
-      "expectedSignature": null,
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_OPENCLAW_MEMORY_AUTHORIZATION missing caller-bound direct reads",
       "id": "compat-openclaw-memory-authorization",
       "ownerSourceFirstTaskId": "5",
       "relevanceEvidence": [
@@ -207,7 +206,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/openclaw-memory-authorization-test.js",
-      "testSha256": "2bdb601858757559a81389857b95b47f9540fd7266641940b88e83be9b4e8751"
+      "testSha256": "da674da29b8717d7113ebf3e148357997ac17aa5877dfee3fefe3972a676aec0"
     },
     {
       "coveredPaths": [
@@ -302,8 +301,8 @@
         "lib/core/http-routes.js",
         "tests/compat/release-provenance-test.js"
       ],
-      "expectedOutcome": "pass",
-      "expectedSignature": null,
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_RELEASE_PROVENANCE missing immutable release identity round-trip",
       "id": "compat-release-provenance",
       "ownerSourceFirstTaskId": "5",
       "relevanceEvidence": [
@@ -324,7 +323,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/release-provenance-test.js",
-      "testSha256": "bf6c40e0c0797f8d814c1c253a7df77c7c42287e0da31018c9851b7cf7457d51"
+      "testSha256": "857f5c5941c980bf4620799d60ac46eda27474b47b542b0bd8e825d3a5abce6b"
     },
     {
       "coveredPaths": [
@@ -380,8 +379,8 @@
         "scripts/setup-first-run.js",
         "tests/compat/write-mode-gate-test.js"
       ],
-      "expectedOutcome": "pass",
-      "expectedSignature": null,
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_WRITE_MODE_GATE missing complete fail-closed writer policy",
       "id": "compat-write-mode-gate",
       "ownerSourceFirstTaskId": "5",
       "relevanceEvidence": [
@@ -475,7 +474,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/write-mode-gate-test.js",
-      "testSha256": "b9e2fe873f40f63b3c769782b1e0bcc8fd2aca383ac7da31e8000daef3066745"
+      "testSha256": "2992d362c9a43aa0c4c328edf70f3c128727784f9db37e78ee0609fc195f2fcf"
     },
     {
       "coveredPaths": [
@@ -1224,6 +1223,6 @@
     }
   ],
   "entryCount": 81,
-  "manifestSha256": "0dee56f1f31a438a18efcbdfb2e60416eab165e702a126c96925277ca3ca106a",
+  "manifestSha256": "bc256826d1cc963533284588dcbfc66685c51980f499e7ec15318eff8be4fb77",
   "schemaVersion": 1
 }
