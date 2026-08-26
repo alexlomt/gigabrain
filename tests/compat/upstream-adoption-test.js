@@ -221,8 +221,8 @@ async function assertRetiredBehaviorAbsent(portMap) {
   assert.equal(typeof maintenanceService.HYGIENE_VERSION, "undefined");
 
   const packageJson = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"));
-  assert.deepEqual(packageJson.openclaw?.extensions, ["./index.ts"]);
-  assert.equal(existsSync(path.join(repoRoot, "index.js")), false);
+  assert.deepEqual(packageJson.openclaw?.extensions, ["./index.js"]);
+  assert.equal(existsSync(path.join(repoRoot, "index.js")), true);
   const forbiddenScriptPaths = new Set(portMap.retirementContracts.flatMap((row) => row.forbiddenPaths));
   for (const script of Object.values(packageJson.scripts || {})) {
     for (const forbiddenPath of forbiddenScriptPaths) {

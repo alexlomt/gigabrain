@@ -105,7 +105,7 @@ const makeFixture = () => {
         },
       },
       native: { enabled: true, memoryMdPath: path.join(workspace, "MEMORY.md"), includeFiles: [] },
-      recall: { autoInjectEnabled: false, topK: 8, maxTokens: 1200, semanticRerankEnabled: false },
+      recall: { autoInjectEnabled: true, topK: 8, maxTokens: 1200, semanticRerankEnabled: false },
       capture: { enabled: false },
       synthesis: { enabled: false },
     },
@@ -115,6 +115,7 @@ const makeFixture = () => {
 export async function run() {
   const adapter = await importContractModule("lib/compat/openclaw-adapter.js", EXPECTED_SIGNATURE);
   const runtimeModule = await importContractModule("lib/compat/openclaw-memory-runtime.js", EXPECTED_SIGNATURE);
+  const cliModule = await importContractModule("lib/compat/openclaw-memory-cli.js", EXPECTED_SIGNATURE);
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
     const register = requireCallable(adapter, "registerOpenClawCompatibility");
     const createRuntime = requireCallable(runtimeModule, "createGigabrainMemoryRuntime");
@@ -161,6 +162,17 @@ export async function run() {
       assert.equal(typeof capability.runtime?.getMemorySearchManager, "function");
       assert.equal(typeof capability.flushPlanResolver, "function");
 
+      const beforeHelp = snapshot(fixture);
+      const fakeCommand = {
+        action() { return this; },
+        argument() { return this; },
+        command() { return this; },
+        description() { return this; },
+        option() { return this; },
+      };
+      await calls.find(([kind]) => kind === "cli")[1]({ program: fakeCommand });
+      assert.deepEqual(snapshot(fixture), beforeHelp, "CLI registration/help metadata must be observational");
+
       const runtime = createRuntime(fixture.config);
       const beforeManager = snapshot(fixture);
       const resolved = await runtime.getMemorySearchManager({ cfg: {}, agentId: "main", purpose: "status" });
@@ -170,7 +182,17 @@ export async function run() {
       const results = await resolved.manager.search("harbour", { maxResults: 5 });
       assert.equal(results.length, 1);
       assert.match(results[0].snippet, /harbour/i);
-      assert.deepEqual(snapshot(fixture), beforeManager, "status and first search must be observational");
+      const direct = await resolved.manager.readFile({ relPath: "gigabrain://memory/main-memory" });
+      assert.match(direct.text, /Synthetic harbour memory/);
+      const io = { stdout: { write() {} } };
+      await cliModule.runMemoryStatus({ config: fixture.config, options: { agent: "main" }, io });
+      await cliModule.runMemoryDoctorRead({ config: fixture.config, options: { agent: "main" }, io });
+      const injected = await handlers.get("before_prompt_build")(
+        { prompt: "Where is the harbour memory?", messages: [{ role: "user", content: "Where is the harbour memory?" }] },
+        { agentId: "main", sessionKey: "agent:main:task5-observational" },
+      );
+      assert.match(injected.prependContext, /Synthetic harbour memory/);
+      assert.deepEqual(snapshot(fixture), beforeManager, "status, search, get, doctor-read and first recall must be observational");
       assert.equal(typeof resolved.manager.sync, "undefined", "the adapter must not expose an implicit sync seam");
     } finally {
       rmSync(fixture.root, { recursive: true, force: true });

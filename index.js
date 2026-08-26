@@ -1,3 +1,4 @@
+// Generated from index.ts deterministically by scripts/build-runtime-js.js.
 import { V3_CONFIG_SCHEMA, normalizeConfig } from './lib/core/config.js';
 import {
   hasSessionPrelude,
@@ -6,27 +7,27 @@ import {
 } from './lib/compat/openclaw-adapter.js';
 import { deriveScopeFromWorkspaceDir } from './lib/compat/scope-policy.js';
 
-type PluginApi = {
-  config?: unknown;
-  logger?: {
-    info?: (message: string) => void;
-    warn?: (message: string) => void;
-    error?: (message: string) => void;
-  };
-  on?: (event: string, handler: (...args: any[]) => any) => void;
-  registerCli?: (registrar: (...args: any[]) => any, options?: unknown) => void;
-  registerMemoryCapability?: (capability: unknown) => void;
-  registerHttpHandler?: (handler: (...args: any[]) => any) => void;
-  registerHttpRoute?: (route: unknown) => void;
-};
 
-const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(
+
+
+
+
+
+
+
+
+
+
+
+
+
+const isRecord = (value         )                                   => Boolean(
   value && typeof value === 'object' && !Array.isArray(value),
 );
 
-const resolvePluginConfig = (raw: unknown): Record<string, unknown> => {
+const resolvePluginConfig = (raw         )                          => {
   if (!isRecord(raw)) return {};
-  const nested = (raw as any)?.plugins?.entries?.gigabrain?.config;
+  const nested = (raw       )?.plugins?.entries?.gigabrain?.config;
   return isRecord(nested) ? nested : raw;
 };
 
@@ -34,9 +35,9 @@ const gigabrainPlugin = {
   id: 'gigabrain',
   name: 'Gigabrain',
   description: 'Source-first observational memory adapter for OpenClaw',
-  kind: 'memory' as const,
+  kind: 'memory'         ,
   configSchema: V3_CONFIG_SCHEMA,
-  register(api: PluginApi) {
+  register(api           ) {
     const config = normalizeConfig(resolvePluginConfig(api.config), {
       workspaceRoot: process.cwd(),
     });
@@ -55,3 +56,6 @@ export {
   markSessionBriefed,
   registerOpenClawCompatibility,
 };
+
+
+//# sourceURL=index.ts

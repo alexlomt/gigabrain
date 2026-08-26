@@ -20,6 +20,7 @@
     "access": "public"
   },
   "scripts": {
+    "build:runtime-js": "node scripts/build-runtime-js.js",
     "setup": "node scripts/setup-first-run.js",
     "codex:setup": "node scripts/gigabrain-codex-setup.js",
     "hermes:setup": "node scripts/gigabrain-hermes-setup.js",
@@ -82,7 +83,7 @@
   },
   "openclaw": {
     "extensions": [
-      "./index.ts"
+      "./index.js"
     ]
   },
   "peerDependencies": {
@@ -122,13 +123,16 @@
     "docs/sharing.md",
     "docs/upgrading.md",
     "docs/world-model-custom-slots.md",
+    "index.js",
     "index.ts",
     "lib/",
     "LICENSE",
     "openclaw.plugin.json",
+    "memory_api/",
     "README.md",
     "scripts/audit-github-surface.mjs",
     "scripts/build-claude-desktop-bundle.js",
+    "scripts/build-runtime-js.js",
     "scripts/check-no-pii.mjs",
     "scripts/claude-desktop-launcher.sh",
     "scripts/demo-handoff.sh",

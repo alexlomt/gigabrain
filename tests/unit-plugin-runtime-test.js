@@ -53,11 +53,16 @@ const run = async () => {
       autoInjectEnabled: true,
     };
     const handlers = new Map();
+    const registrations = [];
     gigabrainPlugin.register({
       config,
       logger: { info: () => {}, warn: () => {}, error: () => {} },
       on: (event, handler) => handlers.set(event, handler),
+      registerMemoryCapability: (capability) => registrations.push(['capability', capability]),
+      registerCli: (registrar) => registrations.push(['cli', registrar]),
     });
+    assert.equal(registrations.filter(([kind]) => kind === 'capability').length, 1);
+    assert.equal(registrations.filter(([kind]) => kind === 'cli').length, 1);
     const db = openDb(ws.dbPath);
     seedMemoryCurrent(db, [
       {
@@ -85,12 +90,13 @@ const run = async () => {
     const before = mutationCounts(db);
     db.close();
 
-    const recall = await handlers.get('before_agent_start')(
+    assert.equal(handlers.has('before_agent_start'), false, 'deprecated prompt hook must not be registered');
+    const recall = await handlers.get('before_prompt_build')(
       { messages: [{ role: 'user', content: 'Who owns roadmap planning?' }] },
       { agentId: 'project:alpha', sessionKey: 'plugin-observational-session', workspaceDir: ws.workspace },
     );
-    assert.match(String(recall?.appendSystemContext || ''), /roadmap planning and release sequencing/);
-    assert.doesNotMatch(String(recall?.appendSystemContext || ''), /Shared shadow|Private profile shadow/);
+    assert.match(String(recall?.prependContext || ''), /roadmap planning and release sequencing/);
+    assert.doesNotMatch(String(recall?.prependContext || ''), /Shared shadow|Private profile shadow/);
 
     const afterDb = openDb(ws.dbPath);
     const after = mutationCounts(afterDb);

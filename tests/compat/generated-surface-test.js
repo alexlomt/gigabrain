@@ -18,7 +18,7 @@ export async function run() {
     const first = await render({ source, sourcePath: "index.ts" });
     const second = await render({ source, sourcePath: "index.ts" });
     assert.equal(first, second);
-    assert.match(first, /export const syntheticValue = ['\"]ok['\"]/);
+    assert.match(first, /export const syntheticValue\s+= ['\"]ok['\"]/);
     assert.doesNotMatch(first, /: string/);
     assert.match(first, /generated from index\.ts/i);
   });

@@ -26,6 +26,7 @@ import { runAdaptiveTrust } from '../lib/core/adaptive-trust.js';
 import { proposeToVaultInbox } from '../lib/core/vault-inbox.js';
 import { atomicWriteFileSync, readFileIfExistsSync } from '../lib/core/safe-fs.js';
 import { migrateLegacyCheckpoints } from '../lib/core/checkpoint-migration.js';
+import { assertWriteAllowed, resolveWriteMode } from '../lib/compat/write-policy.js';
 import {
   ensureWorldModelReady,
   getEntityDetail,
@@ -142,6 +143,31 @@ const duplicateGroups = (db) => {
   return Number(row?.c || 0);
 };
 
+const resolveCliWriteOperation = () => {
+  const subcommand = String(flags[0] || '').trim().toLowerCase();
+  const operations = {
+    audit: 'cli.audit',
+    control: subcommand === 'apply' ? 'cli.control_apply' : '',
+    'export-bundle': 'cli.export_bundle',
+    handoff: 'cli.handoff',
+    passport: 'cli.handoff',
+    'import-bundle': 'cli.import_bundle',
+    'import-openclaw': 'cli.import_openclaw',
+    init: 'cli.setup',
+    maintain: 'cli.maintain',
+    migrate: 'cli.migrate',
+    nightly: 'cli.nightly',
+    'sync-hosts': subcommand === 'status' ? '' : 'cli.sync_hosts',
+    synthesis: subcommand === 'build' ? 'cli.synthesis_build' : '',
+    transcript: subcommand === 'sync' ? 'cli.transcript_sync' : '',
+    vault: subcommand === 'sync' ? 'cli.vault_sync' : '',
+    watch: 'cli.watch',
+    wiki: subcommand === 'project' ? 'cli.wiki_project' : subcommand === 'reconcile' ? 'cli.wiki_reconcile' : '',
+    world: subcommand === 'rebuild' ? 'cli.world_rebuild' : '',
+  };
+  return String(operations[command] || '');
+};
+
 const loadConfigAndDbPath = () => {
   const configPath = readFlag('--config', '');
   if (configPath) {
@@ -161,6 +187,10 @@ const loadConfigAndDbPath = () => {
     workspaceRoot: workspaceOverride || undefined,
     mode: mode || undefined,
   });
+  const writeOperation = resolveCliWriteOperation();
+  if (writeOperation) {
+    assertWriteAllowed({ mode: resolveWriteMode(loaded.config), operation: writeOperation });
+  }
   const dbPath = path.resolve(readFlag('--db', loaded.config.runtime.paths.registryPath));
   // Fresh-install UX: node:sqlite's DatabaseSync throws a raw "unable to open
   // database file" when the registry's parent dir is missing. Ensure it exists

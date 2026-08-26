@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { resolveRuntimeStandaloneConfigPath } from '../lib/core/standalone-client.js';
+import { loadResolvedConfig } from '../lib/core/config.js';
+import { resolveWriteMode } from '../lib/compat/write-policy.js';
 
 const HELP = `Gigabrain MCP server
 
@@ -151,6 +153,11 @@ const main = async () => {
   const allowedScopes = readFlags('--allowed-scope');
   const allowedHosts = readFlags('--allowed-host');
   const allowedOrigins = readFlags('--allowed-origin');
+  const loaded = loadResolvedConfig({
+    configPath: runtimeConfig.resolvedPath,
+    workspaceRoot: defaults.workspaceRoot || undefined,
+    mode: defaults.mode || undefined,
+  });
   const remoteOptions = {
     host: readFlag('--host', process.env.GIGABRAIN_MCP_HOST || ''),
     port: readFlag('--port', process.env.GIGABRAIN_MCP_PORT || ''),
@@ -160,6 +167,7 @@ const main = async () => {
     issuer: readFlag('--auth-issuer', process.env.GIGABRAIN_MCP_AUTH_ISSUER || ''),
     jwksUrl: readFlag('--jwks-url', process.env.GIGABRAIN_MCP_JWKS_URL || ''),
     enableWrites: readBooleanFlag('--enable-writes', process.env.GIGABRAIN_MCP_ENABLE_WRITES),
+    writeMode: resolveWriteMode(loaded.config),
     allowNoAuth: readBooleanFlag('--allow-no-auth', process.env.GIGABRAIN_MCP_ALLOW_NO_AUTH),
     maxRequestsPerMinute: readFlag('--rate-limit', process.env.GIGABRAIN_MCP_RATE_LIMIT || ''),
     ...(allowedScopes.length > 0 ? { allowedScopes } : {}),

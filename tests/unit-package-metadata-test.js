@@ -9,6 +9,8 @@ export async function run() {
   assert.match(pkg.engines.node, /^>=22/);
   assert.ok(pkg.files.includes("scripts/npm-pack-inventory.mjs"));
   assert.equal(pkg.scripts["test:full"], "node tests/run-all.js");
-  assert.equal(pkg.openclaw.extensions[0], "./index.ts");
+  assert.equal(pkg.openclaw.extensions[0], "./index.js");
+  assert.ok(pkg.files.includes("index.js"));
+  assert.ok(pkg.files.includes("memory_api/"));
 }
 runDirect(import.meta.url, run);

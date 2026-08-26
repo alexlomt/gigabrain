@@ -16,6 +16,7 @@ import {
 } from '../lib/core/host-memory-sync.js';
 import { projectArbitrationBeliefRows } from '../lib/core/world-model.js';
 import { loadResolvedConfig } from '../lib/core/config.js';
+import { assertWriteAllowed, resolveWriteMode } from '../lib/compat/write-policy.js';
 import { installSessionHook, resolveSessionSettingsPath } from '../lib/core/lifecycle-hooks.js';
 import { atomicWriteFileSync, readFileIfExistsSync } from '../lib/core/safe-fs.js';
 import { createAgentMemoryPolicyBody } from '../lib/core/agent-memory-policy.js';
@@ -255,6 +256,7 @@ const main = () => {
   const entries = ensureObject(plugins, 'entries');
   const gigabrain = ensureObject(entries, 'gigabrain');
   const gigabrainConfig = ensureObject(gigabrain, 'config');
+  assertWriteAllowed({ mode: resolveWriteMode(gigabrainConfig), operation: 'setup.first_run' });
   const runtime = ensureObject(gigabrainConfig, 'runtime');
   const runtimePaths = ensureObject(runtime, 'paths');
   const capture = ensureObject(gigabrainConfig, 'capture');

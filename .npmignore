@@ -2,3 +2,12 @@
 eval/
 tests/
 scripts/eval-runner.js
+**/__pycache__/
+**/*.pyc
+**/.env
+**/.env.*
+!**/.env.example
+**/.venv/
+**/venv/
+runtime/
+secrets/

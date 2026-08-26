@@ -20,15 +20,29 @@ const EXPECTED_WRITERS = [
   "cli.claim_decide",
   "cli.claim_propose",
   "cli.control_apply",
+  "cli.export_bundle",
+  "cli.handoff",
   "cli.import",
+  "cli.import_bundle",
+  "cli.import_openclaw",
   "cli.index",
   "cli.maintain",
   "cli.migrate",
   "cli.nightly",
   "cli.review_apply",
+  "cli.session_hook",
   "cli.setup",
+  "cli.sync_hosts",
   "cli.synthesis_build",
+  "cli.transcript_sync",
+  "cli.vault_sync",
+  "cli.watch",
+  "cli.watch_hook",
+  "cli.wiki_project",
+  "cli.wiki_reconcile",
   "cli.world_rebuild",
+  "codex.arbitrate",
+  "codex.bootstrap",
   "codex.checkpoint",
   "codex.claim_decide",
   "codex.claim_propose",
@@ -42,15 +56,18 @@ const EXPECTED_WRITERS = [
   "http.control_apply",
   "http.suggestions",
   "maintenance.run",
+  "mcp.local.arbitrate",
   "mcp.local.checkpoint",
   "mcp.local.claim_decide",
   "mcp.local.claim_propose",
   "mcp.local.receipt_write",
   "mcp.local.remember",
+  "mcp.remote.arbitrate",
   "mcp.remote.checkpoint",
   "mcp.remote.claim_decide",
   "mcp.remote.claim_propose",
   "mcp.remote.receipt_write",
+  "mcp.remote.remember",
   "native.checkpoint",
   "native.entry",
   "openclaw.agent_end.full_capture",
@@ -61,6 +78,7 @@ const EXPECTED_WRITERS = [
   "setup.first_run",
   "transcript.harvest",
   "wiki.project",
+  "wiki.reconcile",
 ];
 
 export async function run() {
@@ -85,6 +103,29 @@ export async function run() {
     }
     assert.throws(() => assertWriteAllowed({ mode: "full", operation: "future.unclassified_writer" }), /GIGABRAIN_UNCLASSIFIED_WRITER/);
     assert.throws(() => assertWriteAllowed({ mode: "unexpected", operation: EXPECTED_WRITERS[0] }), /GIGABRAIN_INVALID_WRITE_MODE/);
+
+    const [capture, actions, transcripts, wiki, maintenance] = await Promise.all([
+      import("../../lib/core/capture-service.js"),
+      import("../../lib/core/memory-actions.js"),
+      import("../../lib/core/transcript-harvester.js"),
+      import("../../lib/core/wiki-project.js"),
+      import("../../lib/core/maintenance-service.js"),
+    ]);
+    const readOnlyConfig = {
+      compat: { writeMode: "read_only" },
+      native: { transcripts: { enabled: false }, wiki: { enabled: false } },
+      runtime: { paths: {} },
+    };
+    assert.throws(() => capture.captureFromEvent({ config: readOnlyConfig, db: null }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => actions.applyMemoryActions({
+      config: readOnlyConfig,
+      db: null,
+      actions: [{ action: "forget" }],
+    }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => transcripts.harvestTranscripts({ config: readOnlyConfig, db: {} }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => wiki.projectWiki({ config: readOnlyConfig, db: null }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => wiki.reconcileWiki({ config: readOnlyConfig, db: null }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => maintenance.runMaintenance({ config: readOnlyConfig, dbPath: "" }), /GIGABRAIN_WRITE_FORBIDDEN/);
 
     const root = mkdtempSync(path.join(tmpdir(), "gigabrain-task5-native-only-"));
     try {
@@ -113,7 +154,7 @@ export async function run() {
       });
       assert.equal(result.written, 1);
       const nativeText = readFileSync(path.join(memoryRoot, "2026-08-25.md"), "utf8");
-      assert.match(nativeText, /PREFERENCES/);
+      assert.match(nativeText, /Remembered Today/);
       assert.match(nativeText, /Use synthetic harbour fixtures/);
       assert.match(nativeText, /gigabrain:scope=profile:main/);
       assert.equal(existsSync(config.runtime.paths.registryPath), false, "native_only must not create a registry");
