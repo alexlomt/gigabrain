@@ -286,7 +286,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/generated-surface-test.js",
-      "testSha256": "92dad04659ae3fbe05c7cea54ed2cff2cba11ea9dec5fca5d1ae4e712f9452d7"
+      "testSha256": "70085cbe462c88b6c7e2fa5c0d04f01d6b9b48d9150359c5f46ecb07c154446c"
     },
     {
       "coveredPaths": [
@@ -1859,6 +1859,6 @@
     }
   ],
   "entryCount": 94,
-  "manifestSha256": "316641602312a493752e51139bad4e028b4c5d2836dcecabc80c89c910a8e95c",
+  "manifestSha256": "e63481000505f1bf49a607f56f340ba2cf43060cf9f4f459b50811191c0dc2a8",
   "schemaVersion": 1
 }

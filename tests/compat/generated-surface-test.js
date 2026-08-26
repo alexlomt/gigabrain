@@ -34,7 +34,13 @@ const treeVector = (root) => {
   const rows = [];
   const visit = (current, relative) => {
     const stat = lstatSync(current);
-    rows.push({ mode: stat.mode & 0o777, path: relative, sha256: stat.isFile() ? hash(readFileSync(current)) : "directory" });
+    rows.push({
+      ctimeMs: stat.ctimeMs,
+      mode: stat.mode & 0o777,
+      mtimeMs: stat.mtimeMs,
+      path: relative,
+      sha256: stat.isFile() ? hash(readFileSync(current)) : "directory",
+    });
     if (stat.isDirectory()) {
       for (const name of readdirSync(current).sort()) visit(path.join(current, name), path.join(relative, name));
     }
