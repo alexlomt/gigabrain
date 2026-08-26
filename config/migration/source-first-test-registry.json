@@ -423,6 +423,7 @@
         {
           "binding": "captureFromEvent",
           "mode": "import",
+          "symbol": "captureFromEvent",
           "targetPath": "lib/core/capture-service.js"
         },
         {
@@ -1268,6 +1269,6 @@
     }
   ],
   "entryCount": 81,
-  "manifestSha256": "8a6b1659ecea3425fc73bbb51a13832519be35792e1a046e32a0f065231f6451",
+  "manifestSha256": "b00308605068bff64b1c9a9204fd1543838cc20911a68f0ce7eb2e46192e6d44",
   "schemaVersion": 1
 }
