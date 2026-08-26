@@ -130,6 +130,24 @@
     },
     {
       "coveredPaths": [
+        "tests/compat/entity-taxonomy-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_ENTITY_TAXONOMY missing compound, title, and non-person entity contracts",
+      "id": "compat-entity-taxonomy",
+      "ownerSourceFirstTaskId": "8",
+      "relevanceEvidence": [
+        {
+          "mode": "self",
+          "targetPath": "tests/compat/entity-taxonomy-test.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/compat/entity-taxonomy-test.js",
+      "testSha256": "1b15b4ec755c030756dcc50618f10e031a02bdf77f3769651128afe8fa6c9061"
+    },
+    {
+      "coveredPaths": [
         "tests/compat/full-registry-migration-test.js"
       ],
       "expectedOutcome": "xfail",
@@ -522,6 +540,24 @@
     },
     {
       "coveredPaths": [
+        "tests/compat/session-brief-scope-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_SESSION_BRIEF_SCOPE missing exact-scope session syntheses",
+      "id": "compat-session-brief-scope",
+      "ownerSourceFirstTaskId": "8",
+      "relevanceEvidence": [
+        {
+          "mode": "self",
+          "targetPath": "tests/compat/session-brief-scope-test.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/compat/session-brief-scope-test.js",
+      "testSha256": "e2d3420a2bc8132cf28fc9dd9395c10c9ed20776e8ea7721036191a427c54020"
+    },
+    {
+      "coveredPaths": [
         "lib/compat/flush-plan.js",
         "lib/compat/openclaw-adapter.js",
         "lib/compat/openclaw-memory-cli.js",
@@ -616,6 +652,24 @@
       "runner": "node",
       "testPath": "tests/compat/shipping-core-evidence-test.js",
       "testSha256": "a995599ee925eb97a7bfdfc878c02d73695b15f589467846b026034c94c7c5b2"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/world-model-shadow-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_WORLD_MODEL_SHADOW missing protected non-consuming shadow semantics",
+      "id": "compat-world-model-shadow",
+      "ownerSourceFirstTaskId": "8",
+      "relevanceEvidence": [
+        {
+          "mode": "self",
+          "targetPath": "tests/compat/world-model-shadow-test.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/compat/world-model-shadow-test.js",
+      "testSha256": "74f18fa4ebe6016c472891c98c6883b5c3a44f1470c231131f720765063c62e0"
     },
     {
       "coveredPaths": [
@@ -1492,7 +1546,7 @@
       "testPath": "tests/compat/upstream-adoption-test.js"
     }
   ],
-  "entryCount": 84,
-  "manifestSha256": "3afe5fa15635f0ab358b10febb9fb633980899bd1e33f92bee149e3748713567",
+  "entryCount": 87,
+  "manifestSha256": "519323e22989d5e56f79dff383e6211d8dd8b0b215fda52a523aedcfaee212b3",
   "schemaVersion": 1
 }

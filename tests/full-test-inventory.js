@@ -30,14 +30,20 @@ const RESTORE_STATES = new Set([
   "upstream_replaced",
 ]);
 const CANONICAL_EXPECTED_FAILURE_OWNERS = new Map([
+  ["compat/entity-taxonomy-test.js", "8"],
   ["compat/generated-surface-test.js", "10"],
   ["compat/observational-diagnostics-test.js", "5"],
   ["compat/full-registry-migration-test.js", "14"],
   ["compat/rollback-restore-test.js", "14"],
+  ["compat/session-brief-scope-test.js", "8"],
+  ["compat/world-model-shadow-test.js", "8"],
 ]);
 const CANONICAL_COMPATIBILITY_OWNERS = new Map([
+  ["compat/entity-taxonomy-test.js", "8"],
   ["compat/generated-surface-test.js", "10"],
   ["compat/observational-diagnostics-test.js", "5"],
+  ["compat/session-brief-scope-test.js", "8"],
+  ["compat/world-model-shadow-test.js", "8"],
 ]);
 
 export const DEPLOYED_CLASS_COUNTS = Object.freeze({
@@ -147,6 +153,7 @@ const COMPATIBILITY_TESTS = [
   ["compat/config-schema-parity-test.js", "4"],
   ["compat/dedupe-scope-isolation-test.js", "4"],
   ["compat/embedding-identity-test.js", "7"],
+  ["compat/entity-taxonomy-test.js", "8"],
   ["compat/full-registry-migration-test.js", "14"],
   ["compat/generated-surface-test.js", "10"],
   ["compat/memory-api-projection-test.js", "11"],
@@ -163,8 +170,10 @@ const COMPATIBILITY_TESTS = [
   ["compat/release-provenance-test.js", "5"],
   ["compat/rollback-restore-test.js", "14"],
   ["compat/scope-visibility-matrix-test.js", "4"],
+  ["compat/session-brief-scope-test.js", "8"],
   ["compat/shipping-core-evidence-test.js", "5"],
   ["compat/upstream-adoption-test.js", "3"],
+  ["compat/world-model-shadow-test.js", "8"],
   ["compat/write-mode-gate-test.js", "5"],
 ];
 
