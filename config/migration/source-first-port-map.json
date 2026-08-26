@@ -335,7 +335,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "d40ea6fcfd90f9199be25fc8e07d130962c3cb6d8d5a37cad14d67798ef9c1f7",
+      "contentSha256": "7825bafc63fa14897bc7c0d2ea2791fb96d1aecfdff5f37baba4366413bb8473",
       "disposition": "compat_module",
       "gate": {
         "registrationId": "compat-auto-capture-policy"
@@ -343,7 +343,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9A fix round closes generic credential, execution-chatter, canonical Paperclip, assistant-decision, and shared-trigger review gaps.",
+      "reason": "Task 9A fix round 2 closes residual execution-chatter eligibility and Paperclip authorization-boilerplate ordering gaps.",
       "targetMode": "100644",
       "targetPath": "lib/compat/auto-capture-policy.js"
     },
