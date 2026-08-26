@@ -30,6 +30,7 @@ config/*
 !config/migration/
 config/migration/*
 !config/migration/deployed-test-inventory.json
+!config/migration/retirement-evidence-attestation.json
 !config/migration/source-first-port-map.json
 !config/migration/source-first-test-registry.json
 !config/migration/task2-stage-paths.txt

@@ -6,15 +6,28 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  hashStructuralTokenWindow,
+  STRUCTURAL_FINGERPRINT_ALGORITHM,
+  tokenizeStructuralSource,
+} from "../scripts/retirement-structural-fingerprint.mjs";
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const guardPath = path.join(repoRoot, "scripts", "check-source-first-divergence.mjs");
 const mapPath = path.join(repoRoot, "config", "migration", "source-first-port-map.json");
 const allowlistPath = path.join(repoRoot, "config", "migration", "upstream-source-allowlist.json");
+const retirementEvidencePath = path.join(
+  repoRoot,
+  "config",
+  "migration",
+  "retirement-evidence-attestation.json",
+);
 
 for (const [label, requiredPath] of [
   ["source-first guard", guardPath],
   ["source-first port map", mapPath],
   ["upstream source allowlist", allowlistPath],
+  ["retirement evidence attestation", retirementEvidencePath],
 ]) {
   assert.doesNotThrow(
     () => readFileSync(requiredPath),
@@ -24,15 +37,26 @@ for (const [label, requiredPath] of [
 
 const realMap = JSON.parse(readFileSync(mapPath, "utf8"));
 const realAllowlist = JSON.parse(readFileSync(allowlistPath, "utf8"));
+const realRetirementEvidence = JSON.parse(readFileSync(retirementEvidencePath, "utf8"));
 assert.equal(realMap.deployedSource.commit, "43cd4b41518b5e35b3872722fcceaac535a1ff64");
 assert.equal(realMap.deployedCommits.length, 47);
 assert.equal(realMap.deployedFiles.length, 208);
 assert.equal(realMap.preTagTools.length, 9);
-assert.equal(realMap.candidateChanges.length, 106);
+assert.equal(realMap.candidateChanges.length, 108);
 assert.equal(realMap.retirementContractCount, 8);
 assert.equal(
   realMap.retirementContractManifestSha256,
-  "3b27549ec17312bbb9d9e6ca6be00015ada38fba2a8faf5b48f73d9b89efef6b",
+  "b5bd31b3650a80a7c7cd6e11bbf8fc16eb4acdad68b0a1c6dd891b104ed29cbb",
+);
+assert.equal(realRetirementEvidence.entryCount, 13);
+assert.equal(
+  realRetirementEvidence.manifestSha256,
+  "26f4bdd011ed499fd2b49ecdb0e563ac5053889ea76265f12408528fbe22e619",
+);
+assert.equal(realRetirementEvidence.structuralFingerprintCount, 13);
+assert.equal(
+  realRetirementEvidence.structuralFingerprintManifestSha256,
+  "c672074c8da1111872ea2da78f6e6eafaff15926f3d6bad6f29d85382b852b0b",
 );
 assert.equal(realAllowlist.entries.length, 142);
 assert.equal(realAllowlist.adoptionContractCount, 11);
@@ -111,7 +135,15 @@ function makeFixture(mutate = () => {}) {
   commitAll(fixtureRepo, "allowed fixture delta");
 
   const legacyBytes = Buffer.from('export const legacy = "synthetic-obsolete-v0.7";\n');
-  const retiredBytes = Buffer.from('export const retired = "synthetic-task3-retired";\n');
+  const retiredBytes = Buffer.from(`
+export function syntheticRetiredPolicy(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  const parts = normalized.split(/\\s+/).filter(Boolean);
+  if (parts.length < 2) return { accepted: false, reason: "too_short" };
+  const score = parts.reduce((total, item) => total + item.length, 0);
+  return { accepted: score > 12, count: parts.length, score };
+}
+`);
   const adoptionContracts = [
     {
       id: "synthetic-upstream",
@@ -122,9 +154,10 @@ function makeFixture(mutate = () => {}) {
     {
       enforcement: "forbidden_bytes",
       evidence: [{
-        commit: "5".repeat(40),
+        commit: "1".repeat(40),
         path: "legacy/task3-retired.js",
         sha256: sha256(retiredBytes),
+        sourceBlob: "7".repeat(40),
       }],
       forbiddenPaths: ["legacy/task3-retired.js"],
       id: "synthetic-retired",
@@ -152,6 +185,7 @@ function makeFixture(mutate = () => {}) {
       ownerTasks: ["2A"],
       reason: "Exercises complete deployed-commit ledger validation.",
       sequence: 1,
+      sourcePaths: ["legacy/task3-retired.js", "lib/upstream.js"],
       testGate: "source-first divergence fixture gate",
     },
   ];
@@ -206,6 +240,25 @@ function makeFixture(mutate = () => {}) {
     manifestSha256: sha256(canonicalJson(testRegistryEntries)),
     schemaVersion: 1,
   };
+  const retiredTokens = tokenizeStructuralSource(retiredBytes);
+  const retiredTokenCount = Math.min(48, retiredTokens.length);
+  const retirementEvidenceEntries = [{
+    behaviorId: "synthetic-retired",
+    commit: "1".repeat(40),
+    path: "legacy/task3-retired.js",
+    sha256: sha256(retiredBytes),
+    sourceBlob: "7".repeat(40),
+  }];
+  const retirementStructuralFingerprints = [{
+    algorithm: STRUCTURAL_FINGERPRINT_ALGORITHM,
+    behaviorId: "synthetic-retired",
+    commit: "1".repeat(40),
+    path: "legacy/task3-retired.js",
+    sha256: hashStructuralTokenWindow(retiredTokens, 0, retiredTokenCount),
+    sourceBlob: "7".repeat(40),
+    sourceTokenOffset: 0,
+    tokenCount: retiredTokenCount,
+  }];
 
   const baseRows = git(fixtureRepo, ["ls-tree", "-r", base])
     .split("\n")
@@ -248,6 +301,7 @@ function makeFixture(mutate = () => {}) {
       retirementContractCount: retirementContracts.length,
       retirementContractManifestSha256: sha256(canonicalJson(retirementContracts)),
       retirementContracts,
+      retirementEvidenceAttestation: "retirement-evidence-attestation.json",
       schemaVersion: 1,
       testRegistry: "source-first-test-registry.json",
       upstreamAllowlist: "upstream-source-allowlist.json",
@@ -257,6 +311,17 @@ function makeFixture(mutate = () => {}) {
     legacyBytes,
     policyDir,
     retiredBytes,
+    retirementEvidence: {
+      attestationKind: "read-only-deployed-source-hashes-v1",
+      auditedDeployedSource: { commit: "3".repeat(40), tree: "4".repeat(40) },
+      entries: retirementEvidenceEntries,
+      entryCount: retirementEvidenceEntries.length,
+      manifestSha256: sha256(canonicalJson(retirementEvidenceEntries)),
+      schemaVersion: 1,
+      structuralFingerprintCount: retirementStructuralFingerprints.length,
+      structuralFingerprintManifestSha256: sha256(canonicalJson(retirementStructuralFingerprints)),
+      structuralFingerprints: retirementStructuralFingerprints,
+    },
     registry,
     root,
   };
@@ -269,10 +334,20 @@ function makeFixture(mutate = () => {}) {
   fixture.allowlist.adoptionContractManifestSha256 ??= sha256(canonicalJson(fixture.allowlist.adoptionContracts));
   fixture.map.retirementContractCount ??= fixture.map.retirementContracts.length;
   fixture.map.retirementContractManifestSha256 ??= sha256(canonicalJson(fixture.map.retirementContracts));
+  fixture.retirementEvidence.entryCount ??= fixture.retirementEvidence.entries.length;
+  fixture.retirementEvidence.manifestSha256 ??= sha256(canonicalJson(fixture.retirementEvidence.entries));
+  fixture.retirementEvidence.structuralFingerprintCount ??= fixture.retirementEvidence.structuralFingerprints.length;
+  fixture.retirementEvidence.structuralFingerprintManifestSha256 ??= sha256(
+    canonicalJson(fixture.retirementEvidence.structuralFingerprints),
+  );
   fixture.registry.entryCount ??= fixture.registry.entries.length;
   fixture.registry.manifestSha256 ??= sha256(canonicalJson(fixture.registry.entries));
   writeFileSync(path.join(policyDir, "upstream-source-allowlist.json"), canonicalJson(fixture.allowlist));
   writeFileSync(path.join(policyDir, "source-first-test-registry.json"), canonicalJson(fixture.registry));
+  writeFileSync(
+    path.join(policyDir, "retirement-evidence-attestation.json"),
+    canonicalJson(fixture.retirementEvidence),
+  );
   writeFileSync(path.join(policyDir, "source-first-port-map.json"), canonicalJson(fixture.map));
   return fixture;
 }
@@ -386,16 +461,27 @@ expectFailure(
 expectFailure(
   "upstream identity evidence must match the audited base",
   "UPSTREAM_IDENTITY_EVIDENCE_MISMATCH",
-  ({ map }) => {
+  ({ allowlist, map, retirementEvidence }) => {
     const contract = map.retirementContracts[0];
+    const sourceBlob = allowlist.entries.find((row) => row.path === "lib/upstream.js").blob;
     contract.enforcement = "upstream_identity";
     contract.evidence = [{
-      commit: "5".repeat(40),
+      commit: "1".repeat(40),
       path: "lib/upstream.js",
       sha256: "0".repeat(64),
+      sourceBlob,
     }];
     contract.forbiddenPaths = [];
     map.retirementContractManifestSha256 = sha256(canonicalJson(map.retirementContracts));
+    retirementEvidence.entries = [{
+      behaviorId: contract.id,
+      ...contract.evidence[0],
+    }];
+    retirementEvidence.entryCount = retirementEvidence.entries.length;
+    retirementEvidence.manifestSha256 = sha256(canonicalJson(retirementEvidence.entries));
+    retirementEvidence.structuralFingerprints = [];
+    retirementEvidence.structuralFingerprintCount = 0;
+    retirementEvidence.structuralFingerprintManifestSha256 = sha256(canonicalJson([]));
   },
 );
 
@@ -421,7 +507,7 @@ expectFailure(
   "retirement evidence blob must be attested",
   "RETIREMENT_EVIDENCE_MISMATCH",
   ({ map }) => {
-    map.retirementContracts[0].evidence[0].sourceBlob = "7".repeat(40);
+    map.retirementContracts[0].evidence[0].sourceBlob = "8".repeat(40);
     map.retirementContractManifestSha256 = sha256(canonicalJson(map.retirementContracts));
   },
 );

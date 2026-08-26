@@ -29,17 +29,27 @@ complete dependency tree.
 ## Package and release exclusion
 
 The same test builds a real lifecycle-disabled npm tarball and a real
-`git archive` release tree. It rejects every forbidden production path and
-every hash-bound retired implementation byte sequence in:
+`git archive` release tree. It rejects every forbidden production path,
+hash-bound retired implementation byte sequence, and normalized structural
+fingerprint in:
 
 - tracked candidate source;
 - the Git release archive;
 - the extracted npm package and npm-reported inventory; and
 - the public repository/npm inventory in `public-release-manifest.json`.
 
-This is byte/path/package behavior, not a source comment or marker check. The
-source-first divergence gate independently applies the hash-bound adoption and
-retirement contracts to every committed tree.
+This is byte/path/package behavior, not a source comment or marker check.
+Comment-only edits, wrappers, partial transplants and path renames preserve the
+attested token-window fingerprint and are rejected. The source-first divergence
+gate applies these contracts to candidate `HEAD`; the focused test separately
+checks the generated Git archive and extracted npm package.
+
+Each retirement evidence row is cross-bound to
+`config/migration/retirement-evidence-attestation.json`. That canonical file
+records the audited deployed commit/tree and exact commit, path, Git blob and
+SHA-256 identity without carrying retired source bytes. Its evidence and
+structural manifests are pinned by the policy checker and regression tests, so
+an unavailable historical Git object cannot be replaced by a fabricated hash.
 
 ## Private operator semantics
 

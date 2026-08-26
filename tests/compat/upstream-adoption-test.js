@@ -277,7 +277,7 @@ async function adoptionAndRetirementContract() {
   assert.equal(portMap.retirementContractCount, portMap.retirementContracts.length);
   assert.equal(
     portMap.retirementContractManifestSha256,
-    "3b27549ec17312bbb9d9e6ca6be00015ada38fba2a8faf5b48f73d9b89efef6b",
+    "b5bd31b3650a80a7c7cd6e11bbf8fc16eb4acdad68b0a1c6dd891b104ed29cbb",
   );
   assert.equal(
     portMap.retirementContractManifestSha256,
@@ -310,8 +310,16 @@ async function adoptionAndRetirementContract() {
   assert.deepEqual(allowlist.adoptionContracts.map((row) => row.id), expectedAdoptions);
   assert.deepEqual(portMap.retirementContracts.map((row) => row.id), expectedRetirements);
   assert.equal(attestation.entryCount, attestation.entries.length);
+  assert.equal(
+    attestation.manifestSha256,
+    "26f4bdd011ed499fd2b49ecdb0e563ac5053889ea76265f12408528fbe22e619",
+  );
   assert.equal(attestation.manifestSha256, sha256(canonicalJson(attestation.entries)));
   assert.equal(attestation.structuralFingerprintCount, attestation.structuralFingerprints.length);
+  assert.equal(
+    attestation.structuralFingerprintManifestSha256,
+    "c672074c8da1111872ea2da78f6e6eafaff15926f3d6bad6f29d85382b852b0b",
+  );
   assert.equal(
     attestation.structuralFingerprintManifestSha256,
     sha256(canonicalJson(attestation.structuralFingerprints)),

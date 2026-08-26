@@ -1,0 +1,237 @@
+{
+  "attestationKind": "read-only-deployed-source-hashes-v1",
+  "auditedDeployedSource": {
+    "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+    "tree": "2ea1117367407f87e5b9702ba65f7346f2c6390f"
+  },
+  "entries": [
+    {
+      "behaviorId": "belief-trust",
+      "commit": "cee6c263ce4f1aee0c7465340d75cdb23a602fd4",
+      "path": "lib/core/world-model.js",
+      "sha256": "f3d508bafb0d29412f5a1d1173fcc8b5658bc415571eae9c8afa7fa0e58cb5f5",
+      "sourceBlob": "9a3cc60324afe0a4990383685cdf0b4ae9f992ee"
+    },
+    {
+      "behaviorId": "broad-vault-mirror",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "lib/core/vault-mirror.js",
+      "sha256": "809ce6ebdcb3dbda9c3ec31b46ff7f1417389db415f25c52409fe2964dd407af",
+      "sourceBlob": "3a9f90dcfe4f7d6075b05dbf93bb08699e172a74"
+    },
+    {
+      "behaviorId": "hand-edited-runtime-blob",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "index.js",
+      "sha256": "b89b743582c897450258a4ac8d225c1bb4667613fc97157c3f2d8b4fcf2451c7",
+      "sourceBlob": "5f9baf6b659344368891ed6cb9eb9e6389948e2b"
+    },
+    {
+      "behaviorId": "host-trust",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "lib/core/host-trust.js",
+      "sha256": "a7af4347a7a97a22b732b3463a9e37085149152f8cc0196ccccf32305c43137d",
+      "sourceBlob": "49e327050e9001baac5439403c76af7d06491886"
+    },
+    {
+      "behaviorId": "one-time-hygiene",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "lib/core/hygiene-migration.js",
+      "sha256": "4b4bf7830d37adbf0f67dc63c9587175194300d88318a004a797150a6bf50929",
+      "sourceBlob": "30cdd379f2ca5bd3568c0514920c012de8e30fb3"
+    },
+    {
+      "behaviorId": "one-time-hygiene",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "scripts/gigabrain-hygiene-20260425.js",
+      "sha256": "8628532346dd028ae6aaeffeff17fb3716c2cf15b4a3de2608ecc3b63f83ff11",
+      "sourceBlob": "744d889f6c6608402880e7a49d0bcbca058b371a"
+    },
+    {
+      "behaviorId": "passport",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "lib/core/memory-passport.js",
+      "sha256": "e58dfdd0e66e2de79388e4151a0ce73198812f26f929430dede0943290efb659",
+      "sourceBlob": "601dc5e9688009bdd1ccbcb56776238e52f87c17"
+    },
+    {
+      "behaviorId": "passport",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "lib/core/passport-bundle.js",
+      "sha256": "cd343bbff3353553ac8c7a0c7807d7169ba59fb684882364f47a1fd80cede197",
+      "sourceBlob": "b8f14e3502b7e2621825fb38c4212d50f55fe451"
+    },
+    {
+      "behaviorId": "passport",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "scripts/demo-memory-passport.sh",
+      "sha256": "607898b6ad2c5ee95849fd2165a4a8ff6f88cc976153937699c4feeb9669b365",
+      "sourceBlob": "1c4a6971e8f88db80896a7e9ab5d79f5ed18b81d"
+    },
+    {
+      "behaviorId": "remote-embedding-provider",
+      "commit": "48d99770c0f600d6216d1ebbdf8a6a6703c7c081",
+      "path": "lib/core/config.js",
+      "sha256": "50b0989d1aa22296840cee33393fea9907f807244cf13e8e196057627c2a81af",
+      "sourceBlob": "45a4b8d4789109f72bdb7d69dd815a2b2c9f76d8"
+    },
+    {
+      "behaviorId": "remote-embedding-provider",
+      "commit": "48d99770c0f600d6216d1ebbdf8a6a6703c7c081",
+      "path": "lib/core/embedding-service.js",
+      "sha256": "4c0e4c524d035344c5bdb49e2765932c35ad7bce7ec8e8b33a3b4171bda5f685",
+      "sourceBlob": "cf00571f7b54b126857ed1970d727c977ce34946"
+    },
+    {
+      "behaviorId": "remote-embedding-provider",
+      "commit": "48d99770c0f600d6216d1ebbdf8a6a6703c7c081",
+      "path": "openclaw.plugin.json",
+      "sha256": "0f85d1be87ba7b0cd13921f151208fe177530f0f0b1f51646e50cbc05b29f4a9",
+      "sourceBlob": "a45943f73875e56da9b5bc98b3c25da35a533150"
+    },
+    {
+      "behaviorId": "workspace-identity",
+      "commit": "239bc7048b233061e3adc5cd95e7aae44ad7dc62",
+      "path": "lib/core/workspace-identity.js",
+      "sha256": "6547000e988f8ba0d1d754f2a9b6a8b105e66da7f136cbcb6b12a6dc15aabfa9",
+      "sourceBlob": "c192b0b3f7deb3a5264a2e6837ead86ed2b84613"
+    }
+  ],
+  "entryCount": 13,
+  "manifestSha256": "26f4bdd011ed499fd2b49ecdb0e563ac5053889ea76265f12408528fbe22e619",
+  "schemaVersion": 1,
+  "structuralFingerprintCount": 13,
+  "structuralFingerprintManifestSha256": "c672074c8da1111872ea2da78f6e6eafaff15926f3d6bad6f29d85382b852b0b",
+  "structuralFingerprints": [
+    {
+      "algorithm": "source-token-window-v1",
+      "behaviorId": "belief-trust",
+      "commit": "cee6c263ce4f1aee0c7465340d75cdb23a602fd4",
+      "path": "lib/core/world-model.js",
+      "sha256": "ed4c31203069ff71023d4485abacbc0b5c51181d31112cf8f8878f6d5633f169",
+      "sourceBlob": "9a3cc60324afe0a4990383685cdf0b4ae9f992ee",
+      "sourceTokenOffset": 7253,
+      "tokenCount": 96
+    },
+    {
+      "algorithm": "source-token-window-v1",
+      "behaviorId": "broad-vault-mirror",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "lib/core/vault-mirror.js",
+      "sha256": "9673533385d46bff15cfa2e88afb7725b75474a83443e9d39e978e11027246e9",
+      "sourceBlob": "3a9f90dcfe4f7d6075b05dbf93bb08699e172a74",
+      "sourceTokenOffset": 13168,
+      "tokenCount": 96
+    },
+    {
+      "algorithm": "source-token-window-v1",
+      "behaviorId": "hand-edited-runtime-blob",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "index.js",
+      "sha256": "15a37b00b4b34c0fe583908afb2b10b293d8f7f82f4aa85c3a83178dfc39e9b4",
+      "sourceBlob": "5f9baf6b659344368891ed6cb9eb9e6389948e2b",
+      "sourceTokenOffset": 0,
+      "tokenCount": 96
+    },
+    {
+      "algorithm": "source-token-window-v1",
+      "behaviorId": "hand-edited-runtime-blob",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "index.js",
+      "sha256": "94d081bf845067024947a7428b3fd3ff7748411df2057c674eb414a768e8bbdf",
+      "sourceBlob": "5f9baf6b659344368891ed6cb9eb9e6389948e2b",
+      "sourceTokenOffset": 2635,
+      "tokenCount": 96
+    },
+    {
+      "algorithm": "source-token-window-v1",
+      "behaviorId": "hand-edited-runtime-blob",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "index.js",
+      "sha256": "66938549bf69de76ad4aa31ef8efff9697f11c0907f7e4a654da9d69b2730adf",
+      "sourceBlob": "5f9baf6b659344368891ed6cb9eb9e6389948e2b",
+      "sourceTokenOffset": 5271,
+      "tokenCount": 96
+    },
+    {
+      "algorithm": "source-token-window-v1",
+      "behaviorId": "host-trust",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "lib/core/host-trust.js",
+      "sha256": "69038d9ccb2472aa1a5042c11a57b5fc024870b8eacca8ab519b32ab6ce8e545",
+      "sourceBlob": "49e327050e9001baac5439403c76af7d06491886",
+      "sourceTokenOffset": 6,
+      "tokenCount": 96
+    },
+    {
+      "algorithm": "source-token-window-v1",
+      "behaviorId": "one-time-hygiene",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "lib/core/hygiene-migration.js",
+      "sha256": "09e2dd5cd12cf4716cdbd9bb9b81cad00b47f69aaed7697f8245836be781ad5d",
+      "sourceBlob": "30cdd379f2ca5bd3568c0514920c012de8e30fb3",
+      "sourceTokenOffset": 2347,
+      "tokenCount": 96
+    },
+    {
+      "algorithm": "source-token-window-v1",
+      "behaviorId": "one-time-hygiene",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "scripts/gigabrain-hygiene-20260425.js",
+      "sha256": "7cc6042425d6a79881d2b7943484d185378a158c823ce20b6662aedde1b8bf2d",
+      "sourceBlob": "744d889f6c6608402880e7a49d0bcbca058b371a",
+      "sourceTokenOffset": 109,
+      "tokenCount": 96
+    },
+    {
+      "algorithm": "source-token-window-v1",
+      "behaviorId": "passport",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "lib/core/memory-passport.js",
+      "sha256": "0ae173c19d12c6b181d7a48f4ad0a1117d9cce3220176587bbb5409dd89087e2",
+      "sourceBlob": "601dc5e9688009bdd1ccbcb56776238e52f87c17",
+      "sourceTokenOffset": 2901,
+      "tokenCount": 96
+    },
+    {
+      "algorithm": "source-token-window-v1",
+      "behaviorId": "passport",
+      "commit": "43cd4b41518b5e35b3872722fcceaac535a1ff64",
+      "path": "scripts/demo-memory-passport.sh",
+      "sha256": "0bcd706cc340a5de3a1db44ec31b6edcbd4b9601254b4aaf2bd0d20cb283c572",
+      "sourceBlob": "1c4a6971e8f88db80896a7e9ab5d79f5ed18b81d",
+      "sourceTokenOffset": 65,
+      "tokenCount": 96
+    },
+    {
+      "algorithm": "source-token-window-v1",
+      "behaviorId": "remote-embedding-provider",
+      "commit": "48d99770c0f600d6216d1ebbdf8a6a6703c7c081",
+      "path": "lib/core/config.js",
+      "sha256": "7c3a10ba460e878c23bd80897afefa9c44cd77701f1ee339c9be07e982e84bc5",
+      "sourceBlob": "45a4b8d4789109f72bdb7d69dd815a2b2c9f76d8",
+      "sourceTokenOffset": 497,
+      "tokenCount": 96
+    },
+    {
+      "algorithm": "source-token-window-v1",
+      "behaviorId": "remote-embedding-provider",
+      "commit": "48d99770c0f600d6216d1ebbdf8a6a6703c7c081",
+      "path": "lib/core/embedding-service.js",
+      "sha256": "03c82e7185ece98eee3521398862712606fa4aabf66aa084459e31b3b6f5f7ac",
+      "sourceBlob": "cf00571f7b54b126857ed1970d727c977ce34946",
+      "sourceTokenOffset": 106,
+      "tokenCount": 96
+    },
+    {
+      "algorithm": "source-token-window-v1",
+      "behaviorId": "remote-embedding-provider",
+      "commit": "48d99770c0f600d6216d1ebbdf8a6a6703c7c081",
+      "path": "openclaw.plugin.json",
+      "sha256": "d38ee3b535af30eca6da47093ac2e62cd894df872eb11b0de401e8ee520793e8",
+      "sourceBlob": "a45943f73875e56da9b5bc98b3c25da35a533150",
+      "sourceTokenOffset": 495,
+      "tokenCount": 96
+    }
+  ]
+}

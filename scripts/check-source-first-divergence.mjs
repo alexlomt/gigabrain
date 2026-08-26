@@ -5,6 +5,11 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
+import {
+  findRetiredStructuralFingerprintMatches,
+  STRUCTURAL_FINGERPRINT_ALGORITHM,
+} from "./retirement-structural-fingerprint.mjs";
+
 const DISPOSITIONS = new Set([
   "upstream_owned",
   "compat_module",
@@ -21,6 +26,7 @@ const TASK = /^\d+[A-Z]?$/;
 const WILDCARD = /[*?\[\]{}]/;
 const AUTHORITATIVE_BASE = "ef624f97cc616a9e00b6df653eded455fbd30e01";
 const POLICY_INFRASTRUCTURE = new Set([
+  "config/migration/retirement-evidence-attestation.json",
   "config/migration/source-first-port-map.json",
   "config/migration/source-first-test-registry.json",
   "config/migration/upstream-source-allowlist.json",
@@ -42,6 +48,10 @@ const AUTHORITATIVE = {
   obsoleteSourceManifestSha256: "2f9eca0903c8c134fc731b37ee5b56aca5e77d5387c2c3f9d79844b5d84a94ff",
   preTagToolCount: 9,
   preTagToolManifestSha256: "8d213d472fc662239cf94348a9f427d1a9226d3bc84271cb5c0036061ee479ee",
+  retirementEvidenceCount: 13,
+  retirementEvidenceManifestSha256: "26f4bdd011ed499fd2b49ecdb0e563ac5053889ea76265f12408528fbe22e619",
+  retirementStructuralFingerprintCount: 13,
+  retirementStructuralFingerprintManifestSha256: "c672074c8da1111872ea2da78f6e6eafaff15926f3d6bad6f29d85382b852b0b",
 };
 
 class GuardError extends Error {
@@ -206,6 +216,7 @@ function validateMap(map) {
     "retirementContractCount",
     "retirementContractManifestSha256",
     "retirementContracts",
+    "retirementEvidenceAttestation",
     "schemaVersion",
     "testRegistry",
     "upstreamAllowlist",
@@ -216,6 +227,8 @@ function validateMap(map) {
   validatePath(map.upstreamAllowlist);
   nonEmptyString(map.testRegistry);
   validatePath(map.testRegistry);
+  nonEmptyString(map.retirementEvidenceAttestation);
+  validatePath(map.retirementEvidenceAttestation);
 
   exactKeys(map.deployedSource, [
     "commit",
@@ -320,8 +333,12 @@ function validateMap(map) {
     if (!Array.isArray(row.evidence) || row.evidence.length === 0) fail("SCHEMA");
     const evidenceKeys = new Set();
     for (const evidence of row.evidence) {
-      exactKeys(evidence, ["commit", "path", "sha256"]);
-      if (!FULL_SHA1.test(evidence.commit) || !SHA256.test(evidence.sha256)) fail("SCHEMA");
+      exactKeys(evidence, ["commit", "path", "sha256", "sourceBlob"]);
+      if (
+        !FULL_SHA1.test(evidence.commit)
+        || !FULL_SHA1.test(evidence.sourceBlob)
+        || !SHA256.test(evidence.sha256)
+      ) fail("SCHEMA");
       validatePath(evidence.path);
       const evidenceKey = `${evidence.commit}\0${evidence.path}`;
       if (evidenceKeys.has(evidenceKey)) fail("DUPLICATE_ROW", evidenceKey);
@@ -433,9 +450,143 @@ function validateAllowlist(allowlist) {
   );
 }
 
-function validateAdoptionAndRetirement({ allowlist, base, head, headByPath, map }) {
+function validateRetirementEvidenceAttestation(attestation, map) {
+  exactKeys(attestation, [
+    "attestationKind",
+    "auditedDeployedSource",
+    "entries",
+    "entryCount",
+    "manifestSha256",
+    "schemaVersion",
+    "structuralFingerprintCount",
+    "structuralFingerprintManifestSha256",
+    "structuralFingerprints",
+  ]);
+  if (attestation.schemaVersion !== 1) fail("SCHEMA_VERSION");
+  if (attestation.attestationKind !== "read-only-deployed-source-hashes-v1") fail("SCHEMA");
+  exactKeys(attestation.auditedDeployedSource, ["commit", "tree"]);
+  if (
+    attestation.auditedDeployedSource.commit !== map.deployedSource.commit
+    || attestation.auditedDeployedSource.tree !== map.deployedSource.tree
+  ) {
+    fail("RETIREMENT_EVIDENCE_MISMATCH");
+  }
+  if (!Array.isArray(attestation.entries) || !Number.isSafeInteger(attestation.entryCount)) fail("SCHEMA");
+  if (!SHA256.test(attestation.manifestSha256)) fail("SCHEMA");
+  const evidenceKeys = new Set();
+  const deployedFiles = new Map(map.deployedFiles.map((row) => [row.sourcePath, row]));
+  const deployedCommits = new Map(map.deployedCommits.map((row) => [row.commit, row]));
+  for (const row of attestation.entries) {
+    exactKeys(row, ["behaviorId", "commit", "path", "sha256", "sourceBlob"]);
+    nonEmptyString(row.behaviorId);
+    if (!FULL_SHA1.test(row.commit) || !FULL_SHA1.test(row.sourceBlob) || !SHA256.test(row.sha256)) {
+      fail("SCHEMA");
+    }
+    validatePath(row.path);
+    const key = `${row.behaviorId}\0${row.commit}\0${row.path}`;
+    if (evidenceKeys.has(key)) fail("DUPLICATE_ROW", key);
+    evidenceKeys.add(key);
+    if (row.commit === map.deployedSource.commit) {
+      const deployed = deployedFiles.get(row.path);
+      if (!deployed || deployed.sourceBlob !== row.sourceBlob) {
+        fail("RETIREMENT_EVIDENCE_MISMATCH", row.path);
+      }
+    } else {
+      const commit = deployedCommits.get(row.commit);
+      if (!commit || !commit.sourcePaths?.includes(row.path)) {
+        fail("RETIREMENT_EVIDENCE_MISMATCH", row.path);
+      }
+    }
+  }
+  ensureSorted(attestation.entries, (row) => `${row.behaviorId}\0${row.commit}\0${row.path}`);
+  checkManifest(
+    attestation.entries,
+    attestation.entryCount,
+    attestation.manifestSha256,
+    "RETIREMENT_EVIDENCE_MANIFEST",
+  );
+
+  if (
+    !Array.isArray(attestation.structuralFingerprints)
+    || !Number.isSafeInteger(attestation.structuralFingerprintCount)
+    || !SHA256.test(attestation.structuralFingerprintManifestSha256)
+  ) fail("SCHEMA");
+  const fingerprintKeys = new Set();
+  const fingerprintBehaviors = new Set();
+  for (const row of attestation.structuralFingerprints) {
+    exactKeys(row, [
+      "algorithm",
+      "behaviorId",
+      "commit",
+      "path",
+      "sha256",
+      "sourceBlob",
+      "sourceTokenOffset",
+      "tokenCount",
+    ]);
+    if (
+      row.algorithm !== STRUCTURAL_FINGERPRINT_ALGORITHM
+      || !FULL_SHA1.test(row.commit)
+      || !FULL_SHA1.test(row.sourceBlob)
+      || !SHA256.test(row.sha256)
+      || !Number.isSafeInteger(row.sourceTokenOffset)
+      || row.sourceTokenOffset < 0
+      || !Number.isSafeInteger(row.tokenCount)
+      || row.tokenCount < 32
+    ) fail("SCHEMA");
+    nonEmptyString(row.behaviorId);
+    validatePath(row.path);
+    const evidenceKey = `${row.behaviorId}\0${row.commit}\0${row.path}`;
+    const evidence = attestation.entries.find((entry) => (
+      `${entry.behaviorId}\0${entry.commit}\0${entry.path}` === evidenceKey
+    ));
+    if (!evidence || evidence.sourceBlob !== row.sourceBlob) {
+      fail("RETIREMENT_EVIDENCE_MISMATCH", row.path);
+    }
+    const key = `${evidenceKey}\0${String(row.sourceTokenOffset).padStart(12, "0")}`;
+    if (fingerprintKeys.has(key)) fail("DUPLICATE_ROW", key);
+    fingerprintKeys.add(key);
+    fingerprintBehaviors.add(row.behaviorId);
+  }
+  ensureSorted(
+    attestation.structuralFingerprints,
+    (row) => `${row.behaviorId}\0${row.commit}\0${row.path}\0${String(row.sourceTokenOffset).padStart(12, "0")}`,
+  );
+  checkManifest(
+    attestation.structuralFingerprints,
+    attestation.structuralFingerprintCount,
+    attestation.structuralFingerprintManifestSha256,
+    "RETIREMENT_STRUCTURAL_MANIFEST",
+  );
+  for (const contract of map.retirementContracts) {
+    if (contract.enforcement === "forbidden_bytes" && !fingerprintBehaviors.has(contract.id)) {
+      fail("RETIREMENT_STRUCTURAL_COVERAGE", contract.id);
+    }
+  }
+  if (map.auditedBase.commit === AUTHORITATIVE_BASE) {
+    const checks = [
+      [attestation.entryCount, AUTHORITATIVE.retirementEvidenceCount],
+      [attestation.manifestSha256, AUTHORITATIVE.retirementEvidenceManifestSha256],
+      [attestation.structuralFingerprintCount, AUTHORITATIVE.retirementStructuralFingerprintCount],
+      [
+        attestation.structuralFingerprintManifestSha256,
+        AUTHORITATIVE.retirementStructuralFingerprintManifestSha256,
+      ],
+    ];
+    for (const [actual, expected] of checks) {
+      if (actual !== expected) fail("AUTHORITATIVE_SNAPSHOT");
+    }
+  }
+}
+
+function validateAdoptionAndRetirement({ allowlist, attestation, base, head, headByPath, map }) {
   const adoptedPaths = new Set(allowlist.adoptionContracts.flatMap((row) => row.paths));
   const forbiddenHashes = new Set();
+  const attestedByKey = new Map(attestation.entries.map((row) => [
+    `${row.behaviorId}\0${row.commit}\0${row.path}`,
+    row,
+  ]));
+  const usedEvidence = new Set();
   for (const contract of map.retirementContracts) {
     for (const replacementPath of contract.replacementPaths) {
       if (!adoptedPaths.has(replacementPath)) {
@@ -446,20 +597,40 @@ function validateAdoptionAndRetirement({ allowlist, base, head, headByPath, map 
       if (headByPath.has(forbiddenPath)) fail("RETIRED_PATH_PRESENT", forbiddenPath);
     }
     for (const evidence of contract.evidence) {
+      const evidenceKey = `${contract.id}\0${evidence.commit}\0${evidence.path}`;
+      const attested = attestedByKey.get(evidenceKey);
+      if (
+        !attested
+        || attested.sourceBlob !== evidence.sourceBlob
+        || attested.sha256 !== evidence.sha256
+      ) {
+        fail("RETIREMENT_EVIDENCE_MISMATCH", evidence.path);
+      }
+      usedEvidence.add(evidenceKey);
       if (contract.enforcement === "forbidden_bytes") {
         forbiddenHashes.add(evidence.sha256);
       } else if (
         !adoptedPaths.has(evidence.path)
-        || sha256(blobAt(base, evidence.path)) !== evidence.sha256
+        || sha256(blobAt(base, evidence.path)) !== attested.sha256
       ) {
         fail("UPSTREAM_IDENTITY_EVIDENCE_MISMATCH", evidence.path);
       }
     }
   }
+  if (usedEvidence.size !== attestedByKey.size) fail("RETIREMENT_EVIDENCE_MISMATCH");
   for (const entry of headByPath.values()) {
     if (entry.type === "blob" && forbiddenHashes.has(sha256(blobAt(head, entry.path)))) {
       fail("RETIRED_BYTES_PRESENT", entry.path);
     }
+  }
+  const structuralMatches = findRetiredStructuralFingerprintMatches(
+    [...headByPath.values()]
+      .filter((entry) => entry.type === "blob")
+      .map((entry) => ({ bytes: blobAt(head, entry.path), path: entry.path })),
+    attestation.structuralFingerprints,
+  );
+  if (structuralMatches.length > 0) {
+    fail("RETIRED_STRUCTURAL_FINGERPRINT", structuralMatches[0].path);
   }
 }
 
@@ -619,7 +790,15 @@ function validatePrivateAndObsolete(map, head, candidateRow) {
   if (privatePatterns.some((pattern) => pattern.test(text))) fail("PRIVATE_LITERAL", candidateRow.targetPath);
 }
 
-function validatePolicyAuthority({ allowlistPath, base, head, map, mapPath, testRegistryPath }) {
+function validatePolicyAuthority({
+  allowlistPath,
+  base,
+  head,
+  map,
+  mapPath,
+  retirementEvidencePath,
+  testRegistryPath,
+}) {
   const repoRoot = path.resolve(gitText(["rev-parse", "--show-toplevel"]));
   const authoritativeBaseExists = git(
     ["cat-file", "-e", `${AUTHORITATIVE_BASE}^{commit}`],
@@ -629,10 +808,17 @@ function validatePolicyAuthority({ allowlistPath, base, head, map, mapPath, test
   if (authoritativeBaseExists) {
     const canonicalMap = path.join(repoRoot, "config", "migration", "source-first-port-map.json");
     const canonicalAllowlist = path.join(repoRoot, "config", "migration", "upstream-source-allowlist.json");
+    const canonicalRetirementEvidence = path.join(
+      repoRoot,
+      "config",
+      "migration",
+      "retirement-evidence-attestation.json",
+    );
     const canonicalTestRegistry = path.join(repoRoot, "config", "migration", "source-first-test-registry.json");
     if (
       mapPath !== canonicalMap ||
       allowlistPath !== canonicalAllowlist ||
+      retirementEvidencePath !== canonicalRetirementEvidence ||
       testRegistryPath !== canonicalTestRegistry ||
       base !== AUTHORITATIVE_BASE ||
       map.auditedBase.commit !== AUTHORITATIVE_BASE
@@ -735,6 +921,9 @@ function main() {
   const allowlistPath = path.resolve(path.dirname(mapPath), map.upstreamAllowlist);
   const allowlist = readCanonicalJson(allowlistPath);
   validateAllowlist(allowlist);
+  const retirementEvidencePath = path.resolve(path.dirname(mapPath), map.retirementEvidenceAttestation);
+  const retirementEvidence = readCanonicalJson(retirementEvidencePath);
+  validateRetirementEvidenceAttestation(retirementEvidence, map);
   const testRegistryPath = path.resolve(path.dirname(mapPath), map.testRegistry);
   const testRegistry = readCanonicalJson(testRegistryPath);
   validateTestRegistry(testRegistry);
@@ -742,7 +931,15 @@ function main() {
 
   const base = resolveCommit(options.base);
   const head = resolveCommit("HEAD");
-  validatePolicyAuthority({ allowlistPath, base, head, map, mapPath, testRegistryPath });
+  validatePolicyAuthority({
+    allowlistPath,
+    base,
+    head,
+    map,
+    mapPath,
+    retirementEvidencePath,
+    testRegistryPath,
+  });
   if (base !== map.auditedBase.commit || allowlist.auditedBase.commit !== base) fail("INVALID_BASE");
   const baseTreeId = gitText(["rev-parse", `${base}^{tree}`]);
   if (baseTreeId !== map.auditedBase.tree || allowlist.auditedBase.tree !== baseTreeId) fail("INVALID_BASE");
@@ -778,7 +975,14 @@ function main() {
 
   const diff = readDiff(base, head);
   const headByPath = new Map(readTree(head).map((entry) => [entry.path, entry]));
-  validateAdoptionAndRetirement({ allowlist, base, head, headByPath, map });
+  validateAdoptionAndRetirement({
+    allowlist,
+    attestation: retirementEvidence,
+    base,
+    head,
+    headByPath,
+    map,
+  });
   validateActiveGates(map, testRegistry, headByPath, head);
   const seenDiffs = new Set();
   const statusToChange = { A: "added", D: "deleted", M: "modified", T: "modified" };
