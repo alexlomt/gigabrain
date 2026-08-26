@@ -4,6 +4,10 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { runMemoryStatus } from "../../lib/compat/openclaw-memory-cli.js";
+import { runDoctor } from "../../lib/core/codex-service.js";
+import { createMemoryHttpHandler } from "../../lib/core/http-routes.js";
+
 import {
   importContractModule,
   requireCallable,
@@ -84,6 +88,44 @@ export async function run() {
         const roundTrip = attach({ ok: true, surface }, loaded);
         assert.deepEqual(roundTrip.release, serialized, `${surface} must preserve every release field`);
       }
+      const workspace = path.join(fixture.root, "workspace");
+      mkdirSync(path.join(workspace, "memory"), { recursive: true });
+      const config = {
+        enabled: true,
+        compat: { writeMode: "read_only" },
+        releaseRoot: fixture.root,
+        runtime: { paths: {
+          workspaceRoot: workspace,
+          memoryRoot: path.join(workspace, "memory"),
+          registryPath: path.join(workspace, "memory", "registry.sqlite"),
+          outputDir: path.join(workspace, "output"),
+          reviewQueuePath: path.join(workspace, "output", "queue.jsonl"),
+        } },
+        native: { memoryMdPath: path.join(workspace, "MEMORY.md") },
+        codex: { projectRoot: workspace, storeMode: "project", projectScope: "project:fixture" },
+      };
+      const io = { stdout: { write() {} } };
+      const status = await runMemoryStatus({ config, io, options: { agent: "main" } });
+      assert.deepEqual(status.release, serialized);
+      const doctor = await runDoctor({ config, releaseRoot: fixture.root, target: "project", workspaceRoot: workspace });
+      assert.deepEqual(doctor.release, serialized);
+      let healthPayload = null;
+      const handler = createMemoryHttpHandler({
+        config,
+        dbPath: config.runtime.paths.registryPath,
+        token: "",
+        allowNoAuth: true,
+      });
+      await handler(
+        { headers: {}, method: "GET", url: "/gb/health" },
+        {
+          end(value) { healthPayload = JSON.parse(String(value)); },
+          writeHead() {},
+        },
+      );
+      assert.deepEqual(healthPayload.release, serialized);
+      const codexMcpSource = readFileSync("lib/core/codex-mcp.js", "utf8");
+      assert.match(codexMcpSource, /local_integrity_root/);
       const manifestPath = path.join(fixture.root, "RELEASE.manifest.json");
       writeFileSync(manifestPath, `${readFileSync(manifestPath, "utf8")} `);
       assert.throws(() => load(fixture.root), /GIGABRAIN_RELEASE_MANIFEST_MISMATCH/);

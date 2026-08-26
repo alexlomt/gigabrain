@@ -13,6 +13,7 @@ import {
 import { appendEvent, ensureEventStore } from "../../lib/core/event-store.js";
 import { ensureNativeStore } from "../../lib/core/native-sync.js";
 import { ensureProjectionStore, upsertCurrentMemory } from "../../lib/core/projection-store.js";
+import { readContainedRegularFileNoFollowSync } from "../../lib/core/safe-fs.js";
 
 export const OWNER_TASK = "5";
 export const EXPECTED_SIGNATURE = "COMPAT_EXPECTED_OPENCLAW_MEMORY_AUTHORIZATION missing caller-bound direct reads";
@@ -156,6 +157,12 @@ export async function run() {
       });
       assert.match(raw.text, /Main private fact/);
       assert.match(raw.text, /CEO private fact/);
+      const contained = readContainedRegularFileNoFollowSync(
+        fixture.config.runtime.paths.workspaceRoot,
+        "memory/2026-08-25.md",
+        "utf8",
+      );
+      assert.match(contained.data, /Shared fact/);
       for (const params of [
         { relativePath: "/etc/passwd", authority: "operator-admin", transport: "loopback", pathSource: "cli" },
         { relativePath: "../outside.md", authority: "operator-admin", transport: "loopback", pathSource: "cli" },

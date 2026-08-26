@@ -54,6 +54,14 @@ export async function run() {
     }
 
     const packageJson = JSON.parse(readFileSync(path.join(path.dirname(entry), "package.json"), "utf8"));
+    const generatedEntrySource = readFileSync("index.js", "utf8");
+    const sourceEntry = readFileSync("index.ts", "utf8");
+    const npmIgnore = readFileSync(".npmignore", "utf8");
+    const buildScript = readFileSync("scripts/build-runtime-js.js", "utf8");
+    assert.match(generatedEntrySource, /Generated from index\.ts/);
+    assert.match(sourceEntry, /registerOpenClawCompatibility/);
+    assert.match(npmIgnore, /__pycache__/);
+    assert.match(buildScript, /stripTypeScriptTypes/);
     assert.deepEqual(packageJson.openclaw.extensions, ["./index.js"]);
     const files = new Set(packageJson.files);
     for (const required of ["index.js", "lib/", "memory_api/", "openclaw.plugin.json", "scripts/gigabrainctl.js", "scripts/gigabrain-mcp.js"]) {

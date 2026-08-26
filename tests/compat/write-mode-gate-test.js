@@ -3,6 +3,24 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { captureFromEvent } from "../../lib/core/capture-service.js";
+import { createMcpServer } from "../../lib/core/codex-mcp.js";
+import { runRemember } from "../../lib/core/codex-service.js";
+import {
+  appendCheckpointEpisode,
+  appendClaimDecision,
+  appendClaimProposal,
+  appendMemoryReceipt,
+} from "../../lib/core/control-plane.js";
+import { createMemoryHttpHandler } from "../../lib/core/http-routes.js";
+import { runMaintenance } from "../../lib/core/maintenance-service.js";
+import { applyMemoryActions } from "../../lib/core/memory-actions.js";
+import { writeNativeMemoryEntry, writeNativeSessionCheckpoint } from "../../lib/core/native-memory.js";
+import { resolveRemoteMcpOptions } from "../../lib/core/remote-mcp.js";
+import { openDatabase } from "../../lib/core/sqlite.js";
+import { harvestTranscripts } from "../../lib/core/transcript-harvester.js";
+import { projectWiki, reconcileWiki } from "../../lib/core/wiki-project.js";
+
 import {
   importContractModule,
   requireCallable,
@@ -104,28 +122,46 @@ export async function run() {
     assert.throws(() => assertWriteAllowed({ mode: "full", operation: "future.unclassified_writer" }), /GIGABRAIN_UNCLASSIFIED_WRITER/);
     assert.throws(() => assertWriteAllowed({ mode: "unexpected", operation: EXPECTED_WRITERS[0] }), /GIGABRAIN_INVALID_WRITE_MODE/);
 
-    const [capture, actions, transcripts, wiki, maintenance] = await Promise.all([
-      import("../../lib/core/capture-service.js"),
-      import("../../lib/core/memory-actions.js"),
-      import("../../lib/core/transcript-harvester.js"),
-      import("../../lib/core/wiki-project.js"),
-      import("../../lib/core/maintenance-service.js"),
-    ]);
     const readOnlyConfig = {
       compat: { writeMode: "read_only" },
       native: { transcripts: { enabled: false }, wiki: { enabled: false } },
       runtime: { paths: {} },
     };
-    assert.throws(() => capture.captureFromEvent({ config: readOnlyConfig, db: null }), /GIGABRAIN_WRITE_FORBIDDEN/);
-    assert.throws(() => actions.applyMemoryActions({
+    assert.throws(() => captureFromEvent({ config: readOnlyConfig, db: null }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => applyMemoryActions({
       config: readOnlyConfig,
       db: null,
       actions: [{ action: "forget" }],
     }), /GIGABRAIN_WRITE_FORBIDDEN/);
-    assert.throws(() => transcripts.harvestTranscripts({ config: readOnlyConfig, db: {} }), /GIGABRAIN_WRITE_FORBIDDEN/);
-    assert.throws(() => wiki.projectWiki({ config: readOnlyConfig, db: null }), /GIGABRAIN_WRITE_FORBIDDEN/);
-    assert.throws(() => wiki.reconcileWiki({ config: readOnlyConfig, db: null }), /GIGABRAIN_WRITE_FORBIDDEN/);
-    assert.throws(() => maintenance.runMaintenance({ config: readOnlyConfig, dbPath: "" }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => harvestTranscripts({ config: readOnlyConfig, db: {} }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => projectWiki({ config: readOnlyConfig, db: null }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => reconcileWiki({ config: readOnlyConfig, db: null }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => runMaintenance({ config: readOnlyConfig, dbPath: "" }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => writeNativeMemoryEntry({ config: readOnlyConfig }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => writeNativeSessionCheckpoint({ config: readOnlyConfig }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => appendCheckpointEpisode(null, { writeMode: "read_only" }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => appendClaimProposal(null, { writeMode: "read_only" }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => appendClaimDecision(null, { writeMode: "read_only" }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => appendMemoryReceipt(null, { writeMode: "read_only" }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => runRemember({ config: readOnlyConfig, content: "synthetic", target: "project" }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.ok(createMcpServer({ config: readOnlyConfig }));
+    assert.equal(typeof createMemoryHttpHandler({ config: readOnlyConfig, dbPath: "", token: "" }), "function");
+    assert.throws(() => resolveRemoteMcpOptions({
+      allowedScopes: ["shared"],
+      allowNoAuth: true,
+      enableWrites: true,
+      writeMode: "read_only",
+    }), /GIGABRAIN_WRITE_FORBIDDEN/);
+    assert.throws(() => openDatabase("/definitely/not/a/gigabrain/registry.sqlite", {
+      observational: true,
+      readOnly: true,
+    }));
+    const gigabrainCtlSource = readFileSync("scripts/gigabrainctl.js", "utf8");
+    const gigabrainMcpSource = readFileSync("scripts/gigabrain-mcp.js", "utf8");
+    const setupSource = readFileSync("scripts/setup-first-run.js", "utf8");
+    assert.match(gigabrainCtlSource, /assertWriteAllowed/);
+    assert.match(gigabrainMcpSource, /writeMode/);
+    assert.match(setupSource, /setup\.first_run/);
 
     const root = mkdtempSync(path.join(tmpdir(), "gigabrain-task5-native-only-"));
     try {
