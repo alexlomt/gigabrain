@@ -196,7 +196,9 @@ export async function run() {
     const buildSchema = requireCallable(configModule, "buildOpenClawConfigSchema");
     const renderManifest = requireCallable(generator, "renderOpenClawPluginManifest");
     const schema = buildSchema();
-    const manifest = JSON.parse(readFileSync(path.join(repoRoot, "openclaw.plugin.json"), "utf8"));
+    const manifestText = readFileSync(path.join(repoRoot, "openclaw.plugin.json"), "utf8");
+    const manifest = JSON.parse(manifestText);
+    assert.doesNotMatch(manifestText, /\/(?:home|Users)\/[A-Za-z0-9._-]+\//, "public manifest must not contain machine-specific home paths");
     assert.deepEqual(schema, configModule.V3_CONFIG_SCHEMA);
     assert.deepEqual(manifest.configSchema, schema);
     assert.equal(renderManifest(), `${JSON.stringify(manifest, null, 2)}\n`);

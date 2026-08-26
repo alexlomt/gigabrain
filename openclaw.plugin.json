@@ -2132,11 +2132,11 @@
           },
           "projectStorePath": {
             "type": "string",
-            "default": "/home/alex/.gigabrain"
+            "default": "~/.gigabrain"
           },
           "userProfilePath": {
             "type": "string",
-            "default": "/home/alex/.gigabrain/profile"
+            "default": "~/.gigabrain/profile"
           },
           "projectScope": {
             "type": "string",

@@ -16,11 +16,12 @@ const DEPLOYED_TREE = '2ea1117367407f87e5b9702ba65f7346f2c6390f';
 const CUSTOM_RULES_REFACTOR = 'e5a95b09594f29f3e04b09c0708cb8ff8c932adf';
 const CUSTOM_RULES_SOURCE_COMMIT = '83943806904a888f6d4151953dc8671e2a620df3';
 
+const openClawHome = path.join(os.homedir(), '.openclaw');
 const DEFAULTS = Object.freeze({
-  deployedRepo: '/home/alex/.openclaw/vendor/gigabrain',
-  handoffPath: '/home/alex/.openclaw/runtime/gigabrain-v0.11-audit/operator-rules-migration-task3-handoff.json',
-  outputPath: '/home/alex/.openclaw/runtime/gigabrain-v0.11-audit/operator-rules-migration.json',
-  protectedConfigPath: '/home/alex/.openclaw/openclaw.json',
+  deployedRepo: path.join(openClawHome, 'vendor', 'gigabrain'),
+  handoffPath: path.join(openClawHome, 'runtime', 'gigabrain-v0.11-audit', 'operator-rules-migration-task3-handoff.json'),
+  outputPath: path.join(openClawHome, 'runtime', 'gigabrain-v0.11-audit', 'operator-rules-migration.json'),
+  protectedConfigPath: path.join(openClawHome, 'openclaw.json'),
 });
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
