@@ -880,6 +880,143 @@ export async function run() {
         );
       }
 
+      if (shouldRunFixCase("processor-result-validation")) {
+        for (const [label, processorResult] of [
+          ["undefined", undefined],
+          ["null", null],
+          ["empty", {}],
+          ["negative", { autoSaved: -1, queuedReview: 0 }],
+          ["fractional", { autoSaved: 0, queuedReview: 0.5 }],
+          ["extra", { autoSaved: 0, queuedReview: 0, rawCandidate: "must not be retained" }],
+        ]) {
+          const current = fixture(`processor-result-${label}`);
+          const queued = await enqueueAutoCaptureEvent({
+            config: current.config,
+            event: packetEvent(`processor-result-${label}`),
+            runId: `processor-result-${label}`,
+          });
+          const result = await processAutoCaptureQueue({
+            config: current.config,
+            limit: 1,
+            processJob: async () => processorResult,
+          });
+          assert.equal(result.completed, 0, `${label} processor result must not complete a job`);
+          assert.equal(result.retryable, 0);
+          assert.equal(result.terminal, 1);
+          const row = readRows(current.descriptor.autoCaptureQueuePath)
+            .find((entry) => entry.id === queued.jobId);
+          assert.equal(row.status, "failed_terminal");
+          assert.equal(row.error_class, "invalid_payload");
+          assert.equal("packet" in row, false, "terminal invalid results must scrub the source packet");
+          assert.equal(JSON.stringify(row).includes("must not be retained"), false);
+        }
+      }
+
+      if (shouldRunFixCase("open-circuit-stale-recovery")) {
+        const current = fixture("open-circuit-stale-recovery");
+        const ids = [];
+        for (let index = 0; index < 4; index += 1) {
+          const queued = await enqueueAutoCaptureEvent({
+            config: current.config,
+            event: packetEvent(`open-circuit-stale-${index}`),
+            runId: `open-circuit-stale-${index}`,
+          });
+          ids.push(queued.jobId);
+        }
+        const rows = readRows(current.descriptor.autoCaptureQueuePath);
+        const recentFailureAt = new Date(Date.now() - 1_000).toISOString();
+        for (const row of rows.slice(0, 3)) {
+          row.attempts = 1;
+          row.error_class = "network";
+          row.error_message = "network";
+          row.next_attempt_at = "";
+          row.provider_failure_count = 1;
+          row.provider_failure_timestamps = [recentFailureAt];
+          row.status = "failed_terminal";
+          row.updated_at = recentFailureAt;
+        }
+        const stale = rows[3];
+        const staleAt = new Date(Date.now() - 190_000).toISOString();
+        stale.attempts = 1;
+        stale.error_class = "";
+        stale.error_message = "";
+        stale.next_attempt_at = "";
+        stale.processing_owner = "synthetic-stale-open-circuit-owner";
+        stale.processing_started_at = staleAt;
+        stale.status = "processing";
+        stale.updated_at = staleAt;
+        writeRows(current.descriptor.autoCaptureQueuePath, rows);
+
+        let dispatched = false;
+        const result = await processAutoCaptureQueue({
+          config: current.config,
+          limit: 1,
+          processJob: async () => {
+            dispatched = true;
+            return { autoSaved: 0, queuedReview: 0 };
+          },
+        });
+        assert.equal(dispatched, false);
+        assert.equal(result.circuitOpen, true);
+        assert.equal(result.processingRecovered, 1, "stale ownership must recover even while dispatch is circuit-blocked");
+        assert.equal(result.mutated, true);
+        const recovered = readRows(current.descriptor.autoCaptureQueuePath)
+          .find((row) => row.id === ids[3]);
+        assert.equal(recovered.status, "failed_retryable");
+        assert.equal(recovered.error_class, "timeout_or_aborted");
+        assert.equal(recovered.error_message, "stale_processing_recovered");
+      }
+
+      if (shouldRunFixCase("local-http-error-classification")) {
+        for (const [status, expectedClass] of [
+          [400, "invalid_payload"],
+          [401, "configuration"],
+          [403, "configuration"],
+          [404, "configuration"],
+        ]) {
+          const current = fixture(`local-http-${status}`);
+          const queued = await enqueueAutoCaptureEvent({
+            config: current.config,
+            event: packetEvent(`local-http-${status}`),
+            runId: `local-http-${status}`,
+          });
+          const result = await processAutoCaptureQueue({
+            config: current.config,
+            limit: 1,
+            processJob: async () => {
+              throw new Error(`memory_llm_ollama_http_${status}`);
+            },
+          });
+          assert.equal(result.retryable, 0);
+          assert.equal(result.terminal, 1);
+          assert.equal(result.circuitFailureCount, 0, `HTTP ${status} must not poison the provider circuit`);
+          const row = readRows(current.descriptor.autoCaptureQueuePath)
+            .find((entry) => entry.id === queued.jobId);
+          assert.equal(row.status, "failed_terminal");
+          assert.equal(row.error_class, expectedClass);
+          assert.equal(row.provider_failure_count, undefined);
+        }
+
+        for (const status of [429, 500, 502, 503, 504]) {
+          const current = fixture(`local-http-${status}`);
+          await enqueueAutoCaptureEvent({
+            config: current.config,
+            event: packetEvent(`local-http-${status}`),
+            runId: `local-http-${status}`,
+          });
+          const result = await processAutoCaptureQueue({
+            config: current.config,
+            limit: 1,
+            processJob: async () => {
+              throw new Error(`memory_llm_ollama_http_${status}`);
+            },
+          });
+          assert.equal(result.retryable, 1, `HTTP ${status} must remain retryable`);
+          assert.equal(result.terminal, 0);
+          assert.equal(result.circuitFailureCount, 1);
+        }
+      }
+
       if (shouldRunFixCase("producer-normalization")) {
         const current = fixture("producer-normalization");
         const exactMessage = "m".repeat(1_500);

@@ -100,7 +100,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "5b154d64e1bc25d308cb801e8a887b23c75fab490a00ef1c09f330915ec674aa",
+      "contentSha256": "0bb03efd7d23ce20d0643ce79df3645c660cf8b5cddecc1f720cb100a503fbcf",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -114,7 +114,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with the passing Task 9C memory-LLM test hash and behavioral relevance evidence.",
+      "reason": "Source-first registry with exact Task 9A/9B post-review blocker XFAIL ownership.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -1206,7 +1206,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "d30624910993e91e6507b1b805cf4b82da57205cb23859c31b28050cc317ce8b",
+      "contentSha256": "e5231bc60a00ad843d8a40f47ce2585ef5310a5e9c79fd63c460b85f24647b00",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-queue"
@@ -1214,13 +1214,13 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Passing Task 9B fix-round 3 contract for legacy in-flight attempt history and no-double-counting behavior.",
+      "reason": "Task 9 post-review RED contract for processor-result validation, circuit-safe stale recovery, and local HTTP error classification.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-queue-test.js"
     },
     {
       "changeType": "added",
-      "contentSha256": "8da7064e9078ef1026d4d88aa6a9468933012ae95576a997b2a1543c89157207",
+      "contentSha256": "0879ea5cf7c261d9bc88f6447f89b7d0f2047fcb72b530ca0a1c72f0a14e99cf",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-worker"
@@ -1229,7 +1229,7 @@
         "2B",
         "9"
       ],
-      "reason": "Passing Task 9B fix-round 1 worker contract proving real npm-pack and release-allowlist inclusion with executable mode.",
+      "reason": "Task 9 post-review RED contract proving every transitive public-mirror worker dependency is shipped.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-worker-test.js"
     },
@@ -1336,7 +1336,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "49dbdae4dbc35340e3bf0cfd1e3afbbb5704ca5aa8547efbac45ccc271626512",
+      "contentSha256": "e6b5f0405125c997a7148d71dda46ca3e97839ef89ddbb6359568ed36ad26666",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1351,7 +1351,7 @@
         "8",
         "9"
       ],
-      "reason": "Task 9C XFAIL removed after the stateless loopback-only memory-LLM contract passed.",
+      "reason": "Expected-failure ownership for the exact Task 9A/9B post-review blocker signatures.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },

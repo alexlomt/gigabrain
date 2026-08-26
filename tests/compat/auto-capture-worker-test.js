@@ -302,7 +302,15 @@ export async function run() {
         const packageJson = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"));
         const releaseManifest = JSON.parse(readFileSync(path.join(repoRoot, "public-release-manifest.json"), "utf8"));
         assert.equal(packageJson.files.includes("scripts/auto-capture-worker.js"), true);
-        for (const runtimePath of ["lib/compat/auto-capture-queue.js", "scripts/auto-capture-worker.js"]) {
+        for (const runtimePath of [
+          "lib/compat/auto-capture-policy.js",
+          "lib/compat/auto-capture-queue.js",
+          "lib/compat/native-metadata.js",
+          "lib/compat/runtime-descriptor.js",
+          "lib/compat/scope-policy.js",
+          "lib/compat/write-policy.js",
+          "scripts/auto-capture-worker.js",
+        ]) {
           assert.equal(releaseManifest.repository.files.includes(runtimePath), true, `release source allowlist omitted ${runtimePath}`);
           assert.equal(releaseManifest.npm.files.includes(runtimePath), true, `release npm inventory omitted ${runtimePath}`);
         }

@@ -45,8 +45,8 @@
         "lib/compat/auto-capture-queue.js",
         "tests/compat/auto-capture-queue-test.js"
       ],
-      "expectedOutcome": "pass",
-      "expectedSignature": null,
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_AUTO_CAPTURE_QUEUE missing durable bounded queue state machine",
       "id": "compat-auto-capture-queue",
       "ownerSourceFirstTaskId": "9",
       "relevanceEvidence": [
@@ -59,7 +59,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/auto-capture-queue-test.js",
-      "testSha256": "d30624910993e91e6507b1b805cf4b82da57205cb23859c31b28050cc317ce8b"
+      "testSha256": "e5231bc60a00ad843d8a40f47ce2585ef5310a5e9c79fd63c460b85f24647b00"
     },
     {
       "coveredPaths": [
@@ -69,8 +69,8 @@
         "scripts/auto-capture-worker.js",
         "tests/compat/auto-capture-worker-test.js"
       ],
-      "expectedOutcome": "pass",
-      "expectedSignature": null,
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_AUTO_CAPTURE missing durable bounded capture worker",
       "id": "compat-auto-capture-worker",
       "ownerSourceFirstTaskId": "9",
       "relevanceEvidence": [
@@ -98,7 +98,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/auto-capture-worker-test.js",
-      "testSha256": "8da7064e9078ef1026d4d88aa6a9468933012ae95576a997b2a1543c89157207"
+      "testSha256": "0879ea5cf7c261d9bc88f6447f89b7d0f2047fcb72b530ca0a1c72f0a14e99cf"
     },
     {
       "coveredPaths": [
@@ -1695,6 +1695,6 @@
     }
   ],
   "entryCount": 90,
-  "manifestSha256": "9fb1fb06dfe769a9e5dbbd63f4ae04d273e36776f49ad664f87cc06489751c5a",
+  "manifestSha256": "035fe685e9ee093b4321c8ca454170d68b86b182ec47c3e0a0efbc0ab9c7a782",
   "schemaVersion": 1
 }
