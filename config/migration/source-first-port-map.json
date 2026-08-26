@@ -97,7 +97,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "7c41124cc92d27dc67145295dd8a94fceaa95de083c6f006abffdc3a1df52b9c",
+      "contentSha256": "9372bd0c88d16afe6479f7a0f23fcf0733f565e88cb0872100419b2f7f420aff",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1040,7 +1040,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "2e0d0b61bb4a9fdd8358f7d13115e1ae3cbe146effa5695bc3c63322b24696c5",
+      "contentSha256": "231df83fc362748e5c375c06e0ece88c00e1f3f57264199bbccf3d6e8a317b5b",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1132,7 +1132,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "03be7536199e05dc90cced3048c286bfb1344a3fa0e1d3d8280196c96eddb073",
+      "contentSha256": "48642a87453bee581a7972601e26efdd67201f74979093a315fd393e747b14c1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-observational-diagnostics"
@@ -1279,7 +1279,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "b9a6cab0c5993a8066c791c16564d5940cbeb9e8a425d86f6e4c5adc41d1d808",
+      "contentSha256": "933caea82ef62eaa6c09ecf6c6a33b408f840c83726898c26a1c17197215a7ee",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-write-mode-gate"

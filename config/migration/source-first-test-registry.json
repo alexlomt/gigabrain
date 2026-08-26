@@ -171,8 +171,8 @@
         "scripts/gigabrainctl.js",
         "tests/compat/observational-diagnostics-test.js"
       ],
-      "expectedOutcome": "pass",
-      "expectedSignature": null,
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_OBSERVATIONAL_DIAGNOSTICS missing zero-write diagnostics guard",
       "id": "compat-observational-diagnostics",
       "ownerSourceFirstTaskId": "5",
       "relevanceEvidence": [
@@ -208,7 +208,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/observational-diagnostics-test.js",
-      "testSha256": "03be7536199e05dc90cced3048c286bfb1344a3fa0e1d3d8280196c96eddb073"
+      "testSha256": "48642a87453bee581a7972601e26efdd67201f74979093a315fd393e747b14c1"
     },
     {
       "coveredPaths": [
@@ -419,8 +419,8 @@
         "scripts/setup-first-run.js",
         "tests/compat/write-mode-gate-test.js"
       ],
-      "expectedOutcome": "pass",
-      "expectedSignature": null,
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_WRITE_MODE_GATE missing complete fail-closed writer policy",
       "id": "compat-write-mode-gate",
       "ownerSourceFirstTaskId": "5",
       "relevanceEvidence": [
@@ -524,7 +524,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/write-mode-gate-test.js",
-      "testSha256": "b9a6cab0c5993a8066c791c16564d5940cbeb9e8a425d86f6e4c5adc41d1d808"
+      "testSha256": "933caea82ef62eaa6c09ecf6c6a33b408f840c83726898c26a1c17197215a7ee"
     },
     {
       "coveredPaths": [
@@ -1273,6 +1273,6 @@
     }
   ],
   "entryCount": 81,
-  "manifestSha256": "16353960941275b8b4041fb06f4b0a8013cb9ddfb8f06d24052df12c8b9aa5de",
+  "manifestSha256": "36101702231e84ad016d13c5ebecddd684d8d5e34a4c25d32d35a8fd08862a8b",
   "schemaVersion": 1
 }

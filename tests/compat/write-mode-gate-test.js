@@ -64,7 +64,7 @@ export async function run() {
     const discovered = discoverWriterEntrypoints({ repoRoot });
     assert.equal(assertWriterRegistryComplete(discovered), true);
     const discoveredIds = new Set(discovered.map((entry) => entry.operation));
-    for (const required of ["package.migrate-v3", "package.harmonize", "cli.inventory"]) {
+    for (const required of ["package.migrate-v3", "package.harmonize", "cli.inventory", "cli.vault.inbox"]) {
       assert.equal(discoveredIds.has(required), true, `discovery must include ${required}`);
       assert.ok(registry[required], `registry must classify ${required}`);
     }
@@ -89,6 +89,24 @@ export async function run() {
       const future = discoverWriterEntrypoints({ repoRoot: discoveryRoot });
       assert.equal(future.some((entry) => entry.operation === "package.future-writer"), true);
       assert.throws(() => assertWriterRegistryComplete(future), /GIGABRAIN_UNCLASSIFIED_WRITER/);
+      writeFileSync(path.join(discoveryRoot, "scripts", "gigabrainctl.js"), `
+        import { writeFileSync } from "node:fs";
+        const command = "future";
+        const flags = ["write"];
+        const resolveCliWriteOperation = () => "";
+        const commandFuture = async () => {
+          const subcommand = String(flags[0] || "");
+          if (subcommand === "write") writeFileSync("state", "changed");
+        };
+        if (command === "future") await commandFuture();
+      `);
+      const nestedFuture = discoverWriterEntrypoints({ repoRoot: discoveryRoot });
+      assert.equal(
+        nestedFuture.some((entry) => entry.operation === "cli.future.write" && entry.access === "write"),
+        true,
+        "nested CLI writers must be derived from branch behavior, not only the declaration map",
+      );
+      assert.throws(() => assertWriterRegistryComplete(nestedFuture), /GIGABRAIN_UNCLASSIFIED_WRITER/);
     } finally {
       rmSync(discoveryRoot, { recursive: true, force: true });
     }
@@ -225,6 +243,7 @@ export async function run() {
       for (const [label, script, args] of [
         ["migrate-v3", "scripts/migrate-v3.js", ["--apply", "--config", configPath]],
         ["harmonize", "scripts/harmonize-memory.js", ["--config", configPath]],
+        ["vault inbox", "scripts/gigabrainctl.js", ["vault", "inbox", "--config", configPath]],
       ]) {
         const result = spawnSync(process.execPath, [path.join(repoRoot, script), ...args], { cwd: repoRoot, encoding: "utf8", timeout: 30_000 });
         assert.notEqual(result.status, 0, `${label} must be rejected in read_only`);

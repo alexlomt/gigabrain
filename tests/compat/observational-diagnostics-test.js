@@ -147,6 +147,7 @@ export async function run() {
         ["help", ["--help"]],
         ["doctor", ["doctor", "--config", fixture.configPath, "--target", "project"]],
         ["inventory", ["inventory", "--config", fixture.configPath]],
+        ["sync-hosts status", ["sync-hosts", "status", "--config", fixture.configPath]],
         ["vault status", ["vault", "status", "--config", fixture.configPath]],
         ["transcript status", ["transcript", "status", "--config", fixture.configPath]],
       ]) {
@@ -182,9 +183,13 @@ export async function run() {
           } },
         } } } },
       }, null, 2)}\n`, { mode: 0o600 });
-      for (const command of ["doctor", "inventory"]) {
-        const result = runCli([command, "--config", missingConfig, "--target", "project"]);
-        assert.equal(existsSync(missingRoot), false, `${command} must not create a missing workspace`);
+      for (const [label, args] of [
+        ["doctor", ["doctor", "--config", missingConfig, "--target", "project"]],
+        ["inventory", ["inventory", "--config", missingConfig]],
+        ["sync-hosts status", ["sync-hosts", "status", "--config", missingConfig]],
+      ]) {
+        const result = runCli(args);
+        assert.equal(existsSync(missingRoot), false, `${label} must not create a missing workspace`);
         assert.match(`${result.stdout}\n${result.stderr}`, /missing|does not exist|db_exists|unavailable/i);
       }
 
@@ -207,11 +212,15 @@ export async function run() {
       }, null, 2)}\n`, { mode: 0o600 });
       const schemaState = { dbPath: schemaDbPath, roots: [schemaRoot], files: [schemaConfigPath] };
       const beforeSchema = snapshotState(schemaState);
-      for (const command of ["doctor", "inventory"]) {
-        const result = runCli([command, "--config", schemaConfigPath, "--target", "project"]);
+      for (const [label, args] of [
+        ["doctor", ["doctor", "--config", schemaConfigPath, "--target", "project"]],
+        ["inventory", ["inventory", "--config", schemaConfigPath]],
+        ["sync-hosts status", ["sync-hosts", "status", "--config", schemaConfigPath]],
+      ]) {
+        const result = runCli(args);
         assert.equal(result.status, 0, String(result.stderr || result.stdout));
         assert.match(`${result.stdout}\n${result.stderr}`, /schema is unavailable|projection_ready/i);
-        assert.equal(assertUnchanged(beforeSchema, snapshotState(schemaState), `${command} missing schema`), true);
+        assert.equal(assertUnchanged(beforeSchema, snapshotState(schemaState), `${label} missing schema`), true);
       }
     } finally {
       rmSync(fixture.root, { recursive: true, force: true });
