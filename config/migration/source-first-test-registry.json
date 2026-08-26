@@ -42,25 +42,51 @@
     },
     {
       "coveredPaths": [
+        "lib/compat/auto-capture-queue.js",
         "tests/compat/auto-capture-queue-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_AUTO_CAPTURE_QUEUE missing durable bounded queue state machine",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-auto-capture-queue",
       "ownerSourceFirstTaskId": "9",
+      "relevanceEvidence": [
+        {
+          "binding": "enqueueAutoCaptureEvent",
+          "mode": "import",
+          "symbol": "enqueueAutoCaptureEvent",
+          "targetPath": "lib/compat/auto-capture-queue.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/compat/auto-capture-queue-test.js"
+      "testPath": "tests/compat/auto-capture-queue-test.js",
+      "testSha256": "382f2ae34609fdcfe8dc94ce1c09e473575440fedbd2d5115434ebc8d1bbca0a"
     },
     {
       "coveredPaths": [
+        "lib/compat/auto-capture-queue.js",
+        "scripts/auto-capture-worker.js",
         "tests/compat/auto-capture-worker-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_AUTO_CAPTURE missing durable bounded capture worker",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-auto-capture-worker",
       "ownerSourceFirstTaskId": "9",
+      "relevanceEvidence": [
+        {
+          "binding": "enqueueAutoCaptureEvent",
+          "mode": "import",
+          "symbol": "enqueueAutoCaptureEvent",
+          "targetPath": "lib/compat/auto-capture-queue.js"
+        },
+        {
+          "binding": "runWorker",
+          "mode": "spawn",
+          "targetPath": "scripts/auto-capture-worker.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/compat/auto-capture-worker-test.js"
+      "testPath": "tests/compat/auto-capture-worker-test.js",
+      "testSha256": "780af74016d98d43bf090e9e737d68b7fa217483ec614c873d23bb75bbe12fa9"
     },
     {
       "coveredPaths": [
@@ -1622,6 +1648,6 @@
     }
   ],
   "entryCount": 89,
-  "manifestSha256": "d1b1b36e1a06debe753c598c55b11ea43cc10bd64882165e7a5329a905de3864",
+  "manifestSha256": "9a76c2d0a9547c26db239961133ceafde5ca3a0843fe56757f42f1718986bc82",
   "schemaVersion": 1
 }

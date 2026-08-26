@@ -255,6 +255,45 @@ export async function run() {
       }
 
       {
+        const current = fixture("row-bound-zero-terminal-budget");
+        await enqueueAutoCaptureEvent({
+          config: current.config,
+          event: packetEvent("row-bound-template"),
+          runId: "row-bound-template",
+        });
+        const template = readRows(current.descriptor.autoCaptureQueuePath)[0];
+        const rows = Array.from({ length: 250 }, (_, index) => ({
+          ...structuredClone(template),
+          id: `acq_${sha256(`row-bound-${index}`).slice(0, 24)}`,
+          packet_hash: sha256(`row-bound-packet-${index}`),
+          session_key: `agent:main:row-bound-${index}`,
+        }));
+        rows.push({
+          ...structuredClone(template),
+          id: `acq_${sha256("row-bound-terminal").slice(0, 24)}`,
+          packet_hash: sha256("row-bound-terminal-packet"),
+          status: "completed",
+          processed_at: new Date().toISOString(),
+        });
+        writeRows(current.descriptor.autoCaptureQueuePath, rows);
+        let persistedDuringDispatch = 0;
+        await processAutoCaptureQueue({
+          config: current.config,
+          limit: 1,
+          processJob: async () => {
+            persistedDuringDispatch = readRows(current.descriptor.autoCaptureQueuePath).length;
+            return { autoSaved: 0, queuedReview: 0 };
+          },
+        });
+        assert.equal(
+          persistedDuringDispatch,
+          250,
+          "the queue must remain bounded when active rows consume the entire terminal budget",
+        );
+        assert.equal(readRows(current.descriptor.autoCaptureQueuePath).length, 250);
+      }
+
+      {
         const current = fixture("success-limit");
         await enqueueAutoCaptureEvent({ config: current.config, event: packetEvent("success-a"), runId: "success-a" });
         await enqueueAutoCaptureEvent({ config: current.config, event: packetEvent("success-b"), runId: "success-b" });
