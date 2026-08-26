@@ -335,7 +335,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "edae1b0afea07ae5df8e9ea39fa370165ccc15443e8220c8902ed77d743566f1",
+      "contentSha256": "05558b69576016c933c6fd300778ab4d68ebce3958b62b18cac277ef72d6d396",
       "disposition": "compat_module",
       "gate": {
         "registrationId": "compat-auto-capture-policy"
@@ -343,7 +343,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9A bounded auto-capture classification, privacy sanitization, trusted-scope forcing, and injected enqueue policy.",
+      "reason": "Task 9A fix round closes generic credential, execution-chatter, canonical Paperclip, assistant-decision, and shared-trigger review gaps.",
       "targetMode": "100644",
       "targetPath": "lib/compat/auto-capture-policy.js"
     },
