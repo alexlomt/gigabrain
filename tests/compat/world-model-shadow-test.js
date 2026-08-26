@@ -5,7 +5,7 @@ import { ensureAdaptiveTrustStore, loadAdaptiveTrustOverrides, runAdaptiveTrust 
 import { normalizeConfig } from "../../lib/core/config.js";
 import { ensureNativeStore } from "../../lib/core/native-sync.js";
 import { ensurePersonStore, rebuildEntityMentions } from "../../lib/core/person-service.js";
-import { ensureWorldModelStore, rebuildWorldModel } from "../../lib/core/world-model.js";
+import { ensureWorldModelReady, ensureWorldModelStore, rebuildWorldModel } from "../../lib/core/world-model.js";
 import { makeConfigObject, makeTempWorkspace, openDb, seedMemoryCurrent } from "../helpers.js";
 import { runBehaviorContract, runDirect } from "./contract-test-helpers.js";
 
@@ -177,6 +177,298 @@ const sourceRows = (db) => logicalRows(db, "memory_current", [
   "memory_id", "type", "content", "scope", "status", "confidence", "source_path",
 ]);
 
+const insertNativeChunk = (db, {
+  chunkId,
+  content,
+  sourceKind = "curated",
+  memoryType = "CONTEXT",
+  scope = "shared",
+  sourcePath = "memory/synthetic-native.md",
+  lastSeenAt = NOW,
+} = {}) => {
+  ensureNativeStore(db);
+  db.prepare(`
+    INSERT INTO memory_native_chunks (
+      chunk_id, source_path, source_kind, source_date, section, line_start, line_end,
+      content, normalized, hash, scope, memory_type, origin_kind, linked_memory_id,
+      first_seen_at, last_seen_at, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    chunkId,
+    sourcePath,
+    sourceKind,
+    String(lastSeenAt).slice(0, 10),
+    "Synthetic fixture",
+    1,
+    1,
+    content,
+    content.toLowerCase(),
+    `hash-${chunkId}`,
+    scope,
+    memoryType,
+    sourceKind,
+    null,
+    lastSeenAt,
+    lastSeenAt,
+    "active",
+  );
+};
+
+const insertProtectedEntity = (db, {
+  entityId,
+  displayName,
+  normalizedName = displayName.toLowerCase(),
+} = {}) => {
+  ensureWorldModelStore(db);
+  db.prepare(`
+    INSERT INTO memory_entities (
+      entity_id, kind, display_name, normalized_name, status, confidence,
+      aliases, created_at, updated_at, payload
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    entityId,
+    "person",
+    displayName,
+    normalizedName,
+    "active",
+    0.97,
+    JSON.stringify([displayName]),
+    NOW,
+    NOW,
+    JSON.stringify({ scopes: ["shared"], surface_curated: true, surface_visible: true }),
+  );
+  db.prepare(`
+    INSERT INTO memory_entity_aliases (
+      alias_id, entity_id, alias, normalized_alias, confidence, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    `alias:${entityId}`,
+    entityId,
+    displayName,
+    normalizedName,
+    0.97,
+    NOW,
+    NOW,
+  );
+};
+
+export const runVaultBoundaryFixture = () => {
+  const workspace = makeTempWorkspace("gigabrain-task8-vault-boundary-");
+  const db = openDb(workspace.dbPath);
+  try {
+    const config = normalizeConfig(makeConfigObject(workspace.workspace).plugins.entries.gigabrain.config);
+    ensurePersonStore(db);
+    ensureWorldModelStore(db);
+    insertNativeChunk(db, {
+      chunkId: "vault-self",
+      content: "I live in Vaultborough.",
+      sourceKind: "vault",
+      memoryType: "USER_FACT",
+      sourcePath: "vault/synthetic-transcript.md",
+    });
+    insertNativeChunk(db, {
+      chunkId: "vault-project",
+      content: "Project Vault Mirage needs follow-up tomorrow, 2026-08-27.",
+      sourceKind: "vault",
+      memoryType: "EPISODE",
+      sourcePath: "vault/synthetic-transcript.md",
+    });
+    rebuildEntityMentions(db);
+    db.prepare(`
+      INSERT INTO memory_entity_mentions (
+        id, memory_id, entity_key, entity_display, role, confidence,
+        source, scope, source_path, linked_memory_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      "stale-vault-project-mention",
+      "native:vault-project",
+      "vault mirage",
+      "Vault Mirage",
+      "general",
+      0.99,
+      "memory_native",
+      "shared",
+      "vault/synthetic-transcript.md",
+      null,
+    );
+
+    assert.equal(
+      Number(db.prepare("SELECT COUNT(*) AS count FROM memory_native_chunks WHERE source_kind = 'vault' AND status = 'active'").get()?.count || 0),
+      2,
+      "the negative fixture must contain active vault source rows",
+    );
+    const rebuilt = rebuildWorldModel({ db, config, now: NOW });
+    assert.equal(rebuilt.ok, true);
+    const vaultSourceIds = ["native:vault-self", "native:vault-project"];
+    assert.equal(
+      Number(db.prepare("SELECT COUNT(*) AS count FROM memory_claims WHERE memory_id IN (?, ?)").get(...vaultSourceIds)?.count || 0),
+      0,
+      "vault chunks must produce zero world-model claims",
+    );
+    assert.equal(
+      Number(db.prepare("SELECT COUNT(*) AS count FROM memory_beliefs WHERE source_memory_id IN (?, ?)").get(...vaultSourceIds)?.count || 0),
+      0,
+      "vault chunks must produce zero world-model beliefs",
+    );
+    assert.equal(
+      Number(db.prepare(`
+        SELECT COUNT(DISTINCT episode_id) AS count
+        FROM memory_episodes, json_each(memory_episodes.source_memory_ids) AS source_row
+        WHERE source_row.value IN (?, ?)
+      `).get(...vaultSourceIds)?.count || 0),
+      0,
+      "vault chunks must produce zero world-model episodes",
+    );
+    assert.equal(
+      Number(db.prepare(`
+        SELECT COUNT(DISTINCT loop_id) AS count
+        FROM memory_open_loops, json_each(memory_open_loops.source_memory_ids) AS source_row
+        WHERE source_row.value IN (?, ?)
+      `).get(...vaultSourceIds)?.count || 0),
+      0,
+      "vault chunks must produce zero world-model loops",
+    );
+    assert.equal(
+      Number(db.prepare(`
+        SELECT COUNT(*) AS count
+        FROM memory_syntheses
+        WHERE lower(content) LIKE '%vaultborough%'
+           OR lower(content) LIKE '%vault mirage%'
+      `).get()?.count || 0),
+      0,
+      "vault chunks must produce zero world-model syntheses",
+    );
+  } finally {
+    db.close();
+    rmSync(workspace.root, { recursive: true, force: true });
+  }
+};
+
+export const runNativeOnlyReadinessFixture = () => {
+  const workspace = makeTempWorkspace("gigabrain-task8-native-only-ready-");
+  const db = openDb(workspace.dbPath);
+  try {
+    const config = normalizeConfig(makeConfigObject(workspace.workspace).plugins.entries.gigabrain.config);
+    insertNativeChunk(db, {
+      chunkId: "native-only-ready",
+      content: "Project Native Solstice records a durable checkpoint.",
+    });
+    rebuildEntityMentions(db);
+    const ready = ensureWorldModelReady({ db, config, rebuildIfEmpty: true });
+    assert.equal(ready.rebuilt, true, "eligible native-only input must initialize the world model");
+    assert.equal(
+      Number(db.prepare("SELECT COUNT(*) AS count FROM memory_claims WHERE memory_id = ?").get("native:native-only-ready")?.count || 0),
+      1,
+      "eligible native-only input must be projected through readiness",
+    );
+  } finally {
+    db.close();
+    rmSync(workspace.root, { recursive: true, force: true });
+  }
+};
+
+export const runNewerNativeReadinessFixture = () => {
+  const workspace = makeTempWorkspace("gigabrain-task8-newer-native-ready-");
+  const db = openDb(workspace.dbPath);
+  try {
+    const config = normalizeConfig(makeConfigObject(workspace.workspace).plugins.entries.gigabrain.config);
+    seedMemoryCurrent(db, [{
+      memory_id: "registry-readiness-anchor",
+      type: "CONTEXT",
+      content: "Project Registry Anchor initializes the world model.",
+      scope: "shared",
+      confidence: 0.94,
+      value_score: 0.9,
+      value_label: "core",
+      source_path: "MEMORY.md",
+      created_at: NOW,
+      updated_at: NOW,
+    }]);
+    rebuildEntityMentions(db);
+    const initialized = ensureWorldModelReady({ db, config, rebuildIfEmpty: true });
+    assert.equal(initialized.rebuilt, true);
+
+    insertNativeChunk(db, {
+      chunkId: "newer-native-ready",
+      content: "Project Fresh Native records a newer checkpoint.",
+      lastSeenAt: "2099-01-02T03:04:05.000Z",
+    });
+    rebuildEntityMentions(db);
+    const refreshed = ensureWorldModelReady({ db, config, rebuildIfEmpty: true });
+    assert.equal(refreshed.rebuilt, true, "newer eligible native last_seen_at must refresh the world model");
+    assert.equal(
+      Number(db.prepare("SELECT COUNT(*) AS count FROM memory_claims WHERE memory_id = ?").get("native:newer-native-ready")?.count || 0),
+      1,
+      "newer eligible native input must be projected through readiness",
+    );
+  } finally {
+    db.close();
+    rmSync(workspace.root, { recursive: true, force: true });
+  }
+};
+
+export const runProtectedEntityLifecycleFixture = () => {
+  const workspace = makeTempWorkspace("gigabrain-task8-protected-lifecycle-");
+  const db = openDb(workspace.dbPath);
+  try {
+    const config = normalizeConfig(makeConfigObject(workspace.workspace).plugins.entries.gigabrain.config);
+    seedMemoryCurrent(db, [{
+      memory_id: "duplicate-protected-source",
+      type: "USER_FACT",
+      content: "Duplicate Protected works as a synthetic advisor.",
+      scope: "shared",
+      confidence: 0.97,
+      value_score: 0.92,
+      value_label: "core",
+      source_path: "MEMORY.md",
+      created_at: NOW,
+      updated_at: NOW,
+    }]);
+    ensureWorldModelStore(db);
+    insertProtectedEntity(db, {
+      entityId: "person:detached-protected",
+      displayName: "Detached Protected",
+    });
+    insertProtectedEntity(db, {
+      entityId: "person:duplicate-protected-a",
+      displayName: "Duplicate Protected",
+    });
+    insertProtectedEntity(db, {
+      entityId: "person:duplicate-protected-b",
+      displayName: "Duplicate Protected",
+    });
+    rebuildEntityMentions(db);
+    const rebuilt = rebuildWorldModel({ db, config, now: NOW });
+    assert.equal(rebuilt.ok, true);
+    assert.deepEqual(
+      db.prepare(`
+        SELECT entity_id
+        FROM memory_entities
+        WHERE entity_id IN (?, ?, ?)
+        ORDER BY entity_id
+      `).all(
+        "person:detached-protected",
+        "person:duplicate-protected-a",
+        "person:duplicate-protected-b",
+      ).map((row) => row.entity_id),
+      [
+        "person:detached-protected",
+        "person:duplicate-protected-a",
+        "person:duplicate-protected-b",
+      ],
+      "protected IDs must survive independently of exact-name mention extraction",
+    );
+    assert.equal(
+      Number(db.prepare("SELECT COUNT(*) AS count FROM memory_entities WHERE normalized_name = ?").get("duplicate protected")?.count || 0),
+      2,
+      "duplicate protected normalized names must preserve every protected entity ID",
+    );
+  } finally {
+    db.close();
+    rmSync(workspace.root, { recursive: true, force: true });
+  }
+};
+
 export async function run() {
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
     const first = makeTempWorkspace("gigabrain-task8-shadow-a-");
@@ -258,6 +550,10 @@ export async function run() {
       rmSync(first.root, { recursive: true, force: true });
       rmSync(second.root, { recursive: true, force: true });
     }
+    runVaultBoundaryFixture();
+    runNativeOnlyReadinessFixture();
+    runNewerNativeReadinessFixture();
+    runProtectedEntityLifecycleFixture();
   });
 }
 

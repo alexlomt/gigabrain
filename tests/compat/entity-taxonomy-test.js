@@ -4,6 +4,7 @@ import { rmSync, writeFileSync } from "node:fs";
 import { normalizeConfig } from "../../lib/core/config.js";
 import { rebuildEntityMentions, splitNameCandidates } from "../../lib/core/person-service.js";
 import { listEntities, rebuildWorldModel } from "../../lib/core/world-model.js";
+import { rewriteSelfReferenceQuery } from "../../lib/core/workspace-identity.js";
 import { makeConfigObject, makeTempWorkspace, openDb, seedMemoryCurrent } from "../helpers.js";
 import { runBehaviorContract, runDirect } from "./contract-test-helpers.js";
 
@@ -65,11 +66,37 @@ export async function run() {
       "# User\n\n- **Name:** Casey Vale\n- **What to call them:** Casey\n",
       "utf8",
     );
+    assert.deepEqual(
+      rewriteSelfReferenceQuery("Who am I?", { workspaceRoot: workspace.workspace }),
+      {
+        query: "Who is Casey?",
+        rewritten: true,
+        mode: "user",
+        resolvedName: "Casey",
+      },
+      "user self-reference must resolve through the declared workspace identity",
+    );
+    assert.deepEqual(
+      rewriteSelfReferenceQuery("Who are you?", { workspaceRoot: workspace.workspace }),
+      {
+        query: "Who is Harbor Wren?",
+        rewritten: true,
+        mode: "agent",
+        resolvedName: "Harbor Wren",
+      },
+      "agent self-reference must resolve through the declared workspace identity",
+    );
     const db = openDb(workspace.dbPath);
     try {
       const config = normalizeConfig(makeConfigObject(workspace.workspace).plugins.entries.gigabrain.config);
       config.operatorRules.entity.rejectTerms = ["synthetic noise"];
-      config.operatorRules.entity.nonPersonTerms = ["synthetic runtime", "verification token"];
+      config.operatorRules.entity.nonPersonTerms = [
+        "synthetic runtime",
+        "verification token",
+        "copper compass",
+        "quartz falcon",
+        "ember relay",
+      ];
       seedMemoryCurrent(db, [
         memoryRow("agent-main", "AGENT_IDENTITY", "Harbor Wren is the main agent.", "profile:synthetic"),
         memoryRow("agent-ceo", "AGENT_IDENTITY", "Chief Executive Officer Mira Vexley is the executive agent.", "synthetic-ceo"),
@@ -82,6 +109,9 @@ export async function run() {
         memoryRow("org-2", "CONTEXT", "Organization Aurora Signal Labs maintains the service."),
         memoryRow("non-person-1", "AGENT_IDENTITY", "Synthetic Runtime is a system agent, not a person."),
         memoryRow("non-person-2", "AGENT_IDENTITY", "Verification Token is a system identity, not a person."),
+        memoryRow("tool-entity", "ENTITY", "Copper Compass is a tool used for automation."),
+        memoryRow("model-entity", "ENTITY", "Quartz Falcon is a model used for inference."),
+        memoryRow("system-entity", "ENTITY", "Ember Relay is a system used for routing."),
         memoryRow("rejected", "ENTITY", "Synthetic Noise is an explicit rejected entity."),
       ]);
 
@@ -98,6 +128,14 @@ export async function run() {
       }
       assert.equal(byName.get("synthetic harbour")?.kind, "project");
       assert.equal(byName.get("aurora signal labs")?.kind, "organization");
+      for (const [name, kind] of [
+        ["copper compass", "project"],
+        ["quartz falcon", "project"],
+        ["ember relay", "topic"],
+      ]) {
+        assert.equal(names.has(name), true, `${name} must be present before its non-person taxonomy is asserted`);
+        assert.equal(byName.get(name)?.kind, kind, `${name} must be classified as ${kind}, not person`);
+      }
 
       for (const fragment of [
         "harbor", "wren", "mira", "vexley", "indigo", "quill", "sable", "north", "rowan", "pike",
@@ -108,8 +146,12 @@ export async function run() {
       for (const rejected of ["chief executive officer", "synthetic noise"]) {
         assert.equal(names.has(rejected), false, `${rejected} must not enter the entity graph`);
       }
-      for (const nonPerson of ["synthetic runtime", "verification token"]) {
-        assert.notEqual(byName.get(nonPerson)?.kind, "person", `${nonPerson} must never become a person`);
+      for (const absentNonEntity of ["synthetic runtime", "verification token", "tool", "model", "system"]) {
+        assert.equal(
+          names.has(absentNonEntity),
+          false,
+          `${absentNonEntity} must be explicitly absent as a bare operational noun`,
+        );
       }
     } finally {
       db.close();
