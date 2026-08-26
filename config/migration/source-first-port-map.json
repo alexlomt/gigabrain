@@ -94,13 +94,13 @@
         "8",
         "9"
       ],
-      "reason": "Source-first evidence plus exact Task 9B fix-round 3 RED ownership and content hashes.",
+      "reason": "Source-first evidence plus passing Task 9B fix-round 3 ownership and exact content hashes.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-port-map.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "ec9e992470a1797335e3840c7f3d609ea2cde022ca4de857e68acb0fe2a71b72",
+      "contentSha256": "472a85dfb360d9fd0aecef6ec348878849b8766361f44c176b655e6ea9d8d515",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -114,7 +114,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with the exact Task 9B fix-round 3 queue XFAIL signature and test hash.",
+      "reason": "Source-first registry with the passing Task 9B fix-round 3 queue test hash and behavioral relevance evidence.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -349,7 +349,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "9de98c40a65d469d791a92c7b84bac826bb29ce8585eb65a0ef8fd82be863f07",
+      "contentSha256": "9aea9359e47f798e668f5a4d33ad1dbba00c06b01e30f0f41f30842c199bc310",
       "disposition": "compat_module",
       "gate": {
         "registrationId": "compat-auto-capture-queue"
@@ -357,7 +357,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9B fix round 2 seeds legacy/stale provider attempts, normalizes after truncation, and validates canonical rows before durable replacement.",
+      "reason": "Task 9B fix round 3 seeds missing legacy in-flight history from prior attempts without double counting explicit history.",
       "targetMode": "100644",
       "targetPath": "lib/compat/auto-capture-queue.js"
     },
@@ -1200,7 +1200,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9B fix-round 3 RED contract for legacy in-flight attempt history and no-double-counting behavior.",
+      "reason": "Passing Task 9B fix-round 3 contract for legacy in-flight attempt history and no-double-counting behavior.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-queue-test.js"
     },
@@ -1321,7 +1321,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "890e38f9f17d3b06b884c287d38c01325e0d3bafe3dc8f3ea339457d7803f220",
+      "contentSha256": "49dbdae4dbc35340e3bf0cfd1e3afbbb5704ca5aa8547efbac45ccc271626512",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1336,7 +1336,7 @@
         "8",
         "9"
       ],
-      "reason": "Expected-failure ownership includes the exact Task 9B fix-round 3 queue RED signature.",
+      "reason": "Task 9B fix-round 3 queue XFAIL removed after the final bounded legacy-processing edge passed.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
