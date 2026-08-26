@@ -567,6 +567,41 @@ function configureRetirementReplacementCorePatch(fixture, {
   fixture.map.retirementContractManifestSha256 = sha256(canonicalJson(fixture.map.retirementContracts));
 }
 
+function bindCorePatchToReadTest(fixture, targetPath) {
+  const testTargetPath = "tests/registered-test.js";
+  const testPath = path.join(fixture.fixtureRepo, testTargetPath);
+  writeFileSync(testPath, [
+    'import assert from "node:assert/strict";',
+    'import { readFileSync } from "node:fs";',
+    'export async function run() {',
+    `  const targetSource = readFileSync("${targetPath}", "utf8");`,
+    '  assert.ok(targetSource.length > 0);',
+    '}',
+    '',
+  ].join("\n"));
+  commitAll(fixture.fixtureRepo, `read-bound core patch gate ${targetPath}`);
+  fixture.map.candidateChanges.push({
+    changeType: "modified",
+    contentSha256: blobIdentity(testPath),
+    disposition: "core_patch",
+    gate: { registrationId: "fixture-gate" },
+    ownerTasks: ["2A"],
+    reason: "Synthetic read-bound core patch gate fixture.",
+    targetMode: "100644",
+    targetPath: testTargetPath,
+  });
+  fixture.map.candidateChanges.sort((left, right) => left.targetPath.localeCompare(right.targetPath, "en"));
+  registerFixtureCoverage(fixture.registry, targetPath);
+  registerFixtureCoverage(fixture.registry, testTargetPath);
+  const registration = fixture.registry.entries[0];
+  registration.testSha256 = blobIdentity(testPath);
+  registration.relevanceEvidence = [
+    { binding: "targetSource", mode: "read", targetPath },
+    { mode: "self", targetPath: testTargetPath },
+  ];
+  fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
+}
+
 expectPass("exact classified delta", () => {});
 
 expectPass("retirement replacement may be an explicitly mapped behavioral core patch", (fixture) => {
@@ -1043,7 +1078,7 @@ expectFailure("private literal marker in source", "PRIVATE_LITERAL", ({ allowlis
     targetMode: "100644",
     targetPath: "lib/core.js",
   });
-  registerFixtureCoverage(registry, "lib/core.js");
+  bindCorePatchToReadTest({ fixtureRepo, map, registry }, "lib/core.js");
 });
 
 expectFailure("private literal marker in defaults", "PRIVATE_LITERAL", ({ fixtureRepo, map }) => {
@@ -1068,7 +1103,7 @@ expectFailure("obsolete implementation copied in", "OBSOLETE_SOURCE_COPY", ({ al
     targetMode: "100644",
     targetPath: "lib/core.js",
   });
-  registerFixtureCoverage(registry, "lib/core.js");
+  bindCorePatchToReadTest({ fixtureRepo, map, registry }, "lib/core.js");
 });
 
 expectFailure("stale map row", "STALE_MAP_ROW", ({ map, registry }) => {
