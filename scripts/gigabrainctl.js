@@ -30,6 +30,8 @@ import { migrateLegacyCheckpoints } from '../lib/core/checkpoint-migration.js';
 import { classifyNativeOrigins } from '../lib/core/native-sync.js';
 import { assertEntrypointAllowed, assertWriteAllowed, resolveWriteMode } from '../lib/compat/write-policy.js';
 import { reviewQueuedCandidates } from '../lib/compat/queue-review-service.js';
+import { buildGeneratedSurface, inspectGeneratedSurface } from '../lib/operator/generated-surface.js';
+import { refreshGeneratedSurfaceAfterMutation } from '../lib/operator/surface-refresh-service.js';
 import {
   ensureWorldModelReady,
   getEntityDetail,
@@ -66,6 +68,7 @@ Commands:
   synthesis    Inspect or rebuild synthesis artifacts
   briefing     Print the latest generated briefing artifacts
   review       Inspect contradictions, open loops, adjudications, the review queue, beliefs as of a timestamp, or adaptive host trust (trust)
+  surface      Build or inspect the private generated operator surface (build|status|doctor)
   migrate      Run a migration (legacy-checkpoints: typed immutable backfill; legacy-drop: deprecated table removal)
   vault        Sync or report on READ-ONLY Obsidian vault reference corpora (sync|status; never becomes a belief)
   wiki         Git-versioned LLM-wiki projection of the ledger (project|reconcile|status; human edits round-trip + win arbitration)
@@ -167,6 +170,7 @@ const resolveCliWriteOperation = () => {
     migrate: 'cli.migrate',
     nightly: 'cli.nightly',
     'sync-hosts': subcommand === 'status' ? '' : 'cli.sync_hosts',
+    surface: subcommand === 'build' ? 'cli.surface_build' : '',
     synthesis: subcommand === 'build' ? 'cli.synthesis_build' : '',
     transcript: subcommand === 'sync' ? 'cli.transcript_sync' : '',
     vault: subcommand === 'sync' ? 'cli.vault_sync' : subcommand === 'inbox' ? 'cli.vault.inbox' : '',
@@ -1421,6 +1425,28 @@ const commandNightly = async () => {
         reviewPurge = { ok: false, error: String(error?.message || error) };
       }
     }
+    const surfaceMutationCount = [
+      'quality_archived',
+      'quality_rejected',
+      'dedupe_exact_archived',
+      'dedupe_semantic_archived',
+      'dedupe_auto_resolved',
+      'native_sync_inserted_chunks',
+      'native_promoted_inserted',
+      'native_promoted_linked_existing',
+      'host_sync_inserted',
+      'transcript_sync_inserted',
+      'wiki_reconcile_ingested',
+      'open_loops_auto_resolved',
+    ].reduce((total, key) => total + Number(maintain?.eventCounts?.[key] || 0), 0)
+      + Number(queueReview?.mutatedRows || 0);
+    const surfaceRefresh = await refreshGeneratedSurfaceAfterMutation({
+      config,
+      configPath,
+      dbPath,
+      mutationCount: surfaceMutationCount,
+      runId: `${maintain.runId}-surface`,
+    });
     const verification = verifyNightlyOutputs({
       maintain,
       dryRun,
@@ -1436,10 +1462,55 @@ const commandNightly = async () => {
       harmonize,
       audit,
       review_purge: reviewPurge,
+      surfaceRefresh,
       verification,
     }, null, 2));
   } finally {
     releaseNightlyLock(lock);
+  }
+};
+
+const commandSurface = async () => {
+  const subcommand = String(flags[0] || '').trim().toLowerCase();
+  if (!subcommand || ['--help', '-h', 'help'].includes(subcommand)) {
+    console.log(JSON.stringify({
+      ok: true,
+      usage: 'node scripts/gigabrainctl.js surface build|status|doctor [--config <path>] [--db <path>] [--output-dir <path>] [--force]',
+    }, null, 2));
+    return;
+  }
+  if (!['build', 'status', 'doctor'].includes(subcommand)) throw new Error(`unknown surface subcommand: ${subcommand}`);
+  const { config, dbPath } = loadConfigAndDbPath();
+  const outputDir = readFlag('--output-dir', '');
+  if (subcommand === 'build') {
+    const db = openDatabase(dbPath);
+    try {
+      const result = await buildGeneratedSurface({
+        config,
+        db,
+        force: readBool('--force', false),
+        outputDir,
+        runId: readFlag('--run-id', `surface-${new Date().toISOString().replace(/[:.]/g, '-')}`),
+      });
+      console.log(JSON.stringify({ command: 'surface', subcommand, ...result }, null, 2));
+    } finally {
+      db.close();
+    }
+    return;
+  }
+  let db = null;
+  try {
+    if (fs.existsSync(dbPath)) db = openDatabase(dbPath, { readOnly: true, observational: true });
+    const health = await inspectGeneratedSurface({ config, db, outputDir });
+    console.log(JSON.stringify({
+      command: 'surface',
+      ok: subcommand === 'status' ? true : health.healthy,
+      observational: true,
+      subcommand,
+      health,
+    }, null, 2));
+  } finally {
+    db?.close?.();
   }
 };
 const commandInventory = async () => {
@@ -2411,6 +2482,10 @@ const main = async () => {
   }
   if (command === 'review') {
     await commandReview();
+    return;
+  }
+  if (command === 'surface') {
+    await commandSurface();
     return;
   }
   if (command === 'migrate') {

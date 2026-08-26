@@ -514,7 +514,7 @@ const testReleaseManifestStaysNarrow = () => {
       packageFiles: manifest.npm.packageFiles.length,
       repositoryFiles: manifest.repository.files.length,
     },
-    { npmFiles: 111, packageFiles: 53, repositoryFiles: 164 },
+    { npmFiles: 113, packageFiles: 53, repositoryFiles: 166 },
     'reviewed public inventories must remain exact and deliberately narrow',
   );
   for (const required of [

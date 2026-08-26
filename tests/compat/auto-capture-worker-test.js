@@ -530,6 +530,8 @@ export async function run() {
           "lib/compat/runtime-descriptor.js",
           "lib/compat/scope-policy.js",
           "lib/compat/write-policy.js",
+          "lib/operator/generated-surface.js",
+          "lib/operator/surface-refresh-service.js",
           "scripts/auto-capture-worker.js",
         ]) {
           assert.equal(releaseManifest.repository.files.includes(runtimePath), true, `release source allowlist omitted ${runtimePath}`);

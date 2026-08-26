@@ -80,10 +80,10 @@ export async function run() {
     const registry = policy.WRITER_REGISTRY;
     const discovered = discoverWriterEntrypoints({ repoRoot });
     assert.equal(assertWriterRegistryComplete(discovered), true);
-    assert.equal(discovered.length, 179, "all shipped entrypoints remain in the discovery inventory");
+    assert.equal(discovered.length, 182, "all shipped entrypoints remain in the discovery inventory");
     assert.equal(
       new Set(discovered.filter((entry) => entry.access === "write").map((entry) => entry.canonicalOperation || entry.operation)).size,
-      73,
+      74,
       "nested aliases must not inflate the canonical shipped-writer count",
     );
     assert.equal(
@@ -95,6 +95,16 @@ export async function run() {
       discovered.find((entry) => entry.operation === "cli.wiki.reconcile")?.access,
       "write",
       "explicitly mapped reconcileWiki must classify its nested CLI call as write",
+    );
+    assert.equal(
+      discovered.find((entry) => entry.operation === "cli.surface.build")?.canonicalOperation,
+      "cli.surface_build",
+      "generated surface build must remain bound to its full-mode writer guard",
+    );
+    assert.equal(
+      discovered.find((entry) => entry.operation === "cli.surface")?.access,
+      "read",
+      "generated surface status and doctor remain observational",
     );
     const expectedFallbackWriters = new Map([
       ["cli.control.apply", "cli.control_apply"],

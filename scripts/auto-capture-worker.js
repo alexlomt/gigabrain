@@ -54,10 +54,18 @@ const main = async () => {
     process.stdout.write(USAGE);
     return;
   }
-  const [{ loadResolvedConfig }, { processAutoCaptureQueue }, { createAutoCaptureJobProcessor }] = await Promise.all([
+  const [
+    { loadResolvedConfig },
+    { processAutoCaptureQueue },
+    { createAutoCaptureJobProcessor },
+    { resolveRuntimeDescriptor },
+    { refreshGeneratedSurfaceAfterMutation },
+  ] = await Promise.all([
     import('../lib/core/config.js'),
     import('../lib/compat/auto-capture-queue.js'),
     import('../lib/compat/auto-capture-processor.js'),
+    import('../lib/compat/runtime-descriptor.js'),
+    import('../lib/operator/surface-refresh-service.js'),
   ]);
   const loaded = loadResolvedConfig({ configPath: parsed.configPath });
   const result = await processAutoCaptureQueue({
@@ -66,7 +74,15 @@ const main = async () => {
     limit: parsed.limit,
     processJob: parsed.dryRun ? undefined : createAutoCaptureJobProcessor({ config: loaded.config }),
   });
-  process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+  const descriptor = resolveRuntimeDescriptor(loaded.config);
+  const surfaceRefresh = await refreshGeneratedSurfaceAfterMutation({
+    config: loaded.config,
+    configPath: parsed.configPath,
+    dbPath: descriptor.dbPath,
+    mutationCount: Number(result.autoSaved || 0) + Number(result.queuedReview || 0),
+    runId: 'auto-capture-worker-surface',
+  });
+  process.stdout.write(`${JSON.stringify({ ok: true, ...result, surfaceRefresh }, null, 2)}\n`);
 };
 
 main().catch((error) => {

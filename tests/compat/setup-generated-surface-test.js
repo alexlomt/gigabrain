@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
+import { WRITER_REGISTRY } from "../../lib/compat/write-policy.js";
+
 import {
   importContractModule,
   requireCallable,
@@ -14,13 +16,16 @@ export const EXPECTED_SIGNATURE = "COMPAT_EXPECTED_SETUP_SURFACE missing explici
 export async function run() {
   const surface = await importContractModule("lib/operator/generated-surface.js", EXPECTED_SIGNATURE);
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
-    requireCallable(surface, "buildGeneratedSurface");
-    requireCallable(surface, "inspectGeneratedSurface");
+    const buildGeneratedSurface = requireCallable(surface, "buildGeneratedSurface");
+    const inspectGeneratedSurface = requireCallable(surface, "inspectGeneratedSurface");
+    assert.equal(typeof buildGeneratedSurface, "function");
+    assert.equal(typeof inspectGeneratedSurface, "function");
     const cliSource = readFileSync("scripts/gigabrainctl.js", "utf8");
     assert.match(cliSource, /surface\s+build\|status\|doctor/);
     assert.match(cliSource, /commandSurface/);
     assert.match(cliSource, /buildGeneratedSurface/);
     assert.match(cliSource, /inspectGeneratedSurface/);
+    assert.deepEqual(WRITER_REGISTRY["cli.surface_build"].allowedModes, ["full"]);
     const setupSource = readFileSync("scripts/setup-first-run.js", "utf8");
     assert.doesNotMatch(setupSource, /buildGeneratedSurface\s*\(/, "setup must not implicitly materialize private memory content");
     const release = JSON.parse(readFileSync("public-release-manifest.json", "utf8"));

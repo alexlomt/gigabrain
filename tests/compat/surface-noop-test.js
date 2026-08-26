@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import {
   importContractModule,
@@ -45,6 +46,13 @@ export async function run() {
     });
     assert.equal(failed.ok, false);
     assert.equal(failed.graph.ok, false);
+
+    const maintenanceSource = readFileSync("lib/core/maintenance-service.js", "utf8");
+    assert.match(maintenanceSource, /deferred_to_surface_refresh/);
+    assert.doesNotMatch(maintenanceSource, /execFileSync\(process\.execPath, graphArgs/);
+    const workerSource = readFileSync("scripts/auto-capture-worker.js", "utf8");
+    assert.match(workerSource, /refreshGeneratedSurfaceAfterMutation/);
+    assert.match(workerSource, /mutationCount:\s*Number\(result\.autoSaved/);
   });
 }
 

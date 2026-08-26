@@ -105,7 +105,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/auto-capture-worker-test.js",
-      "testSha256": "845d5999a6c6c14ea4e9cd69cdd6bed2628d2e9a2bf9030942e18dc20ab7aaaa"
+      "testSha256": "15f5c6548f6dbe9df3874b161cfe83b0fe8e3d43b4b670951bdca57592d695dd"
     },
     {
       "coveredPaths": [
@@ -263,14 +263,30 @@
     },
     {
       "coveredPaths": [
+        "lib/operator/generated-surface.js",
         "tests/compat/generated-surface-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_GENERATED_SURFACE missing deterministic generated runtime surface",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-generated-surface",
       "ownerSourceFirstTaskId": "10",
+      "relevanceEvidence": [
+        {
+          "binding": "build",
+          "mode": "import",
+          "symbol": "buildGeneratedSurface",
+          "targetPath": "lib/operator/generated-surface.js"
+        },
+        {
+          "binding": "inspect",
+          "mode": "import",
+          "symbol": "inspectGeneratedSurface",
+          "targetPath": "lib/operator/generated-surface.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/compat/generated-surface-test.js"
+      "testPath": "tests/compat/generated-surface-test.js",
+      "testSha256": "92dad04659ae3fbe05c7cea54ed2cff2cba11ea9dec5fca5d1ae4e712f9452d7"
     },
     {
       "coveredPaths": [
@@ -767,14 +783,49 @@
     },
     {
       "coveredPaths": [
+        "lib/compat/write-policy.js",
+        "lib/operator/generated-surface.js",
+        "public-release-manifest.json",
+        "scripts/gigabrainctl.js",
+        "scripts/setup-first-run.js",
         "tests/compat/setup-generated-surface-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_SETUP_SURFACE missing explicit generated-surface CLI",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-setup-generated-surface",
       "ownerSourceFirstTaskId": "10",
+      "relevanceEvidence": [
+        {
+          "binding": "WRITER_REGISTRY",
+          "mode": "import",
+          "symbol": "WRITER_REGISTRY",
+          "targetPath": "lib/compat/write-policy.js"
+        },
+        {
+          "binding": "buildGeneratedSurface",
+          "mode": "import",
+          "symbol": "buildGeneratedSurface",
+          "targetPath": "lib/operator/generated-surface.js"
+        },
+        {
+          "binding": "release",
+          "mode": "read",
+          "targetPath": "public-release-manifest.json"
+        },
+        {
+          "binding": "cliSource",
+          "mode": "read",
+          "targetPath": "scripts/gigabrainctl.js"
+        },
+        {
+          "binding": "setupSource",
+          "mode": "read",
+          "targetPath": "scripts/setup-first-run.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/compat/setup-generated-surface-test.js"
+      "testPath": "tests/compat/setup-generated-surface-test.js",
+      "testSha256": "60c19417ce0d21f64df414a04c424adcc375622afd1b1cdbeaf6ab048533d639"
     },
     {
       "coveredPaths": [
@@ -875,14 +926,36 @@
     },
     {
       "coveredPaths": [
+        "lib/core/maintenance-service.js",
+        "lib/operator/surface-refresh-service.js",
+        "scripts/auto-capture-worker.js",
         "tests/compat/surface-noop-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_SURFACE_NOOP missing mutation-gated surface refresh",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-surface-noop",
       "ownerSourceFirstTaskId": "10",
+      "relevanceEvidence": [
+        {
+          "binding": "maintenanceSource",
+          "mode": "read",
+          "targetPath": "lib/core/maintenance-service.js"
+        },
+        {
+          "binding": "runRefresh",
+          "mode": "import",
+          "symbol": "refreshGeneratedSurfaceAfterMutation",
+          "targetPath": "lib/operator/surface-refresh-service.js"
+        },
+        {
+          "binding": "workerSource",
+          "mode": "read",
+          "targetPath": "scripts/auto-capture-worker.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/compat/surface-noop-test.js"
+      "testPath": "tests/compat/surface-noop-test.js",
+      "testSha256": "c1e30fea234fd9cd378c63d4e7d25e5daa07c535d2d04e0d82c01de944836bb0"
     },
     {
       "coveredPaths": [
@@ -1037,7 +1110,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/write-mode-gate-test.js",
-      "testSha256": "1ce71ce22bd7f113ffa46086bc2e9997e1235a1fbb4d944e52a04a5069f359a5"
+      "testSha256": "ac4fc20ea94b589bc214447e9b7425198519226da7c9cd1b7372ddeaf2addbcf"
     },
     {
       "coveredPaths": [
@@ -1786,6 +1859,6 @@
     }
   ],
   "entryCount": 94,
-  "manifestSha256": "3b217bc5397bf93459e24621437057bfdb357208a84b22a696149c3b9d7f66e3",
+  "manifestSha256": "316641602312a493752e51139bad4e028b4c5d2836dcecabc80c89c910a8e95c",
   "schemaVersion": 1
 }
