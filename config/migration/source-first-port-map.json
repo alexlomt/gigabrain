@@ -94,13 +94,13 @@
         "8",
         "9"
       ],
-      "reason": "Source-first evidence plus passing Task 9B fix-round 1 ownership and exact content hashes.",
+      "reason": "Source-first evidence plus exact Task 9B fix-round 2 RED ownership and content hashes.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-port-map.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "b7214fc5a761e15c4a1404501cff294635e92dc47dcb1dce88562338eddae17a",
+      "contentSha256": "3e4bb51eeac9b66e8f8cd1c6daa608fb3264fc113adbf2d2da3a5ead2a2f1d1e",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -114,7 +114,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with passing Task 9B fix-round 1 queue/worker hashes and package/release relevance evidence.",
+      "reason": "Source-first registry with the exact Task 9B fix-round 2 queue XFAIL signature and test hash.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -1192,7 +1192,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "0c5962fb7e6220c597ab1658a483fa79db966abb405e46c80a46834d51852772",
+      "contentSha256": "5640d2d207dbc8f157af266204fdc9587d0d1459c8fae6abc8aae4a0f9d4339a",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-queue"
@@ -1200,7 +1200,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Passing Task 9B fix-round 1 contract for descriptor lock authority, strict row schema, attempt-based circuit state, terminal allowlisting, and parent-directory fsync.",
+      "reason": "Task 9B fix-round 2 RED contract for legacy/stale provider history and post-truncation producer normalization.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-queue-test.js"
     },
@@ -1321,7 +1321,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "49dbdae4dbc35340e3bf0cfd1e3afbbb5704ca5aa8547efbac45ccc271626512",
+      "contentSha256": "890e38f9f17d3b06b884c287d38c01325e0d3bafe3dc8f3ea339457d7803f220",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1336,7 +1336,7 @@
         "8",
         "9"
       ],
-      "reason": "Task 9B fix-round 1 queue and worker XFAILs removed after all five reviewed contracts passed.",
+      "reason": "Expected-failure ownership includes the exact Task 9B fix-round 2 queue RED signature.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },

@@ -45,8 +45,8 @@
         "lib/compat/auto-capture-queue.js",
         "tests/compat/auto-capture-queue-test.js"
       ],
-      "expectedOutcome": "pass",
-      "expectedSignature": null,
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_AUTO_CAPTURE_QUEUE missing durable bounded queue state machine",
       "id": "compat-auto-capture-queue",
       "ownerSourceFirstTaskId": "9",
       "relevanceEvidence": [
@@ -59,7 +59,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/auto-capture-queue-test.js",
-      "testSha256": "0c5962fb7e6220c597ab1658a483fa79db966abb405e46c80a46834d51852772"
+      "testSha256": "5640d2d207dbc8f157af266204fdc9587d0d1459c8fae6abc8aae4a0f9d4339a"
     },
     {
       "coveredPaths": [
@@ -1660,6 +1660,6 @@
     }
   ],
   "entryCount": 89,
-  "manifestSha256": "480f88b66797187926e03572c5ce6e09bc462b226b0a5cde4955bd36f8b088a1",
+  "manifestSha256": "57fd5333380c63ab67dc6262cb56ceefa863b3d9a2899e964b62fcf118407c67",
   "schemaVersion": 1
 }

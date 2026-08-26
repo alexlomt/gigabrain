@@ -601,6 +601,229 @@ export async function run() {
         assert.deepEqual(stateVector(current), beforeBlocked);
       }
 
+      if (shouldRunFixCase("legacy-circuit-history")) {
+        const current = fixture("legacy-circuit-history");
+        const failing = await enqueueAutoCaptureEvent({
+          config: current.config,
+          event: packetEvent("legacy-circuit-failing"),
+          runId: "legacy-circuit-failing",
+        });
+        const later = await enqueueAutoCaptureEvent({
+          config: current.config,
+          event: packetEvent("legacy-circuit-later"),
+          runId: "legacy-circuit-later",
+        });
+        const legacyFailureAt = new Date(Date.now() - 1_000).toISOString();
+        let rows = readRows(current.descriptor.autoCaptureQueuePath);
+        const legacyRetry = rows.find((row) => row.id === failing.jobId);
+        legacyRetry.attempts = 1;
+        legacyRetry.error_class = "network";
+        legacyRetry.error_message = "network";
+        legacyRetry.next_attempt_at = new Date(Date.now() - 500).toISOString();
+        legacyRetry.status = "failed_retryable";
+        legacyRetry.updated_at = legacyFailureAt;
+        delete legacyRetry.provider_failure_count;
+        delete legacyRetry.provider_failure_timestamps;
+        writeRows(current.descriptor.autoCaptureQueuePath, rows);
+
+        const calls = [];
+        const failProvider = async ({ job }) => {
+          calls.push(job.id);
+          const error = new Error("fetch failed with raw legacy retry sentinel");
+          error.code = "ECONNRESET";
+          throw error;
+        };
+        for (let attempt = 2; attempt <= 3; attempt += 1) {
+          const outcome = await processAutoCaptureQueue({
+            config: current.config,
+            limit: 1,
+            processJob: failProvider,
+          });
+          assert.equal(outcome.processed, 1);
+          if (attempt < 3) {
+            rows = readRows(current.descriptor.autoCaptureQueuePath);
+            rows.find((row) => row.id === failing.jobId).next_attempt_at = new Date(Date.now() - 500).toISOString();
+            writeRows(current.descriptor.autoCaptureQueuePath, rows);
+          }
+        }
+        assert.deepEqual(calls, [failing.jobId, failing.jobId]);
+        const terminal = readRows(current.descriptor.autoCaptureQueuePath).find((row) => row.id === failing.jobId);
+        assert.equal(terminal.status, "dead_lettered");
+        assert.equal(terminal.attempts, 3, "legacy history must not increase the exact three-attempt execution ceiling");
+        assert.equal(terminal.provider_failure_count, 3);
+        assert.deepEqual(terminal.provider_failure_timestamps[0], legacyFailureAt);
+        assert.equal(JSON.stringify(terminal).includes("raw legacy retry"), false);
+
+        const beforeBlocked = stateVector(current);
+        let laterDispatched = false;
+        const blocked = await processAutoCaptureQueue({
+          config: current.config,
+          limit: 1,
+          processJob: async ({ job }) => {
+            laterDispatched = job.id === later.jobId;
+            return { autoSaved: 0, queuedReview: 0 };
+          },
+        });
+        assert.equal(laterDispatched, false);
+        assert.equal(blocked.circuitOpen, true);
+        assert.equal(blocked.circuitFailureCount, 3);
+        assert.equal(blocked.processed, 0);
+        assert.equal(blocked.mutated, false);
+        assert.deepEqual(stateVector(current), beforeBlocked);
+
+        const terminalFixture = fixture("legacy-terminal-history");
+        const historical = await enqueueAutoCaptureEvent({
+          config: terminalFixture.config,
+          event: packetEvent("legacy-terminal-history"),
+          runId: "legacy-terminal-history",
+        });
+        await enqueueAutoCaptureEvent({
+          config: terminalFixture.config,
+          event: packetEvent("legacy-terminal-trigger"),
+          runId: "legacy-terminal-trigger",
+        });
+        rows = readRows(terminalFixture.descriptor.autoCaptureQueuePath);
+        const legacyTerminal = rows.find((row) => row.id === historical.jobId);
+        legacyTerminal.attempts = 1;
+        legacyTerminal.error_class = "network";
+        legacyTerminal.error_message = "network";
+        legacyTerminal.next_attempt_at = "";
+        legacyTerminal.status = "failed_terminal";
+        legacyTerminal.updated_at = legacyFailureAt;
+        delete legacyTerminal.provider_failure_count;
+        delete legacyTerminal.provider_failure_timestamps;
+        writeRows(terminalFixture.descriptor.autoCaptureQueuePath, rows);
+        await processAutoCaptureQueue({
+          config: terminalFixture.config,
+          limit: 1,
+          processJob: async () => ({ autoSaved: 0, queuedReview: 0 }),
+        });
+        const seededTerminal = readRows(terminalFixture.descriptor.autoCaptureQueuePath)
+          .find((row) => row.id === historical.jobId);
+        assert.equal(seededTerminal.provider_failure_count, 1);
+        assert.deepEqual(seededTerminal.provider_failure_timestamps, [legacyFailureAt]);
+      }
+
+      if (shouldRunFixCase("stale-circuit-history")) {
+        const current = fixture("stale-circuit-history");
+        const stale = await enqueueAutoCaptureEvent({
+          config: current.config,
+          event: packetEvent("stale-circuit-one-job"),
+          runId: "stale-circuit-one-job",
+        });
+        let dispatched = false;
+        for (let attempt = 1; attempt <= 3; attempt += 1) {
+          const rows = readRows(current.descriptor.autoCaptureQueuePath);
+          const row = rows.find((entry) => entry.id === stale.jobId);
+          const staleAt = new Date(Date.now() - 190_000).toISOString();
+          row.attempts = attempt;
+          row.error_class = "";
+          row.error_message = "";
+          row.next_attempt_at = "";
+          row.processing_owner = `synthetic-stale-owner-${attempt}`;
+          row.processing_started_at = staleAt;
+          row.status = "processing";
+          row.updated_at = staleAt;
+          writeRows(current.descriptor.autoCaptureQueuePath, rows);
+          const recovered = await processAutoCaptureQueue({
+            config: current.config,
+            limit: 1,
+            processJob: async () => { dispatched = true; },
+          });
+          assert.equal(recovered.processingRecovered, 1);
+          assert.equal(recovered.processed, 0);
+          assert.equal(dispatched, false);
+          const recoveredRow = readRows(current.descriptor.autoCaptureQueuePath)
+            .find((entry) => entry.id === stale.jobId);
+          assert.equal(recoveredRow.provider_failure_count, attempt);
+          assert.equal(recoveredRow.provider_failure_timestamps.length, attempt);
+          assert.equal(recoveredRow.error_class, "timeout_or_aborted");
+          assert.equal(recoveredRow.error_message, "stale_processing_recovered");
+        }
+        const terminal = readRows(current.descriptor.autoCaptureQueuePath).find((row) => row.id === stale.jobId);
+        assert.equal(terminal.status, "dead_lettered");
+        assert.equal(terminal.attempts, 3);
+        assert.equal(terminal.provider_failure_count, 3);
+
+        const later = await enqueueAutoCaptureEvent({
+          config: current.config,
+          event: packetEvent("stale-circuit-later"),
+          runId: "stale-circuit-later",
+        });
+        const beforeBlocked = stateVector(current);
+        const blocked = await processAutoCaptureQueue({
+          config: current.config,
+          limit: 1,
+          processJob: async ({ job }) => {
+            dispatched = job.id === later.jobId;
+            return { autoSaved: 0, queuedReview: 0 };
+          },
+        });
+        assert.equal(dispatched, false);
+        assert.equal(blocked.circuitOpen, true);
+        assert.equal(blocked.circuitFailureCount, 3);
+        assert.equal(blocked.processed, 0);
+        assert.equal(blocked.mutated, false);
+        assert.deepEqual(stateVector(current), beforeBlocked);
+      }
+
+      if (shouldRunFixCase("producer-normalization")) {
+        const current = fixture("producer-normalization");
+        const exactMessage = "m".repeat(1_500);
+        const exactSession = "s".repeat(256);
+        const exactReason = "r".repeat(256);
+        const exactRunId = "u".repeat(256);
+        const exact = await enqueueAutoCaptureEvent({
+          config: current.config,
+          event: packetEvent("exact-bounds", {
+            decision: { action: "save", reason: exactReason },
+            messages: [{ role: "user", content: exactMessage }],
+            sessionKey: exactSession,
+          }),
+          runId: exactRunId,
+        });
+        assert.equal(exact.enqueued, true);
+
+        const cutMessage = `${"a".repeat(1_499)} tail-beyond-boundary`;
+        const cutSession = `${"b".repeat(255)} trailing-session`;
+        const cutReason = `${"c".repeat(255)} trailing-reason`;
+        const cutRunId = `${"d".repeat(255)} trailing-run-id`;
+        const cut = await enqueueAutoCaptureEvent({
+          config: current.config,
+          event: packetEvent("cut-bounds", {
+            decision: { action: "save", reason: cutReason },
+            messages: [{ role: "user", content: cutMessage }],
+            sessionKey: cutSession,
+          }),
+          runId: cutRunId,
+        });
+        assert.equal(cut.enqueued, true);
+
+        const rows = readRows(current.descriptor.autoCaptureQueuePath);
+        const exactRow = rows.find((row) => row.id === exact.jobId);
+        const cutRow = rows.find((row) => row.id === cut.jobId);
+        assert.equal(exactRow.packet.messages[0].content, exactMessage);
+        assert.equal(exactRow.session_key, exactSession);
+        assert.equal(exactRow.packet.decision.reason, exactReason);
+        assert.equal(exactRow.run_id, exactRunId);
+        assert.equal(cutRow.packet.messages[0].content, "a".repeat(1_499));
+        assert.equal(cutRow.session_key, "b".repeat(255));
+        assert.equal(cutRow.packet.decision.reason, "c".repeat(255));
+        assert.equal(cutRow.run_id, "d".repeat(255));
+        for (const value of [
+          cutRow.packet.messages[0].content,
+          cutRow.session_key,
+          cutRow.packet.decision.reason,
+          cutRow.run_id,
+        ]) assert.equal(value, value.trim(), "persisted bounded text must be normalized after truncation");
+
+        const before = stateVector(current);
+        const dryRun = await processAutoCaptureQueue({ config: current.config, limit: 2, dryRun: true });
+        assert.equal(dryRun.inspected, 2, "producer rows must be readable by the canonical persisted-row validator");
+        assert.equal(dryRun.mutated, false);
+        assert.deepEqual(stateVector(current), before);
+      }
+
       {
         const current = fixture("dry-run");
         await enqueueAutoCaptureEvent({ config: current.config, event: packetEvent("dry-run"), runId: "dry-run" });
