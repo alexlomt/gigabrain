@@ -2,8 +2,10 @@
 
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
   findRetiredStructuralFingerprintMatches,
@@ -858,7 +860,53 @@ function assessStaticRelevanceEvidence({ evidence, source, testPath }) {
   return assertedCall ? "ok" : "behavior_missing";
 }
 
+function collectV8Coverage(coverageDir) {
+  const executed = new Map();
+  let documents = 0;
+  try {
+    for (const file of readdirSync(coverageDir).filter((name) => name.endsWith(".json"))) {
+      const document = JSON.parse(readFileSync(path.join(coverageDir, file), "utf8"));
+      if (!Array.isArray(document.result)) return { executed, valid: false };
+      documents += 1;
+      for (const script of document.result) {
+        if (typeof script?.url !== "string" || !script.url.startsWith("file:")) continue;
+        let targetPath;
+        try {
+          const url = new URL(script.url);
+          url.search = "";
+          url.hash = "";
+          targetPath = path.resolve(fileURLToPath(url));
+        } catch {
+          continue;
+        }
+        if (!executed.has(targetPath)) executed.set(targetPath, new Map());
+        const bySymbol = executed.get(targetPath);
+        for (const fn of Array.isArray(script.functions) ? script.functions : []) {
+          const symbol = String(fn.functionName || "");
+          const ranges = Array.isArray(fn.ranges) ? fn.ranges : [];
+          if (!symbol || !ranges.some((range) => Number(range.count) > 0)) continue;
+          const rootRange = ranges[0] || {};
+          const signature = `${Number(rootRange.startOffset)}:${Number(rootRange.endOffset)}`;
+          if (!bySymbol.has(symbol)) bySymbol.set(symbol, new Set());
+          bySymbol.get(symbol).add(signature);
+        }
+      }
+    }
+  } catch {
+    return { executed, valid: false };
+  }
+  return { executed, valid: documents > 0 };
+}
+
+function hasUnambiguousExecutedTargetSymbol(coverage, targetPath, symbol) {
+  if (!coverage?.valid) return false;
+  const absoluteTarget = path.resolve(process.cwd(), targetPath);
+  const signatures = coverage.executed.get(absoluteTarget)?.get(symbol);
+  return signatures instanceof Set && signatures.size === 1;
+}
+
 function executeRegisteredNodeTest(registration) {
+  const coverageDir = mkdtempSync(path.join(tmpdir(), "gigabrain-source-first-coverage-"));
   const wrapper = [
     'import { pathToFileURL } from "node:url";',
     'const target = process.env.SOURCE_FIRST_GATE_TEST_PATH;',
@@ -867,22 +915,30 @@ function executeRegisteredNodeTest(registration) {
     'if (typeof module.run !== "function") throw new Error("SOURCE_FIRST_TEST_RUN_EXPORT");',
     'await module.run();',
   ].join("\n");
-  const result = spawnSync(process.execPath, [
-    "--input-type=module",
-    "--eval",
-    wrapper,
-  ], {
-    cwd: process.cwd(),
-    encoding: "utf8",
-    env: {
-      ...process.env,
-      LC_ALL: "C",
-      SOURCE_FIRST_GATE_TEST_PATH: path.resolve(process.cwd(), registration.testPath),
-    },
-    maxBuffer: 16 * 1024 * 1024,
-    timeout: 60_000,
-  });
-  return !result.error && result.status === 0;
+  try {
+    const result = spawnSync(process.execPath, [
+      "--input-type=module",
+      "--eval",
+      wrapper,
+    ], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        LC_ALL: "C",
+        NODE_V8_COVERAGE: coverageDir,
+        SOURCE_FIRST_GATE_TEST_PATH: path.resolve(process.cwd(), registration.testPath),
+      },
+      maxBuffer: 16 * 1024 * 1024,
+      timeout: 60_000,
+    });
+    return {
+      coverage: collectV8Coverage(coverageDir),
+      ok: !result.error && result.status === 0,
+    };
+  } finally {
+    rmSync(coverageDir, { force: true, recursive: true });
+  }
 }
 
 function ensureSorted(rows, key) {
@@ -1101,7 +1157,7 @@ function readExpectedFailures(head, headByPath) {
 function validateActiveGates(map, registry, headByPath, head, allowlist) {
   const registrations = new Map(registry.entries.map((entry) => [entry.id, entry]));
   const adoptedPaths = new Set(allowlist.entries.map((entry) => entry.path));
-  const executedTests = new Set();
+  const executedTests = new Map();
   const used = new Set();
   const expectedFailures = readExpectedFailures(head, headByPath);
   for (const row of map.candidateChanges) {
@@ -1151,11 +1207,20 @@ function validateActiveGates(map, registry, headByPath, head, allowlist) {
       }
       if (relevance !== "ok") fail("GATE_BEHAVIORAL_RELEVANCE", row.targetPath);
       const executionKey = `${registration.testPath}\0${registration.testSha256}`;
-      if (!executedTests.has(executionKey)) {
-        if (registration.runner !== "node" || !executeRegisteredNodeTest(registration)) {
+      let execution = executedTests.get(executionKey);
+      if (!execution) {
+        if (registration.runner !== "node") {
           fail("GATE_EXECUTION_FAILED", registration.testPath);
         }
-        executedTests.add(executionKey);
+        execution = executeRegisteredNodeTest(registration);
+        if (!execution.ok) fail("GATE_EXECUTION_FAILED", registration.testPath);
+        executedTests.set(executionKey, execution);
+      }
+      if (
+        evidence.mode === "import"
+        && !hasUnambiguousExecutedTargetSymbol(execution.coverage, evidence.targetPath, evidence.symbol)
+      ) {
+        fail("GATE_DYNAMIC_EVIDENCE", row.targetPath);
       }
     }
   }
