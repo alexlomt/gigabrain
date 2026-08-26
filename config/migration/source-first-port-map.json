@@ -335,7 +335,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "7825bafc63fa14897bc7c0d2ea2791fb96d1aecfdff5f37baba4366413bb8473",
+      "contentSha256": "dd13a7a5571475c7beac16cd75dd558864ae21dc201b31f3e278e457bb70f532",
       "disposition": "compat_module",
       "gate": {
         "registrationId": "compat-auto-capture-policy"
@@ -343,7 +343,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9A fix round 2 closes residual execution-chatter eligibility and Paperclip authorization-boilerplate ordering gaps.",
+      "reason": "Task 9A fix round 3 closes natural conversational unit-test and diagnostics chatter eligibility.",
       "targetMode": "100644",
       "targetPath": "lib/compat/auto-capture-policy.js"
     },
