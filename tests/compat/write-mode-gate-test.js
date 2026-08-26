@@ -65,6 +65,11 @@ export async function run() {
     assert.equal(assertWriterRegistryComplete(discovered), true);
     assert.equal(discovered.length, 170, "all shipped entrypoints remain in the discovery inventory");
     assert.equal(
+      new Set(discovered.filter((entry) => entry.access === "write").map((entry) => entry.canonicalOperation || entry.operation)).size,
+      70,
+      "nested aliases must not inflate the canonical shipped-writer count",
+    );
+    assert.equal(
       discovered.find((entry) => entry.operation === "cli.vault.sync")?.access,
       "write",
       "pure nested discovery must recognize syncVaultMemory without relying on the declaration map alias",
