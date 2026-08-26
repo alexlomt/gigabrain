@@ -99,7 +99,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "6620e9d45238e1c5b2af8c02eeaf62633c300827d9790c1899bf8acb7b2838ee",
+      "contentSha256": "e01c3a7502b8d216337e06cd6f56ee1bb44fbe852bd2d15df833a9519b9b4c91",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1243,7 +1243,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "b574f3efad59e20344368bc0f7b99ded36b503272f8c7e1f8eba934932f25ba1",
+      "contentSha256": "13d38714797178b29c8eeff1f4d52b92a08dc97f9794dfea5a95d5a073eb1591",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1257,7 +1257,7 @@
         "7",
         "8"
       ],
-      "reason": "Expected-failure ownership after all Task 8 red gates became passing contracts.",
+      "reason": "Expected-failure ownership while the Task 8 native world-row projection regression is red.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1541,7 +1541,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "49eee9c470edeb0de5875636b491536eac8059667873ef84615ed86ab1a35348",
+      "contentSha256": "161f95e591040a197c5708faa4389270c995ef5a6a555f252bce1db0d17e69bd",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-world-model-shadow"
@@ -1549,7 +1549,7 @@
       "ownerTasks": [
         "8"
       ],
-      "reason": "Passing Task 8 deterministic shadow projection and protected non-slot rule contract.",
+      "reason": "Task 8 red regression for native-row preservation in deterministic shadow projection.",
       "targetMode": "100644",
       "targetPath": "tests/compat/world-model-shadow-test.js"
     },

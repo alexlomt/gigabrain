@@ -3,6 +3,7 @@ import { rmSync } from "node:fs";
 
 import { ensureAdaptiveTrustStore, loadAdaptiveTrustOverrides, runAdaptiveTrust } from "../../lib/core/adaptive-trust.js";
 import { normalizeConfig } from "../../lib/core/config.js";
+import { ensureNativeStore } from "../../lib/core/native-sync.js";
 import { ensurePersonStore, rebuildEntityMentions } from "../../lib/core/person-service.js";
 import { rebuildWorldModel } from "../../lib/core/world-model.js";
 import { makeConfigObject, makeTempWorkspace, openDb, seedMemoryCurrent } from "../helpers.js";
@@ -41,7 +42,39 @@ const seed = (db) => {
     },
   ]);
   ensurePersonStore(db);
+  ensureNativeStore(db);
   ensureAdaptiveTrustStore(db);
+  const insertNative = db.prepare(`
+    INSERT INTO memory_native_chunks (
+      chunk_id, source_path, source_kind, source_date, section, line_start, line_end,
+      content, normalized, hash, scope, memory_type, origin_kind, linked_memory_id,
+      first_seen_at, last_seen_at, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  for (const [chunkId, content] of [
+    ["native-shadow-1", "Project Native Beacon preserves the first native world fact."],
+    ["native-shadow-2", "Project Native Beacon preserves the second native world fact."],
+  ]) {
+    insertNative.run(
+      chunkId,
+      "memory/synthetic-native.md",
+      "curated",
+      "2026-08-26",
+      "Projects",
+      1,
+      1,
+      content,
+      content.toLowerCase(),
+      chunkId,
+      "shared",
+      "CONTEXT",
+      "curated",
+      null,
+      NOW,
+      NOW,
+      "active",
+    );
+  }
   rebuildEntityMentions(db);
 };
 
@@ -68,6 +101,10 @@ export async function run() {
       seed(dbA);
       seed(dbB);
       const sourceBefore = sourceRows(dbA);
+      const nativeBefore = logicalRows(dbA, "memory_native_chunks", [
+        "chunk_id", "source_path", "source_kind", "content", "normalized", "scope",
+        "memory_type", "origin_kind", "linked_memory_id", "status",
+      ]);
 
       assert.equal(loadAdaptiveTrustOverrides({ db: dbA, config: configA }), null);
       const trust = runAdaptiveTrust({ db: dbA, config: configA, now: NOW, dryRun: false });
@@ -80,6 +117,14 @@ export async function run() {
       assert.deepEqual(firstRebuild.counts, secondRebuild.counts);
       assert.deepEqual(sourceRows(dbA), sourceBefore, "world-model rebuild must preserve source memories");
       assert.deepEqual(sourceRows(dbB), sourceBefore, "identical shadow input must preserve source memories");
+      assert.deepEqual(
+        logicalRows(dbA, "memory_native_chunks", [
+          "chunk_id", "source_path", "source_kind", "content", "normalized", "scope",
+          "memory_type", "origin_kind", "linked_memory_id", "status",
+        ]),
+        nativeBefore,
+        "world-model rebuild must preserve native source rows",
+      );
 
       for (const [table, columns] of [
         ["memory_claims", ["memory_id", "memory_tier", "claim_slot", "consolidation_op", "source_strength", "surface_candidate", "payload"]],
@@ -98,6 +143,16 @@ export async function run() {
         "SELECT memory_tier FROM memory_claims WHERE memory_id = ?",
       ).get("shadow-project");
       assert.equal(protectedClaim?.memory_tier, "ops_runbook", "protected non-slot tier rules must be consumed");
+      assert.equal(
+        Number(dbA.prepare("SELECT COUNT(*) AS count FROM memory_claims WHERE memory_id LIKE 'native:%'").get()?.count || 0),
+        2,
+        "active native rows must participate in world-model projection",
+      );
+      assert.equal(
+        dbA.prepare("SELECT kind FROM memory_entities WHERE entity_id = ?").get("project:native-beacon")?.kind,
+        "project",
+        "native-only entities must survive the shadow rebuild",
+      );
     } finally {
       dbA.close();
       dbB.close();
