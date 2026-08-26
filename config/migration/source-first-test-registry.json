@@ -171,8 +171,8 @@
         "scripts/gigabrainctl.js",
         "tests/compat/observational-diagnostics-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_OBSERVATIONAL_DIAGNOSTICS missing zero-write diagnostics guard",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-observational-diagnostics",
       "ownerSourceFirstTaskId": "5",
       "relevanceEvidence": [
@@ -419,8 +419,8 @@
         "scripts/setup-first-run.js",
         "tests/compat/write-mode-gate-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_WRITE_MODE_GATE missing complete fail-closed writer policy",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-write-mode-gate",
       "ownerSourceFirstTaskId": "5",
       "relevanceEvidence": [
@@ -1273,6 +1273,6 @@
     }
   ],
   "entryCount": 81,
-  "manifestSha256": "36101702231e84ad016d13c5ebecddd684d8d5e34a4c25d32d35a8fd08862a8b",
+  "manifestSha256": "f916359d865aa2bedbd77ce2b2da9a3c25513746bcd3ff01a6d06917b555139c",
   "schemaVersion": 1
 }

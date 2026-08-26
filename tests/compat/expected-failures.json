@@ -41,19 +41,9 @@
       "test": "compat/native-metadata-promotion-test.js"
     },
     {
-      "ownerTask": "5",
-      "signature": "COMPAT_EXPECTED_OBSERVATIONAL_DIAGNOSTICS missing zero-write diagnostics guard",
-      "test": "compat/observational-diagnostics-test.js"
-    },
-    {
       "ownerTask": "14",
       "signature": "COMPAT_EXPECTED_ROLLBACK_RESTORE missing verified rollback restoration",
       "test": "compat/rollback-restore-test.js"
-    },
-    {
-      "ownerTask": "5",
-      "signature": "COMPAT_EXPECTED_WRITE_MODE_GATE missing complete fail-closed writer policy",
-      "test": "compat/write-mode-gate-test.js"
     }
   ],
   "schemaVersion": 1

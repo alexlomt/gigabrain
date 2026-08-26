@@ -167,7 +167,7 @@ const resolveCliWriteOperation = () => {
     'sync-hosts': subcommand === 'status' ? '' : 'cli.sync_hosts',
     synthesis: subcommand === 'build' ? 'cli.synthesis_build' : '',
     transcript: subcommand === 'sync' ? 'cli.transcript_sync' : '',
-    vault: subcommand === 'sync' ? 'cli.vault_sync' : '',
+    vault: subcommand === 'sync' ? 'cli.vault_sync' : subcommand === 'inbox' ? 'cli.vault.inbox' : '',
     watch: 'cli.watch',
     wiki: subcommand === 'project' ? 'cli.wiki_project' : subcommand === 'reconcile' ? 'cli.wiki_reconcile' : '',
     world: subcommand === 'rebuild' ? 'cli.world_rebuild' : '',
@@ -1702,22 +1702,54 @@ const commandSyncHosts = async () => {
     return;
   }
   const { configPath, config, dbPath } = loadConfigAndDbPath();
-  ensureDir(path.dirname(dbPath));
-  const db = openDatabase(dbPath);
   const requestedHostsForSync = parseHostList(syncFlags);
   const manualImportPath = readFlag('--manual-import', '', syncFlags);
   const manualSourceHost = readFlag('--manual-source-host', 'chatgpt_manual', syncFlags);
   const effectiveHosts = requestedHostsForSync.length > 0
     ? requestedHostsForSync
     : (manualImportPath ? [manualSourceHost] : []);
-  const common = {
-    db,
+  const commonOptions = {
     config,
     hosts: effectiveHosts,
     codexHome: readFlag('--codex-home', '', syncFlags),
     claudeHome: readFlag('--claude-home', '', syncFlags),
     hermesHome: readFlag('--hermes-home', '', syncFlags),
     workspaceRoot: readFlag('--workspace', '', syncFlags),
+  };
+  if (action === 'status') {
+    if (!fs.existsSync(dbPath)) {
+      console.log(JSON.stringify({
+        ok: false,
+        observational: true,
+        configPath,
+        dbPath,
+        diagnostic: 'registry does not exist',
+        hosts: [],
+        groups: { ready: [], never_synced: [], manual_only: [], bridge: [] },
+      }, null, 2));
+      return;
+    }
+    const readDb = openDatabase(dbPath, { readOnly: true, observational: true });
+    try {
+      try { readDb.exec('PRAGMA query_only = ON'); } catch { /* connection-local hardening */ }
+      const schemaReady = hasTableReadOnly(readDb, 'memory_host_sync_runs');
+      console.log(JSON.stringify({
+        configPath,
+        dbPath,
+        observational: true,
+        ...getSyncStatus({ db: readDb, ...commonOptions }),
+        ...(schemaReady ? {} : { diagnostic: 'memory_host_sync_runs schema is unavailable' }),
+      }, null, 2));
+    } finally {
+      readDb.close();
+    }
+    return;
+  }
+  ensureDir(path.dirname(dbPath));
+  const db = openDatabase(dbPath);
+  const common = {
+    db,
+    ...commonOptions,
   };
   try {
     ensureProjectionStore(db);
@@ -1731,14 +1763,6 @@ const commandSyncHosts = async () => {
           manualImportPath,
           manualSourceHost,
         }),
-      }, null, 2));
-      return;
-    }
-    if (action === 'status') {
-      console.log(JSON.stringify({
-        configPath,
-        dbPath,
-        ...getSyncStatus(common),
       }, null, 2));
       return;
     }
