@@ -99,7 +99,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "9f36eed0413ff79f149674ac9e1a694e1d342a12b84402411bcb715acc2bbc41",
+      "contentSha256": "f62988d20db116bcca0239096016c3163b216c173e51514527404b449480ebf5",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -848,7 +848,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "282ef519b1fc487ead1a49ba8ddd842998287b0ddda78feb48cb9627f0a7c190",
+      "contentSha256": "4a6f6dcf6b47900e2147c3844c44ecfee6ed9c29b42ffe614a89c741ea200c89",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-observational-core-patches"
@@ -857,7 +857,7 @@
         "5",
         "8"
       ],
-      "reason": "Task 5 observational behavior retained while Task 8 restores native projection, consumes protected rules, and emits exact-scope deterministic syntheses.",
+      "reason": "Task 5 observational behavior retained while Task 8 restores native projection, protects stable curated identities, consumes protected rules, and emits exact-scope syntheses.",
       "targetMode": "100644",
       "targetPath": "lib/core/world-model.js"
     },
@@ -1243,7 +1243,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "13d38714797178b29c8eeff1f4d52b92a08dc97f9794dfea5a95d5a073eb1591",
+      "contentSha256": "b574f3efad59e20344368bc0f7b99ded36b503272f8c7e1f8eba934932f25ba1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1257,7 +1257,7 @@
         "7",
         "8"
       ],
-      "reason": "Expected-failure ownership while the Task 8 protected-entity preservation regression is red.",
+      "reason": "Expected-failure ownership after the Task 8 protected-entity preservation regression became a passing gate.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1549,7 +1549,7 @@
       "ownerTasks": [
         "8"
       ],
-      "reason": "Task 8 red regression for existing protected entity IDs during deterministic shadow rebuilds.",
+      "reason": "Passing Task 8 existing-protected-ID, native-row, and deterministic shadow rebuild contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/world-model-shadow-test.js"
     },
