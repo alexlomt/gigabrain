@@ -200,6 +200,7 @@
         {
           "binding": "readContainedRegularFileNoFollowSync",
           "mode": "import",
+          "resultBinding": "contained",
           "symbol": "readContainedRegularFileNoFollowSync",
           "targetPath": "lib/core/safe-fs.js"
         }
@@ -1223,6 +1224,6 @@
     }
   ],
   "entryCount": 81,
-  "manifestSha256": "4af717d476dd0bc354c98997c494a3b1fda3a6901148bc6d6833eb0299bdacdf",
+  "manifestSha256": "0dee56f1f31a438a18efcbdfb2e60416eab165e702a126c96925277ca3ca106a",
   "schemaVersion": 1
 }
