@@ -97,7 +97,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "fabeb66b0c3edcb192c674b4b019764aafb45d444302ddd7bf66aad62fc4717e",
+      "contentSha256": "06003c5329e1ce9c4a46450ef707038726f471fe844753bef77c8473a96e7204",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -411,7 +411,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "6f3029e1ec6751f6ba86fd6f4c1a2077387bb77b88207f910e42c561768b0b2b",
+      "contentSha256": "52409aa7072ffb6dc498de52d2738df3f35583c27ae8cbd96bf16b4d19b8de3e",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-write-mode-gate"
@@ -1279,7 +1279,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "347b778f57f9041b8e8bf31620e5c1d67e72de2ddd3d4d6039ea71c01ca370d8",
+      "contentSha256": "0d4d0ca79ecd0a1e21cab877135ad64e1058e30356aa7257d23c7b5afd399b47",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-write-mode-gate"
