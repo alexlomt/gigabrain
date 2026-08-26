@@ -767,6 +767,119 @@ export async function run() {
         assert.deepEqual(stateVector(current), beforeBlocked);
       }
 
+      if (shouldRunFixCase("legacy-processing-history")) {
+        const makeLegacyProcessing = async (label, attempts, explicitTimestamps = null) => {
+          const current = fixture(`legacy-processing-${label}`);
+          const queued = await enqueueAutoCaptureEvent({
+            config: current.config,
+            event: packetEvent(`legacy-processing-${label}`),
+            runId: `legacy-processing-${label}`,
+          });
+          const rows = readRows(current.descriptor.autoCaptureQueuePath);
+          const row = rows.find((entry) => entry.id === queued.jobId);
+          const processingStartedAt = new Date(Date.now() - 190_000).toISOString();
+          row.attempts = attempts;
+          row.error_class = "";
+          row.error_message = "";
+          row.next_attempt_at = "";
+          row.processing_owner = `legacy-owner-${label}`;
+          row.processing_started_at = processingStartedAt;
+          row.status = "processing";
+          row.updated_at = processingStartedAt;
+          if (explicitTimestamps) {
+            row.provider_failure_count = explicitTimestamps.length;
+            row.provider_failure_timestamps = [...explicitTimestamps];
+          } else {
+            delete row.provider_failure_count;
+            delete row.provider_failure_timestamps;
+          }
+          writeRows(current.descriptor.autoCaptureQueuePath, rows);
+          return { current, jobId: queued.jobId, processingStartedAt };
+        };
+
+        let dispatched = false;
+        const attemptTwo = await makeLegacyProcessing("attempt-two", 2);
+        const recoveredTwo = await processAutoCaptureQueue({
+          config: attemptTwo.current.config,
+          limit: 1,
+          processJob: async () => { dispatched = true; },
+        });
+        assert.equal(dispatched, false);
+        assert.equal(recoveredTwo.processingRecovered, 1);
+        assert.equal(recoveredTwo.circuitOpen, false);
+        assert.equal(recoveredTwo.circuitFailureCount, 2);
+        const attemptTwoRow = readRows(attemptTwo.current.descriptor.autoCaptureQueuePath)
+          .find((row) => row.id === attemptTwo.jobId);
+        assert.equal(attemptTwoRow.status, "failed_retryable");
+        assert.equal(attemptTwoRow.attempts, 2);
+        assert.equal(attemptTwoRow.provider_failure_count, 2);
+        assert.deepEqual(
+          attemptTwoRow.provider_failure_timestamps.slice(0, 1),
+          [attemptTwo.processingStartedAt],
+        );
+
+        const attemptThree = await makeLegacyProcessing("attempt-three", 3);
+        const recoveredThree = await processAutoCaptureQueue({
+          config: attemptThree.current.config,
+          limit: 1,
+          processJob: async () => { dispatched = true; },
+        });
+        assert.equal(dispatched, false);
+        assert.equal(recoveredThree.processingRecovered, 1);
+        assert.equal(recoveredThree.circuitOpen, true);
+        assert.equal(recoveredThree.circuitFailureCount, 3);
+        const attemptThreeRow = readRows(attemptThree.current.descriptor.autoCaptureQueuePath)
+          .find((row) => row.id === attemptThree.jobId);
+        assert.equal(attemptThreeRow.status, "dead_lettered");
+        assert.equal(attemptThreeRow.attempts, 3);
+        assert.equal(attemptThreeRow.provider_failure_count, 3);
+        assert.deepEqual(
+          attemptThreeRow.provider_failure_timestamps.slice(0, 2),
+          [attemptThree.processingStartedAt, attemptThree.processingStartedAt],
+        );
+        const later = await enqueueAutoCaptureEvent({
+          config: attemptThree.current.config,
+          event: packetEvent("legacy-processing-later"),
+          runId: "legacy-processing-later",
+        });
+        const beforeBlocked = stateVector(attemptThree.current);
+        const blocked = await processAutoCaptureQueue({
+          config: attemptThree.current.config,
+          limit: 1,
+          processJob: async ({ job }) => {
+            dispatched = job.id === later.jobId;
+            return { autoSaved: 0, queuedReview: 0 };
+          },
+        });
+        assert.equal(dispatched, false);
+        assert.equal(blocked.circuitOpen, true);
+        assert.equal(blocked.processed, 0);
+        assert.equal(blocked.mutated, false);
+        assert.deepEqual(stateVector(attemptThree.current), beforeBlocked);
+
+        const explicitHistory = [
+          new Date(Date.now() - 120_000).toISOString(),
+          new Date(Date.now() - 60_000).toISOString(),
+        ];
+        const existing = await makeLegacyProcessing("existing-history", 3, explicitHistory);
+        const recoveredExisting = await processAutoCaptureQueue({
+          config: existing.current.config,
+          limit: 1,
+          processJob: async () => { dispatched = true; },
+        });
+        assert.equal(dispatched, false);
+        assert.equal(recoveredExisting.processingRecovered, 1);
+        assert.equal(recoveredExisting.circuitOpen, true);
+        const existingRow = readRows(existing.current.descriptor.autoCaptureQueuePath)
+          .find((row) => row.id === existing.jobId);
+        assert.equal(existingRow.provider_failure_count, 3);
+        assert.deepEqual(
+          existingRow.provider_failure_timestamps.slice(0, 2),
+          explicitHistory,
+          "explicit valid history must not be reseeded or double-counted",
+        );
+      }
+
       if (shouldRunFixCase("producer-normalization")) {
         const current = fixture("producer-normalization");
         const exactMessage = "m".repeat(1_500);
