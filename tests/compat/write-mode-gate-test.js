@@ -79,6 +79,26 @@ export async function run() {
       "write",
       "explicitly mapped reconcileWiki must classify its nested CLI call as write",
     );
+    const expectedFallbackWriters = new Map([
+      ["cli.control.apply", "cli.control_apply"],
+      ["cli.migrate.legacy.drop", "cli.migrate"],
+      ["cli.sync.hosts.sync", "cli.sync_hosts"],
+      ["cli.wiki.project", "cli.wiki_project"],
+    ]);
+    for (const [operation, canonicalOperation] of expectedFallbackWriters) {
+      const entry = discovered.find((item) => item.operation === operation);
+      assert.equal(entry?.access, "write", `${operation} must be discovered from fall-through behavior`);
+      assert.equal(entry?.canonicalOperation, canonicalOperation, `${operation} must link its actual fallback guard`);
+      assert.equal(entry?.branchKind, "fallback", `${operation} must remain independently visible as fallback behavior`);
+    }
+    assert.deepEqual(
+      discovered
+        .filter((entry) => entry.branchKind === "fallback" && entry.access === "write")
+        .map((entry) => entry.operation)
+        .sort(),
+      [...expectedFallbackWriters.keys()].sort(),
+      "all current fall-through/default writers must be enumerated",
+    );
     const discoveredIds = new Set(discovered.map((entry) => entry.operation));
     for (const required of ["package.migrate-v3", "package.harmonize", "cli.inventory", "cli.vault.inbox"]) {
       assert.equal(discoveredIds.has(required), true, `discovery must include ${required}`);
@@ -233,6 +253,87 @@ export async function run() {
         /GIGABRAIN_UNGUARDED_WRITER/,
         "a dotted registry classification must not conceal a missing pre-work guard link",
       );
+
+      const missingFallbackGuardRoot = path.join(discoveryRoot, "missing-fallback-guards");
+      mkdirSync(path.join(missingFallbackGuardRoot, "scripts"), { recursive: true });
+      writeFileSync(path.join(missingFallbackGuardRoot, "package.json"), JSON.stringify({ scripts: {} }));
+      const fallbackGuardRemovals = [
+        {
+          operation: "cli.control.apply",
+          from: "control: subcommand === 'apply' ? 'cli.control_apply' : '',",
+          to: "control: '',",
+        },
+        {
+          operation: "cli.migrate.legacy.drop",
+          from: "migrate: 'cli.migrate',",
+          to: "migrate: '',",
+        },
+        {
+          operation: "cli.sync.hosts.sync",
+          from: "'sync-hosts': subcommand === 'status' ? '' : 'cli.sync_hosts',",
+          to: "'sync-hosts': '',",
+        },
+        {
+          operation: "cli.wiki.project",
+          from: "wiki: subcommand === 'project' ? 'cli.wiki_project' : subcommand === 'reconcile' ? 'cli.wiki_reconcile' : '',",
+          to: "wiki: subcommand === 'reconcile' ? 'cli.wiki_reconcile' : '',",
+        },
+      ];
+      for (const fixture of fallbackGuardRemovals) {
+        const changedSource = currentCliSource.replace(fixture.from, fixture.to);
+        assert.notEqual(changedSource, currentCliSource, `fixture must remove the shipped ${fixture.operation} fallback guard`);
+        writeFileSync(path.join(missingFallbackGuardRoot, "scripts", "gigabrainctl.js"), changedSource);
+        const changedDiscovery = discoverWriterEntrypoints({ repoRoot: missingFallbackGuardRoot });
+        assert.equal(
+          changedDiscovery.find((entry) => entry.operation === fixture.operation)?.access,
+          "write",
+          `${fixture.operation} must remain behaviorally discovered after its fallback guard is removed`,
+        );
+        assert.throws(
+          () => assertWriterRegistryComplete(changedDiscovery),
+          /GIGABRAIN_UNGUARDED_WRITER/,
+          `removing the ${fixture.operation} fallback guard must fail completeness`,
+        );
+      }
+
+      const fallbackRoot = path.join(discoveryRoot, "future-fallback");
+      mkdirSync(path.join(fallbackRoot, "scripts"), { recursive: true });
+      writeFileSync(path.join(fallbackRoot, "package.json"), JSON.stringify({ scripts: {} }));
+      writeFileSync(path.join(fallbackRoot, "scripts", "gigabrainctl.js"), `
+        import { writeFileSync } from "node:fs";
+        const command = "future";
+        const flags = [];
+        const resolveCliWriteOperation = () => {
+          const subcommand = String(flags[0] || "apply").trim().toLowerCase();
+          const operations = { future: subcommand === "status" ? "" : "cli.audit" };
+          return String(operations[command] || "");
+        };
+        const commandFuture = async () => {
+          const subcommand = String(flags[0] || "apply").trim().toLowerCase();
+          if (!subcommand || subcommand === "--help" || subcommand === "-h") {
+            console.log("usage");
+            return;
+          }
+          if (!["apply", "status"].includes(subcommand)) throw new Error("unknown future subcommand");
+          if (subcommand === "status") {
+            console.log("status");
+            return;
+          }
+          writeFileSync("state", "changed");
+        };
+        if (command === "future") await commandFuture();
+      `);
+      const fallbackDiscovery = discoverWriterEntrypoints({ repoRoot: fallbackRoot });
+      const futureFallback = fallbackDiscovery.find((entry) => entry.operation === "cli.future.apply");
+      assert.equal(futureFallback?.access, "write", "future fall-through writers must be discovered from residual behavior");
+      assert.equal(futureFallback?.canonicalOperation, "cli.audit", "future fall-through writers must link the resolver fallback");
+      assert.equal(futureFallback?.branchKind, "fallback", "future fall-through writers need a distinct behavioral row");
+      assert.equal(
+        fallbackDiscovery.find((entry) => entry.operation === "cli.future.status")?.access,
+        "read",
+        "explicit default-read branches must not become writer false positives",
+      );
+      assert.equal(assertWriterRegistryComplete(fallbackDiscovery), true);
     } finally {
       rmSync(discoveryRoot, { recursive: true, force: true });
     }
