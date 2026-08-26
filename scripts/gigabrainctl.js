@@ -175,6 +175,76 @@ const resolveCliWriteOperation = () => {
   return String(operations[command] || '');
 };
 
+const resolveCliAccessPlan = () => {
+  const defaultWriterOperation = !String(flags[0] || '').trim()
+    ? command === 'world'
+      ? 'cli.world_rebuild'
+      : command === 'synthesis'
+        ? 'cli.synthesis_build'
+        : ''
+    : '';
+  const operation = resolveCliWriteOperation() || defaultWriterOperation;
+  return Object.freeze({
+    access: operation ? 'write' : 'read',
+    command,
+    operation,
+    subcommand: String(flags[0] || '').trim().toLowerCase(),
+  });
+};
+
+const assertCliAccessPlanAllowed = ({ config, accessPlan } = {}) => {
+  const mode = resolveWriteMode(config);
+  if (accessPlan?.access === 'write') {
+    return assertWriteAllowed({ mode, operation: accessPlan.operation });
+  }
+  return Object.freeze({ access: 'read', allowedModes: ['read_only', 'native_only', 'full'], mode });
+};
+
+const openCliDatabase = ({ config, dbPath, accessPlan, requiredTables = [] } = {}) => {
+  assertCliAccessPlanAllowed({ config, accessPlan });
+  if (accessPlan?.access === 'write') {
+    ensureDir(path.dirname(dbPath));
+    try { fs.chmodSync(path.dirname(dbPath), 0o700); } catch { /* best-effort */ }
+    return { db: openDatabase(dbPath), diagnostic: '', missingTables: [], observational: false };
+  }
+  if (!fs.existsSync(dbPath)) {
+    return { db: null, diagnostic: 'registry does not exist', missingTables: [], observational: true };
+  }
+  const db = openDatabase(dbPath, { readOnly: true, observational: true });
+  try {
+    db.exec('PRAGMA query_only = ON');
+    const missingTables = requiredTables
+      .map((table) => String(table || '').trim())
+      .filter((table) => table && !hasTableReadOnly(db, table));
+    if (missingTables.length > 0) {
+      db.close();
+      return {
+        db: null,
+        diagnostic: `${missingTables.join(', ')} schema is unavailable`,
+        missingTables,
+        observational: true,
+      };
+    }
+    return { db, diagnostic: '', missingTables: [], observational: true };
+  } catch (error) {
+    try { db.close(); } catch { /* already closed */ }
+    throw error;
+  }
+};
+
+const printReaderDiagnostic = ({ action, configPath, dbPath, opened } = {}) => {
+  console.log(JSON.stringify({
+    ok: false,
+    action,
+    read_only: true,
+    observational: true,
+    configPath,
+    dbPath,
+    diagnostic: opened?.diagnostic || 'required schema is unavailable',
+    missing_tables: opened?.missingTables || [],
+  }, null, 2));
+};
+
 const loadConfigAndDbPath = () => {
   const configPath = readFlag('--config', '');
   if (configPath) {
@@ -194,18 +264,20 @@ const loadConfigAndDbPath = () => {
     workspaceRoot: workspaceOverride || undefined,
     mode: mode || undefined,
   });
-  const writeOperation = resolveCliWriteOperation();
-  if (writeOperation) {
-    assertWriteAllowed({ mode: resolveWriteMode(loaded.config), operation: writeOperation });
+  const accessPlan = resolveCliAccessPlan();
+  if (accessPlan.access === 'write') {
+    assertCliAccessPlanAllowed({ config: loaded.config, accessPlan });
   } else if (command === 'inventory') {
     assertEntrypointAllowed({ mode: resolveWriteMode(loaded.config), operation: 'cli.inventory' });
+  } else {
+    assertCliAccessPlanAllowed({ config: loaded.config, accessPlan });
   }
   const dbPath = path.resolve(readFlag('--db', loaded.config.runtime.paths.registryPath));
   // Fresh-install UX: node:sqlite's DatabaseSync throws a raw "unable to open
   // database file" when the registry's parent dir is missing. Ensure it exists
   // centrally so every command behaves like the sibling commands (sync-hosts,
   // import/export, handoff, vault-inbox) that already ensureDir before opening.
-  if (writeOperation) {
+  if (accessPlan.access === 'write') {
     ensureDir(path.dirname(dbPath));
     // The memory dir holds the registry, backups, and usage logs, so keep it
     // owner-only on shared hosts.
@@ -216,6 +288,7 @@ const loadConfigAndDbPath = () => {
     source: loaded.source,
     config: loaded.config,
     dbPath,
+    accessPlan,
   };
 };
 
@@ -1437,6 +1510,7 @@ const commandDoctor = async () => {
 
 const commandWorld = async () => {
   const action = String(flags[0] || 'rebuild').trim().toLowerCase();
+  if (!['rebuild', 'entities'].includes(action)) throw new Error(`Unknown world action: ${action || '(none)'}`);
   const worldFlags = flags.slice(1);
   const configPath = readFlag('--config', '', worldFlags);
   const workspaceOverride = readFlag('--workspace', '', worldFlags);
@@ -1446,21 +1520,35 @@ const commandWorld = async () => {
   });
   const config = loaded.config;
   const dbPath = path.resolve(readFlag('--db', config.runtime.paths.registryPath, worldFlags));
-  const db = openDatabase(dbPath);
+  const accessPlan = resolveCliAccessPlan();
+  const opened = openCliDatabase({
+    config,
+    dbPath,
+    accessPlan,
+    requiredTables: action === 'entities' ? ['memory_entities'] : [],
+  });
+  if (!opened.db) {
+    printReaderDiagnostic({ action: 'world_entities', configPath: loaded.configPath, dbPath, opened });
+    return;
+  }
+  const db = opened.db;
   try {
-    ensureProjectionStore(db);
-    ensureWorldModelReady({ db, config, rebuildIfEmpty: false });
     if (action === 'rebuild') {
+      ensureProjectionStore(db);
+      ensureWorldModelReady({ db, config, rebuildIfEmpty: false });
       const result = rebuildWorldModel({ db, config });
       console.log(JSON.stringify({ ok: true, action: 'world_rebuild', configPath: loaded.configPath, dbPath, result }, null, 2));
       return;
     }
     if (action === 'entities') {
-      const items = listEntities(db, { kind: readFlag('--kind', '', worldFlags), limit: Number(readFlag('--limit', '200', worldFlags) || 200) });
-      console.log(JSON.stringify({ ok: true, action: 'world_entities', items, count: items.length }, null, 2));
+      const items = listEntities(db, {
+        ensure: false,
+        kind: readFlag('--kind', '', worldFlags),
+        limit: Number(readFlag('--limit', '200', worldFlags) || 200),
+      });
+      console.log(JSON.stringify({ ok: true, action: 'world_entities', read_only: true, observational: true, items, count: items.length }, null, 2));
       return;
     }
-    throw new Error(`Unknown world action: ${action || '(none)'}`);
   } finally {
     db.close();
   }
@@ -1480,17 +1568,37 @@ const commandOrchestrator = async () => {
   });
   const config = loaded.config;
   const dbPath = path.resolve(readFlag('--db', config.runtime.paths.registryPath, orchestratorFlags));
-  const db = openDatabase(dbPath);
+  const accessPlan = resolveCliAccessPlan();
+  const opened = openCliDatabase({
+    config,
+    dbPath,
+    accessPlan,
+    requiredTables: [
+      'memory_beliefs',
+      'memory_current',
+      'memory_entities',
+      'memory_entity_aliases',
+      'memory_entity_mentions',
+      'memory_episodes',
+      'memory_native_chunks',
+      'memory_open_loops',
+      'memory_syntheses',
+    ],
+  });
+  if (!opened.db) {
+    printReaderDiagnostic({ action: 'orchestrator_explain', configPath: loaded.configPath, dbPath, opened });
+    return;
+  }
+  const db = opened.db;
   try {
-    ensureProjectionStore(db);
-    ensureWorldModelReady({ db, config, rebuildIfEmpty: true });
     const result = orchestrateRecall({
       db,
       config,
       query,
       scope: String(readFlag('--scope', '', orchestratorFlags)).trim(),
+      scopeVisibility: { allowMaintenance: false },
     });
-    console.log(JSON.stringify({ ok: true, action: 'orchestrator_explain', result }, null, 2));
+    console.log(JSON.stringify({ ok: true, action: 'orchestrator_explain', read_only: true, observational: true, result }, null, 2));
   } finally {
     db.close();
   }
@@ -1498,6 +1606,7 @@ const commandOrchestrator = async () => {
 
 const commandSynthesis = async () => {
   const action = String(flags[0] || 'build').trim().toLowerCase();
+  if (!['build', 'list'].includes(action)) throw new Error(`Unknown synthesis action: ${action || '(none)'}`);
   const synthesisFlags = flags.slice(1);
   const configPath = readFlag('--config', '', synthesisFlags);
   const workspaceOverride = readFlag('--workspace', '', synthesisFlags);
@@ -1507,21 +1616,35 @@ const commandSynthesis = async () => {
   });
   const config = loaded.config;
   const dbPath = path.resolve(readFlag('--db', config.runtime.paths.registryPath, synthesisFlags));
-  const db = openDatabase(dbPath);
+  const accessPlan = resolveCliAccessPlan();
+  const opened = openCliDatabase({
+    config,
+    dbPath,
+    accessPlan,
+    requiredTables: action === 'list' ? ['memory_syntheses'] : [],
+  });
+  if (!opened.db) {
+    printReaderDiagnostic({ action: 'synthesis_list', configPath: loaded.configPath, dbPath, opened });
+    return;
+  }
+  const db = opened.db;
   try {
-    ensureProjectionStore(db);
-    ensureWorldModelReady({ db, config, rebuildIfEmpty: true });
     if (action === 'build') {
+      ensureProjectionStore(db);
+      ensureWorldModelReady({ db, config, rebuildIfEmpty: true });
       const result = rebuildWorldModel({ db, config });
       console.log(JSON.stringify({ ok: true, action: 'synthesis_build', result }, null, 2));
       return;
     }
     if (action === 'list') {
-      const items = listSyntheses(db, { kind: readFlag('--kind', '', synthesisFlags), limit: Number(readFlag('--limit', '200', synthesisFlags) || 200) });
-      console.log(JSON.stringify({ ok: true, action: 'synthesis_list', items, count: items.length }, null, 2));
+      const items = listSyntheses(db, {
+        ensure: false,
+        kind: readFlag('--kind', '', synthesisFlags),
+        limit: Number(readFlag('--limit', '200', synthesisFlags) || 200),
+      });
+      console.log(JSON.stringify({ ok: true, action: 'synthesis_list', read_only: true, observational: true, items, count: items.length }, null, 2));
       return;
     }
-    throw new Error(`Unknown synthesis action: ${action || '(none)'}`);
   } finally {
     db.close();
   }
@@ -1536,12 +1659,16 @@ const commandBriefing = async () => {
   });
   const config = loaded.config;
   const dbPath = path.resolve(readFlag('--db', config.runtime.paths.registryPath));
-  const db = openDatabase(dbPath);
+  const accessPlan = resolveCliAccessPlan();
+  const opened = openCliDatabase({ config, dbPath, accessPlan, requiredTables: ['memory_syntheses'] });
+  if (!opened.db) {
+    printReaderDiagnostic({ action: 'briefing_build', configPath: loaded.configPath, dbPath, opened });
+    return;
+  }
+  const db = opened.db;
   try {
-    ensureProjectionStore(db);
-    ensureWorldModelReady({ db, config, rebuildIfEmpty: true });
-    const items = listSyntheses(db, { kind: 'session_brief', limit: 5 });
-    console.log(JSON.stringify({ ok: true, action: 'briefing_build', items, count: items.length }, null, 2));
+    const items = listSyntheses(db, { ensure: false, kind: 'session_brief', limit: 5 });
+    console.log(JSON.stringify({ ok: true, action: 'briefing_build', read_only: true, observational: true, items, count: items.length }, null, 2));
   } finally {
     db.close();
   }
@@ -1549,6 +1676,8 @@ const commandBriefing = async () => {
 
 const commandReview = async () => {
   const action = String(flags[0] || '').trim().toLowerCase();
+  const reviewActions = ['adjudications', 'beliefs-as-of', 'contradictions', 'open-loops', 'queue', 'trust'];
+  if (!reviewActions.includes(action)) throw new Error(`Unknown review action: ${action || '(none)'}`);
   const reviewFlags = flags.slice(1);
   const configPath = readFlag('--config', '', reviewFlags);
   const workspaceOverride = readFlag('--workspace', '', reviewFlags);
@@ -1558,6 +1687,8 @@ const commandReview = async () => {
   });
   const config = loaded.config;
   const dbPath = path.resolve(readFlag('--db', config.runtime.paths.registryPath, reviewFlags));
+  const accessPlan = resolveCliAccessPlan();
+  assertCliAccessPlanAllowed({ config, accessPlan });
   // U16 read surface (agent-native review F3): list/filter review-queue
   // entries (incl. the U11/U13 escalation reason codes). READ-ONLY — listing
   // never rewrites or resolves entries; resolution is future scope. The
@@ -1575,6 +1706,7 @@ const commandReview = async () => {
       ok: true,
       action: 'review_queue',
       read_only: true,
+      observational: true,
       queuePath,
       status: status || null,
       reason_code: reasonCode || null,
@@ -1585,29 +1717,45 @@ const commandReview = async () => {
     }, null, 2));
     return;
   }
-  const db = openDatabase(dbPath);
+  const requiredTablesByAction = {
+    adjudications: ['memory_events'],
+    'beliefs-as-of': ['memory_current'],
+    contradictions: ['memory_open_loops'],
+    'open-loops': ['memory_open_loops'],
+    trust: ['memory_current', 'memory_events', 'memory_host_trust'],
+  };
+  const opened = openCliDatabase({
+    config,
+    dbPath,
+    accessPlan,
+    requiredTables: requiredTablesByAction[action] || [],
+  });
+  if (!opened.db) {
+    printReaderDiagnostic({ action: `review_${action.replaceAll('-', '_')}`, configPath: loaded.configPath, dbPath, opened });
+    return;
+  }
+  const db = opened.db;
   try {
-    ensureProjectionStore(db);
-    ensureWorldModelReady({ db, config, rebuildIfEmpty: true });
     if (action === 'contradictions') {
-      const items = listContradictions(db, { limit: Number(readFlag('--limit', '200', reviewFlags) || 200) });
-      console.log(JSON.stringify({ ok: true, action: 'review_contradictions', items, count: items.length }, null, 2));
+      const items = listContradictions(db, { ensure: false, limit: Number(readFlag('--limit', '200', reviewFlags) || 200) });
+      console.log(JSON.stringify({ ok: true, action: 'review_contradictions', read_only: true, observational: true, items, count: items.length }, null, 2));
       return;
     }
     if (action === 'open-loops') {
-      const items = listOpenLoops(db, { limit: Number(readFlag('--limit', '200', reviewFlags) || 200) });
-      console.log(JSON.stringify({ ok: true, action: 'review_open_loops', items, count: items.length }, null, 2));
+      const items = listOpenLoops(db, { ensure: false, limit: Number(readFlag('--limit', '200', reviewFlags) || 200) });
+      console.log(JSON.stringify({ ok: true, action: 'review_open_loops', read_only: true, observational: true, items, count: items.length }, null, 2));
       return;
     }
     // B1 shadow surface: per-host adaptive-trust view (base tier, stored
     // delta, fold target, effective value, evidence). dryRun — a review never
     // moves deltas or writes events; only the nightly step does.
     if (action === 'trust') {
-      const summary = runAdaptiveTrust({ db, config, dryRun: true });
+      const summary = runAdaptiveTrust({ db, config, dryRun: true, ensure: false });
       console.log(JSON.stringify({
         ok: true,
         action: 'review_trust',
         read_only: true,
+        observational: true,
         shadow: summary.shadow,
         hosts: summary.hosts,
         fingerprint: summary.fingerprint,
@@ -1626,7 +1774,7 @@ const commandReview = async () => {
         states,
         limit: Number(readFlag('--limit', '100', reviewFlags) || 100),
       });
-      console.log(JSON.stringify({ ok: true, action: 'review_adjudications', items, count: items.length }, null, 2));
+      console.log(JSON.stringify({ ok: true, action: 'review_adjudications', read_only: true, observational: true, items, count: items.length }, null, 2));
       return;
     }
     if (action === 'beliefs-as-of') {
@@ -1636,13 +1784,13 @@ const commandReview = async () => {
       }
       const items = listBeliefsAsOf(db, {
         at,
+        ensure: false,
         scope: readFlag('--scope', '', reviewFlags),
         limit: Number(readFlag('--limit', '200', reviewFlags) || 200),
       });
-      console.log(JSON.stringify({ ok: true, action: 'review_beliefs_as_of', at, items, count: items.length }, null, 2));
+      console.log(JSON.stringify({ ok: true, action: 'review_beliefs_as_of', read_only: true, observational: true, at, items, count: items.length }, null, 2));
       return;
     }
-    throw new Error(`Unknown review action: ${action || '(none)'}`);
   } finally {
     db.close();
   }

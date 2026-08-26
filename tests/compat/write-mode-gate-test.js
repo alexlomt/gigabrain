@@ -19,11 +19,13 @@ import { createMemoryHttpHandler } from "../../lib/core/http-routes.js";
 import { runMaintenance } from "../../lib/core/maintenance-service.js";
 import { applyMemoryActions } from "../../lib/core/memory-actions.js";
 import { writeNativeMemoryEntry, writeNativeSessionCheckpoint } from "../../lib/core/native-memory.js";
+import { ensureAdaptiveTrustStore } from "../../lib/core/adaptive-trust.js";
 import { resolveRemoteMcpOptions } from "../../lib/core/remote-mcp.js";
 import { openDatabase } from "../../lib/core/sqlite.js";
 import { ensureProjectionStore, upsertCurrentMemory } from "../../lib/core/projection-store.js";
 import { harvestTranscripts } from "../../lib/core/transcript-harvester.js";
 import { projectWiki, reconcileWiki } from "../../lib/core/wiki-project.js";
+import { ensureWorldModelReady } from "../../lib/core/world-model.js";
 
 import {
   importContractModule,
@@ -516,7 +518,7 @@ export async function run() {
       { label: "review beliefs-as-of", args: ["review", "beliefs-as-of", "--at", "2026-08-25T00:00:00.000Z"] },
       { label: "review queue", args: ["review", "queue"] },
     ];
-    for (const dbState of ["missing", "empty"]) {
+    for (const dbState of ["missing", "empty", "ready"]) {
       for (const reader of readerCommands) {
         const readerRoot = mkdtempSync(path.join(tmpdir(), `gigabrain-task5-reader-${dbState}-`));
         try {
@@ -526,7 +528,6 @@ export async function run() {
           mkdirSync(memoryRoot, { recursive: true, mode: 0o700 });
           mkdirSync(outputDir, { recursive: true, mode: 0o700 });
           const dbPath = path.join(memoryRoot, "registry.sqlite");
-          if (dbState === "empty") new DatabaseSync(dbPath).close();
           const configPath = path.join(readerRoot, "openclaw.json");
           const readerConfig = {
             enabled: true,
@@ -540,6 +541,14 @@ export async function run() {
             } },
             native: { enabled: true, memoryMdPath: path.join(workspace, "MEMORY.md"), includeFiles: [] },
           };
+          if (dbState === "empty") new DatabaseSync(dbPath).close();
+          if (dbState === "ready") {
+            const setupDb = new DatabaseSync(dbPath);
+            ensureProjectionStore(setupDb);
+            ensureWorldModelReady({ db: setupDb, config: readerConfig, rebuildIfEmpty: false });
+            ensureAdaptiveTrustStore(setupDb);
+            setupDb.close();
+          }
           writeFileSync(configPath, JSON.stringify({ plugins: { entries: { gigabrain: { enabled: true, config: readerConfig } } } }));
           const before = snapshotTree(readerRoot);
           const result = spawnSync(process.execPath, [
@@ -560,7 +569,7 @@ export async function run() {
           );
           const parsed = JSON.parse(String(result.stdout || "{}"));
           assert.equal(parsed.read_only ?? parsed.observational, true, `${reader.label}/${dbState} must identify its read-only result`);
-          if (reader.args[1] !== "queue") {
+          if (reader.args[1] !== "queue" && dbState !== "ready") {
             assert.match(String(parsed.diagnostic || ""), dbState === "missing" ? /registry does not exist/ : /schema is unavailable/);
           }
         } finally {
