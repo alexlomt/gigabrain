@@ -513,7 +513,7 @@
       "contentSha256": "aa4d354fe9ba6661db70f74f187d7c5f038c2ec0b409343e3eb597add02d18f8",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-release-provenance"
+        "registrationId": "compat-write-mode-gate"
       },
       "ownerTasks": [
         "5"
