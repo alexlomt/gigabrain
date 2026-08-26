@@ -419,8 +419,8 @@
         "scripts/setup-first-run.js",
         "tests/compat/write-mode-gate-test.js"
       ],
-      "expectedOutcome": "pass",
-      "expectedSignature": null,
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_WRITE_MODE_GATE missing complete fail-closed writer policy",
       "id": "compat-write-mode-gate",
       "ownerSourceFirstTaskId": "5",
       "relevanceEvidence": [
@@ -524,7 +524,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/write-mode-gate-test.js",
-      "testSha256": "933caea82ef62eaa6c09ecf6c6a33b408f840c83726898c26a1c17197215a7ee"
+      "testSha256": "7186847e5e56da219b8841349de2dad0db8508e5a7b99d38a41a00dcaf22c8d2"
     },
     {
       "coveredPaths": [
@@ -1273,6 +1273,6 @@
     }
   ],
   "entryCount": 81,
-  "manifestSha256": "f916359d865aa2bedbd77ce2b2da9a3c25513746bcd3ff01a6d06917b555139c",
+  "manifestSha256": "2f3dae43cdda405898611e90bd74565eab5a9ae26cbc8d2ff348f4d7786f06c1",
   "schemaVersion": 1
 }

@@ -63,6 +63,12 @@ export async function run() {
     const registry = policy.WRITER_REGISTRY;
     const discovered = discoverWriterEntrypoints({ repoRoot });
     assert.equal(assertWriterRegistryComplete(discovered), true);
+    assert.equal(discovered.length, 170, "all shipped entrypoints remain in the discovery inventory");
+    assert.equal(
+      discovered.find((entry) => entry.operation === "cli.vault.sync")?.access,
+      "write",
+      "pure nested discovery must recognize syncVaultMemory without relying on the declaration map alias",
+    );
     const discoveredIds = new Set(discovered.map((entry) => entry.operation));
     for (const required of ["package.migrate-v3", "package.harmonize", "cli.inventory", "cli.vault.inbox"]) {
       assert.equal(discoveredIds.has(required), true, `discovery must include ${required}`);
@@ -107,6 +113,53 @@ export async function run() {
         "nested CLI writers must be derived from branch behavior, not only the declaration map",
       );
       assert.throws(() => assertWriterRegistryComplete(nestedFuture), /GIGABRAIN_UNCLASSIFIED_WRITER/);
+
+      mkdirSync(path.join(discoveryRoot, "lib", "core"), { recursive: true });
+      writeFileSync(path.join(discoveryRoot, "lib", "core", "domain-state.js"), `
+        import { writeFileSync } from "node:fs";
+        const syncDomainState = () => writeFileSync("domain-state", "changed");
+        export { syncDomainState };
+      `);
+      writeFileSync(path.join(discoveryRoot, "lib", "core", "vault-sync.js"), `
+        import { writeFileSync } from "node:fs";
+        const syncVaultMemory = () => writeFileSync("vault-state", "changed");
+        export { syncVaultMemory };
+      `);
+      writeFileSync(path.join(discoveryRoot, "scripts", "gigabrainctl.js"), `
+        import { openDatabase } from "../lib/core/sqlite.js";
+        import { syncDomainState } from "../lib/core/domain-state.js";
+        import { syncVaultMemory } from "../lib/core/vault-sync.js";
+        const command = "future";
+        const flags = ["domain"];
+        const resolveCliWriteOperation = () => "";
+        const commandFuture = async () => {
+          const subcommand = String(flags[0] || "");
+          if (subcommand === "domain") syncDomainState();
+          if (subcommand === "known") syncVaultMemory();
+          if (subcommand === "db-write") openDatabase("state.sqlite");
+          if (subcommand === "db-ambiguous") openDatabase("state.sqlite", {});
+          if (subcommand === "db-read") openDatabase("state.sqlite", { readOnly: true, observational: true });
+        };
+        if (command === "future") await commandFuture();
+      `);
+      const domainDiscovery = discoverWriterEntrypoints({ repoRoot: discoveryRoot });
+      for (const operation of [
+        "cli.future.domain",
+        "cli.future.known",
+        "cli.future.db.write",
+        "cli.future.db.ambiguous",
+      ]) {
+        assert.equal(
+          domainDiscovery.find((entry) => entry.operation === operation)?.access,
+          "write",
+          `${operation} must fail closed as a nested writer`,
+        );
+      }
+      assert.equal(
+        domainDiscovery.find((entry) => entry.operation === "cli.future.db.read")?.access,
+        "read",
+        "structurally proven read-only SQLite opens must remain readers",
+      );
     } finally {
       rmSync(discoveryRoot, { recursive: true, force: true });
     }
