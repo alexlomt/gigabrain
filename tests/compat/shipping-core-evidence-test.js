@@ -39,7 +39,10 @@ export async function run() {
     assert.equal(resolveWriteMode({ compat: { writeMode: "read_only" } }), "read_only");
 
     const packageLockSource = readFileSync("package-lock.json", "utf8");
-    assert.equal(JSON.parse(packageLockSource).version, "0.11.0-openclaw.1");
+    const packageLock = JSON.parse(packageLockSource);
+    assert.equal(packageLock.version, "0.11.0-openclaw.1");
+    assert.equal(packageLock.packages[""].devDependencies.acorn, "8.18.0");
+    assert.equal(packageLock.packages["node_modules/acorn"].dev, true);
     const publicReleaseManifestSource = readFileSync("public-release-manifest.json", "utf8");
     assert.equal(JSON.parse(publicReleaseManifestSource).schemaVersion, 1);
     const buildSchemaSource = readFileSync("scripts/build-openclaw-config-schema.mjs", "utf8");

@@ -67,6 +67,8 @@ export async function run() {
     assert.match(buildScript, /stripTypeScriptTypes/);
     assert.match(stageContract, /^index\.js$/m);
     assert.deepEqual(packageJson.openclaw.extensions, ["./index.js"]);
+    assert.equal(packageJson.dependencies.acorn, undefined);
+    assert.equal(packageJson.devDependencies.acorn, "8.18.0");
     const files = new Set(packageJson.files);
     for (const required of ["index.js", "lib/", "memory_api/", "openclaw.plugin.json", "scripts/gigabrainctl.js", "scripts/gigabrain-mcp.js"]) {
       assert.equal(files.has(required), true, `package files must include ${required}`);
