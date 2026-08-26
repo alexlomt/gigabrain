@@ -8,8 +8,8 @@
         "lib/core/config.js",
         "tests/compat/auto-capture-policy-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_AUTO_CAPTURE_POLICY missing bounded capture policy and enqueue-only hook",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-auto-capture-policy",
       "ownerSourceFirstTaskId": "9",
       "relevanceEvidence": [
@@ -45,8 +45,8 @@
         "lib/compat/auto-capture-queue.js",
         "tests/compat/auto-capture-queue-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_AUTO_CAPTURE_QUEUE missing durable bounded queue state machine",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-auto-capture-queue",
       "ownerSourceFirstTaskId": "9",
       "relevanceEvidence": [
@@ -1695,6 +1695,6 @@
     }
   ],
   "entryCount": 90,
-  "manifestSha256": "bb9aaa21ba726b349ee2c66d750db0e356cf7d90b6f723a70b7bbf3ea52b86d9",
+  "manifestSha256": "2082ddccc243a9806e5be83c883e693dabba1d156a4ac9f690eb2d3ffc4f1eef",
   "schemaVersion": 1
 }

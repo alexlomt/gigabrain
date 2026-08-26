@@ -1,16 +1,6 @@
 {
   "entries": [
     {
-      "ownerTask": "9",
-      "signature": "COMPAT_EXPECTED_AUTO_CAPTURE_POLICY missing bounded capture policy and enqueue-only hook",
-      "test": "compat/auto-capture-policy-test.js"
-    },
-    {
-      "ownerTask": "9",
-      "signature": "COMPAT_EXPECTED_AUTO_CAPTURE_QUEUE missing durable bounded queue state machine",
-      "test": "compat/auto-capture-queue-test.js"
-    },
-    {
       "ownerTask": "14",
       "signature": "COMPAT_EXPECTED_FULL_MIGRATION missing source-first registry migration receipt",
       "test": "compat/full-registry-migration-test.js"

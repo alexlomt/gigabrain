@@ -100,7 +100,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "dca756e066b15a9804a200750287fbde1a3ff57a47ce5cfd95d5094149d635a0",
+      "contentSha256": "5af6b08e08ff9d986a0210cb12c9413887f9d088b7a64dd3fcaf0eee001e60fc",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -114,7 +114,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with exact Task 9 persistence-boundary privacy XFAIL ownership.",
+      "reason": "Source-first registry with passing Task 9 persistence-boundary privacy hashes.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -335,7 +335,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "dd13a7a5571475c7beac16cd75dd558864ae21dc201b31f3e278e457bb70f532",
+      "contentSha256": "263f6aadd41559d63abdd6f716561af3c05f2cc0c1490251aabeeb11a93edfc7",
       "disposition": "compat_module",
       "gate": {
         "registrationId": "compat-auto-capture-policy"
@@ -343,13 +343,13 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9A fix round 3 closes natural conversational unit-test and diagnostics chatter eligibility.",
+      "reason": "Task 9 privacy hardening centralizes credential and host-posture rejection and reports queue-full outcomes without content.",
       "targetMode": "100644",
       "targetPath": "lib/compat/auto-capture-policy.js"
     },
     {
       "changeType": "added",
-      "contentSha256": "b4589747163a07dece3b399181674f0cef90e57f96b31a1f0984ad5ca40da598",
+      "contentSha256": "6148122afa76aa2795597ff2e623cd2fc89f2399c767494f20b7ab15f7d404ee",
       "disposition": "compat_module",
       "gate": {
         "registrationId": "compat-auto-capture-queue"
@@ -357,7 +357,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9 post-review fixes validate processor results, recover stale ownership before circuit dispatch, and classify local HTTP failures safely.",
+      "reason": "Task 9 queue hardening rechecks shared sensitivity policy at the durable persistence boundary.",
       "targetMode": "100644",
       "targetPath": "lib/compat/auto-capture-queue.js"
     },
@@ -1200,7 +1200,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9 privacy RED contract for credential URL/userinfo, whitespace token forms, and content-free queue-full signaling.",
+      "reason": "Passing Task 9 privacy contract for credential URL/userinfo, whitespace token forms, negated questions, and content-free queue-full signaling.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-policy-test.js"
     },
@@ -1214,7 +1214,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9 privacy RED contract requiring the direct persistence boundary to reject sensitive and host-posture packets.",
+      "reason": "Passing Task 9 privacy contract requiring the direct persistence boundary to reject sensitive and host-posture packets.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-queue-test.js"
     },
@@ -1336,7 +1336,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "fa705deb3776cf7a32e7a09c19f813f9382de406b944e84906e9811b96b90bb8",
+      "contentSha256": "49dbdae4dbc35340e3bf0cfd1e3afbbb5704ca5aa8547efbac45ccc271626512",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1351,7 +1351,7 @@
         "8",
         "9"
       ],
-      "reason": "Expected-failure ownership for the exact Task 9 persistence-boundary privacy signatures.",
+      "reason": "Task 9 persistence-boundary privacy XFAILs removed after both contracts passed.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
