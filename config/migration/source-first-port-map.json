@@ -98,7 +98,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "0906f6038a6b4862b351cd6a604836cc28e782587d51b943e795fffdc950ddbf",
+      "contentSha256": "bc9c5fb3b20b408679b0156cfb640d1b4b5cbfd9b31a66c40240777f8358be6c",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -110,7 +110,7 @@
         "5",
         "6"
       ],
-      "reason": "Task 5 source-first registry plus exact Task 6 xfail signatures, owners, hashes, and staging coverage.",
+      "reason": "Source-first registry with passing Task 6 native-memory gate evidence.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -343,6 +343,20 @@
     },
     {
       "changeType": "added",
+      "contentSha256": "b1225320bddc480c5b9d9adb13a92657ba09f15ae271719d47e6de8a611ef2ba",
+      "disposition": "compat_module",
+      "gate": {
+        "registrationId": "compat-native-metadata-promotion"
+      },
+      "ownerTasks": [
+        "6"
+      ],
+      "reason": "Task 6 typed native metadata compatibility module.",
+      "targetMode": "100644",
+      "targetPath": "lib/compat/native-metadata.js"
+    },
+    {
+      "changeType": "added",
       "contentSha256": "a3506cf665945a574d0e2330ea15a229c8cbe85e89e53620526705d83f0295ae",
       "disposition": "compat_module",
       "gate": {
@@ -413,6 +427,20 @@
     },
     {
       "changeType": "added",
+      "contentSha256": "647f255e393205b5807b4c862c1c274296f526c6421161769799632977729aa4",
+      "disposition": "compat_module",
+      "gate": {
+        "registrationId": "compat-native-lock-concurrency"
+      },
+      "ownerTasks": [
+        "6"
+      ],
+      "reason": "Task 6 protected runtime descriptor compatibility module.",
+      "targetMode": "100644",
+      "targetPath": "lib/compat/runtime-descriptor.js"
+    },
+    {
+      "changeType": "added",
       "contentSha256": "0a7747b1f1f6c8ac4e4cf642177400cb0ddce570ec3802734ec90a8ed4a98723",
       "disposition": "core_patch",
       "gate": {
@@ -428,15 +456,16 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "f69fd3c2688b76b6bd28aa3515003261fe30fdc8749ea55b8057d7bd0b598c0b",
+      "contentSha256": "188875281f20fa214bba9572f7108f8fdd36c20d15658e056158a4bdca912bfe",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-shipping-core-evidence"
       },
       "ownerTasks": [
-        "5"
+        "5",
+        "6"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Task 5 compatibility behavior retained while Task 6 adds governed native-memory semantics.",
       "targetMode": "100644",
       "targetPath": "lib/compat/write-policy.js"
     },
@@ -468,6 +497,20 @@
       "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/capture-service.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "2a06759dbfea5092891f41b0ae91c957528c3ba765da7969fc9c8dfe98553aab",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-checkpoint-promotion-isolation"
+      },
+      "ownerTasks": [
+        "6"
+      ],
+      "reason": "Task 6 excludes typed structured checkpoints from legacy checkpoint import.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/checkpoint-migration.js"
     },
     {
       "changeType": "modified",
@@ -513,15 +556,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "dcbdd0e1e3dbaebf3c6be67f06fca5b427284e4250ba8d394e45f6cc3000533e",
+      "contentSha256": "1e2b3e982b1af9a3f211358ab60b1ba34e61a4fafac2886398194d0618388546",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-write-mode-gate"
       },
       "ownerTasks": [
-        "5"
+        "5",
+        "6"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 compatibility behavior retained while Task 6 adds governed native-memory semantics.",
       "targetMode": "100644",
       "targetPath": "lib/core/control-plane.js"
     },
@@ -614,29 +658,45 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "49d45e6ee8b271038a94b4cb6e78f0024ba4e7db4a27203d9bd7061191ab7ed0",
+      "contentSha256": "a3e5afe1dbdaa4a3b976938b2fdc102630b8ed4ba5858aa6bdbe96093dceea2c",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-write-mode-gate"
       },
       "ownerTasks": [
-        "5"
+        "5",
+        "6"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 compatibility behavior retained while Task 6 adds governed native-memory semantics.",
       "targetMode": "100644",
       "targetPath": "lib/core/native-memory.js"
     },
     {
       "changeType": "modified",
-      "contentSha256": "49863363f32fd71d2ec98efc0aa66c1497f422b60c5b7be67bc52d6661a79b54",
+      "contentSha256": "4c291b4643940c2348b7f32db71ae5b17d22befc80fe84164e9b6d34dfe7c4c1",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-native-metadata-promotion"
+      },
+      "ownerTasks": [
+        "6"
+      ],
+      "reason": "Task 6 restores metadata-gated native promotion and reconciliation.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/native-promotion.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "f15abd749ba44b8badfdee3d3aa6aa776d0e0f0077f4e4e95fb4f2444af2ee40",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-observational-core-patches"
       },
       "ownerTasks": [
-        "5"
+        "5",
+        "6"
       ],
-      "reason": "Task 5 read-only CLI paths propagate ensure=false so observational commands never create schemas.",
+      "reason": "Task 5 compatibility behavior retained while Task 6 adds governed native-memory semantics.",
       "targetMode": "100644",
       "targetPath": "lib/core/native-sync.js"
     },
@@ -684,15 +744,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "fdd13b7a1203deea96a4b0aa5155c46fcdcfdb365586b3e43c1b4ba30dc3f25f",
+      "contentSha256": "a8c38c4f113a74f76643c43ae65a1154e15f7a1709ef2e4fec6c60e159143148",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-observational-core-patches"
       },
       "ownerTasks": [
-        "5"
+        "5",
+        "6"
       ],
-      "reason": "Task 5 read-only CLI paths propagate ensure=false so observational commands never create schemas.",
+      "reason": "Task 5 compatibility behavior retained while Task 6 adds governed native-memory semantics.",
       "targetMode": "100644",
       "targetPath": "lib/core/recall-service.js"
     },
@@ -946,15 +1007,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "671386fda6ff5a7b528718d289c810ed9566f1bf99920fd171478ae0f999f69b",
+      "contentSha256": "ff29308a05fd1e9afa0adfb084009a9a5e5fbb0d107dbbce7807ead991a8c0ea",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-write-mode-gate"
       },
       "ownerTasks": [
-        "5"
+        "5",
+        "6"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Task 5 compatibility behavior retained while Task 6 adds governed native-memory semantics.",
       "targetMode": "100755",
       "targetPath": "scripts/gigabrainctl.js"
     },
@@ -1146,7 +1208,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "2e0d0b61bb4a9fdd8358f7d13115e1ae3cbe146effa5695bc3c63322b24696c5",
+      "contentSha256": "e2b839ca0be7369897775dfac6b5e6a4bd532b10b3816d259ec473586c4fe8b7",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1158,7 +1220,7 @@
         "5",
         "6"
       ],
-      "reason": "Exact expected-failure ownership metadata including the three Task 6 red contracts; no runtime behavior.",
+      "reason": "Expected-failure ownership after the three Task 6 native contracts became passing gates.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1414,15 +1476,16 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "502651c001c7c8c28997686683ff18f5b94ae6d4e92c4604f5c60aae5a6f9c55",
+      "contentSha256": "1ce71ce22bd7f113ffa46086bc2e9997e1235a1fbb4d944e52a04a5069f359a5",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-write-mode-gate"
       },
       "ownerTasks": [
-        "5"
+        "5",
+        "6"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Task 5 compatibility behavior retained while Task 6 adds governed native-memory semantics.",
       "targetMode": "100644",
       "targetPath": "tests/compat/write-mode-gate-test.js"
     },
@@ -1952,7 +2015,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "e23d0c3fa66c1ac5112b3f6bc20de06c3567a373c23e57ea71c04a2a2ee1e3f7",
+      "contentSha256": "5076f3d9d48fe77ca74b8f2cad15b5d2055602cebe6b53cb1b006eca2b09aa8f",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1965,7 +2028,7 @@
         "5",
         "6"
       ],
-      "reason": "Task 5 source-first contract plus the exact Task 6 corrective red staging path and candidate-change count.",
+      "reason": "Source-first policy contract with the four Task 6 production candidate records.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },

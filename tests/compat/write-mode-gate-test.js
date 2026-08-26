@@ -80,7 +80,7 @@ export async function run() {
     const registry = policy.WRITER_REGISTRY;
     const discovered = discoverWriterEntrypoints({ repoRoot });
     assert.equal(assertWriterRegistryComplete(discovered), true);
-    assert.equal(discovered.length, 178, "all shipped entrypoints remain in the discovery inventory");
+    assert.equal(discovered.length, 179, "all shipped entrypoints remain in the discovery inventory");
     assert.equal(
       new Set(discovered.filter((entry) => entry.access === "write").map((entry) => entry.canonicalOperation || entry.operation)).size,
       73,

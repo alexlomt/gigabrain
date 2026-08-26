@@ -25,12 +25,21 @@
     },
     {
       "coveredPaths": [
+        "lib/core/checkpoint-migration.js",
         "tests/compat/checkpoint-promotion-isolation-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_CHECKPOINT_ISOLATION missing metadata-gated checkpoint promotion",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-checkpoint-promotion-isolation",
       "ownerSourceFirstTaskId": "6",
+      "relevanceEvidence": [
+        {
+          "binding": "parseLegacyCheckpointMarkdown",
+          "mode": "import",
+          "symbol": "parseLegacyCheckpointMarkdown",
+          "targetPath": "lib/core/checkpoint-migration.js"
+        }
+      ],
       "runner": "node",
       "testPath": "tests/compat/checkpoint-promotion-isolation-test.js",
       "testSha256": "c618e10426f34d834a71ac44eba6a14db723b98a93f802759ee559b926698e48"
@@ -142,12 +151,21 @@
     },
     {
       "coveredPaths": [
+        "lib/compat/runtime-descriptor.js",
         "tests/compat/native-lock-concurrency-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_NATIVE_LOCK missing cross-process native-memory lock",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-native-lock-concurrency",
       "ownerSourceFirstTaskId": "6",
+      "relevanceEvidence": [
+        {
+          "binding": "loadRuntimeDescriptor",
+          "mode": "import",
+          "symbol": "loadRuntimeDescriptor",
+          "targetPath": "lib/compat/runtime-descriptor.js"
+        }
+      ],
       "runner": "node",
       "testPath": "tests/compat/native-lock-concurrency-test.js",
       "testSha256": "7e526073d95e44dc09577583f14e2358393a2bc7ca3fe16d4efa954cb7198559"
@@ -155,12 +173,28 @@
     {
       "coveredPaths": [
         "config/migration/task6-stage-paths.txt",
+        "lib/compat/native-metadata.js",
+        "lib/core/native-promotion.js",
         "tests/compat/native-metadata-promotion-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_NATIVE_METADATA missing typed native metadata parser",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-native-metadata-promotion",
       "ownerSourceFirstTaskId": "6",
+      "relevanceEvidence": [
+        {
+          "binding": "parseNativeMetadata",
+          "mode": "import",
+          "symbol": "parseNativeMetadata",
+          "targetPath": "lib/compat/native-metadata.js"
+        },
+        {
+          "binding": "promoteNativeChunks",
+          "mode": "import",
+          "symbol": "promoteNativeChunks",
+          "targetPath": "lib/core/native-promotion.js"
+        }
+      ],
       "runner": "node",
       "testPath": "tests/compat/native-metadata-promotion-test.js",
       "testSha256": "e2e0dbaae27de9b9ae247d00101936c14c478c5674c8cd01a0fb35c5bacf2796"
@@ -1434,6 +1468,6 @@
     }
   ],
   "entryCount": 83,
-  "manifestSha256": "3d3429b3955bd295346ca7b2256d68aba95b1f072141a95826e1d581a2d27946",
+  "manifestSha256": "b9c6034f77c16e88ae6ca9c51c5d2978e473c5df19b9d86eb50a85d59579669e",
   "schemaVersion": 1
 }

@@ -6,11 +6,6 @@
       "test": "compat/auto-capture-worker-test.js"
     },
     {
-      "ownerTask": "6",
-      "signature": "COMPAT_EXPECTED_CHECKPOINT_ISOLATION missing metadata-gated checkpoint promotion",
-      "test": "compat/checkpoint-promotion-isolation-test.js"
-    },
-    {
       "ownerTask": "7",
       "signature": "COMPAT_EXPECTED_EMBEDDING_IDENTITY missing model/dimension/query identity",
       "test": "compat/embedding-identity-test.js"
@@ -29,16 +24,6 @@
       "ownerTask": "11",
       "signature": "COMPAT_EXPECTED_MEMORY_API_PROJECTION missing projection sync contract",
       "test": "compat/memory-api-projection-test.js"
-    },
-    {
-      "ownerTask": "6",
-      "signature": "COMPAT_EXPECTED_NATIVE_LOCK missing cross-process native-memory lock",
-      "test": "compat/native-lock-concurrency-test.js"
-    },
-    {
-      "ownerTask": "6",
-      "signature": "COMPAT_EXPECTED_NATIVE_METADATA missing typed native metadata parser",
-      "test": "compat/native-metadata-promotion-test.js"
     },
     {
       "ownerTask": "14",
