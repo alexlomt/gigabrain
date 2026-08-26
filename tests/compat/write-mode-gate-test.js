@@ -52,6 +52,21 @@ const snapshotTree = (root) => {
   return sha(rows.join("\n"));
 };
 
+const sqliteTableNames = (dbPath) => {
+  if (!existsSync(dbPath)) return [];
+  try {
+    const db = new DatabaseSync(dbPath, { readOnly: true });
+    try {
+      return db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").all()
+        .map((row) => String(row.name));
+    } finally {
+      db.close();
+    }
+  } catch {
+    return [];
+  }
+};
+
 export async function run() {
   const policy = await importContractModule("lib/compat/write-policy.js", EXPECTED_SIGNATURE);
   const runtime = await importContractModule("lib/compat/openclaw-memory-runtime.js", EXPECTED_SIGNATURE);
@@ -487,6 +502,98 @@ export async function run() {
       assert.equal(snapshotTree(entryRoot), before, "read_only inventory must be observational");
     } finally {
       rmSync(entryRoot, { recursive: true, force: true });
+    }
+
+    const readerCommands = [
+      { label: "world entities", args: ["world", "entities"] },
+      { label: "synthesis list", args: ["synthesis", "list"] },
+      { label: "orchestrator explain", args: ["orchestrator", "explain", "--query", "synthetic harbour"] },
+      { label: "briefing", args: ["briefing"] },
+      { label: "review contradictions", args: ["review", "contradictions"] },
+      { label: "review open-loops", args: ["review", "open-loops"] },
+      { label: "review trust", args: ["review", "trust"] },
+      { label: "review adjudications", args: ["review", "adjudications"] },
+      { label: "review beliefs-as-of", args: ["review", "beliefs-as-of", "--at", "2026-08-25T00:00:00.000Z"] },
+      { label: "review queue", args: ["review", "queue"] },
+    ];
+    for (const dbState of ["missing", "empty"]) {
+      for (const reader of readerCommands) {
+        const readerRoot = mkdtempSync(path.join(tmpdir(), `gigabrain-task5-reader-${dbState}-`));
+        try {
+          const workspace = path.join(readerRoot, "workspace");
+          const memoryRoot = path.join(workspace, "memory");
+          const outputDir = path.join(workspace, "output");
+          mkdirSync(memoryRoot, { recursive: true, mode: 0o700 });
+          mkdirSync(outputDir, { recursive: true, mode: 0o700 });
+          const dbPath = path.join(memoryRoot, "registry.sqlite");
+          if (dbState === "empty") new DatabaseSync(dbPath).close();
+          const configPath = path.join(readerRoot, "openclaw.json");
+          const readerConfig = {
+            enabled: true,
+            compat: { writeMode: "read_only" },
+            runtime: { paths: {
+              workspaceRoot: workspace,
+              memoryRoot,
+              registryPath: dbPath,
+              outputDir,
+              reviewQueuePath: path.join(outputDir, "queue.jsonl"),
+            } },
+            native: { enabled: true, memoryMdPath: path.join(workspace, "MEMORY.md"), includeFiles: [] },
+          };
+          writeFileSync(configPath, JSON.stringify({ plugins: { entries: { gigabrain: { enabled: true, config: readerConfig } } } }));
+          const before = snapshotTree(readerRoot);
+          const result = spawnSync(process.execPath, [
+            path.join(repoRoot, "scripts", "gigabrainctl.js"),
+            ...reader.args,
+            "--config",
+            configPath,
+          ], { cwd: repoRoot, encoding: "utf8", timeout: 30_000 });
+          assert.equal(result.status, 0, `${reader.label}/${dbState}: ${String(result.stderr || result.stdout)}`);
+          const after = snapshotTree(readerRoot);
+          if (after !== before) {
+            process.stderr.write(`[reader-mutation] ${reader.label}/${dbState} tables=${sqliteTableNames(dbPath).join(",") || "none"}\n`);
+          }
+          assert.equal(
+            after,
+            before,
+            `${reader.label}/${dbState} must be byte-identical; observed tables: ${sqliteTableNames(dbPath).join(",") || "none"}`,
+          );
+          const parsed = JSON.parse(String(result.stdout || "{}"));
+          assert.equal(parsed.read_only ?? parsed.observational, true, `${reader.label}/${dbState} must identify its read-only result`);
+          if (reader.args[1] !== "queue") {
+            assert.match(String(parsed.diagnostic || ""), dbState === "missing" ? /registry does not exist/ : /schema is unavailable/);
+          }
+        } finally {
+          rmSync(readerRoot, { recursive: true, force: true });
+        }
+      }
+    }
+
+    const sharedSetupRoot = mkdtempSync(path.join(tmpdir(), "gigabrain-task5-shared-setup-discovery-"));
+    try {
+      mkdirSync(path.join(sharedSetupRoot, "scripts"), { recursive: true });
+      writeFileSync(path.join(sharedSetupRoot, "package.json"), JSON.stringify({ scripts: {} }));
+      writeFileSync(path.join(sharedSetupRoot, "scripts", "gigabrainctl.js"), `
+        import { openDatabase } from "../lib/core/sqlite.js";
+        const command = "future";
+        const flags = ["read"];
+        const resolveCliWriteOperation = () => flags[0] === "write" ? "cli.audit" : "";
+        const commandFuture = async () => {
+          const action = String(flags[0] || "read");
+          const db = openDatabase("state.sqlite");
+          if (action === "read") console.log(db.prepare("SELECT 1").get());
+          if (action === "write") db.exec("CREATE TABLE state (id INTEGER)");
+        };
+        if (command === "future") await commandFuture();
+      `);
+      const sharedSetupDiscovery = discoverWriterEntrypoints({ repoRoot: sharedSetupRoot });
+      assert.equal(
+        sharedSetupDiscovery.find((entry) => entry.operation === "cli.future.read")?.access,
+        "write",
+        "nested discovery must include shared setup before the reader branch",
+      );
+    } finally {
+      rmSync(sharedSetupRoot, { recursive: true, force: true });
     }
   });
 }
