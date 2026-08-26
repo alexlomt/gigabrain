@@ -99,7 +99,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "e01c3a7502b8d216337e06cd6f56ee1bb44fbe852bd2d15df833a9519b9b4c91",
+      "contentSha256": "aa9f532f4bf0dd9f7ba8e5f8596cc46a0f115a4ca067f612f9682b274109e7d3",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -848,7 +848,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "b8a1c49a32e1ca29a6d2d5dfd9a196508d2c1b851b5b010ab7fa943bd1139c7b",
+      "contentSha256": "282ef519b1fc487ead1a49ba8ddd842998287b0ddda78feb48cb9627f0a7c190",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-observational-core-patches"
@@ -857,7 +857,7 @@
         "5",
         "8"
       ],
-      "reason": "Task 5 observational behavior retained while Task 8 consumes protected rules and emits exact-scope deterministic world-model syntheses.",
+      "reason": "Task 5 observational behavior retained while Task 8 restores native projection, consumes protected rules, and emits exact-scope deterministic syntheses.",
       "targetMode": "100644",
       "targetPath": "lib/core/world-model.js"
     },
@@ -1243,7 +1243,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "13d38714797178b29c8eeff1f4d52b92a08dc97f9794dfea5a95d5a073eb1591",
+      "contentSha256": "b574f3efad59e20344368bc0f7b99ded36b503272f8c7e1f8eba934932f25ba1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1257,7 +1257,7 @@
         "7",
         "8"
       ],
-      "reason": "Expected-failure ownership while the Task 8 native world-row projection regression is red.",
+      "reason": "Expected-failure ownership after the Task 8 native world-row projection regression became a passing gate.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1549,7 +1549,7 @@
       "ownerTasks": [
         "8"
       ],
-      "reason": "Task 8 red regression for native-row preservation in deterministic shadow projection.",
+      "reason": "Passing Task 8 native-row preservation and deterministic shadow projection contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/world-model-shadow-test.js"
     },
