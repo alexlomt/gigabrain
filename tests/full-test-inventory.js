@@ -162,6 +162,7 @@ const COMPATIBILITY_TESTS = [
   ["compat/release-provenance-test.js", "5"],
   ["compat/rollback-restore-test.js", "14"],
   ["compat/scope-visibility-matrix-test.js", "4"],
+  ["compat/shipping-core-evidence-test.js", "5"],
   ["compat/upstream-adoption-test.js", "3"],
   ["compat/write-mode-gate-test.js", "5"],
 ];
