@@ -47,6 +47,10 @@ const verifyDirectReadHelpers = (fixture) => {
     assert.equal(directMemory.memory_id, "diagnostic-memory");
     assert.equal(Array.isArray(directSources.sources), true);
     assert.equal(Array.isArray(directTranscript.sources), true);
+    assert.doesNotThrow(() => captureSnapshotMetrics(db, fixture.dbPath, { ensure: false }));
+    assert.doesNotThrow(() => getCurrentMemory(db, "diagnostic-memory", { ensure: false }));
+    assert.doesNotThrow(() => listMemorySources({ db, config: fixture.config }));
+    assert.doesNotThrow(() => transcriptStatus({ db, config: fixture.config }));
   } finally {
     db.close();
   }

@@ -179,28 +179,24 @@
         {
           "binding": "listMemorySources",
           "mode": "import",
-          "resultBinding": "directSources",
           "symbol": "listMemorySources",
           "targetPath": "lib/core/host-memory-sync.js"
         },
         {
           "binding": "captureSnapshotMetrics",
           "mode": "import",
-          "resultBinding": "directMetrics",
           "symbol": "captureSnapshotMetrics",
           "targetPath": "lib/core/metrics.js"
         },
         {
           "binding": "getCurrentMemory",
           "mode": "import",
-          "resultBinding": "directMemory",
           "symbol": "getCurrentMemory",
           "targetPath": "lib/core/projection-store.js"
         },
         {
           "binding": "transcriptStatus",
           "mode": "import",
-          "resultBinding": "directTranscript",
           "symbol": "transcriptStatus",
           "targetPath": "lib/core/transcript-harvester.js"
         },
@@ -212,7 +208,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/observational-diagnostics-test.js",
-      "testSha256": "81181092c888af2a7a6169178b21786633baa02387ddc4d1973322ed2ac69a07"
+      "testSha256": "c151bb3220736f0c7b6233e2691d4758b55f3c7aad459431bde0e2e20e855558"
     },
     {
       "coveredPaths": [
@@ -1277,6 +1273,6 @@
     }
   ],
   "entryCount": 81,
-  "manifestSha256": "d62f3a96a924a031528473798158116de7ab1a2a4f1bca5c6b4e4a2332bdde99",
+  "manifestSha256": "50beb25cf9d430483e9423af20f0d6b5ccd73368e881f663bedde838e0317e3e",
   "schemaVersion": 1
 }
