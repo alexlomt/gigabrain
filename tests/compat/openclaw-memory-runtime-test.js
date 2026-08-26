@@ -165,7 +165,8 @@ export async function run() {
       const beforeManager = snapshot(fixture);
       const resolved = await runtime.getMemorySearchManager({ cfg: {}, agentId: "main", purpose: "status" });
       assert.equal(resolved.error, undefined);
-      assert.equal(resolved.manager.status().backend, "gigabrain");
+      assert.equal(resolved.manager.status().backend, "qmd", "the pinned host routes custom runtimes through its qmd backend branch");
+      assert.equal(resolved.manager.status().provider, "gigabrain");
       const results = await resolved.manager.search("harbour", { maxResults: 5 });
       assert.equal(results.length, 1);
       assert.match(results[0].snippet, /harbour/i);
