@@ -63,16 +63,21 @@ export async function run() {
     const registry = policy.WRITER_REGISTRY;
     const discovered = discoverWriterEntrypoints({ repoRoot });
     assert.equal(assertWriterRegistryComplete(discovered), true);
-    assert.equal(discovered.length, 170, "all shipped entrypoints remain in the discovery inventory");
+    assert.equal(discovered.length, 174, "all shipped entrypoints remain in the discovery inventory");
     assert.equal(
       new Set(discovered.filter((entry) => entry.access === "write").map((entry) => entry.canonicalOperation || entry.operation)).size,
-      70,
+      73,
       "nested aliases must not inflate the canonical shipped-writer count",
     );
     assert.equal(
       discovered.find((entry) => entry.operation === "cli.vault.sync")?.access,
       "write",
       "pure nested discovery must recognize syncVaultMemory without relying on the declaration map alias",
+    );
+    assert.equal(
+      discovered.find((entry) => entry.operation === "cli.wiki.reconcile")?.access,
+      "write",
+      "explicitly mapped reconcileWiki must classify its nested CLI call as write",
     );
     const discoveredIds = new Set(discovered.map((entry) => entry.operation));
     for (const required of ["package.migrate-v3", "package.harmonize", "cli.inventory", "cli.vault.inbox"]) {
@@ -117,7 +122,7 @@ export async function run() {
         true,
         "nested CLI writers must be derived from branch behavior, not only the declaration map",
       );
-      assert.throws(() => assertWriterRegistryComplete(nestedFuture), /GIGABRAIN_UNCLASSIFIED_WRITER/);
+      assert.throws(() => assertWriterRegistryComplete(nestedFuture), /GIGABRAIN_UNGUARDED_WRITER/);
 
       mkdirSync(path.join(discoveryRoot, "lib", "core"), { recursive: true });
       writeFileSync(path.join(discoveryRoot, "lib", "core", "domain-state.js"), `
@@ -164,6 +169,69 @@ export async function run() {
         domainDiscovery.find((entry) => entry.operation === "cli.future.db.read")?.access,
         "read",
         "structurally proven read-only SQLite opens must remain readers",
+      );
+
+      const explicitMapRoot = path.join(discoveryRoot, "explicit-map");
+      mkdirSync(path.join(explicitMapRoot, "lib", "core"), { recursive: true });
+      mkdirSync(path.join(explicitMapRoot, "scripts"), { recursive: true });
+      writeFileSync(path.join(explicitMapRoot, "package.json"), JSON.stringify({ scripts: {} }));
+      writeFileSync(path.join(explicitMapRoot, "lib", "core", "domain-state.js"), `
+        const settleDomainState = () => ({ settled: true });
+        export { settleDomainState };
+      `);
+      writeFileSync(path.join(explicitMapRoot, "scripts", "gigabrainctl.js"), `
+        import { settleDomainState as closeState } from "../lib/core/domain-state.js";
+        const command = "future";
+        const flags = ["settle"];
+        const resolveCliWriteOperation = () => {
+          const subcommand = String(flags[0] || "");
+          const operations = { future: subcommand === "settle" ? "cli.audit" : "" };
+          return String(operations[command] || "");
+        };
+        const commandFuture = async () => {
+          const subcommand = String(flags[0] || "");
+          if (subcommand === "settle") closeState();
+        };
+        if (command === "future") await commandFuture();
+      `);
+      const explicitMapDiscovery = discoverWriterEntrypoints({
+        repoRoot: explicitMapRoot,
+        exportedWriterOperationBySymbol: {
+          "lib/core/domain-state.js#settleDomainState": "internal.event.append",
+        },
+      });
+      assert.equal(
+        explicitMapDiscovery.some((entry) => entry.operation === "internal.event.append" && entry.symbol === "settleDomainState"),
+        true,
+        "explicit map membership must discover a non-generic exported writer symbol",
+      );
+      assert.equal(
+        explicitMapDiscovery.find((entry) => entry.operation === "cli.future.settle")?.access,
+        "write",
+        "explicitly mapped writers must propagate through import aliases into nested call sites",
+      );
+      assert.equal(assertWriterRegistryComplete(explicitMapDiscovery), true);
+
+      const missingGuardRoot = path.join(discoveryRoot, "missing-guard");
+      mkdirSync(path.join(missingGuardRoot, "scripts"), { recursive: true });
+      writeFileSync(path.join(missingGuardRoot, "package.json"), JSON.stringify({ scripts: {} }));
+      const currentCliSource = readFileSync(path.join(repoRoot, "scripts", "gigabrainctl.js"), "utf8");
+      const missingInboxGuardSource = currentCliSource.replace(
+        "subcommand === 'sync' ? 'cli.vault_sync' : subcommand === 'inbox' ? 'cli.vault.inbox' : ''",
+        "subcommand === 'sync' ? 'cli.vault_sync' : ''",
+      );
+      assert.notEqual(missingInboxGuardSource, currentCliSource, "fixture must remove the shipped vault-inbox guard mapping");
+      writeFileSync(path.join(missingGuardRoot, "scripts", "gigabrainctl.js"), missingInboxGuardSource);
+      const missingGuardDiscovery = discoverWriterEntrypoints({ repoRoot: missingGuardRoot });
+      assert.equal(
+        missingGuardDiscovery.find((entry) => entry.operation === "cli.vault.inbox")?.access,
+        "write",
+        "vault inbox must remain behaviorally discovered after its guard mapping is removed",
+      );
+      assert.throws(
+        () => assertWriterRegistryComplete(missingGuardDiscovery),
+        /GIGABRAIN_UNGUARDED_WRITER/,
+        "a dotted registry classification must not conceal a missing pre-work guard link",
       );
     } finally {
       rmSync(discoveryRoot, { recursive: true, force: true });
