@@ -400,6 +400,7 @@
     {
       "coveredPaths": [
         "lib/compat/write-policy.js",
+        "lib/core/adaptive-trust.js",
         "lib/core/capture-service.js",
         "lib/core/codex-mcp.js",
         "lib/core/codex-service.js",
@@ -408,10 +409,15 @@
         "lib/core/maintenance-service.js",
         "lib/core/memory-actions.js",
         "lib/core/native-memory.js",
+        "lib/core/native-sync.js",
+        "lib/core/orchestrator.js",
+        "lib/core/person-service.js",
+        "lib/core/recall-service.js",
         "lib/core/remote-mcp.js",
         "lib/core/sqlite.js",
         "lib/core/transcript-harvester.js",
         "lib/core/wiki-project.js",
+        "lib/core/world-model.js",
         "scripts/gigabrain-mcp.js",
         "scripts/gigabrainctl.js",
         "scripts/harmonize-memory.js",
@@ -524,7 +530,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/write-mode-gate-test.js",
-      "testSha256": "0d4d0ca79ecd0a1e21cab877135ad64e1058e30356aa7257d23c7b5afd399b47"
+      "testSha256": "502651c001c7c8c28997686683ff18f5b94ae6d4e92c4604f5c60aae5a6f9c55"
     },
     {
       "coveredPaths": [
@@ -1273,6 +1279,6 @@
     }
   ],
   "entryCount": 81,
-  "manifestSha256": "c0543fdee69686ed34a0e5a51bc5e4fe93a2f7892bcc0549d9048b9e176b677f",
+  "manifestSha256": "b6c5cfcc1217943457a7e7b6541c2bb877706d5fe9142c88d941fe15cd77b4b0",
   "schemaVersion": 1
 }

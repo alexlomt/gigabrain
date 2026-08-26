@@ -589,7 +589,12 @@ function validateRetirementEvidenceAttestation(attestation, map) {
 }
 
 function validateAdoptionAndRetirement({ allowlist, attestation, base, head, headByPath, map }) {
-  const adoptedPaths = new Set(allowlist.adoptionContracts.flatMap((row) => row.paths));
+  const adoptedPaths = new Set([
+    ...allowlist.adoptionContracts.flatMap((row) => row.paths),
+    ...map.candidateChanges
+      .filter((row) => row.disposition === "core_patch")
+      .map((row) => row.targetPath),
+  ]);
   const forbiddenHashes = new Set();
   const attestedByKey = new Map(attestation.entries.map((row) => [
     `${row.behaviorId}\0${row.commit}\0${row.path}`,

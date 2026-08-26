@@ -1,6 +1,6 @@
 {
-  "adoptionContractCount": 11,
-  "adoptionContractManifestSha256": "e25eb05c00029eb2af2b5f89db51ee999c38fef3ef80e74964c44ce551fa35b2",
+  "adoptionContractCount": 10,
+  "adoptionContractManifestSha256": "926f0b2bbdeecfd383b46163a1409fb910b65a132bf887e54bdbccbbdfe68e84",
   "adoptionContracts": [
     {
       "id": "active-boundary-retention",
@@ -19,12 +19,6 @@
       ]
     },
     {
-      "id": "custom-slot-framework",
-      "paths": [
-        "lib/core/world-model.js"
-      ]
-    },
-    {
       "id": "handoff-v2",
       "paths": [
         "lib/core/handoff-bundle.js",
@@ -35,8 +29,7 @@
       "id": "observational-recall",
       "paths": [
         "lib/core/embedding-service.js",
-        "lib/core/multi-hop-recall.js",
-        "lib/core/recall-service.js"
+        "lib/core/multi-hop-recall.js"
       ]
     },
     {
@@ -61,7 +54,6 @@
     {
       "id": "trust-arbitration",
       "paths": [
-        "lib/core/adaptive-trust.js",
         "lib/core/belief-arbitration.js",
         "lib/core/host-trust.js"
       ]
@@ -337,12 +329,6 @@
       "type": "blob"
     },
     {
-      "blob": "ca42a20121ef1e9f7e42fbe68a27ec779956df5a",
-      "mode": "100644",
-      "path": "lib/core/adaptive-trust.js",
-      "type": "blob"
-    },
-    {
       "blob": "8ef271f60c2073fe317d1ec441379e29431f92b0",
       "mode": "100644",
       "path": "lib/core/agent-memory-policy.js",
@@ -511,27 +497,9 @@
       "type": "blob"
     },
     {
-      "blob": "c4b3c28a6336adf27f83e60bd1f4dad1d52ec821",
-      "mode": "100644",
-      "path": "lib/core/native-sync.js",
-      "type": "blob"
-    },
-    {
       "blob": "c5fba47ce4ab1ab816002745f115c81c9a73a181",
       "mode": "100644",
       "path": "lib/core/openclaw-import.js",
-      "type": "blob"
-    },
-    {
-      "blob": "28b13039e5e62ad7ecb4ecb265e6950b8dc31cc8",
-      "mode": "100644",
-      "path": "lib/core/orchestrator.js",
-      "type": "blob"
-    },
-    {
-      "blob": "ad83cbcd2671cf18d7ec2d1add9a813ccc2beddf",
-      "mode": "100644",
-      "path": "lib/core/person-service.js",
       "type": "blob"
     },
     {
@@ -544,12 +512,6 @@
       "blob": "e99929af39860438ba85169a90f8b76ff9bd2b33",
       "mode": "100644",
       "path": "lib/core/projection-store.js",
-      "type": "blob"
-    },
-    {
-      "blob": "ffe7f30ebbdc194c115cec29ddc4410ebcb55f6e",
-      "mode": "100644",
-      "path": "lib/core/recall-service.js",
       "type": "blob"
     },
     {
@@ -622,12 +584,6 @@
       "blob": "c192b0b3f7deb3a5264a2e6837ead86ed2b84613",
       "mode": "100644",
       "path": "lib/core/workspace-identity.js",
-      "type": "blob"
-    },
-    {
-      "blob": "e10eba4a9607b96539347c3b3e02cbf68d56031c",
-      "mode": "100644",
-      "path": "lib/core/world-model.js",
       "type": "blob"
     },
     {
@@ -937,7 +893,7 @@
       "type": "blob"
     }
   ],
-  "entryCount": 142,
-  "manifestSha256": "d4bc1d0fbec4b163c477fbece841ccdc5f96329fc047e746415406df62b45496",
+  "entryCount": 136,
+  "manifestSha256": "708a3da83fda25cb4bed709d1f901e6b997e0dfd92a1c2f664f4d1e2a2ce0c3c",
   "schemaVersion": 1
 }

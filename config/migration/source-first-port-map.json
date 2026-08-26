@@ -97,7 +97,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "06003c5329e1ce9c4a46450ef707038726f471fe844753bef77c8473a96e7204",
+      "contentSha256": "1a27cb846129f17c169923878f84d166c44d3a589023da7daa4ad5e9a77dd794",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -170,7 +170,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "08b2d9dc8bc3ae015974c5e183a7a2c04e2c44d1dad9cf8ffb891403bfadc62d",
+      "contentSha256": "b33589379926633a789c72dde5b5cb6a785b127316c93797207bb95fa789c472",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "upstream-adoption"
@@ -178,9 +178,10 @@
       "ownerTasks": [
         "2A",
         "2B",
-        "3"
+        "3",
+        "5"
       ],
-      "reason": "Hash-bound adoption capabilities plus exact path, mode, type and blob ownership for untouched upstream source.",
+      "reason": "Task 5 evidence closure keeps byte-identical upstream ownership separate from six observational reader core patches.",
       "targetMode": "100644",
       "targetPath": "config/migration/upstream-source-allowlist.json"
     },
@@ -411,7 +412,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "52409aa7072ffb6dc498de52d2738df3f35583c27ae8cbd96bf16b4d19b8de3e",
+      "contentSha256": "f69fd3c2688b76b6bd28aa3515003261fe30fdc8749ea55b8057d7bd0b598c0b",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-write-mode-gate"
@@ -422,6 +423,20 @@
       "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
       "targetMode": "100644",
       "targetPath": "lib/compat/write-policy.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "3d3b7586b452c5a0a11994ce6456b656754d7544631efd19c5c326fb1cbc86d4",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 read-only CLI paths propagate ensure=false so observational commands never create schemas.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/adaptive-trust.js"
     },
     {
       "changeType": "modified",
@@ -597,7 +612,49 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "83fd64eda43dfc2b5185b90c05ec3f1e0054e648f3e8b0ca28521a135e96c0cd",
+      "contentSha256": "49863363f32fd71d2ec98efc0aa66c1497f422b60c5b7be67bc52d6661a79b54",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 read-only CLI paths propagate ensure=false so observational commands never create schemas.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/native-sync.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "3fc2dacd80a4ccd7fecfcd348e4bbdbd99cb60307c9f45baceaed971eb398b06",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 read-only CLI paths propagate ensure=false so observational commands never create schemas.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/orchestrator.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "4f674eba2d25c6fa8b47befa3e934693fe70ef217ce80140f85ce098c4199acf",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 read-only CLI paths propagate ensure=false so observational commands never create schemas.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/person-service.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "b2837f0accb688aa155e44d0019a3d79582b013ff52e526e9340f08403932731",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-observational-diagnostics"
@@ -608,6 +665,20 @@
       "reason": "Task 5 fix round 1 makes diagnostic projection reads observational.",
       "targetMode": "100644",
       "targetPath": "lib/core/projection-store.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "fdd13b7a1203deea96a4b0aa5155c46fcdcfdb365586b3e43c1b4ba30dc3f25f",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 read-only CLI paths propagate ensure=false so observational commands never create schemas.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/recall-service.js"
     },
     {
       "changeType": "modified",
@@ -678,6 +749,20 @@
       "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/wiki-project.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "cc032e4e83b1cb96966730db8fa417d0888cb4450b2cf00354525fcef5d756bb",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-write-mode-gate"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 read-only CLI paths propagate ensure=false so observational commands never create schemas.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/world-model.js"
     },
     {
       "changeType": "modified",
@@ -809,7 +894,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "c3bde357e285615bc6b95dc89a3dd591bbc53f794bcafdee01c890ecc158ea30",
+      "contentSha256": "2cc13f1c2627380691485aae5cc3ffcfe2403b7b9a29464b8e68a4ccb2cc342a",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -840,7 +925,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "2d8927df17dbc9d28914d40f0cba9a803c989b9c3164279c0a6c94f282d2d0d3",
+      "contentSha256": "671386fda6ff5a7b528718d289c810ed9566f1bf99920fd171478ae0f999f69b",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-write-mode-gate"
@@ -1263,7 +1348,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "9a444ecb162375e7c756c087052a89824796649bf3a7b99bb4056296505b14ba",
+      "contentSha256": "b8f5e86f998fa3b335d9d6a231e7fbaea5f2567fcaf2441a3aed99c203b88a35",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "upstream-adoption"
@@ -1279,7 +1364,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "0d4d0ca79ecd0a1e21cab877135ad64e1058e30356aa7257d23c7b5afd399b47",
+      "contentSha256": "502651c001c7c8c28997686683ff18f5b94ae6d4e92c4604f5c60aae5a6f9c55",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-write-mode-gate"
@@ -1817,7 +1902,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "ce0e56bf92eb2ae14b35ae68f59268df075f56a62a0f548d7d3d7c9bfb46a50c",
+      "contentSha256": "e8a647bfa548f2e629ec1843410346c4c856a731d55dece8580fef70222f4c8f",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"

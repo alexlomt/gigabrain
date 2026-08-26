@@ -271,7 +271,7 @@ async function adoptionAndRetirementContract() {
   assert.equal(allowlist.adoptionContractCount, allowlist.adoptionContracts.length);
   assert.equal(
     allowlist.adoptionContractManifestSha256,
-    "e25eb05c00029eb2af2b5f89db51ee999c38fef3ef80e74964c44ce551fa35b2",
+    "926f0b2bbdeecfd383b46163a1409fb910b65a132bf887e54bdbccbbdfe68e84",
   );
   assert.equal(
     allowlist.adoptionContractManifestSha256,
@@ -291,7 +291,6 @@ async function adoptionAndRetirementContract() {
   const expectedAdoptions = [
     "active-boundary-retention",
     "all-scope-guard",
-    "custom-slot-framework",
     "handoff-v2",
     "observational-recall",
     "runtime-source-entry",
@@ -364,6 +363,12 @@ async function adoptionAndRetirementContract() {
       adoptedPaths.add(relativePath);
     }
   }
+  const acceptedReplacementPaths = new Set([
+    ...adoptedPaths,
+    ...portMap.candidateChanges
+      .filter((row) => row.disposition === "core_patch")
+      .map((row) => row.targetPath),
+  ]);
 
   const forbiddenHashes = new Set();
   const forbiddenPaths = new Set();
@@ -372,7 +377,7 @@ async function adoptionAndRetirementContract() {
     assert.deepEqual(contract.forbiddenPaths, [...contract.forbiddenPaths].sort(compareText));
     assert.deepEqual(contract.replacementPaths, [...contract.replacementPaths].sort(compareText));
     for (const replacementPath of contract.replacementPaths) {
-      assert.ok(adoptedPaths.has(replacementPath), `retirement replacement is not adopted: ${replacementPath}`);
+      assert.ok(acceptedReplacementPaths.has(replacementPath), `retirement replacement is not adopted: ${replacementPath}`);
     }
     for (const evidence of contract.evidence) {
       assert.match(evidence.commit, FULL_SHA1);
