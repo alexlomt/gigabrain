@@ -19,6 +19,16 @@
       "ownerTask": "14",
       "signature": "COMPAT_EXPECTED_ROLLBACK_RESTORE missing verified rollback restoration",
       "test": "compat/rollback-restore-test.js"
+    },
+    {
+      "ownerTask": "10",
+      "signature": "COMPAT_EXPECTED_SETUP_SURFACE missing explicit generated-surface CLI",
+      "test": "compat/setup-generated-surface-test.js"
+    },
+    {
+      "ownerTask": "10",
+      "signature": "COMPAT_EXPECTED_SURFACE_NOOP missing mutation-gated surface refresh",
+      "test": "compat/surface-noop-test.js"
     }
   ],
   "schemaVersion": 1

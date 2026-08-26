@@ -767,6 +767,17 @@
     },
     {
       "coveredPaths": [
+        "tests/compat/setup-generated-surface-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_SETUP_SURFACE missing explicit generated-surface CLI",
+      "id": "compat-setup-generated-surface",
+      "ownerSourceFirstTaskId": "10",
+      "runner": "node",
+      "testPath": "tests/compat/setup-generated-surface-test.js"
+    },
+    {
+      "coveredPaths": [
         "lib/compat/flush-plan.js",
         "lib/compat/openclaw-adapter.js",
         "lib/compat/openclaw-memory-cli.js",
@@ -861,6 +872,17 @@
       "runner": "node",
       "testPath": "tests/compat/shipping-core-evidence-test.js",
       "testSha256": "a995599ee925eb97a7bfdfc878c02d73695b15f589467846b026034c94c7c5b2"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/surface-noop-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_SURFACE_NOOP missing mutation-gated surface refresh",
+      "id": "compat-surface-noop",
+      "ownerSourceFirstTaskId": "10",
+      "runner": "node",
+      "testPath": "tests/compat/surface-noop-test.js"
     },
     {
       "coveredPaths": [
@@ -1763,7 +1785,7 @@
       "testPath": "tests/compat/upstream-adoption-test.js"
     }
   ],
-  "entryCount": 92,
-  "manifestSha256": "f71db478e37b4127d83e84451c7552824d91fd7a21c8eb8f3d6c8f5993adeac1",
+  "entryCount": 94,
+  "manifestSha256": "3b217bc5397bf93459e24621437057bfdb357208a84b22a696149c3b9d7f66e3",
   "schemaVersion": 1
 }

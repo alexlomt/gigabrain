@@ -100,7 +100,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "15d15c9626f3df0cab4875e52dc34fd6b6d1a6d5b6b5e294bcf5d647eaa85a52",
+      "contentSha256": "aabad843c23b689b5cc5c6aa2adc9b6ea4c85f72e0d6d4ff8400296f13af69c2",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -112,9 +112,10 @@
         "5",
         "6",
         "8",
-        "9"
+        "9",
+        "10"
       ],
-      "reason": "Source-first registry with passing Task 9D queue-review and nightly-integration hashes and relevance evidence.",
+      "reason": "Source-first registry with exact Task 10 generated-surface XFAIL ownership.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -1366,7 +1367,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "49dbdae4dbc35340e3bf0cfd1e3afbbb5704ca5aa8547efbac45ccc271626512",
+      "contentSha256": "1eae662df4cf5c8a7a86166d206e365dece80538ac2cc1d6c378e0c378191c00",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1379,9 +1380,10 @@
         "6",
         "7",
         "8",
-        "9"
+        "9",
+        "10"
       ],
-      "reason": "Task 9D XFAILs removed after both queue-review and nightly-integration contracts passed.",
+      "reason": "Expected-failure ownership for the exact Task 10 generated-surface signatures.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1402,7 +1404,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "744e819e444284483c5d2c95d5fbb217dc5817656232b849be5c2b27042d1d45",
+      "contentSha256": "92dad04659ae3fbe05c7cea54ed2cff2cba11ea9dec5fca5d1ae4e712f9452d7",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-generated-surface"
@@ -1411,7 +1413,7 @@
         "10",
         "2B"
       ],
-      "reason": "Task 10 owns the real generated operator-surface compatibility contract.",
+      "reason": "Task 10 RED contract for deterministic generated files, exact counts, manual-folder preservation, permissions, freshness, and no-op builds.",
       "targetMode": "100644",
       "targetPath": "tests/compat/generated-surface-test.js"
     },
@@ -1677,6 +1679,20 @@
     },
     {
       "changeType": "added",
+      "contentSha256": "24eb32b0d1323ed3fe51b6c7c557ed03f3ba4aa957430ec83e6c7b87beb57abd",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-setup-generated-surface"
+      },
+      "ownerTasks": [
+        "10"
+      ],
+      "reason": "Task 10 RED contract for explicit surface CLI routing, no implicit setup materialization, and release inclusion.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/setup-generated-surface-test.js"
+    },
+    {
+      "changeType": "added",
       "contentSha256": "a995599ee925eb97a7bfdfc878c02d73695b15f589467846b026034c94c7c5b2",
       "disposition": "private_dev_only",
       "gate": {
@@ -1688,6 +1704,20 @@
       "reason": "Direct behavioral and build-artifact evidence for shipping Task 5 core patches.",
       "targetMode": "100644",
       "targetPath": "tests/compat/shipping-core-evidence-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "105dc4dad602cd23703a3c5e0b49aa9d7c3b7254244922e88c2f6582c6e05e2c",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-surface-noop"
+      },
+      "ownerTasks": [
+        "10"
+      ],
+      "reason": "Task 10 RED contract for zero-mutation no-op behavior and one-pass embeddings/surface/graph refresh.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/surface-noop-test.js"
     },
     {
       "changeType": "added",
@@ -1794,7 +1824,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "80e4c0351aaa3cf9ab6e583cd5fef1ca609a95a0dbcce7cdc61c8410e01561ed",
+      "contentSha256": "45d754ffd95197683d6a2e7f461296df8d5ffb8e6ef62b7c033c2619cff45ab1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1806,9 +1836,10 @@
         "5",
         "7",
         "8",
-        "9"
+        "9",
+        "10"
       ],
-      "reason": "Compatibility inventory including both passing Task 9D contracts.",
+      "reason": "Compatibility inventory including all three exact Task 10 surface RED contracts.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory.js"
     },
@@ -2263,7 +2294,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "eb5d0dad9be457ada3a0f1fccbd5bc648eb93eda8aff02b8a56b0df0601f8089",
+      "contentSha256": "a4cdec7528f8d4446252b9b9639dbdd3ad7b04ec30c2cd67fd542cfc355ccb6b",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2276,9 +2307,10 @@
         "5",
         "6",
         "8",
-        "9"
+        "9",
+        "10"
       ],
-      "reason": "Source-first policy contract updated for the passing Task 9D module and test candidate set.",
+      "reason": "Source-first policy contract updated for the classified Task 10 test candidate set.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },
