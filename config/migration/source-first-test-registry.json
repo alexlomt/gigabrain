@@ -152,7 +152,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/entity-taxonomy-test.js",
-      "testSha256": "dba347bc0f312614b12ea2413f8113ef7663472fb5a7bb753bfca2407a952fcf"
+      "testSha256": "ebc3f195d517276c4c5c5e5078fd530ba734f1cf3f77aea2098131cc07870c08"
     },
     {
       "coveredPaths": [
@@ -693,7 +693,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/world-model-shadow-test.js",
-      "testSha256": "0db48dce4889cca5103293d81181e84af154aa448244f038171bf4e33c685710"
+      "testSha256": "55645e200e2090421d95bc6c39c8971f6041821865f53ad270e1f061929eeab2"
     },
     {
       "coveredPaths": [
@@ -1571,6 +1571,6 @@
     }
   ],
   "entryCount": 87,
-  "manifestSha256": "6e4df651f7432adb83d034ce8b432fbb9f216b7d04f943d14678d1405c4fbad7",
+  "manifestSha256": "876a289382e90d11a2210ace9126edfda9aead1eba7c23df79fdb30eb213f431",
   "schemaVersion": 1
 }

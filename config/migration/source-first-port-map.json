@@ -99,7 +99,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "f62988d20db116bcca0239096016c3163b216c173e51514527404b449480ebf5",
+      "contentSha256": "ef86d60b784fd8df487d68a40eda45618f3d96d8c2303e6a309eca7c8bf8b922",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -848,7 +848,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "4a6f6dcf6b47900e2147c3844c44ecfee6ed9c29b42ffe614a89c741ea200c89",
+      "contentSha256": "05e1ad2c8c73e8e1246a5881aeb995ab77b86de5018a10251e926fa4aa934ef1",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-observational-core-patches"
@@ -857,7 +857,7 @@
         "5",
         "8"
       ],
-      "reason": "Task 5 observational behavior retained while Task 8 restores native projection, protects stable curated identities, consumes protected rules, and emits exact-scope syntheses.",
+      "reason": "Task 5 observational behavior retained while Task 8 excludes vault projection, refreshes from eligible native state, and preserves every protected entity ID.",
       "targetMode": "100644",
       "targetPath": "lib/core/world-model.js"
     },
@@ -1229,7 +1229,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "dba347bc0f312614b12ea2413f8113ef7663472fb5a7bb753bfca2407a952fcf",
+      "contentSha256": "ebc3f195d517276c4c5c5e5078fd530ba734f1cf3f77aea2098131cc07870c08",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-entity-taxonomy"
@@ -1237,7 +1237,7 @@
       "ownerTasks": [
         "8"
       ],
-      "reason": "Passing Task 8 compound, title, self-reference, and protected non-person entity contract.",
+      "reason": "Passing Task 8 compound, title, behavioral self-reference, and non-vacuous tool/model/system taxonomy contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/entity-taxonomy-test.js"
     },
@@ -1257,7 +1257,7 @@
         "7",
         "8"
       ],
-      "reason": "Expected-failure ownership after the Task 8 protected-entity preservation regression became a passing gate.",
+      "reason": "Expected-failure ownership after all Task 8 fix-round regressions became passing contracts.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1541,7 +1541,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "0db48dce4889cca5103293d81181e84af154aa448244f038171bf4e33c685710",
+      "contentSha256": "55645e200e2090421d95bc6c39c8971f6041821865f53ad270e1f061929eeab2",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-world-model-shadow"
@@ -1549,7 +1549,7 @@
       "ownerTasks": [
         "8"
       ],
-      "reason": "Passing Task 8 existing-protected-ID, native-row, and deterministic shadow rebuild contract.",
+      "reason": "Passing Task 8 vault-boundary, native-readiness, all-protected-ID, native-row, and deterministic shadow rebuild contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/world-model-shadow-test.js"
     },
