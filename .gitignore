@@ -36,6 +36,7 @@ config/migration/*
 !config/migration/task2-stage-paths.txt
 !config/migration/task3-stage-paths.txt
 !config/migration/task4-stage-paths.txt
+!config/migration/task5-stage-paths.txt
 !config/migration/upstream-source-allowlist.json
 eval/harness-cases.jsonl
 lib/obsidian-cli-adapter.js
