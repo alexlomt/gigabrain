@@ -258,6 +258,10 @@ async function adoptionAndRetirementContract() {
     path.join(repoRoot, "config", "migration", "source-first-port-map.json"),
     "utf8",
   ));
+  const testRegistry = JSON.parse(readFileSync(
+    path.join(repoRoot, "config", "migration", "source-first-test-registry.json"),
+    "utf8",
+  ));
   const attestation = JSON.parse(readFileSync(
     path.join(repoRoot, "config", "migration", "retirement-evidence-attestation.json"),
     "utf8",
@@ -326,6 +330,8 @@ async function adoptionAndRetirementContract() {
   );
 
   const allowByPath = new Map(allowlist.entries.map((entry) => [entry.path, entry]));
+  const candidateByPath = new Map(portMap.candidateChanges.map((entry) => [entry.targetPath, entry]));
+  const registrationById = new Map(testRegistry.entries.map((entry) => [entry.id, entry]));
   const adoptedPaths = new Set();
   for (const contract of allowlist.adoptionContracts) {
     assert.ok(Array.isArray(contract.paths) && contract.paths.length > 0);
@@ -335,7 +341,18 @@ async function adoptionAndRetirementContract() {
       assert.ok(allowEntry, `adopted path is not upstream allowlisted: ${relativePath}`);
       const upstream = gitBlob(BASE, relativePath);
       const candidate = readFileSync(path.join(repoRoot, relativePath));
-      assert.deepEqual(candidate, upstream, `adopted module diverged from v0.11.0: ${relativePath}`);
+      const candidateChange = candidateByPath.get(relativePath);
+      if (candidateChange?.disposition === "core_patch") {
+        const registration = registrationById.get(candidateChange.gate?.registrationId);
+        assert.equal(candidateChange.changeType, "modified", `adopted core patch type: ${relativePath}`);
+        assert.equal(candidateChange.contentSha256, sha256(candidate), `adopted core patch hash: ${relativePath}`);
+        assert.ok(registration, `adopted core patch registration missing: ${relativePath}`);
+        assert.equal(registration.expectedOutcome, "pass", `adopted core patch gate is not passing: ${relativePath}`);
+        assert.ok(registration.coveredPaths.includes(relativePath), `adopted core patch path is not covered: ${relativePath}`);
+        assert.ok(candidateChange.ownerTasks.includes(registration.ownerSourceFirstTaskId));
+      } else {
+        assert.deepEqual(candidate, upstream, `adopted module diverged from v0.11.0: ${relativePath}`);
+      }
       assert.equal(
         execFileSync("git", ["rev-parse", `${BASE}:${relativePath}`], {
           cwd: repoRoot,

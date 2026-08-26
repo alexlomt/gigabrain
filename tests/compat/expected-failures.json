@@ -11,16 +11,6 @@
       "test": "compat/checkpoint-promotion-isolation-test.js"
     },
     {
-      "ownerTask": "4",
-      "signature": "COMPAT_EXPECTED_CONFIG_SCHEMA_PARITY missing canonical generated configuration schema",
-      "test": "compat/config-schema-parity-test.js"
-    },
-    {
-      "ownerTask": "4",
-      "signature": "COMPAT_EXPECTED_DEDUPE_SCOPE_ISOLATION missing same-scope automatic dedupe isolation",
-      "test": "compat/dedupe-scope-isolation-test.js"
-    },
-    {
       "ownerTask": "7",
       "signature": "COMPAT_EXPECTED_EMBEDDING_IDENTITY missing model/dimension/query identity",
       "test": "compat/embedding-identity-test.js"
@@ -67,18 +57,8 @@
     },
     {
       "ownerTask": "4",
-      "signature": "COMPAT_EXPECTED_OPERATOR_RULES_MIGRATION missing protected deterministic operator rules migration",
-      "test": "compat/operator-rules-migration-test.js"
-    },
-    {
-      "ownerTask": "4",
       "signature": "COMPAT_EXPECTED_ROLLBACK_RESTORE missing verified rollback restoration",
       "test": "compat/rollback-restore-test.js"
-    },
-    {
-      "ownerTask": "4",
-      "signature": "COMPAT_EXPECTED_SCOPE_VISIBILITY missing fail-closed scope visibility matrix",
-      "test": "compat/scope-visibility-matrix-test.js"
     }
   ],
   "schemaVersion": 1

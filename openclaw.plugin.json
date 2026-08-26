@@ -9,6 +9,21 @@
         "type": "boolean",
         "default": true
       },
+      "compat": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "writeMode": {
+            "type": "string",
+            "enum": [
+              "read_only",
+              "native_only",
+              "full"
+            ],
+            "default": "full"
+          }
+        }
+      },
       "runtime": {
         "type": "object",
         "additionalProperties": false,
@@ -42,6 +57,60 @@
               "reviewQueuePath": {
                 "type": "string",
                 "default": "output/memory-review-queue.jsonl"
+              }
+            }
+          },
+          "reviewQueueRetention": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": true
+              },
+              "keepPendingOnly": {
+                "type": "boolean",
+                "default": true
+              },
+              "requireExcerptForPending": {
+                "type": "boolean",
+                "default": true
+              },
+              "maxRows": {
+                "type": "number",
+                "default": 2000
+              },
+              "maxPendingRows": {
+                "type": "number",
+                "default": 600
+              },
+              "maxNonPendingRows": {
+                "type": "number",
+                "default": 0
+              },
+              "maxPendingAgeDays": {
+                "type": "number",
+                "default": 21
+              },
+              "relevantReasons": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": [
+                  "llm_unavailable",
+                  "remember_intent_missing_note",
+                  "capture_note_parse_failed",
+                  "memory_note_oversized",
+                  "capture_note_oversized",
+                  "semantic_borderline",
+                  "capture_missing_note",
+                  "capture_parse_failed",
+                  "duplicate_semantic",
+                  "capture_review_required",
+                  "capture_contradiction_unverified",
+                  "memory_action_review"
+                ]
               }
             }
           }
@@ -104,6 +173,115 @@
                 "default": true
               }
             }
+          },
+          "autoCapture": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": false
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "off",
+                  "shadow",
+                  "review",
+                  "auto"
+                ],
+                "default": "off"
+              },
+              "provider": {
+                "type": "string",
+                "enum": [
+                  "openclaw",
+                  "openai_compatible",
+                  "none"
+                ],
+                "default": "none"
+              },
+              "baseUrl": {
+                "type": "string",
+                "default": ""
+              },
+              "model": {
+                "type": "string",
+                "default": ""
+              },
+              "apiKey": {
+                "type": "string",
+                "default": ""
+              },
+              "profile": {
+                "type": "string",
+                "default": "auto_capture"
+              },
+              "timeoutMs": {
+                "type": "integer",
+                "default": 45000
+              },
+              "minConfidence": {
+                "type": "number",
+                "default": 0.88
+              },
+              "minImportance": {
+                "type": "number",
+                "default": 0.75
+              },
+              "queueMinConfidence": {
+                "type": "number",
+                "default": 0.65
+              },
+              "queueMinImportance": {
+                "type": "number",
+                "default": 0.5
+              },
+              "minContentChars": {
+                "type": "integer",
+                "default": 20
+              },
+              "maxCandidates": {
+                "type": "integer",
+                "default": 5
+              },
+              "maxTurns": {
+                "type": "integer",
+                "default": 16
+              },
+              "maxCharsPerTurn": {
+                "type": "integer",
+                "default": 4000
+              },
+              "targetTokens": {
+                "type": "integer",
+                "default": 10000
+              },
+              "softMaxTokens": {
+                "type": "integer",
+                "default": 15000
+              },
+              "hardMaxTokens": {
+                "type": "integer",
+                "default": 25000
+              },
+              "includeExistingMemories": {
+                "type": "boolean",
+                "default": true
+              },
+              "existingMemoryLimit": {
+                "type": "integer",
+                "default": 80
+              },
+              "minTriggerChars": {
+                "type": "integer",
+                "default": 80
+              },
+              "processingStaleMs": {
+                "type": "integer",
+                "default": 300000
+              }
+            }
           }
         }
       },
@@ -114,6 +292,17 @@
           "exactEnabled": {
             "type": "boolean",
             "default": true
+          },
+          "thresholdsByType": {
+            "type": "object"
+          },
+          "autoResolvePendingDays": {
+            "type": "number",
+            "default": 7
+          },
+          "autoResolveArchive": {
+            "type": "boolean",
+            "default": false
           },
           "semanticEnabled": {
             "type": "boolean",
@@ -144,10 +333,6 @@
           "topK": {
             "type": "number",
             "default": 8
-          },
-          "minScore": {
-            "type": "number",
-            "default": 0.45
           },
           "maxTokens": {
             "type": "number",
@@ -181,6 +366,121 @@
               "decisions": {
                 "type": "number",
                 "default": 0.25
+              }
+            }
+          },
+          "semanticRerankEnabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "relevanceFloor": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": true
+              },
+              "minMatchedTokens": {
+                "type": "number",
+                "default": 2
+              },
+              "denseCosine": {
+                "type": "number",
+                "default": 0.65
+              }
+            }
+          },
+          "vaultWeight": {
+            "type": "number",
+            "default": 1
+          },
+          "crossEncoderRerankEnabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "ollamaUrl": {
+            "type": "string",
+            "default": "http://127.0.0.1:11434"
+          },
+          "embeddingModel": {
+            "type": "string",
+            "default": "bge-m3"
+          },
+          "embeddingTimeoutMs": {
+            "type": "number",
+            "default": 5000
+          },
+          "embeddingProvider": {
+            "type": "string",
+            "enum": [
+              "ollama",
+              "openai_compatible",
+              "openclaw",
+              "none"
+            ],
+            "default": "ollama"
+          },
+          "embeddingBaseUrl": {
+            "type": "string",
+            "default": ""
+          },
+          "embeddingApiKey": {
+            "type": "string",
+            "default": ""
+          },
+          "embeddingDimensions": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "embeddingModelFingerprint": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "semanticRerankAlpha": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.65
+          },
+          "minScore": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0
+          },
+          "adaptiveBudgeting": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": true
+              }
+            }
+          },
+          "multiHop": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": false
+              },
+              "hops": {
+                "type": "integer",
+                "default": 2
+              },
+              "entitiesPerHop": {
+                "type": "integer",
+                "default": 5
+              },
+              "rowsPerEntity": {
+                "type": "integer",
+                "default": 6
+              },
+              "maxTotal": {
+                "type": "integer",
+                "default": 40
               }
             }
           }
@@ -239,6 +539,14 @@
             "default": [
               "topic"
             ]
+          },
+          "multiEntityEnabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "fallbackChainEnabled": {
+            "type": "boolean",
+            "default": true
           }
         }
       },
@@ -322,6 +630,590 @@
                 "default": 80
               }
             }
+          },
+          "evolutionEnabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "autoResolveLoops": {
+            "type": "boolean",
+            "default": true
+          },
+          "llmContradictionReview": {
+            "type": "boolean",
+            "default": false
+          },
+          "arbiter": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "clusterThreshold": {
+                "type": "number",
+                "default": 0.55
+              },
+              "clusterLlmRefinement": {
+                "type": "boolean",
+                "default": false
+              },
+              "recencyAmbiguityWindowMs": {
+                "type": "number",
+                "default": 300000
+              },
+              "independenceWindowMs": {
+                "type": "number",
+                "default": 600000
+              },
+              "supportCapPerSource": {
+                "type": "number",
+                "default": 1
+              }
+            }
+          },
+          "customSlotRules": {
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "pattern",
+                "slot"
+              ],
+              "properties": {
+                "pattern": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "flags": {
+                  "type": "string",
+                  "pattern": "^[dgimsuvy]*$",
+                  "default": "i"
+                },
+                "slot": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "topic": {
+                  "type": "string"
+                },
+                "subtopic": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "update",
+                    "remember"
+                  ],
+                  "default": "update"
+                }
+              }
+            }
+          },
+          "hostTrust": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "operatorRules": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entity": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "rejectTerms": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "nonPersonTerms": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "rejectPatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              },
+              "nonPersonPatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "memoryTier": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "tierValues": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "durableTiers": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "opsPatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              },
+              "workingReferencePatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              },
+              "personalMemoryPatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              },
+              "projectMemoryPatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              },
+              "projectEpisodePatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              },
+              "projectIdentityPatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              },
+              "personalGoalPatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              },
+              "projectReferencePatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              },
+              "contactInfoPatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              },
+              "healthMemoryPatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "surface": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "beliefNoisePatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              },
+              "beliefMetaPatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              },
+              "summaryWeakPatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              },
+              "personPreferredPatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              },
+              "projectPreferredPatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              },
+              "personCueTerms": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "projectCueTerms": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "sessionBrief": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "excludePatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flags": {
+                      "type": "string",
+                      "pattern": "^[dgimsuvy]*$",
+                      "default": "i"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "agentRegistry": {
+        "type": "array",
+        "default": [],
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "trust": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "arbitrationHostTrust": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "default": {}
+          },
+          "scoringHostTrust": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "default": {}
           }
         }
       },
@@ -369,36 +1261,36 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-        "obsidian": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "mode": {
-              "type": "string",
-              "enum": [
-                "curated",
-                "diagnostic"
-              ],
-              "default": "curated"
-            },
-            "exportDiagnostics": {
-              "type": "boolean",
-              "default": false
-            },
-            "exportEntityPages": {
-              "type": "string",
-              "enum": [
-                "off",
-                "stable_only",
-                "all"
-              ],
-              "default": "stable_only"
-            },
-            "entityPages": {
-              "type": "boolean",
-              "default": true
+          "obsidian": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "curated",
+                  "diagnostic"
+                ],
+                "default": "curated"
+              },
+              "exportDiagnostics": {
+                "type": "boolean",
+                "default": false
+              },
+              "exportEntityPages": {
+                "type": "string",
+                "enum": [
+                  "off",
+                  "stable_only",
+                  "all"
+                ],
+                "default": "stable_only"
+              },
+              "entityPages": {
+                "type": "boolean",
+                "default": true
+              }
             }
-          }
           },
           "webConsole": {
             "type": "object",
@@ -457,7 +1349,14 @@
               "benchmark",
               "mb:",
               "smoke test",
-              "^\\(none\\)$"
+              "^\\(none\\)$",
+              "Post-Compaction Audit",
+              "\\[Subagent Context\\]",
+              "Exec completed (",
+              "Conversation info (untrusted metadata)",
+              "[System Message] [sessionId:",
+              "compaction audit",
+              "subagent.*depth d+/d+"
             ]
           },
           "junkPatternsAppend": {
@@ -485,7 +1384,9 @@
               "\\b(?:i|ich)\\s+(?:like|love|prefer|mag|liebe|bevorzuge)\\b",
               "\\b(?:pronouns?|pronomen)\\b",
               "\\b(?:partner(?:in)?|wife|husband|girlfriend|boyfriend|friend|mentor|sibling)\\b",
-              "\\b(?:proud of|stolz auf|grateful|dankbar|appreciates?|sch[aä]tzt|supports?|unterst[uü]tzt|trusts?|vertraut)\\b"
+              "\\b(?:proud of|stolz auf|grateful|dankbar|appreciates?|sch[aä]tzt|supports?|unterst[uü]tzt|trusts?|vertraut)\\b",
+              "\\b(?:care|caring|appreciation|valued|important to|matters? to|means? a lot to)\\b",
+              "\\b(?:goal|target|birthday|poly|polyamorous|relationship|dating|reads?|reading|bookmarks?)\\b"
             ]
           },
           "highValueShortPatternsAppend": {
@@ -509,7 +1410,9 @@
               "\\b(?:proud of|stolz auf|grateful|dankbar|appreciates?|sch[aä]tzt|supports?|unterst[uü]tzt|trusts?|vertraut)\\b",
               "\\b(?:partner(?:in)?|wife|husband|girlfriend|boyfriend|best friend|mentor|sibling)\\b",
               "\\b(?:pronouns?|pronomen)\\b",
-              "\\b(?:identity|personality|continuity|evolution)\\b"
+              "\\b(?:identity|personality|continuity|evolution)\\b",
+              "\\b(?:care|caring|appreciation|valued|important to|matters? to|means? a lot to|self-sufficient|helpful)\\b",
+              "\\b(?:goal|target|birthday|poly|polyamorous|relationship|dating|reads?|reading|weight goal|lose weight)\\b"
             ]
           },
           "durablePatternsAppend": {
@@ -518,24 +1421,6 @@
               "type": "string"
             },
             "default": []
-          },
-          "valueThresholds": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "keep": {
-                "type": "number",
-                "default": 0.78
-              },
-              "archive": {
-                "type": "number",
-                "default": 0.3
-              },
-              "reject": {
-                "type": "number",
-                "default": 0.18
-              }
-            }
           },
           "plausibility": {
             "type": "object",
@@ -551,10 +1436,10 @@
                   "type": "string"
                 },
                 "default": [
-                  "\\b(?:jabber)\\b",
-                  "\\b(?:began|started)\\s+a\\s+\\d+\\b",
-                  "\\b\\d+\\s+jabber\\b",
-                  "\\b(?:started|began)\\s+a\\s+jabber\\b"
+                  "\\bjabber\\b",
+                  "\\bbegan\\s+a\\s+\\d+\\b",
+                  "\\bstarted\\s+a\\s+\\d+\\b",
+                  "\\b\\d+\\s+jabber\\b"
                 ]
               },
               "brokenPhrasePatternsAppend": {
@@ -573,15 +1458,20 @@
                   "started",
                   "began",
                   "journey",
-                  "weight",
-                  "loss",
                   "target",
                   "current",
-                  "kg",
-                  "newsletter",
+                  "goal",
                   "launched",
                   "founded",
-                  "joined"
+                  "joined",
+                  "birthday",
+                  "relationship",
+                  "partner",
+                  "email",
+                  "read",
+                  "reading",
+                  "care",
+                  "appreciation"
                 ]
               },
               "semanticAnchorsAppend": {
@@ -590,6 +1480,24 @@
                   "type": "string"
                 },
                 "default": []
+              }
+            }
+          },
+          "valueThresholds": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "keep": {
+                "type": "number",
+                "default": 0.78
+              },
+              "archive": {
+                "type": "number",
+                "default": 0.3
+              },
+              "reject": {
+                "type": "number",
+                "default": 0.18
               }
             }
           }
@@ -617,6 +1525,10 @@
           },
           "apiKey": {
             "type": "string"
+          },
+          "apiKeyEnv": {
+            "type": "string",
+            "default": ""
           },
           "timeoutMs": {
             "type": "number",
@@ -725,6 +1637,39 @@
                   }
                 }
               },
+              "auto_capture": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "model": {
+                    "type": "string"
+                  },
+                  "temperature": {
+                    "type": "number",
+                    "default": 0.1
+                  },
+                  "top_p": {
+                    "type": "number",
+                    "default": 0.8
+                  },
+                  "top_k": {
+                    "type": "number",
+                    "default": 20
+                  },
+                  "max_tokens": {
+                    "type": "number",
+                    "default": 512
+                  },
+                  "reasoning": {
+                    "type": "string",
+                    "enum": [
+                      "off",
+                      "default"
+                    ],
+                    "default": "off"
+                  }
+                }
+              },
               "chat_general": {
                 "type": "object",
                 "additionalProperties": false,
@@ -789,6 +1734,80 @@
                 "default": "memory_review"
               }
             }
+          },
+          "queueReview": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": false
+              },
+              "limit": {
+                "type": "number",
+                "default": 200
+              },
+              "minConfidence": {
+                "type": "number",
+                "default": 0.8
+              },
+              "profile": {
+                "type": "string",
+                "default": "memory_review"
+              },
+              "allowedReasons": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "memoryLlm": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "openai_compatible",
+              "ollama",
+              "none"
+            ],
+            "default": "none"
+          },
+          "baseUrl": {
+            "type": "string",
+            "default": ""
+          },
+          "model": {
+            "type": "string",
+            "default": ""
+          },
+          "apiKey": {
+            "type": "string",
+            "default": ""
+          },
+          "apiKeyEnv": {
+            "type": "string",
+            "default": ""
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "default": 15000
+          },
+          "maxRetries": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5,
+            "default": 1
           }
         }
       },
@@ -820,9 +1839,61 @@
             "type": "number",
             "default": 1
           },
+          "maxCompactFiles": {
+            "type": "number",
+            "default": 5
+          },
           "vacuum": {
             "type": "boolean",
             "default": true
+          },
+          "harmonize": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": false
+              },
+              "outPath": {
+                "type": "string",
+                "default": "memory/gigabrain-harmonized.md"
+              },
+              "statuses": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": [
+                  "active",
+                  "archived"
+                ]
+              },
+              "maxRows": {
+                "type": "number",
+                "default": 420
+              },
+              "perTypeLimit": {
+                "type": "number",
+                "default": 120
+              },
+              "minConfidence": {
+                "type": "number",
+                "default": 0
+              },
+              "syncNative": {
+                "type": "boolean",
+                "default": true
+              },
+              "includeInNative": {
+                "type": "boolean",
+                "default": true
+              },
+              "backup": {
+                "type": "boolean",
+                "default": true
+              }
+            }
           }
         }
       },
@@ -852,7 +1923,8 @@
               "memory/recent-changes.md",
               "memory/whois.md",
               "memory/pinned-core-people.md",
-              "memory/pinned/core-people.md"
+              "memory/pinned/core-people.md",
+              "memory/gigabrain-harmonized.md"
             ]
           },
           "excludeGlobs": {
@@ -882,6 +1954,106 @@
           "onDemandTemporalDays": {
             "type": "number",
             "default": 3650
+          },
+          "vaults": {
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "glob": {
+                  "type": "string"
+                },
+                "weight": {
+                  "type": "number"
+                },
+                "maxFileKB": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "vaultSyncMaxFiles": {
+            "type": "number",
+            "default": 2000
+          },
+          "cloudInbox": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": false
+              },
+              "dir": {
+                "type": "string",
+                "default": "~/.gigabrain/cloud-inbox"
+              },
+              "staleDays": {
+                "type": "number",
+                "default": 30
+              }
+            }
+          },
+          "transcripts": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": false
+              },
+              "globs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "maxFiles": {
+                "type": "integer",
+                "default": 50
+              },
+              "maxTurns": {
+                "type": "integer",
+                "default": 200
+              }
+            }
+          },
+          "wiki": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": false
+              },
+              "dir": {
+                "type": "string",
+                "default": "~/.gigabrain/wiki"
+              }
+            }
+          },
+          "sparkAdvisory": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "dedupeEnabled": {
+                "type": "boolean",
+                "default": true
+              },
+              "maxChunks": {
+                "type": "number",
+                "default": 260
+              },
+              "nearDuplicateThreshold": {
+                "type": "number",
+                "default": 0.9
+              }
+            }
           }
         }
       },
@@ -901,9 +2073,118 @@
             "type": "boolean",
             "default": true
           },
+          "requireDailyMetadata": {
+            "type": "boolean",
+            "default": false
+          },
           "minConfidence": {
             "type": "number",
             "default": 0.72
+          }
+        }
+      },
+      "person": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "keepPublicFacts": {
+            "type": "boolean",
+            "default": true
+          },
+          "relationshipPriorityBoost": {
+            "type": "number",
+            "default": 0.35
+          },
+          "publicProfileBoost": {
+            "type": "number",
+            "default": 0.1
+          },
+          "requireWordBoundaryMatch": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "telemetry": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "countersEnabled": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "codex": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "storeMode": {
+            "type": "string",
+            "default": "global"
+          },
+          "projectRoot": {
+            "type": "string"
+          },
+          "projectStorePath": {
+            "type": "string",
+            "default": "/home/alex/.gigabrain"
+          },
+          "userProfilePath": {
+            "type": "string",
+            "default": "/home/alex/.gigabrain/profile"
+          },
+          "projectScope": {
+            "type": "string",
+            "default": ""
+          },
+          "defaultProjectScope": {
+            "type": "string",
+            "default": ""
+          },
+          "defaultUserScope": {
+            "type": "string",
+            "default": "profile:user"
+          },
+          "defaultTarget": {
+            "type": "string",
+            "enum": [
+              "project",
+              "user"
+            ],
+            "default": "project"
+          },
+          "recallOrder": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "project",
+                "user",
+                "remote"
+              ]
+            },
+            "default": [
+              "project",
+              "user",
+              "remote"
+            ]
+          },
+          "userOverlayTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "PREFERENCE",
+              "USER_FACT",
+              "AGENT_IDENTITY",
+              "DECISION"
+            ]
           }
         }
       },
@@ -911,6 +2192,62 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "path": {
+            "type": "string",
+            "default": ""
+          },
+          "subdir": {
+            "type": "string",
+            "default": ""
+          },
+          "homeNoteName": {
+            "type": "string",
+            "default": ""
+          },
+          "clean": {
+            "type": "boolean",
+            "default": false
+          },
+          "exportActiveNodes": {
+            "type": "boolean",
+            "default": false
+          },
+          "exportRecentArchivesLimit": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          },
+          "manualFolders": {
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "string"
+            }
+          },
+          "views": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": false
+              }
+            }
+          },
+          "reports": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": false
+              }
+            }
+          },
           "inbox": {
             "type": "object",
             "additionalProperties": false,
@@ -947,35 +2284,76 @@
           }
         }
       },
-      "person": {
+      "hostSync": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "keepPublicFacts": {
+          "autoOnSetup": {
             "type": "boolean",
-            "default": true
+            "default": false
           },
-          "relationshipPriorityBoost": {
-            "type": "number",
-            "default": 0.35
-          },
-          "publicProfileBoost": {
-            "type": "number",
-            "default": 0.1
-          },
-          "requireWordBoundaryMatch": {
+          "autoNightly": {
             "type": "boolean",
-            "default": true
+            "default": false
           }
         }
       },
-      "telemetry": {
+      "lifecycleHooks": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "countersEnabled": {
+          "enabled": {
             "type": "boolean",
             "default": false
+          }
+        }
+      },
+      "remoteMcp": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "urlImport": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "allowedHosts": {
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "remoteBridge": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "baseUrl": {
+            "type": "string",
+            "default": ""
+          },
+          "authToken": {
+            "type": "string",
+            "default": ""
+          },
+          "timeoutMs": {
+            "type": "number",
+            "default": 8000
           }
         }
       }

@@ -2,6 +2,22 @@
 
 OpenClaw mode keeps config under `plugins.entries.gigabrain.config` in `openclaw.json`. Codex and Claude standalone modes store the same schema in `~/.gigabrain/config.json` by default for fresh installs, reuse `~/.codex/gigabrain/config.json` when a supported legacy standalone install already exists, or use `<repo>/.gigabrain/config.json` when you opt into `--store-mode project-local`. The full OpenClaw plugin schema is defined in [`openclaw.plugin.json`](../openclaw.plugin.json).
 
+`lib/core/config.js` is the canonical runtime schema authority. `openclaw.plugin.json` is generated from it with `node scripts/build-openclaw-config-schema.mjs`; hand-editing the manifest is unsupported.
+
+## Compatibility write mode and safe automation defaults
+
+```json
+{
+  "compat": { "writeMode": "full" },
+  "hostSync": { "autoOnSetup": false, "autoNightly": false },
+  "lifecycleHooks": { "enabled": false },
+  "remoteMcp": { "enabled": false },
+  "urlImport": { "enabled": false, "allowedHosts": [] }
+}
+```
+
+`compat.writeMode` accepts exactly `read_only`, `native_only`, or `full`. Host setup sync, nightly host sync, lifecycle hooks, remote MCP, and URL import are independently opt-in. Enabling one does not enable another. The candidate project-scope and omitted-local-HTTP policies remain cutover-gated capabilities; this configuration work does not activate them in a live deployment.
+
 ## Runtime
 
 ```json
@@ -61,6 +77,8 @@ OpenClaw mode keeps config under `plugins.entries.gigabrain.config` in `openclaw
     "topK": 8,
     "maxTokens": 1200,
     "mode": "hybrid",
+    "embeddingDimensions": 2560,
+    "embeddingModelFingerprint": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "relevanceFloor": {
       "minMatchedTokens": 2,
       "denseCosine": 0.65
@@ -76,10 +94,26 @@ OpenClaw mode keeps config under `plugins.entries.gigabrain.config` in `openclaw
 - `semanticRerankEnabled` — **default `true` (U14)**: recall fuses the lexical FTS5 ranking with a dense bge-m3 cosine ranking (weighted Borda-count rank aggregation) over embeddings cached in `memory_embeddings`; capture's embedding-kNN neighbor selection reads the same flag. Degrades silently to lexical-only when Ollama is unreachable or no embeddings are cached — no crash, no log spam. Set to `false` for strictly lexical recall.
 - `crossEncoderRerankEnabled` — default `false`: seam for a cross-encoder rerank over the fused candidate set; currently an identity passthrough until a measured experiment wires a model in.
 - `ollamaUrl` / `embeddingModel` / `embeddingTimeoutMs` — dense-leg embedding endpoint (loopback-only, port 11434 enforced), model (`bge-m3`), and per-call timeout
+- `embeddingDimensions` — positive integer identity for the configured embedding output; the compatibility production profile uses `2560`
+- `embeddingModelFingerprint` — protected model-manifest identity matching `^sha256:[0-9a-f]{64}$`; public defaults contain no machine-specific digest
 - `relevanceFloor.minMatchedTokens` — default `2` for queries with at least four informative tokens; short queries require one token
 - `relevanceFloor.denseCosine` — default `0.65`; a sufficiently strong dense match may pass without the lexical minimum
 - Recall never performs native sync, projection rebuild, or maintenance. Run those write paths explicitly.
-- Local HTTP recall defaults an omitted scope to `shared`. An explicit `project:*` scope is exact and excludes shared and profile rows; an explicit `profile:*` scope is the intentional personal-memory path.
+- Local HTTP recall candidate policy defaults an omitted scope to `shared`. An explicit `project:*` scope is exact and excludes shared and profile rows; activation of these HTTP hardening rules remains an owner cutover gate.
+
+### Agent scope visibility
+
+| Requested scope | Candidate-visible scopes |
+| --- | --- |
+| `main` or `profile:main` | `profile:main`, `shared` |
+| `paperclip-ceo` | `paperclip-ceo`, `shared` |
+| `scrapling-research-operator` | `scrapling-research-operator`, `shared` |
+| `higgsfield-creator` | `higgsfield-creator`, `shared` |
+| `linkedin-public-evidence-operator` | `linkedin-public-evidence-operator`, `shared` |
+| `project:*` | exact project scope only |
+| omitted local scope | `shared` only |
+
+Remote authority is always an exact-scope intersection and never receives a locally inferred shared/profile overlay. Capture scope comes from the trusted host event envelope; a model-authored `scope` attribute cannot redirect a write.
 
 ## Orchestrator and world model
 
@@ -124,9 +158,9 @@ Clean toggle for the entity, belief, and contradiction projection layer. It defa
 
 ### `worldModel.customSlotRules`
 
-Generic detectors already recognise common claim slots (relationship, location, role, preference, decision, birthday, identity). `customSlotRules` lets a deployment add durable slots for its own projects, people, or domain terms instead of hardcoding them. Each rule maps a regex over the memory text to a slot and is applied **before** the generic detectors, so a custom rule always wins for text it matches. Defaults to `[]` (generic detectors only). Invalid regexes are skipped rather than thrown.
+Generic detectors already recognise common claim slots (relationship, location, role, preference, decision, birthday, identity). `customSlotRules` lets a deployment add durable slots for its own projects, people, or domain terms instead of hardcoding them. Each rule maps a regex over the memory text to a slot and is applied **before** the generic detectors, so a custom rule always wins for text it matches. Defaults to `[]` (generic detectors only).
 
-Slot detection also applies to **entity-less, user-anchored facts** ("The user …" / first person): such rows are projected onto a synthetic, arbitration-only `user:self` entity so the arbiter can adjudicate implicit rivals about the user. A built-in mode-level topic lexicon covers the canonical personal-fact life domains: transport mode, work-location mode, residence (dwelling/tenure — city facts stay in the value-typed `location.current_city` slot), employment, device platform, subscription service, health regimen, financial obligations (per-obligation slots: mortgage, auto loan, student loan, banking — each loan is its own exclusive state), relationship status, education program, pet companion, exercise routine, diet pattern, and hobby activity. Every lexicon alternative names a domain noun (employer, landlord, prescription, mortgage, …), never a bare verb, and noun-demanding domains match before the broader verb-led ones, so unrelated facts cannot acquire a life-domain slot. Domain-grouped facts only arbitrate when some row carries an explicit state-change or incapacity cue ("sold", "switched", "no longer", "upgraded to", "paid off", "relocated", "surgery", …) — co-facts about one domain (a second hobby, an additional device) are never superseded, and even then only the single most-similar rival position is superseded (spared co-facts stay active and surface for review). The synthetic entity is never written to `memory_entities`, so entity surfaces and briefs are unaffected. `customSlotRules` still extends coverage to deployment-specific domains without code.
+Slot detection also applies to **entity-less, user-anchored facts** ("The user …" / first person): such rows are projected onto a synthetic, arbitration-only `user:self` entity so the arbiter can adjudicate implicit rivals about the user. `customSlotRules` extends coverage to deployment-specific domains without code. Invalid protected regex or flags fail configuration validation; they are never silently skipped.
 
 | Field | Required | Purpose |
 | --- | --- | --- |
@@ -148,6 +182,47 @@ Slot detection also applies to **entity-less, user-anchored facts** ("The user �
   }
 }
 ```
+
+### Protected `operatorRules`
+
+```json
+{
+  "operatorRules": {
+    "entity": {
+      "rejectTerms": [],
+      "nonPersonTerms": [],
+      "rejectPatterns": [],
+      "nonPersonPatterns": []
+    },
+    "memoryTier": {
+      "tierValues": [],
+      "durableTiers": [],
+      "opsPatterns": [],
+      "workingReferencePatterns": [],
+      "personalMemoryPatterns": [],
+      "projectMemoryPatterns": [],
+      "projectEpisodePatterns": [],
+      "projectIdentityPatterns": [],
+      "personalGoalPatterns": [],
+      "projectReferencePatterns": [],
+      "contactInfoPatterns": [],
+      "healthMemoryPatterns": []
+    },
+    "surface": {
+      "beliefNoisePatterns": [],
+      "beliefMetaPatterns": [],
+      "summaryWeakPatterns": [],
+      "personPreferredPatterns": [],
+      "projectPreferredPatterns": [],
+      "personCueTerms": [],
+      "projectCueTerms": []
+    },
+    "sessionBrief": { "excludePatterns": [] }
+  }
+}
+```
+
+Public defaults are typed and empty. Deployment-specific entity rejects, non-person terms, memory-tier cues, surface/session-brief filters, and preferred cues belong only in protected configuration. Regex entries use `{ "pattern": "...", "flags": "i" }` and fail closed when invalid.
 
 ### `worldModel.hostTrust`
 
@@ -196,13 +271,38 @@ Robustness knobs for the deterministic arbitration rule (**trust tier > corrobor
     "exactEnabled": true,
     "semanticEnabled": true,
     "autoThreshold": 0.92,
-    "reviewThreshold": 0.85
+    "reviewThreshold": 0.85,
+    "crossScopeGlobal": false
   }
 }
 ```
 
 - Above `autoThreshold` — auto-merged silently
 - Between `reviewThreshold` and `autoThreshold` — queued for review
+- Automatic exact/semantic dedupe is restricted to the same normalized exact scope. Cross-scope similarity may be reported or queued for review, but never mutates status or supersession.
+
+## Optional capture and review models
+
+```json
+{
+  "capture": {
+    "autoCapture": { "enabled": false, "mode": "off", "provider": "none" }
+  },
+  "memoryLlm": { "enabled": false, "provider": "none" },
+  "llm": {
+    "queueReview": {
+      "enabled": false,
+      "limit": 200,
+      "minConfidence": 0.8,
+      "profile": "memory_review",
+      "allowedReasons": []
+    }
+  },
+  "nativePromotion": { "requireDailyMetadata": false }
+}
+```
+
+These deployed-compatibility families are schema-valid but remain independently disabled unless deliberately configured. `nativePromotion.requireDailyMetadata` is the explicit gate for daily-note promotion metadata.
 
 ## LLM (optional)
 
@@ -281,6 +381,8 @@ Indexes workspace markdown files into `memory_native_chunks` for unified recall 
 
 Both importers are off by default. `cloudInbox` reads files you deliberately place in its local directory; it does not connect to a cloud account. `transcripts` reads bounded local session files and should be enabled only after you review the configured paths and the privacy implications. Neither option uploads data or silently synchronizes another computer.
 
+Host-memory setup and nightly import are also off by default. Manual/default main-host import targets `profile:main`; it never falls back to the legacy `profile:user` scope. Explicit non-main scopes remain exact.
+
 ## Node HTTP authentication
 
 The OpenClaw plugin resolves its `/gb` route token from `runtime.apiToken`, the OpenClaw gateway token, or `GB_UI_TOKEN`, in that order. Without a token, data routes are not registered by default.
@@ -350,7 +452,7 @@ Gigabrain-owned note and is disabled by default:
 }
 ```
 
-The broad generated-vault export surface is retired. See
+The broad generated-vault export surface remains schema-compatible but disabled (`vault.enabled:false`, with views/reports also false). See
 [docs/obsidian.md](obsidian.md) for the exact direction, trust and TLS boundaries.
 
 ## Quality

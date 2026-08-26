@@ -8,7 +8,12 @@ import { ensureProjectionStore, materializeProjectionFromMemories } from '../lib
 import { ensureEventStore } from '../lib/core/event-store.js';
 import { ensureNativeStore, syncNativeMemory } from '../lib/core/native-sync.js';
 import { ensurePersonStore, rebuildEntityMentions } from '../lib/core/person-service.js';
-import { discoverHostSources, ensureHostMemoryStore, syncHostMemories } from '../lib/core/host-memory-sync.js';
+import {
+  discoverHostSources,
+  ensureHostMemoryStore,
+  shouldRunAutomaticHostSync,
+  syncHostMemories,
+} from '../lib/core/host-memory-sync.js';
 import { projectArbitrationBeliefRows } from '../lib/core/world-model.js';
 import { loadResolvedConfig } from '../lib/core/config.js';
 import { installSessionHook, resolveSessionSettingsPath } from '../lib/core/lifecycle-hooks.js';
@@ -193,27 +198,27 @@ const bootstrapDatabase = ({ configPath, workspaceRoot }) => {
     nativeInsertedChunks = Number(nativeResult?.inserted_chunks || 0);
     rebuildEntityMentions(db);
 
-    // Feature #2(b): auto-ingest local host memories on first-run setup so the
-    // cross-agent arbiter is populated from the start — not gated behind a
-    // manual `sync-hosts`. BEST-EFFORT: a missing host directory or a malformed
-    // store must NEVER fail setup. discoverHostSources is wrapped too so a
-    // probe error degrades to "no sources detected".
-    try {
-      let detected = [];
-      try { detected = discoverHostSources({ config }) || []; } catch { detected = []; }
-      hostSync.sources_detected = detected.length;
-      const result = syncHostMemories({
-        db,
-        config,
-        incremental: true,
-        arbitrate: true,
-        projectBeliefRows: projectArbitrationBeliefRows,
-      });
-      hostSync.inserted = Number(result?.inserted_count || 0);
-      hostSync.verdicts = Number(result?.arbitration_verdicts || 0);
-      hostSync.ran = true;
-    } catch (hostErr) {
-      hostSync.error = String(hostErr?.message || hostErr).slice(0, 200);
+    // Compatibility policy keeps discovery/import disabled on setup unless an
+    // operator explicitly enables the separate hostSync.autoOnSetup gate.
+    if (shouldRunAutomaticHostSync(config, 'setup')) {
+      try {
+        let detected = [];
+        try { detected = discoverHostSources({ config }) || []; } catch { detected = []; }
+        hostSync.sources_detected = detected.length;
+        const result = syncHostMemories({
+          db,
+          config,
+          automaticTrigger: 'setup',
+          incremental: true,
+          arbitrate: true,
+          projectBeliefRows: projectArbitrationBeliefRows,
+        });
+        hostSync.inserted = Number(result?.inserted_count || 0);
+        hostSync.verdicts = Number(result?.arbitration_verdicts || 0);
+        hostSync.ran = true;
+      } catch (hostErr) {
+        hostSync.error = String(hostErr?.message || hostErr).slice(0, 200);
+      }
     }
   } finally {
     db.close();

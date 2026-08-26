@@ -36,10 +36,19 @@
     },
     {
       "coveredPaths": [
-        "tests/compat/config-schema-parity-test.js"
+        "config/migration/task4-stage-paths.txt",
+        "docs/configuration.md",
+        "lib/core/config.js",
+        "lib/core/host-memory-sync.js",
+        "lib/core/maintenance-service.js",
+        "openclaw.plugin.json",
+        "scripts/build-openclaw-config-schema.mjs",
+        "scripts/setup-first-run.js",
+        "tests/compat/config-schema-parity-test.js",
+        "tests/unit-config-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_CONFIG_SCHEMA_PARITY missing canonical generated configuration schema",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-config-schema-parity",
       "ownerSourceFirstTaskId": "4",
       "runner": "node",
@@ -47,10 +56,11 @@
     },
     {
       "coveredPaths": [
+        "lib/compat/scope-policy.js",
         "tests/compat/dedupe-scope-isolation-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_DEDUPE_SCOPE_ISOLATION missing same-scope automatic dedupe isolation",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-dedupe-scope-isolation",
       "ownerSourceFirstTaskId": "4",
       "runner": "node",
@@ -157,10 +167,12 @@
     },
     {
       "coveredPaths": [
+        "lib/core/config.js",
+        "scripts/build-operator-rules-migration.js",
         "tests/compat/operator-rules-migration-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_OPERATOR_RULES_MIGRATION missing protected deterministic operator rules migration",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-operator-rules-migration",
       "ownerSourceFirstTaskId": "4",
       "runner": "node",
@@ -179,10 +191,13 @@
     },
     {
       "coveredPaths": [
+        "lib/compat/scope-policy.js",
+        "lib/core/capture-service.js",
+        "lib/core/memory-actions.js",
         "tests/compat/scope-visibility-matrix-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_SCOPE_VISIBILITY missing fail-closed scope visibility matrix",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-scope-visibility-matrix",
       "ownerSourceFirstTaskId": "4",
       "runner": "node",
@@ -590,12 +605,13 @@
     },
     {
       "coveredPaths": [
+        "lib/core/host-trust.js",
         "tests/unit-host-trust-test.js"
       ],
       "expectedOutcome": "pass",
       "expectedSignature": null,
       "id": "restored-unit-host-trust",
-      "ownerSourceFirstTaskId": "2B",
+      "ownerSourceFirstTaskId": "4",
       "runner": "node",
       "testPath": "tests/unit-host-trust-test.js"
     },
@@ -867,6 +883,6 @@
     }
   ],
   "entryCount": 75,
-  "manifestSha256": "fb572ce5101e94187a67ac76819a2be52774d6261453e71ab178587be7bd282a",
+  "manifestSha256": "46f795b2463df021b5c376988b2e4b8ece7bdfcc0560176350e3c311cbe5c756",
   "schemaVersion": 1
 }

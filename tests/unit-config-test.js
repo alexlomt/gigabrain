@@ -63,7 +63,11 @@ const run = async () => {
   assert.equal(config.vault.inbox.enabled, false, 'vault findings write-back should stay disabled by default');
   assert.equal(config.vault.inbox.apiUrl, 'https://127.0.0.1:27124', 'vault inbox should default to the loopback HTTPS API');
   assert.equal(config.remoteBridge.enabled, false, 'remote bridge should stay disabled by default');
-  assert.equal(Object.keys(V3_CONFIG_SCHEMA.properties || {}).length <= 26, true, 'top-level config keys must stay lean');
+  assert.equal(
+    Object.keys(V3_CONFIG_SCHEMA.properties || {}).length,
+    29,
+    'top-level schema must contain the reviewed canonical compatibility families only',
+  );
 
   const longSlugConfig = normalizeConfig({
     runtime: {

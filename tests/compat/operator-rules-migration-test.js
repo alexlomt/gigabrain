@@ -50,7 +50,7 @@ export async function run() {
       }],
     };
     const input = {
-      canary: { ok: true, validator: "openclaw-json-schema" },
+      canary: { configOnly: true, ok: true, secretStripped: true, validator: "openclaw-json-schema" },
       deployedSource: { commit: "c".repeat(40), tree: "d".repeat(40) },
       finalProtectedConfigSha256: "e".repeat(64),
       handoffSha256: "f".repeat(64),
@@ -65,6 +65,7 @@ export async function run() {
     assert.equal(first.artifactKind, "operator-rules-migration");
     assert.equal(first.mechanicalReview.status, "mechanical_only");
     assert.equal(first.privateRulePayloadSha256.length, 64);
+    assert.equal(first.valueArtifactSha256, first.privateRulePayloadSha256);
     assert.deepEqual(first.customSlotRules, fixture.customSlotRules);
     assert.deepEqual(first.operatorRules, fixture.operatorRules);
     assert.throws(

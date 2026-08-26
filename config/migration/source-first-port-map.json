@@ -20,14 +20,15 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "03647345438db5d263112cf04a702478f65e29056b2b2a3a79f6bce32f524316",
+      "contentSha256": "1f76c4651d7357fc3eaf25b7b938a668edf89929ed06639ec34039bcb0205918",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "upstream-adoption"
       },
       "ownerTasks": [
         "2B",
-        "3"
+        "3",
+        "4"
       ],
       "reason": "Exact unignore rules make the reviewed migration pathspec contract directly stageable.",
       "targetMode": "100644",
@@ -71,24 +72,26 @@
       "ownerTasks": [
         "2A",
         "2B",
-        "3"
+        "3",
+        "4"
       ],
-      "reason": "Canonical source-first policy map and forensic disposition ledger.",
+      "reason": "Canonical source-first policy map extended with exact Task 4 paths, hashes, ownership and gates.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-port-map.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "bf19f9a436685c19cbaeacb84e90538e8fa174f6bbd39e28ca28773b3034b227",
+      "contentSha256": "0fc32cf9cf9ccdf3103165c987ac2c5975a2da757a56f521ec8e386b9f2d5944",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
       },
       "ownerTasks": [
         "2A",
-        "3"
+        "3",
+        "4"
       ],
-      "reason": "Canonical owner, signature and path-relevance registry for source-first test evidence.",
+      "reason": "Canonical source-first registry extended with passing Task 4 config, scope, rule, dedupe and trust contracts.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -122,6 +125,20 @@
     },
     {
       "changeType": "added",
+      "contentSha256": "d0d8f19e784ce68711960a21f472a48f7d303d7651678626965bbf16f9a61d5e",
+      "disposition": "operator_only",
+      "gate": {
+        "registrationId": "compat-config-schema-parity"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Reviewed wildcard-free exact Task 4 staging contract.",
+      "targetMode": "100644",
+      "targetPath": "config/migration/task4-stage-paths.txt"
+    },
+    {
+      "changeType": "added",
       "contentSha256": "08b2d9dc8bc3ae015974c5e183a7a2c04e2c44d1dad9cf8ffb891403bfadc62d",
       "disposition": "operator_only",
       "gate": {
@@ -135,6 +152,20 @@
       "reason": "Hash-bound adoption capabilities plus exact path, mode, type and blob ownership for untouched upstream source.",
       "targetMode": "100644",
       "targetPath": "config/migration/upstream-source-allowlist.json"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "eddbfb6fd7bc3288d0a9678ca3d4c7dc274a29d3ba5f6a3c02b38b20c3cfe311",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-config-schema-parity"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Canonical Task 4 configuration, schema generation, disabled automation and host-sync gate behavior.",
+      "targetMode": "100644",
+      "targetPath": "docs/configuration.md"
     },
     {
       "changeType": "added",
@@ -221,6 +252,118 @@
       "targetPath": "eval/run-deep-recall-eval.js"
     },
     {
+      "changeType": "added",
+      "contentSha256": "037eaeb3a7b534e82401a90846e0821dab00cd8a730070af058c134aa8b035a3",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-scope-visibility-matrix"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Fail-closed Task 4 scope normalization, visibility and trusted event-scope authority.",
+      "targetMode": "100644",
+      "targetPath": "lib/compat/scope-policy.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "3ea85e12913c2221020004bac3b5861a81ccb4ff90b1823ded648aa89eb037e9",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-scope-visibility-matrix"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Fail-closed Task 4 scope normalization, visibility and trusted event-scope authority.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/capture-service.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "7f5400579d1a7f656fa5faf088ff6a1207ecbd5d0dd9c38994b27aef8c27fe6e",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-config-schema-parity"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Canonical Task 4 configuration, schema generation, disabled automation and host-sync gate behavior.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/config.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "79f9984e9acf01dd26326360bd88979c681fa2ea6dac72468d10a3caeb79908c",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-config-schema-parity"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Canonical Task 4 configuration, schema generation, disabled automation and host-sync gate behavior.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/host-memory-sync.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "9f5b2dd7851b76b2c86e951884b97964718c84bde9b23403e1606c5c8835907b",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "restored-unit-host-trust"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Exact Nimbus trust preservation and prefix/lookalike denial for host and registered-agent identity.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/host-trust.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "521d43108a6829f9acfcf5dfb4d3e5fecefaba9594b0268b4b93d50e47a690a4",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-config-schema-parity"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Nightly host sync identifies its automatic trigger so the separate disabled-by-default gate is enforced.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/maintenance-service.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "da68b15fa0e5b4f7e408fc41a7b0f8f720d4bb3b9f9692db8e5dcf24d7e87405",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-scope-visibility-matrix"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Fail-closed Task 4 scope normalization, visibility and trusted event-scope authority.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/memory-actions.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "9663499c9f6cd9c1b7b8b75e6f81c0155d6fa4bb265712b95eab5fc343d3b30b",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-config-schema-parity"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Canonical Task 4 configuration, schema generation, disabled automation and host-sync gate behavior.",
+      "targetMode": "100644",
+      "targetPath": "openclaw.plugin.json"
+    },
+    {
       "changeType": "modified",
       "contentSha256": "42cb6e61fff22e53cdd2afe99ee375c3d46836f85172dfbc51ebf0d14831ad93",
       "disposition": "core_patch",
@@ -262,6 +405,34 @@
       "reason": "Public mirror and npm inventory include the shared pack parser dependency.",
       "targetMode": "100644",
       "targetPath": "public-release-manifest.json"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "375cc252ec67d26114d88b1bffe06eabfc4263b643a71a2d5b059a77013c1806",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-config-schema-parity"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Canonical Task 4 configuration, schema generation, disabled automation and host-sync gate behavior.",
+      "targetMode": "100644",
+      "targetPath": "scripts/build-openclaw-config-schema.mjs"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "8990d0d9d8c71bddeccd9d6ab60640ae06f228230ec20fe62472173dc8996543",
+      "disposition": "operator_only",
+      "gate": {
+        "registrationId": "compat-operator-rules-migration"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Hash-bound fail-closed protected rule extraction and deterministic migration artifact builder.",
+      "targetMode": "100644",
+      "targetPath": "scripts/build-operator-rules-migration.js"
     },
     {
       "changeType": "modified",
@@ -349,6 +520,20 @@
       "targetPath": "scripts/retirement-structural-fingerprint.mjs"
     },
     {
+      "changeType": "modified",
+      "contentSha256": "85adfb512b6c51710abf1c4f1841162bf047b965c474109bbee2661516f0f06b",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-config-schema-parity"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Canonical Task 4 configuration, schema generation, disabled automation and host-sync gate behavior.",
+      "targetMode": "100644",
+      "targetPath": "scripts/setup-first-run.js"
+    },
+    {
       "changeType": "added",
       "contentSha256": "3785622bde8398fb632189b858fc8c81297aa70640323c52e0c1e512ec9bd10a",
       "disposition": "private_dev_only",
@@ -380,6 +565,20 @@
     },
     {
       "changeType": "added",
+      "contentSha256": "f28f333a1ea9fc4199b6ba6e98999096d1c46b05e641857fb06566975ef834c1",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-config-schema-parity"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Scanner-clean passing Task 4 behavioral compatibility contract.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/config-schema-parity-test.js"
+    },
+    {
+      "changeType": "added",
       "contentSha256": "707422b5adc04db9d4e0c5c22a7c1b953307f199045f9c3532809ec607bfeb4f",
       "disposition": "private_dev_only",
       "gate": {
@@ -408,6 +607,20 @@
     },
     {
       "changeType": "added",
+      "contentSha256": "21c47e47dff0675f675ff9331a7a335124db3686e33f7e53ed66584894da3ce2",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-dedupe-scope-isolation"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Scanner-clean passing Task 4 behavioral compatibility contract.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/dedupe-scope-isolation-test.js"
+    },
+    {
+      "changeType": "added",
       "contentSha256": "de2729c4244ec56084857d9f44f7229f0718887d09c6edf90785a62d81c67494",
       "disposition": "private_dev_only",
       "gate": {
@@ -423,16 +636,17 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "30b4831b97ef06e61ff56c1bd964ad15d549cc67e4526ad0121c574cdd1bedcd",
+      "contentSha256": "c3ebca7340c86f62cf16b48c3178d9fcfdf74cc54197cea49bb2bbae3e53b284",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "upstream-adoption"
       },
       "ownerTasks": [
         "2B",
-        "3"
+        "3",
+        "4"
       ],
-      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior. Task 4 contracts are registered and removed from expected failures after GREEN.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -558,6 +772,20 @@
     },
     {
       "changeType": "added",
+      "contentSha256": "3b9adbe78e5cd5b029dbf592e221d8c5599bf7b76bafe35d47b3814ba848bb81",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-operator-rules-migration"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Scanner-clean passing Task 4 behavioral compatibility contract.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/operator-rules-migration-test.js"
+    },
+    {
+      "changeType": "added",
       "contentSha256": "630a6e57259ee4381326c611a87c7f1e6424a1d0c68ac48c347e87ef2396eebf",
       "disposition": "private_dev_only",
       "gate": {
@@ -573,7 +801,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "ce7bb879094a20267bb8fa7820184a2fc29a353e01727a3e3c81f08ffbede47d",
+      "contentSha256": "8791b11dbc13d1ca1e19a498ce474ef16d9db9271025682aff1e2253d4e1ef06",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-scope-visibility-matrix"
@@ -582,19 +810,20 @@
         "2B",
         "4"
       ],
-      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "reason": "Passing fail-closed Task 4 scope visibility and trusted event-scope contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/scope-visibility-matrix-test.js"
     },
     {
       "changeType": "added",
-      "contentSha256": "09923aa8e618c1e5efa6d0751bafe15041731e84e35de5ec45f215c44510c2d6",
+      "contentSha256": "10e29b14a8ff9d11ab29e38a10a8b0dc02366b075c5da723e9616ec7832e4858",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "upstream-adoption"
       },
       "ownerTasks": [
-        "3"
+        "3",
+        "4"
       ],
       "reason": "Byte-identity, retired-byte/path, release-tree and package-behavior adoption contract.",
       "targetMode": "100644",
@@ -658,16 +887,17 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "b7122626a1905e4174b506846325920ccf7884166b4a18158419e4fe236b2eef",
+      "contentSha256": "86178026d43c8adbb9bf073845f3c09e4d07246ed030c27edf9025dbe2c73a40",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "upstream-adoption"
       },
       "ownerTasks": [
         "2B",
-        "3"
+        "3",
+        "4"
       ],
-      "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure.",
+      "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure. Task 4 contracts are registered and removed from expected failures after GREEN.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory.js"
     },
@@ -1121,7 +1351,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "91c874cc0c5531333cfa6cb9dd9a6a8a334b50dac110e6330c80f7f3fcac3074",
+      "contentSha256": "0b9bf614c41bdd22ac2faa2d7fe84f8b87651836e6fe2aa40a033fa577d6e19d",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1129,7 +1359,8 @@
       "ownerTasks": [
         "2A",
         "2B",
-        "3"
+        "3",
+        "4"
       ],
       "reason": "Synthetic regression coverage for source-first policy failures.",
       "targetMode": "100644",
@@ -1192,6 +1423,20 @@
       "targetPath": "tests/unit-codex-service-test.js"
     },
     {
+      "changeType": "modified",
+      "contentSha256": "5ed8a9e3b21798d05b5fba537469b90bc8a67bcd12433b18554c5721a5a30d56",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-config-schema-parity"
+      },
+      "ownerTasks": [
+        "4"
+      ],
+      "reason": "Canonical configuration-family count updated for the reviewed Task 4 schema.",
+      "targetMode": "100644",
+      "targetPath": "tests/unit-config-test.js"
+    },
+    {
       "changeType": "added",
       "contentSha256": "4bec2c5024d07bd4201344d0138f69bf0861b67293154b6c8e8318ea00f72027",
       "disposition": "private_dev_only",
@@ -1221,15 +1466,16 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "0803808abbc6426b1581c956b2f9d8fec8455f1c7907c49ad9c7b32bfb6529bf",
+      "contentSha256": "7c97b759b4720f116015f8e5d0ef28b87321033755b05a1b98ed98935a4d2688",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "restored-unit-host-trust"
       },
       "ownerTasks": [
-        "2B"
+        "2B",
+        "4"
       ],
-      "reason": "Scanner-clean restored compatibility assertion or its private test infrastructure.",
+      "reason": "Restored trust test extended with exact Nimbus and registered-agent lookalike negatives.",
       "targetMode": "100644",
       "targetPath": "tests/unit-host-trust-test.js"
     },

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, readdirSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -191,6 +191,7 @@ function productionShapedFixture() {
 export async function run() {
   const configModule = await importContractModule("lib/core/config.js", EXPECTED_SIGNATURE);
   const generator = await importContractModule("scripts/build-openclaw-config-schema.mjs", EXPECTED_SIGNATURE);
+  const hostSyncModule = await importContractModule("lib/core/host-memory-sync.js", EXPECTED_SIGNATURE);
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
     const buildSchema = requireCallable(configModule, "buildOpenClawConfigSchema");
     const renderManifest = requireCallable(generator, "renderOpenClawPluginManifest");
@@ -254,12 +255,42 @@ export async function run() {
     assert.deepEqual(defaults.agentRegistry, []);
     assert.deepEqual(defaults.worldModel.customSlotRules, []);
 
+    const shouldAutoSync = requireCallable(hostSyncModule, "shouldRunAutomaticHostSync");
+    const resolveHostScope = requireCallable(hostSyncModule, "resolveHostScope");
+    assert.equal(shouldAutoSync(defaults, "setup"), false);
+    assert.equal(shouldAutoSync(defaults, "nightly"), false);
+    assert.equal(shouldAutoSync({ hostSync: { autoOnSetup: true } }, "setup"), true);
+    assert.equal(shouldAutoSync({ hostSync: { autoNightly: true } }, "nightly"), true);
+    assert.equal(shouldAutoSync({ hostSync: { autoOnSetup: true, autoNightly: true } }, "unknown"), false);
+    assert.equal(resolveHostScope(defaults, ""), "profile:main");
+    assert.equal(resolveHostScope(defaults, "project:synthetic"), "project:synthetic");
+
     const temp = mkdtempSync(path.join(os.tmpdir(), "gigabrain-config-schema-"));
     const first = path.join(temp, "first.json");
     const second = path.join(temp, "second.json");
     execFileSync(process.execPath, [path.join(repoRoot, "scripts", "build-openclaw-config-schema.mjs"), "--output", first]);
     execFileSync(process.execPath, [path.join(repoRoot, "scripts", "build-openclaw-config-schema.mjs"), "--output", second]);
     assert.deepEqual(readFileSync(first), readFileSync(second));
+
+    const setupRoot = mkdtempSync(path.join(os.tmpdir(), "gigabrain-task4-setup-"));
+    const setupConfig = path.join(setupRoot, "openclaw.json");
+    const setupWorkspace = path.join(setupRoot, "workspace");
+    writeFileSync(setupConfig, "{}\n");
+    const setup = JSON.parse(execFileSync(process.execPath, [
+      path.join(repoRoot, "scripts", "setup-first-run.js"),
+      "--config", setupConfig,
+      "--workspace", setupWorkspace,
+      "--skip-agents",
+      "--skip-restart",
+    ], {
+      encoding: "utf8",
+      env: { ...process.env, HOME: setupRoot, OPENCLAW_CONFIG: setupConfig },
+      timeout: 30_000,
+    }));
+    assert.equal(setup.bootstrap.hostSync.ran, false, "setup must not auto-sync hosts by default");
+    assert.equal(setup.sessionHook, "disabled", "setup must not install lifecycle hooks by default");
+    rmSync(temp, { force: true, recursive: true });
+    rmSync(setupRoot, { force: true, recursive: true });
   });
 }
 

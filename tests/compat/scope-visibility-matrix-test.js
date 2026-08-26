@@ -51,6 +51,7 @@ export async function run() {
     // overlays are never inferred across that trust boundary.
     assert.deepEqual(resolve({ requestedScope: "main", remote: true }), ["profile:main"]);
     assert.deepEqual(resolve({ requestedScope: "paperclip-ceo", remote: true }), ["paperclip-ceo"]);
+    assert.deepEqual(resolve({ requestedScope: "", remote: true }), []);
     assert.deepEqual(resolve({
       requestedScope: ["profile:main", "shared"],
       remote: ["shared", "project:oasis"],
