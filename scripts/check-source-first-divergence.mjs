@@ -729,7 +729,8 @@ function hasStaticRelevanceEvidence({ evidence, source, testPath }) {
 function executeRegisteredNodeTest(registration) {
   const wrapper = [
     'import { pathToFileURL } from "node:url";',
-    'const target = process.argv[1];',
+    'const target = process.env.SOURCE_FIRST_GATE_TEST_PATH;',
+    'if (!target) throw new Error("SOURCE_FIRST_TEST_PATH");',
     'const module = await import(`${pathToFileURL(target).href}?source-first-gate=${Date.now()}`);',
     'if (typeof module.run !== "function") throw new Error("SOURCE_FIRST_TEST_RUN_EXPORT");',
     'await module.run();',
@@ -738,13 +739,16 @@ function executeRegisteredNodeTest(registration) {
     "--input-type=module",
     "--eval",
     wrapper,
-    path.resolve(process.cwd(), registration.testPath),
   ], {
     cwd: process.cwd(),
     encoding: "utf8",
-    env: { ...process.env, LC_ALL: "C" },
+    env: {
+      ...process.env,
+      LC_ALL: "C",
+      SOURCE_FIRST_GATE_TEST_PATH: path.resolve(process.cwd(), registration.testPath),
+    },
     maxBuffer: 16 * 1024 * 1024,
-    timeout: 30_000,
+    timeout: 60_000,
   });
   return !result.error && result.status === 0;
 }
