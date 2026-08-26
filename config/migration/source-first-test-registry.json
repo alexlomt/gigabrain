@@ -76,16 +76,16 @@
       "ownerSourceFirstTaskId": "9",
       "relevanceEvidence": [
         {
-          "binding": "enqueueAutoCaptureEvent",
-          "mode": "import",
-          "symbol": "enqueueAutoCaptureEvent",
-          "targetPath": "lib/compat/auto-capture-queue.js"
-        },
-        {
           "binding": "processAutoCaptureJob",
           "mode": "import",
           "symbol": "processAutoCaptureJob",
           "targetPath": "lib/compat/auto-capture-processor.js"
+        },
+        {
+          "binding": "enqueueAutoCaptureEvent",
+          "mode": "import",
+          "symbol": "enqueueAutoCaptureEvent",
+          "targetPath": "lib/compat/auto-capture-queue.js"
         },
         {
           "binding": "packageJson",
@@ -384,6 +384,12 @@
       "ownerSourceFirstTaskId": "9",
       "relevanceEvidence": [
         {
+          "binding": "reviewQueuedCandidates",
+          "mode": "import",
+          "symbol": "reviewQueuedCandidates",
+          "targetPath": "lib/compat/queue-review-service.js"
+        },
+        {
           "binding": "normalizeConfig",
           "mode": "import",
           "symbol": "normalizeConfig",
@@ -393,12 +399,6 @@
           "binding": "release",
           "mode": "read",
           "targetPath": "public-release-manifest.json"
-        },
-        {
-          "binding": "reviewQueuedCandidates",
-          "mode": "import",
-          "symbol": "reviewQueuedCandidates",
-          "targetPath": "lib/compat/queue-review-service.js"
         },
         {
           "binding": "gigabrainCtlSource",
@@ -1764,6 +1764,6 @@
     }
   ],
   "entryCount": 92,
-  "manifestSha256": "11c6bfceaf8f03e1b1c9910764e6f689433d5d50a24e085c69ca16b06ca531a3",
+  "manifestSha256": "f71db478e37b4127d83e84451c7552824d91fd7a21c8eb8f3d6c8f5993adeac1",
   "schemaVersion": 1
 }
