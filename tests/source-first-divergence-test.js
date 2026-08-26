@@ -464,18 +464,42 @@ function configureAdoptedCorePatch(fixture, {
   fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
 }
 
-function configureRetirementReplacementCorePatch(fixture, { registeredGate = true } = {}) {
+function configureRetirementReplacementCorePatch(fixture, {
+  evidence = "relevant",
+  expectedOutcome = "pass",
+  failingTest = false,
+  registeredGate = true,
+  staleHash = false,
+} = {}) {
   const targetPath = "lib/core.js";
   const absoluteTarget = path.join(fixture.fixtureRepo, targetPath);
   writeFileSync(absoluteTarget, "export const core = false;\n");
   if (registeredGate) {
     const testPath = path.join(fixture.fixtureRepo, "tests", "registered-test.js");
+    const assertion = failingTest ? "assert.equal(observed, true);" : "assert.equal(observed, false);";
+    const body = evidence === "unrelated"
+      ? "const unrelated = 2 + 2; assert.equal(unrelated, 4);"
+      : evidence === "dead"
+        ? `if (false) { const observed = core; ${assertion} }`
+        : `const observed = core; ${assertion}`;
     writeFileSync(testPath, [
       'import assert from "node:assert/strict";',
       'import { core } from "../lib/core.js";',
-      'export async function run() { const observed = core; assert.equal(observed, false); }',
+      `export async function run() { ${body} }`,
       '',
     ].join("\n"));
+    if (expectedOutcome === "xfail") {
+      const expectedFailurePath = path.join(fixture.fixtureRepo, "tests", "compat", "expected-failures.json");
+      mkdirSync(path.dirname(expectedFailurePath), { recursive: true });
+      writeFileSync(expectedFailurePath, canonicalJson({
+        entries: [{
+          ownerTask: "2A",
+          signature: "SYNTHETIC_EXPECTED_CORE_PATCH",
+          test: "registered-test.js",
+        }],
+        schemaVersion: 1,
+      }));
+    }
   }
   commitAll(fixture.fixtureRepo, "retirement replacement core patch fixture");
   fixture.allowlist.entries = fixture.allowlist.entries.filter((entry) => entry.path !== targetPath);
@@ -504,18 +528,36 @@ function configureRetirementReplacementCorePatch(fixture, { registeredGate = tru
       targetMode: "100644",
       targetPath: testTargetPath,
     });
+    if (expectedOutcome === "xfail") {
+      const expectedFailureTargetPath = "tests/compat/expected-failures.json";
+      fixture.map.candidateChanges.push({
+        changeType: "added",
+        contentSha256: blobIdentity(path.join(fixture.fixtureRepo, expectedFailureTargetPath)),
+        disposition: "private_dev_only",
+        gate: { registrationId: "fixture-gate" },
+        ownerTasks: ["2A"],
+        reason: "Synthetic exact expected-failure ownership fixture.",
+        targetMode: "100644",
+        targetPath: expectedFailureTargetPath,
+      });
+      registerFixtureCoverage(fixture.registry, expectedFailureTargetPath);
+    }
     registerFixtureCoverage(fixture.registry, targetPath);
     registerFixtureCoverage(fixture.registry, testTargetPath);
     const registration = fixture.registry.entries[0];
-    registration.testSha256 = blobIdentity(path.join(fixture.fixtureRepo, testTargetPath));
+    registration.expectedOutcome = expectedOutcome;
+    registration.expectedSignature = expectedOutcome === "xfail" ? "SYNTHETIC_EXPECTED_CORE_PATCH" : null;
+    registration.testSha256 = staleHash
+      ? "0".repeat(64)
+      : blobIdentity(path.join(fixture.fixtureRepo, testTargetPath));
     registration.relevanceEvidence = [
-      {
+      ...(evidence === "missing" ? [] : [{
         binding: "core",
         mode: "import",
         resultBinding: "observed",
         symbol: "core",
         targetPath,
-      },
+      }]),
       { mode: "self", targetPath: testTargetPath },
     ];
     fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
@@ -533,6 +575,30 @@ expectPass("retirement replacement may be an explicitly mapped behavioral core p
 
 expectFailure("retirement replacement core patch still requires a registered gate", "MISSING_TEST_GATE", (fixture) => {
   configureRetirementReplacementCorePatch(fixture, { registeredGate: false });
+});
+
+expectFailure("out-of-allowlist core patch requires relevance evidence", "GATE_EVIDENCE_MISSING", (fixture) => {
+  configureRetirementReplacementCorePatch(fixture, { evidence: "missing" });
+});
+
+expectFailure("out-of-allowlist core patch rejects unrelated evidence", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureRetirementReplacementCorePatch(fixture, { evidence: "unrelated" });
+});
+
+expectFailure("out-of-allowlist core patch rejects a stale test hash", "GATE_TEST_HASH", (fixture) => {
+  configureRetirementReplacementCorePatch(fixture, { staleHash: true });
+});
+
+expectFailure("out-of-allowlist core patch rejects a failing test", "GATE_EXECUTION_FAILED", (fixture) => {
+  configureRetirementReplacementCorePatch(fixture, { failingTest: true });
+});
+
+expectFailure("out-of-allowlist core patch cannot ship behind xfail", "GATE_EXECUTION_FAILED", (fixture) => {
+  configureRetirementReplacementCorePatch(fixture, { expectedOutcome: "xfail" });
+});
+
+expectFailure("out-of-allowlist core patch requires executed target-symbol evidence", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
+  configureRetirementReplacementCorePatch(fixture, { evidence: "dead" });
 });
 
 expectFailure("metadata-only fake passing coverage", "GATE_EVIDENCE_MISSING", (fixture) => {
