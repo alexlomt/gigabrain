@@ -569,6 +569,20 @@
     },
     {
       "changeType": "modified",
+      "contentSha256": "a4d81d6408425e305000ae5d987c069596eb5852568b539e4b0070a9d85dace2",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-observational-diagnostics"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 fix round 1 makes diagnostic projection reads observational.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/metrics.js"
+    },
+    {
+      "changeType": "modified",
       "contentSha256": "49d45e6ee8b271038a94b4cb6e78f0024ba4e7db4a27203d9bd7061191ab7ed0",
       "disposition": "core_patch",
       "gate": {
@@ -580,6 +594,20 @@
       "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/native-memory.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "83fd64eda43dfc2b5185b90c05ec3f1e0054e648f3e8b0ca28521a135e96c0cd",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-observational-diagnostics"
+      },
+      "ownerTasks": [
+        "5"
+      ],
+      "reason": "Task 5 fix round 1 makes diagnostic projection reads observational.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/projection-store.js"
     },
     {
       "changeType": "modified",
@@ -1789,7 +1817,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "1916c7fa3745c60ba1d2cd6fcca25c0c278786892cfc5c8bb3ac17fab3c699f4",
+      "contentSha256": "ce0e56bf92eb2ae14b35ae68f59268df075f56a62a0f548d7d3d7c9bfb46a50c",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
