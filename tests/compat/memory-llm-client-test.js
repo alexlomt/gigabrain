@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 
 import { normalizeConfig, V3_CONFIG_SCHEMA } from "../../lib/core/config.js";
 import {
@@ -10,6 +12,8 @@ import {
 
 export const OWNER_TASK = "9";
 export const EXPECTED_SIGNATURE = "COMPAT_EXPECTED_MEMORY_LLM_CLIENT missing loopback-only stateless memory LLM";
+
+const repoRoot = path.resolve(import.meta.dirname, "..", "..");
 
 const withMockFetch = async (handler, callback) => {
   const original = globalThis.fetch;
@@ -66,6 +70,10 @@ export async function run() {
     assert.equal("apiKeyEnv" in V3_CONFIG_SCHEMA.properties.memoryLlm.properties, false);
     assert.equal(normalizeConfig({ memoryLlm: { provider: "openai_compatible" } }).memoryLlm.provider, "none");
     assert.equal(normalizeConfig({ memoryLlm: { provider: "openclaw" } }).memoryLlm.provider, "none");
+    const releaseManifest = JSON.parse(readFileSync(path.join(repoRoot, "public-release-manifest.json"), "utf8"));
+    for (const fileList of [releaseManifest.repository.files, releaseManifest.npm.files]) {
+      assert.equal(fileList.includes("lib/compat/memory-llm-client.js"), true);
+    }
 
     assert.equal(isGateway("http://127.0.0.1:18789/v1"), true);
     assert.equal(isGateway("http://localhost:18789/v1/chat/completions"), true);

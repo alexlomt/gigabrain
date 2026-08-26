@@ -159,7 +159,7 @@ function productionShapedFixture() {
       queueReview: { enabled: false, limit: 200, minConfidence: 0.8, profile: "memory_review", allowedReasons: [] },
       taskProfiles: { auto_capture: { model: "", temperature: 0.1, top_p: 0.8, top_k: 20, max_tokens: 512, reasoning: "off" } },
     },
-    memoryLlm: { enabled: false, provider: "none", baseUrl: "", model: "", apiKey: "", apiKeyEnv: "", timeoutMs: 15000, maxRetries: 1 },
+    memoryLlm: { enabled: false, provider: "none", baseUrl: "", model: "", timeoutMs: 15000, maxRetries: 1 },
     native: {
       cloudInbox: { enabled: false },
       transcripts: { enabled: false },

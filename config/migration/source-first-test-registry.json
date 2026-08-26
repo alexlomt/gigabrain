@@ -181,7 +181,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/config-schema-parity-test.js",
-      "testSha256": "a0d24de95a0f8bd752aa5f0c721cc034d506e9caf7639e1b160d1c19a9fd4b9b"
+      "testSha256": "d50eb09d5984e280e0b263fcc322842eb5ea5432cc66dcc80c809d3fc888602c"
     },
     {
       "coveredPaths": [
@@ -278,14 +278,38 @@
     },
     {
       "coveredPaths": [
+        "lib/compat/memory-llm-client.js",
+        "lib/core/config.js",
+        "openclaw.plugin.json",
+        "public-release-manifest.json",
         "tests/compat/memory-llm-client-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_MEMORY_LLM_CLIENT missing loopback-only stateless memory LLM",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-memory-llm-client",
       "ownerSourceFirstTaskId": "9",
+      "relevanceEvidence": [
+        {
+          "binding": "complete",
+          "mode": "import",
+          "symbol": "completeMemoryJson",
+          "targetPath": "lib/compat/memory-llm-client.js"
+        },
+        {
+          "binding": "normalizeConfig",
+          "mode": "import",
+          "symbol": "normalizeConfig",
+          "targetPath": "lib/core/config.js"
+        },
+        {
+          "binding": "releaseManifest",
+          "mode": "read",
+          "targetPath": "public-release-manifest.json"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/compat/memory-llm-client-test.js"
+      "testPath": "tests/compat/memory-llm-client-test.js",
+      "testSha256": "132e60a8e960169aa61e7a887228ce2e6c0377691d86242f80a6cb4b29fd6160"
     },
     {
       "coveredPaths": [
@@ -1671,6 +1695,6 @@
     }
   ],
   "entryCount": 90,
-  "manifestSha256": "70385ee168552b8d635889121003f8c95e4adb60a67793aa2a57fd6c898ab9f4",
+  "manifestSha256": "9fb1fb06dfe769a9e5dbbd63f4ae04d273e36776f49ad664f87cc06489751c5a",
   "schemaVersion": 1
 }

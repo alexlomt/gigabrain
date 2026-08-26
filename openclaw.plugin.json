@@ -1777,7 +1777,6 @@
           "provider": {
             "type": "string",
             "enum": [
-              "openai_compatible",
               "ollama",
               "none"
             ],
@@ -1788,14 +1787,6 @@
             "default": ""
           },
           "model": {
-            "type": "string",
-            "default": ""
-          },
-          "apiKey": {
-            "type": "string",
-            "default": ""
-          },
-          "apiKeyEnv": {
             "type": "string",
             "default": ""
           },

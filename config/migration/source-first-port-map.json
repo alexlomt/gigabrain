@@ -100,7 +100,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "fc4a4f94f9ba1a15f3f85b7f0601263e68e9fced45f5897802fb93a97890cfb6",
+      "contentSha256": "5b154d64e1bc25d308cb801e8a887b23c75fab490a00ef1c09f330915ec674aa",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -114,7 +114,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with exact Task 9C memory-LLM XFAIL ownership.",
+      "reason": "Source-first registry with the passing Task 9C memory-LLM test hash and behavioral relevance evidence.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -377,6 +377,20 @@
     },
     {
       "changeType": "added",
+      "contentSha256": "c2d1c5e0bef59e5e38124ae2f3e28ac30131cf489f2031393f91bcaed9f2b9f3",
+      "disposition": "compat_module",
+      "gate": {
+        "registrationId": "compat-memory-llm-client"
+      },
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Task 9C provides the bounded stateless loopback-only Ollama JSON client and rejects recursive OpenClaw or remote providers.",
+      "targetMode": "100644",
+      "targetPath": "lib/compat/memory-llm-client.js"
+    },
+    {
+      "changeType": "added",
       "contentSha256": "b1225320bddc480c5b9d9adb13a92657ba09f15ae271719d47e6de8a611ef2ba",
       "disposition": "compat_module",
       "gate": {
@@ -577,17 +591,17 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "9c0f791e2437ee29e3d9e81d2e40d43c1c4f5203ea395e161b862571cfff831e",
+      "contentSha256": "a6ce24ec183bf1f9b3cbeb541617b7b0677e3a167f99966a20cd4b0c334563d5",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-auto-capture-policy"
+        "registrationId": "compat-memory-llm-client"
       },
       "ownerTasks": [
         "4",
         "7",
         "9"
       ],
-      "reason": "Canonical Task 4/7 configuration retained while Task 9A enforces exact auto-capture limits and local Ollama-only provider policy.",
+      "reason": "Canonical Task 4/7 configuration retained while Task 9C removes remote memory-LLM credentials and allows loopback Ollama only.",
       "targetMode": "100644",
       "targetPath": "lib/core/config.js"
     },
@@ -896,17 +910,17 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "14afc34a32456f8e3d4096c48ded58fb95938a417a60e170bdb62d36ceb4d5f8",
+      "contentSha256": "5d76009d28ad76a258fc6f29c9a9f6d668d4eb1d9ebf4d34ef8bad9584e015eb",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-config-schema-parity"
+        "registrationId": "compat-memory-llm-client"
       },
       "ownerTasks": [
         "4",
         "7",
         "9"
       ],
-      "reason": "Deterministically regenerated schema manifest after Task 9A exact auto-capture limits and local provider policy.",
+      "reason": "Deterministically regenerated schema manifest after Task 9C removes remote memory-LLM providers and credential fields.",
       "targetMode": "100644",
       "targetPath": "openclaw.plugin.json"
     },
@@ -944,17 +958,17 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "a8650c9026209de1da7d0cafdb38d9184345ff3a8de44b97f4fe9e0b39933a69",
+      "contentSha256": "bded289f00891293d046d3d574ba04ffffdc83dd488de1966bd2a9ca244fe43a",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-auto-capture-worker"
+        "registrationId": "compat-memory-llm-client"
       },
       "ownerTasks": [
         "2B",
         "5",
         "9"
       ],
-      "reason": "Public source and npm inventories explicitly ship the Task 9B queue module and executable worker.",
+      "reason": "Public source and npm inventories explicitly ship the Task 9C stateless memory-LLM module.",
       "targetMode": "100644",
       "targetPath": "public-release-manifest.json"
     },
@@ -1236,15 +1250,16 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "a0d24de95a0f8bd752aa5f0c721cc034d506e9caf7639e1b160d1c19a9fd4b9b",
+      "contentSha256": "d50eb09d5984e280e0b263fcc322842eb5ea5432cc66dcc80c809d3fc888602c",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-config-schema-parity"
       },
       "ownerTasks": [
-        "4"
+        "4",
+        "9"
       ],
-      "reason": "Scanner-clean passing Task 4 behavioral compatibility contract.",
+      "reason": "Passing Task 4 schema parity contract adapted to the Task 9C loopback-only memory-LLM surface.",
       "targetMode": "100644",
       "targetPath": "tests/compat/config-schema-parity-test.js"
     },
@@ -1321,7 +1336,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "95af4c09f8d254b36bdb2f256447b1d0ca9dc73da5a4c0150153a1dcedbe464d",
+      "contentSha256": "49dbdae4dbc35340e3bf0cfd1e3afbbb5704ca5aa8547efbac45ccc271626512",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1336,7 +1351,7 @@
         "8",
         "9"
       ],
-      "reason": "Expected-failure ownership including the exact Task 9C memory-LLM RED signature.",
+      "reason": "Task 9C XFAIL removed after the stateless loopback-only memory-LLM contract passed.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1387,7 +1402,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "bd0a7acca557dc8e39a5344e0cd4cc54b1787a010cfbdaa71049d27ab2941bca",
+      "contentSha256": "132e60a8e960169aa61e7a887228ce2e6c0377691d86242f80a6cb4b29fd6160",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-memory-llm-client"
@@ -1395,7 +1410,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9C RED contract for a stateless loopback-only Ollama client with retry bounds and no recursive gateway fallback.",
+      "reason": "Passing Task 9C contract for a stateless loopback-only Ollama client with retry bounds and no recursive gateway fallback.",
       "targetMode": "100644",
       "targetPath": "tests/compat/memory-llm-client-test.js"
     },
@@ -1735,7 +1750,7 @@
         "8",
         "9"
       ],
-      "reason": "Compatibility inventory including the exact Task 9C memory-LLM RED contract.",
+      "reason": "Compatibility inventory including the passing Task 9C memory-LLM contract.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory.js"
     },
@@ -2190,7 +2205,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "e3b919ffacc9fee45d29a297566c6e158a5f32edc425b5716d535899b42ed43f",
+      "contentSha256": "863f164d4bc40f3337eaa33d371cb5d0e1a0ec1580be6384561da3227ded86e8",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2205,7 +2220,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first policy contract updated for the classified Task 9C memory-LLM test candidate.",
+      "reason": "Source-first policy contract updated for the passing Task 9C memory-LLM module and test candidate set.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },
