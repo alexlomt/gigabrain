@@ -11,22 +11,48 @@ export const OWNER_TASK = "5";
 export const EXPECTED_SIGNATURE = "COMPAT_EXPECTED_OPENCLAW_HOOKS missing prompt-build and compaction-flush hooks";
 
 export async function run() {
-  const hooks = await importContractModule("lib/compat/openclaw-hooks.js", EXPECTED_SIGNATURE);
+  const adapter = await importContractModule("lib/compat/openclaw-adapter.js", EXPECTED_SIGNATURE);
+  const flush = await importContractModule("lib/compat/flush-plan.js", EXPECTED_SIGNATURE);
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
-    const buildFlushPlan = requireCallable(hooks, "buildGigabrainMemoryFlushPlan");
-    const mergePromptContext = requireCallable(hooks, "mergePromptContext");
-    const plan = buildFlushPlan({
-      remainingTokens: 1_000,
-      reserveTokens: 2_000,
-      workspaceFiles: ["MEMORY.md", "AGENTS.md"],
+    const resolvePlan = requireCallable(flush, "resolveGigabrainFlushPlan");
+    const createPromptBuildHandler = requireCallable(adapter, "createPromptBuildHandler");
+    const plan = resolvePlan({ runtime: { timezone: "UTC" } }, { nowMs: Date.UTC(2026, 7, 25, 23, 59, 0) });
+    assert.equal(plan.relativePath, "memory/2026-08-25.md");
+    assert.equal(plan.softThresholdTokens, 4_000);
+    assert.equal(plan.forceFlushTranscriptBytes, 2 * 1024 * 1024);
+    assert.equal(plan.reserveTokensFloor, 20_000);
+    assert.match(plan.prompt, /<memory_note[^>]*type=/i);
+    assert.match(plan.prompt, /confidence=/i);
+    assert.match(plan.prompt, /append/i);
+    assert.match(plan.prompt, /do not (?:overwrite|edit|replace|delete)/i);
+    assert.match(plan.systemPrompt, /memory\/2026-08-25\.md/);
+
+    const recalls = [];
+    const preludes = [];
+    const handler = createPromptBuildHandler({
+      config: { recall: { autoInjectEnabled: true }, synthesis: { enabled: true } },
+      recall: async ({ query, scope }) => {
+        recalls.push({ query, scope });
+        return `<gigabrain-context>scope:${scope};query:${query}</gigabrain-context>`;
+      },
+      getSessionPrelude: async ({ scope }) => {
+        preludes.push(scope);
+        return `prelude:${scope}`;
+      },
     });
-    assert.equal(plan.shouldFlush, true);
-    assert.deepEqual(plan.readOnlyPaths, ["AGENTS.md", "MEMORY.md"]);
-    assert.match(plan.instructions, /durable/i);
-    assert.equal(
-      mergePromptContext({ existing: "Base context", memory: "Synthetic recall" }),
-      "Base context\n\nSynthetic recall",
-    );
+    const event = { prompt: "Where is the harbour plan?", messages: [{ role: "user", content: "Where is the harbour plan?" }] };
+    const ctx = { agentId: "paperclip-ceo", sessionKey: "agent:paperclip-ceo:stable-session" };
+    const first = await handler(event, ctx);
+    const second = await handler(event, ctx);
+    assert.match(first.prependContext, /prelude:paperclip-ceo/);
+    assert.match(first.prependContext, /scope:paperclip-ceo/);
+    assert.doesNotMatch(first.prependContext, /profile:main|scope:shared/);
+    assert.doesNotMatch(second.prependContext, /prelude:/, "a stable session receives its scoped prelude once");
+    assert.deepEqual(preludes, ["paperclip-ceo"]);
+    assert.deepEqual(recalls, [
+      { query: "Where is the harbour plan?", scope: "paperclip-ceo" },
+      { query: "Where is the harbour plan?", scope: "paperclip-ceo" },
+    ]);
   });
 }
 

@@ -148,11 +148,15 @@ const COMPATIBILITY_TESTS = [
   ["compat/native-metadata-promotion-test.js", "6"],
   ["compat/observational-diagnostics-test.js", "12"],
   ["compat/openclaw-hooks-and-flush-test.js", "5"],
+  ["compat/openclaw-memory-authorization-test.js", "5"],
   ["compat/openclaw-memory-runtime-test.js", "5"],
   ["compat/operator-rules-migration-test.js", "4"],
+  ["compat/packed-entry-smoke-test.js", "5"],
+  ["compat/release-provenance-test.js", "5"],
   ["compat/rollback-restore-test.js", "14"],
   ["compat/scope-visibility-matrix-test.js", "4"],
   ["compat/upstream-adoption-test.js", "3"],
+  ["compat/write-mode-gate-test.js", "5"],
 ];
 
 const RESTORED_DEPLOYED_TESTS = DEPLOYED_NORMAL_TEST_FILES
