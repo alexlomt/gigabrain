@@ -15,6 +15,8 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { parseNpmPackReports } from "../../scripts/npm-pack-inventory.mjs";
+
 import {
   importContractModule,
   requireCallable,
@@ -27,6 +29,11 @@ export const EXPECTED_SIGNATURE = "COMPAT_EXPECTED_AUTO_CAPTURE missing durable 
 
 const repoRoot = path.resolve(import.meta.dirname, "..", "..");
 const workerPath = path.join(repoRoot, "scripts", "auto-capture-worker.js");
+const requestedFixCase = (() => {
+  const index = process.argv.indexOf("--case");
+  return index >= 0 ? String(process.argv[index + 1] || "") : "";
+})();
+const shouldRunFixCase = (name) => !requestedFixCase || requestedFixCase === name;
 
 const writePrivate = (filePath, value) => {
   mkdirSync(path.dirname(filePath), { recursive: true, mode: 0o700 });
@@ -252,6 +259,51 @@ export async function run() {
         assert.notEqual(result.status, 0);
         assert.match(result.stderr, /AUTO_CAPTURE_WORKER_LIMIT_INVALID/);
         assert.deepEqual(stateVector(current), before);
+      }
+
+      if (shouldRunFixCase("package")) {
+        const cacheDirectory = mkdtempSync(path.join(tmpdir(), "gigabrain-task9b-pack-cache-"));
+        let packed;
+        try {
+          packed = spawnSync(
+            process.platform === "win32" ? "npm.cmd" : "npm",
+            ["--cache", cacheDirectory, "pack", "--dry-run", "--json", "--ignore-scripts"],
+            {
+              cwd: repoRoot,
+              encoding: "utf8",
+              env: {
+                ...process.env,
+                npm_config_audit: "false",
+                npm_config_fund: "false",
+                npm_config_ignore_scripts: "true",
+                npm_config_update_notifier: "false",
+              },
+              maxBuffer: 5 * 1024 * 1024,
+              timeout: 180_000,
+            },
+          );
+        } finally {
+          rmSync(cacheDirectory, { recursive: true, force: true });
+        }
+        assert.equal(packed.status, 0, packed.stderr || packed.stdout);
+        const reports = parseNpmPackReports(packed.stdout);
+        assert.equal(reports.length, 1);
+        const byPath = new Map(reports[0].files.map((entry) => [entry.path, entry]));
+        const queueEntry = byPath.get("lib/compat/auto-capture-queue.js");
+        const workerEntry = byPath.get("scripts/auto-capture-worker.js");
+        assert.ok(queueEntry, "the installed package must contain the Task 9B queue module");
+        assert.ok(workerEntry, "the installed package must contain the Task 9B worker executable");
+        if (Number.isInteger(queueEntry.mode)) assert.equal(queueEntry.mode & 0o111, 0);
+        if (Number.isInteger(workerEntry.mode)) assert.equal(workerEntry.mode & 0o777, 0o755);
+
+        const packageJson = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"));
+        const releaseManifest = JSON.parse(readFileSync(path.join(repoRoot, "public-release-manifest.json"), "utf8"));
+        assert.equal(packageJson.files.includes("scripts/auto-capture-worker.js"), true);
+        for (const runtimePath of ["lib/compat/auto-capture-queue.js", "scripts/auto-capture-worker.js"]) {
+          assert.equal(releaseManifest.repository.files.includes(runtimePath), true, `release source allowlist omitted ${runtimePath}`);
+          assert.equal(releaseManifest.npm.files.includes(runtimePath), true, `release npm inventory omitted ${runtimePath}`);
+        }
+        assert.equal(releaseManifest.npm.packageFiles.includes("scripts/auto-capture-worker.js"), true);
       }
     } finally {
       for (const current of fixtures) rmSync(current.root, { recursive: true, force: true });

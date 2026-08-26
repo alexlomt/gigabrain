@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import fs from "node:fs";
 import {
   chmodSync,
   existsSync,
@@ -26,6 +27,11 @@ export const EXPECTED_SIGNATURE = "COMPAT_EXPECTED_AUTO_CAPTURE_QUEUE missing du
 
 const repoRoot = path.resolve(import.meta.dirname, "..", "..");
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+const requestedFixCase = (() => {
+  const index = process.argv.indexOf("--case");
+  return index >= 0 ? String(process.argv[index + 1] || "") : "";
+})();
+const shouldRunFixCase = (name) => !requestedFixCase || requestedFixCase === name;
 
 const writePrivate = (filePath, value) => {
   mkdirSync(path.dirname(filePath), { recursive: true, mode: 0o700 });
@@ -142,6 +148,40 @@ const forceDue = (queuePath) => {
   writeRows(queuePath, rows);
 };
 
+const processStartIdentity = (pid = process.pid) => {
+  const raw = readFileSync(`/proc/${pid}/stat`, "utf8");
+  const close = raw.lastIndexOf(")");
+  return raw.slice(close + 2).trim().split(/\s+/)[19];
+};
+
+const holdDescriptorLock = (current, label) => {
+  const lockDir = current.descriptor.nativeLockDir;
+  mkdirSync(lockDir, { mode: 0o700 });
+  writePrivate(path.join(lockDir, "owner.json"), `${JSON.stringify({
+    created_at: new Date().toISOString(),
+    created_at_ms: Date.now(),
+    owner: `synthetic-${label}`,
+    pid: process.pid,
+    process_start: processStartIdentity(),
+    token: `synthetic-${label}`,
+  })}\n`);
+  return () => rmSync(lockDir, { recursive: true, force: true });
+};
+
+const withDecoyLocks = (current) => ({
+  ...current.config,
+  lockPath: path.join(current.root, "decoy-direct.lockdir"),
+  nativeLockDir: path.join(current.root, "decoy-native.lockdir"),
+  nativeLock: { timeoutMs: 80, staleMs: 10_000 },
+  runtime: {
+    ...current.config.runtime,
+    paths: {
+      ...current.config.runtime.paths,
+      nativeLockDir: path.join(current.root, "decoy-runtime.lockdir"),
+    },
+  },
+});
+
 export async function run() {
   const queue = await importContractModule("lib/compat/auto-capture-queue.js", EXPECTED_SIGNATURE);
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
@@ -254,7 +294,7 @@ export async function run() {
         assert.deepEqual(stateVector(current), beforeFull, "queue-full rejection must not rewrite state");
       }
 
-      {
+      if (shouldRunFixCase("row-bounds")) {
         const current = fixture("row-bound-zero-terminal-budget");
         await enqueueAutoCaptureEvent({
           config: current.config,
@@ -276,21 +316,17 @@ export async function run() {
           processed_at: new Date().toISOString(),
         });
         writeRows(current.descriptor.autoCaptureQueuePath, rows);
-        let persistedDuringDispatch = 0;
-        await processAutoCaptureQueue({
-          config: current.config,
-          limit: 1,
-          processJob: async () => {
-            persistedDuringDispatch = readRows(current.descriptor.autoCaptureQueuePath).length;
-            return { autoSaved: 0, queuedReview: 0 };
-          },
-        });
-        assert.equal(
-          persistedDuringDispatch,
-          250,
-          "the queue must remain bounded when active rows consume the entire terminal budget",
+        const before = stateVector(current);
+        await assert.rejects(
+          () => processAutoCaptureQueue({
+            config: current.config,
+            limit: 1,
+            processJob: async () => ({ autoSaved: 0, queuedReview: 0 }),
+          }),
+          /AUTO_CAPTURE_QUEUE_ROW_LIMIT/,
+          "an over-bound persisted queue must fail closed instead of choosing rows to discard",
         );
-        assert.equal(readRows(current.descriptor.autoCaptureQueuePath).length, 250);
+        assert.deepEqual(stateVector(current), before);
       }
 
       {
@@ -498,6 +534,69 @@ export async function run() {
         assert.deepEqual(stateVector(current), before, "an open circuit must not rewrite queue or adjacent state");
       }
 
+      if (shouldRunFixCase("circuit-attempts")) {
+        const current = fixture("circuit-attempts");
+        const failing = await enqueueAutoCaptureEvent({
+          config: current.config,
+          event: packetEvent("circuit-retry-one-job"),
+          runId: "circuit-retry-one-job",
+        });
+        const later = await enqueueAutoCaptureEvent({
+          config: current.config,
+          event: packetEvent("circuit-later-pending"),
+          runId: "circuit-later-pending",
+        });
+        const calls = [];
+        const failProvider = async ({ job }) => {
+          calls.push(job.id);
+          const error = new Error("fetch failed with raw provider response sentinel");
+          error.code = "ECONNRESET";
+          throw error;
+        };
+        for (let attempt = 1; attempt <= 3; attempt += 1) {
+          const outcome = await processAutoCaptureQueue({
+            config: current.config,
+            limit: 1,
+            processJob: failProvider,
+          });
+          assert.equal(outcome.processed, 1);
+          if (attempt < 3) {
+            const rows = readRows(current.descriptor.autoCaptureQueuePath);
+            const row = rows.find((entry) => entry.id === failing.jobId);
+            row.next_attempt_at = new Date(Date.now() - 60_000).toISOString();
+            writeRows(current.descriptor.autoCaptureQueuePath, rows);
+          }
+        }
+        assert.deepEqual(calls, [failing.jobId, failing.jobId, failing.jobId]);
+        const failedRow = readRows(current.descriptor.autoCaptureQueuePath)
+          .find((row) => row.id === failing.jobId);
+        assert.equal(failedRow.status, "dead_lettered");
+        assert.equal(failedRow.provider_failure_count, 3);
+        assert.equal(failedRow.provider_failure_timestamps.length, 3);
+        assert.equal(
+          failedRow.provider_failure_timestamps.every((value) => /^\d{4}-\d{2}-\d{2}T/.test(value)),
+          true,
+        );
+        assert.equal(JSON.stringify(failedRow).includes("raw provider response"), false);
+
+        const beforeBlocked = stateVector(current);
+        let laterDispatched = false;
+        const blocked = await processAutoCaptureQueue({
+          config: current.config,
+          limit: 1,
+          processJob: async ({ job }) => {
+            laterDispatched = job.id === later.jobId;
+            return { autoSaved: 0, queuedReview: 0 };
+          },
+        });
+        assert.equal(laterDispatched, false, "three provider failures from one job must block a later pending job");
+        assert.equal(blocked.circuitOpen, true);
+        assert.equal(blocked.circuitFailureCount, 3);
+        assert.equal(blocked.processed, 0);
+        assert.equal(blocked.mutated, false);
+        assert.deepEqual(stateVector(current), beforeBlocked);
+      }
+
       {
         const current = fixture("dry-run");
         await enqueueAutoCaptureEvent({ config: current.config, event: packetEvent("dry-run"), runId: "dry-run" });
@@ -556,6 +655,269 @@ export async function run() {
         assert.deepEqual(stateVector(current), beforeProcess, "write-mode rejection must precede lock or queue mutation");
         const dryRun = await processAutoCaptureQueue({ config: readOnly, limit: 1, dryRun: true });
         assert.equal(dryRun.mutated, false, "read-only dry-run remains observational");
+      }
+
+      if (shouldRunFixCase("descriptor-lock")) {
+        const current = fixture("descriptor-lock-authority");
+        const decoyConfig = withDecoyLocks(current);
+        let release = holdDescriptorLock(current, "enqueue-held");
+        try {
+          await assert.rejects(
+            () => enqueueAutoCaptureEvent({
+              config: decoyConfig,
+              event: packetEvent("descriptor-lock-enqueue"),
+              runId: "descriptor-lock-enqueue",
+            }),
+            /GIGABRAIN_NATIVE_LOCK_TIMEOUT/,
+            "enqueue must wait on the descriptor lock even when every caller lock field is a decoy",
+          );
+          assert.equal(existsSync(current.descriptor.autoCaptureQueuePath), false);
+        } finally {
+          release();
+        }
+
+        await enqueueAutoCaptureEvent({
+          config: decoyConfig,
+          event: packetEvent("descriptor-lock-process"),
+          runId: "descriptor-lock-process",
+        });
+        const beforeClaim = stateVector(current);
+        release = holdDescriptorLock(current, "claim-held");
+        try {
+          await assert.rejects(
+            () => processAutoCaptureQueue({
+              config: decoyConfig,
+              limit: 1,
+              processJob: async () => ({ autoSaved: 0, queuedReview: 0 }),
+            }),
+            /GIGABRAIN_NATIVE_LOCK_TIMEOUT/,
+            "claim and recovery must wait on the descriptor lock",
+          );
+          assert.deepEqual(stateVector(current), beforeClaim);
+        } finally {
+          release();
+        }
+
+        let releaseFinalize;
+        try {
+          await assert.rejects(
+            () => processAutoCaptureQueue({
+              config: decoyConfig,
+              limit: 1,
+              processJob: async () => {
+                releaseFinalize = holdDescriptorLock(current, "finalize-held");
+                return { autoSaved: 0, queuedReview: 0 };
+              },
+            }),
+            /GIGABRAIN_NATIVE_LOCK_TIMEOUT/,
+            "finalize must use the same descriptor-authoritative lock as claim",
+          );
+        } finally {
+          releaseFinalize?.();
+        }
+        const processing = readRows(current.descriptor.autoCaptureQueuePath)[0];
+        assert.equal(processing.status, "processing", "a blocked finalize must leave the durable claim for stale recovery");
+        for (const decoy of [decoyConfig.lockPath, decoyConfig.nativeLockDir, decoyConfig.runtime.paths.nativeLockDir]) {
+          assert.equal(existsSync(decoy), false, `decoy lock must remain unused: ${path.basename(decoy)}`);
+        }
+      }
+
+      if (shouldRunFixCase("row-schema")) {
+        const invalidCases = [
+          ["attempt-string", (rows) => { rows[0].attempts = "1"; }],
+          ["attempt-overflow", (rows) => { rows[0].attempts = 4; }],
+          ["job-id-format", (rows) => { rows[0].id = "unstable-job"; }],
+          ["packet-hash-format", (rows) => { rows[0].packet_hash = "not-a-hash"; }],
+          ["packet-hash-mismatch", (rows) => {
+            rows[0].packet_hash = sha256("different-packet");
+            rows[0].id = `acq_${rows[0].packet_hash.slice(0, 24)}`;
+          }],
+          ["job-id-unstable", (rows) => { rows[0].id = `acq_${"f".repeat(24)}`; }],
+          ["created-timestamp", (rows) => { rows[0].created_at = "not-a-timestamp"; }],
+          ["updated-timestamp", (rows) => { delete rows[0].updated_at; }],
+          ["pending-packet", (rows) => { rows[0].packet.messages = []; }],
+          ["processing-state", (rows) => {
+            rows[0].attempts = 1;
+            rows[0].status = "processing";
+            delete rows[0].processing_owner;
+            delete rows[0].processing_started_at;
+          }],
+          ["retry-state", (rows) => {
+            rows[0].attempts = 1;
+            rows[0].error_class = "network";
+            rows[0].error_message = "network";
+            rows[0].next_attempt_at = "";
+            rows[0].status = "failed_retryable";
+          }],
+          ["completed-state", (rows) => {
+            rows[0].status = "completed";
+            delete rows[0].packet;
+            delete rows[0].processed_at;
+          }],
+          ["active-extra-field", (rows) => { rows[0].rawCandidate = "must not be admitted"; }],
+          ["duplicate-row", (rows) => { rows.push(structuredClone(rows[0])); }],
+        ];
+        const outcomes = [];
+        let dispatched = 0;
+        for (const [label, mutate] of invalidCases) {
+          const current = fixture(`invalid-${label}`);
+          await enqueueAutoCaptureEvent({
+            config: current.config,
+            event: packetEvent(`invalid-${label}`),
+            runId: `invalid-${label}`,
+          });
+          const rows = readRows(current.descriptor.autoCaptureQueuePath);
+          mutate(rows);
+          writeRows(current.descriptor.autoCaptureQueuePath, rows);
+          const before = stateVector(current);
+          let code = "resolved";
+          try {
+            await processAutoCaptureQueue({
+              config: current.config,
+              limit: 1,
+              processJob: async () => {
+                dispatched += 1;
+                return { autoSaved: 0, queuedReview: 0 };
+              },
+            });
+          } catch (error) {
+            code = String(error?.code || error?.message || "").split(":")[0];
+          }
+          outcomes.push({ code, unchanged: JSON.stringify(stateVector(current)) === JSON.stringify(before) });
+        }
+        assert.deepEqual(
+          outcomes,
+          invalidCases.map(() => ({ code: "AUTO_CAPTURE_QUEUE_ROW_INVALID", unchanged: true })),
+          "every malformed persisted row must fail before dispatch or rewrite",
+        );
+        assert.equal(dispatched, 0);
+
+        const oversized = fixture("invalid-row-size");
+        await enqueueAutoCaptureEvent({
+          config: oversized.config,
+          event: packetEvent("invalid-row-size"),
+          runId: "invalid-row-size",
+        });
+        const oversizedRows = readRows(oversized.descriptor.autoCaptureQueuePath);
+        oversizedRows[0].run_id = "x".repeat(70_000);
+        writeRows(oversized.descriptor.autoCaptureQueuePath, oversizedRows);
+        const oversizedBefore = stateVector(oversized);
+        await assert.rejects(
+          () => processAutoCaptureQueue({
+            config: oversized.config,
+            limit: 1,
+            processJob: async () => ({ autoSaved: 0, queuedReview: 0 }),
+          }),
+          /AUTO_CAPTURE_QUEUE_ROW_SIZE_INVALID/,
+        );
+        assert.deepEqual(stateVector(oversized), oversizedBefore);
+      }
+
+      if (shouldRunFixCase("terminal-allowlist")) {
+        const current = fixture("terminal-allowlist");
+        await enqueueAutoCaptureEvent({
+          config: current.config,
+          event: packetEvent("legacy-terminal"),
+          runId: "legacy-terminal",
+        });
+        await enqueueAutoCaptureEvent({
+          config: current.config,
+          event: packetEvent("terminal-trigger"),
+          runId: "terminal-trigger",
+        });
+        const rows = readRows(current.descriptor.autoCaptureQueuePath);
+        rows[0] = {
+          ...rows[0],
+          status: "completed",
+          processed_at: new Date().toISOString(),
+          error_class: "network",
+          error_message: "raw legacy error sentinel must be removed",
+          rawCandidate: "raw legacy candidate sentinel must be removed",
+          raw_result: "raw legacy result sentinel must be removed",
+          unexpected: { content: "nested legacy sentinel must be removed" },
+          result: {
+            auto_saved: 0,
+            queued_review: 0,
+            rawCandidate: "raw aggregate sentinel must be removed",
+          },
+        };
+        writeRows(current.descriptor.autoCaptureQueuePath, rows);
+        const processed = await processAutoCaptureQueue({
+          config: current.config,
+          limit: 1,
+          processJob: async () => ({
+            autoSaved: 0,
+            queuedReview: 1,
+            rawCandidate: "raw live candidate sentinel must be removed",
+          }),
+        });
+        assert.equal(processed.completed, 1);
+        const terminalRows = readRows(current.descriptor.autoCaptureQueuePath);
+        assert.equal(terminalRows.every((row) => row.status === "completed"), true);
+        const safeTerminalKeys = new Set([
+          "agent_id",
+          "attempts",
+          "created_at",
+          "error_class",
+          "error_message",
+          "id",
+          "next_attempt_at",
+          "packet_hash",
+          "packet_summary",
+          "processed_at",
+          "provider_failure_count",
+          "provider_failure_timestamps",
+          "result",
+          "run_id",
+          "scope",
+          "session_key",
+          "status",
+          "terminal_at",
+          "updated_at",
+        ]);
+        for (const row of terminalRows) {
+          assert.equal(
+            Object.keys(row).every((key) => safeTerminalKeys.has(key)),
+            true,
+            `terminal row retained non-audit field(s): ${Object.keys(row).filter((key) => !safeTerminalKeys.has(key)).join(",")}`,
+          );
+        }
+        const serialized = JSON.stringify(terminalRows);
+        for (const sentinel of ["raw legacy", "nested legacy", "raw aggregate", "raw live"]) {
+          assert.equal(serialized.includes(sentinel), false, `terminal rewrite retained ${sentinel} content`);
+        }
+      }
+
+      if (shouldRunFixCase("directory-fsync")) {
+        const current = fixture("directory-fsync");
+        const observed = [];
+        const originalFsyncSync = fs.fsyncSync;
+        fs.fsyncSync = (descriptor) => {
+          const stat = fs.fstatSync(descriptor);
+          observed.push(stat.isDirectory() ? "directory" : stat.isFile() ? "file" : "other");
+          return originalFsyncSync(descriptor);
+        };
+        try {
+          const result = await enqueueAutoCaptureEvent({
+            config: current.config,
+            event: packetEvent("directory-fsync"),
+            runId: "directory-fsync",
+          });
+          assert.equal(result.enqueued, true);
+        } finally {
+          fs.fsyncSync = originalFsyncSync;
+        }
+        assert.equal(observed.includes("file"), true, "queue replacement must fsync its temporary file");
+        assert.equal(
+          observed.includes("directory"),
+          true,
+          "queue replacement must fsync the parent directory after the atomic rename",
+        );
+        assert.ok(
+          observed.lastIndexOf("directory") > observed.indexOf("file"),
+          "the durable directory sync must follow the file sync",
+        );
+        assert.equal(readRows(current.descriptor.autoCaptureQueuePath).length, 1);
       }
 
       {
