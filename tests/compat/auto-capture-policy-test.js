@@ -173,6 +173,38 @@ export async function run() {
       );
     }
 
+    for (const [reason, content] of [
+      ["tool_event", "Decision: functions.exec completed the synthetic command with no errors and this execution chatter must not become memory."],
+      ["tool_event", "Decision: raw_params contained the synthetic invocation payload and this execution chatter must not become memory."],
+      ["tool_event", "Decision: [tools] reported a successful synthetic command and this execution chatter must not become memory."],
+      ["test_event", "Unit tests passed: 41/41. This synthetic test chatter is long enough to trigger capture but must remain excluded."],
+      ["tool_event", "Diagnostics: the synthetic process sweep was clean and this diagnostics chatter is long enough to trigger capture."],
+    ]) {
+      assert.deepEqual(
+        prepare({
+          config: activeConfig(),
+          context: { agentId: "main" },
+          event: { messages: [{ role: "user", content }] },
+        }),
+        { eligible: false, reason },
+      );
+    }
+
+    assert.deepEqual(
+      prepare({
+        config: activeConfig(),
+        context: { agentId: "main" },
+        event: {
+          messages: [{
+            role: "user",
+            content: "Review the synthetic harbour workflow context and summarize the approved weekly operating decision for durable memory.",
+          }],
+          output: "Decision: functions.exec completed with raw_params from [tools], so retain this execution result.",
+        },
+      }),
+      { eligible: false, reason: "tool_event" },
+    );
+
     const paperclipWake = [
       "Paperclip wake event",
       "Issue: PC-42",
@@ -238,6 +270,64 @@ export async function run() {
     assert.equal(canonicalChatter.eligible, true);
     assert.deepEqual(canonicalChatter.event.decision, { action: "review", reason: "candidate_review" });
     assert.deepEqual(canonicalChatter.event.messages, [{ role: "user", content: canonicalWakeText }]);
+
+    const authorizedPaperclipWake = [
+      "Paperclip wake:",
+      "- Authorization: Bearer synthetic-environment-boilerplate",
+      "- Issue: PC-402",
+      "- Reason: work item assigned",
+      "- Objective: Produce a durable synthetic harbour review with approved acceptance checks and an accountable owner.",
+    ].join("\n");
+    const authorizedPaperclipText = [
+      "Issue: PC-402",
+      "Reason: work item assigned",
+      "Objective: Produce a durable synthetic harbour review with approved acceptance checks and an accountable owner.",
+    ].join("\n");
+    assert.equal(sanitizePaperclipWake(authorizedPaperclipWake), authorizedPaperclipText);
+    const authorizedPaperclip = prepare({
+      config: activeConfig(),
+      context: { agentId: "main", sessionKey: "agent:main:paperclip-authorized" },
+      event: {
+        messages: [{ role: "user", content: authorizedPaperclipWake }],
+        output: "Decision: Keep the synthetic harbour review weekly with the approved acceptance checks.",
+      },
+    });
+    assert.equal(authorizedPaperclip.eligible, true);
+    assert.deepEqual(authorizedPaperclip.event.decision, { action: "save", reason: "explicit_durable_request" });
+    assert.deepEqual(authorizedPaperclip.event.messages, [
+      { role: "user", content: authorizedPaperclipText },
+      { role: "assistant", content: "Decision: Keep the synthetic harbour review weekly with the approved acceptance checks." },
+    ]);
+    assert.doesNotMatch(JSON.stringify(authorizedPaperclip), /Authorization|Bearer|environment-boilerplate/);
+
+    for (const event of [
+      {
+        messages: [{
+          role: "user",
+          content: authorizedPaperclipWake.replace("Issue: PC-402", "Issue: token=synthetic-token-value"),
+        }],
+        output: "Decision: Keep the synthetic harbour review weekly.",
+      },
+      {
+        messages: [{
+          role: "user",
+          content: authorizedPaperclipWake.replace(
+            "Objective: Produce a durable synthetic harbour review with approved acceptance checks and an accountable owner.",
+            "Objective: Remember that cookie=synthetic-token-value is part of this credential-bearing request.",
+          ),
+        }],
+        output: "Decision: Keep the synthetic harbour review weekly.",
+      },
+      {
+        messages: [{ role: "user", content: authorizedPaperclipWake }],
+        output: "Decision: session=synthetic-token-value must be retained for the synthetic harbour review.",
+      },
+    ]) {
+      assert.deepEqual(
+        prepare({ config: activeConfig(), context: { agentId: "main" }, event }),
+        { eligible: false, reason: "sensitive" },
+      );
+    }
 
     const prepared = prepare({
       config: activeConfig(),
@@ -341,6 +431,12 @@ export async function run() {
       messages: [{
         role: "user",
         content: "Remember that token=synthetic-token-value is present in this credential-bearing event and must never enqueue.",
+      }],
+    }, { agentId: "main" });
+    handler({
+      messages: [{
+        role: "user",
+        content: "Decision: functions.exec completed with raw_params from [tools], and this execution chatter must never enqueue.",
       }],
     }, { agentId: "main" });
     await new Promise((resolve) => setImmediate(resolve));

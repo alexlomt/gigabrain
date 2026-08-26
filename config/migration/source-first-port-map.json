@@ -100,7 +100,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "d3e1fc6a444b2aa12526539da6d339a0d4ef1262a829745ffd1dd1bd9efcc855",
+      "contentSha256": "02f13a7eeb40be2e288b93b7330277ae1d077e525765e07968bc0081494dc007",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -114,7 +114,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with the Task 9A fix-round RED test hash and existing behavioral relevance evidence.",
+      "reason": "Source-first registry with the Task 9A fix-round 2 RED test hash and existing behavioral relevance evidence.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -1148,7 +1148,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "a1155f2ef58aad53993a10c32324496ebb299d5cc675dae480bf346343ea0620",
+      "contentSha256": "318c53489bffab93b9094b4a20a350e3ae345c8cf804111aa53fe6445b5e6b8c",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-policy"
@@ -1156,7 +1156,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9A fix-round RED contract for generic credentials, structural chatter, canonical Paperclip wakes, assistant decisions, and shared trigger eligibility.",
+      "reason": "Task 9A fix-round 2 RED contract for execution chatter and wake-specific authorization boilerplate handling.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-policy-test.js"
     },
