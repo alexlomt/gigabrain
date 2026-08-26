@@ -131,6 +131,7 @@
     "memory_api/",
     "README.md",
     "scripts/audit-github-surface.mjs",
+    "scripts/auto-capture-worker.js",
     "scripts/build-claude-desktop-bundle.js",
     "scripts/build-runtime-js.js",
     "scripts/check-no-pii.mjs",

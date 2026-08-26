@@ -457,6 +457,8 @@ export async function run() {
         rows[0] = {
           ...rows[0],
           attempts: 1,
+          error_class: "",
+          error_message: "",
           processing_owner: "synthetic-crashed-worker",
           processing_started_at: new Date(Date.now() - 190_000).toISOString(),
           status: "processing",
@@ -489,6 +491,8 @@ export async function run() {
         rows[0] = {
           ...rows[0],
           attempts: 1,
+          error_class: "",
+          error_message: "",
           processing_owner: "synthetic-live-worker",
           processing_started_at: new Date(Date.now() - 170_000).toISOString(),
           status: "processing",

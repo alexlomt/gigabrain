@@ -294,7 +294,10 @@ export async function run() {
         assert.ok(queueEntry, "the installed package must contain the Task 9B queue module");
         assert.ok(workerEntry, "the installed package must contain the Task 9B worker executable");
         if (Number.isInteger(queueEntry.mode)) assert.equal(queueEntry.mode & 0o111, 0);
-        if (Number.isInteger(workerEntry.mode)) assert.equal(workerEntry.mode & 0o777, 0o755);
+        if (Number.isInteger(workerEntry.mode)) {
+          assert.equal(workerEntry.mode & 0o100, 0o100, "packed worker must retain its owner executable bit");
+          assert.equal(workerEntry.mode & 0o022, 0, "packed worker must never become group/world writable");
+        }
 
         const packageJson = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"));
         const releaseManifest = JSON.parse(readFileSync(path.join(repoRoot, "public-release-manifest.json"), "utf8"));
