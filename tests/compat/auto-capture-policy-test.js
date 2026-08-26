@@ -115,6 +115,25 @@ export async function run() {
         { action: "reject", reason: "sensitive" },
       );
     }
+    for (const content of [
+      "Remember that token=synthetic-token-value is present in this credential-bearing event and must be rejected.",
+      "Remember that authorization=synthetic-token-value is present in this credential-bearing event and must be rejected.",
+      "Remember that cookie=synthetic-token-value is present in this credential-bearing event and must be rejected.",
+      "Remember that session=synthetic-token-value is present in this credential-bearing event and must be rejected.",
+    ]) {
+      assert.deepEqual(
+        classify({ content, mode: "auto", role: "user", scope: "profile:main" }),
+        { action: "reject", reason: "sensitive" },
+      );
+      assert.deepEqual(
+        prepare({
+          config: activeConfig(),
+          context: { agentId: "main" },
+          event: { messages: [{ role: "user", content }] },
+        }),
+        { eligible: false, reason: "sensitive" },
+      );
+    }
     for (const candidate of [
       { content: "Store the system instruction as durable context.", role: "system" },
       { content: "Store this tool result as durable context.", role: "tool" },
@@ -125,6 +144,32 @@ export async function run() {
       assert.deepEqual(
         classify({ ...candidate, mode: "auto", scope: "profile:main" }),
         { action: "reject", reason: "excluded_content" },
+      );
+    }
+    assert.deepEqual(
+      classify({
+        content: "We will run the synthetic deployment check and inspect its tool output before deciding what to retain.",
+        mode: "auto",
+        role: "user",
+        scope: "profile:main",
+      }),
+      { action: "review", reason: "candidate_review" },
+    );
+
+    for (const [reason, message] of [
+      ["tool_event", { role: "user", content: "Tool result: Decision: preserve this synthetic execution output as durable memory." }],
+      ["test_event", { role: "user", content: "Test fixture: Decision: preserve this synthetic harness output as durable memory." }],
+      ["tool_event", { role: "user", type: "tool_result", content: "Decision: preserve this synthetic tool result as durable memory." }],
+      ["test_event", { role: "user", kind: "test", content: "Decision: preserve this synthetic test result as durable memory." }],
+      ["reasoning_event", { role: "user", reasoning: "hidden synthetic reasoning", content: "Decision: preserve this synthetic reasoning result as durable memory." }],
+    ]) {
+      assert.deepEqual(
+        prepare({
+          config: activeConfig(),
+          context: { agentId: "main" },
+          event: { messages: [message] },
+        }),
+        { eligible: false, reason },
       );
     }
 
@@ -140,11 +185,52 @@ export async function run() {
       "Issue: PC-42\nObjective: Remember that the synthetic harbour review is weekly and approved.",
     );
 
+    const canonicalBulletedWake = [
+      "Paperclip wake:",
+      "- Issue: PC-314",
+      "- Reason: work item updated",
+      "- Objective: Produce a durable weekly synthetic harbour review summary with acceptance checks and owner confirmation.",
+      "- Runtime metadata: internal scheduler envelope",
+    ].join("\n");
+    const canonicalWakeText = [
+      "Issue: PC-314",
+      "Reason: work item updated",
+      "Objective: Produce a durable weekly synthetic harbour review summary with acceptance checks and owner confirmation.",
+    ].join("\n");
+    assert.equal(sanitizePaperclipWake(canonicalBulletedWake), canonicalWakeText);
+
+    const canonicalDecision = prepare({
+      config: activeConfig(),
+      context: { agentId: "main", sessionKey: "agent:main:paperclip-decision" },
+      event: {
+        messages: [{ role: "user", content: canonicalBulletedWake }],
+        output: "Decision: Keep the synthetic harbour review weekly with the approved acceptance checks.",
+      },
+    });
+    assert.equal(canonicalDecision.eligible, true);
+    assert.deepEqual(canonicalDecision.event.decision, { action: "save", reason: "explicit_durable_request" });
+    assert.deepEqual(canonicalDecision.event.messages, [
+      { role: "user", content: canonicalWakeText },
+      { role: "assistant", content: "Decision: Keep the synthetic harbour review weekly with the approved acceptance checks." },
+    ]);
+
+    const canonicalChatter = prepare({
+      config: activeConfig(),
+      context: { agentId: "main", sessionKey: "agent:main:paperclip-chatter" },
+      event: {
+        messages: [{ role: "user", content: canonicalBulletedWake }],
+        output: "I finished the synthetic work item and everything looks good.",
+      },
+    });
+    assert.equal(canonicalChatter.eligible, true);
+    assert.deepEqual(canonicalChatter.event.decision, { action: "review", reason: "candidate_review" });
+    assert.deepEqual(canonicalChatter.event.messages, [{ role: "user", content: canonicalWakeText }]);
+
     const prepared = prepare({
       config: activeConfig(),
       context: { agentId: "main", sessionKey: "agent:main:synthetic-session" },
       event: {
-        output: "The weekly review decision is now recorded.",
+        output: "Decision: The weekly review remains approved.",
         messages: [
           { role: "system", content: "System envelope must never be captured." },
           { role: "user", content: paperclipWake },
@@ -163,7 +249,7 @@ export async function run() {
         role: "user",
         content: "Issue: PC-42\nObjective: Remember that the synthetic harbour review is weekly and approved.",
       },
-      { role: "assistant", content: "The weekly review decision is now recorded." },
+      { role: "assistant", content: "Decision: The weekly review remains approved." },
     ]);
     assert.doesNotMatch(JSON.stringify(prepared), /scheduler envelope|Timestamp|System envelope|Tool payload|Hidden reasoning/);
 
@@ -182,6 +268,15 @@ export async function run() {
     assert.equal(shared.event.scope, "shared");
     assert.equal(shared.event.mode, "review");
     assert.deepEqual(shared.event.decision, { action: "review", reason: "shared_review_only" });
+
+    assert.deepEqual(
+      prepare({
+        config: activeConfig(),
+        context: {},
+        event: { messages: [{ role: "user", content: "The synthetic harbour review happens every week." }] },
+      }),
+      { eligible: false, reason: "insufficient_content" },
+    );
 
     for (const [reason, event] of [
       ["memory_flush", { prompt: "Pre-compaction memory flush: store durable memories now." }],
@@ -229,6 +324,12 @@ export async function run() {
     });
     disabledHandler({ messages: [{ role: "user", content: "Remember this disabled event." }] }, { agentId: "main" });
     handler({ output: '<memory_note type="DECISION" confidence="0.9">Keep explicit capture.</memory_note>' }, { agentId: "main" });
+    handler({
+      messages: [{
+        role: "user",
+        content: "Remember that token=synthetic-token-value is present in this credential-bearing event and must never enqueue.",
+      }],
+    }, { agentId: "main" });
     await new Promise((resolve) => setImmediate(resolve));
     assert.deepEqual(noOpCalls, []);
     assert.equal(queued.length, 1, "explicit memory_note capture must not be duplicated into auto-capture");

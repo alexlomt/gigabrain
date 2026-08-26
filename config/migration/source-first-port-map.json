@@ -100,7 +100,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "cd3359546127c6c907e9dcb6a4a0964e0f03f4b3bbab4288623377fb045ba28a",
+      "contentSha256": "d2cb520be8afc2770ba02949abdb28611323ccfbf6db20fc38d8dae33aa9c362",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -114,7 +114,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with the passing Task 9A policy/hook gate, exact test hash, and behavioral relevance evidence.",
+      "reason": "Source-first registry with the Task 9A fix-round RED test hash and existing behavioral relevance evidence.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -1148,7 +1148,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "8fdcf0e8962b435676cc537bb7daf40b488471218136f1c46c4ffbfce48e2a0a",
+      "contentSha256": "ce166778e3ff324389b1ae176bd4580edcd647131effc33b6838710c2ca955fe",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-policy"
@@ -1156,7 +1156,7 @@
       "ownerTasks": [
         "9"
       ],
-      "reason": "Task 9A RED contract for exact capture policy, provider limits, trusted scope, privacy exclusions, and enqueue-only OpenClaw hook behavior.",
+      "reason": "Task 9A fix-round RED contract for generic credentials, structural chatter, canonical Paperclip wakes, assistant decisions, and shared trigger eligibility.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-policy-test.js"
     },

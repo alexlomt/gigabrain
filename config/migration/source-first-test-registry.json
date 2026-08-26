@@ -38,7 +38,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/auto-capture-policy-test.js",
-      "testSha256": "8fdcf0e8962b435676cc537bb7daf40b488471218136f1c46c4ffbfce48e2a0a"
+      "testSha256": "ce166778e3ff324389b1ae176bd4580edcd647131effc33b6838710c2ca955fe"
     },
     {
       "coveredPaths": [
@@ -1611,6 +1611,6 @@
     }
   ],
   "entryCount": 88,
-  "manifestSha256": "5a41beafa2ed4b384890739bdb768256ed7f96c1cab62b406d019745844ee598",
+  "manifestSha256": "34d2d00e3ca4a0b59195fe28c781798bf46c4f9f13ddaa747b4257c3d37dfa0d",
   "schemaVersion": 1
 }
