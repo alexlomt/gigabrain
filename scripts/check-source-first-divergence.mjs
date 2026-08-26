@@ -1190,7 +1190,9 @@ const buildEvidenceModel = (source) => {
 
 const unwrapExpression = (node) => {
   let current = node;
-  while (["AwaitExpression", "ChainExpression"].includes(current?.type)) current = current.expression;
+  while (["AwaitExpression", "ChainExpression"].includes(current?.type)) {
+    current = current.type === "AwaitExpression" ? current.argument : current.expression;
+  }
   return current;
 };
 
