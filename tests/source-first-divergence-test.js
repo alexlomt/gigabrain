@@ -422,7 +422,8 @@ function configureAdoptedCorePatch(fixture, {
   testSource = "export async function run() { return true; }\n",
 } = {}) {
   const targetPath = "lib/upstream.js";
-  const testPath = path.join(fixture.fixtureRepo, "tests", "registered-test.js");
+  const testTargetPath = "tests/core-evidence-test.js";
+  const testPath = path.join(fixture.fixtureRepo, testTargetPath);
   writeFileSync(path.join(fixture.fixtureRepo, targetPath), "export const readUpstream = () => false;\n");
   writeFileSync(testPath, testSource);
   commitAll(fixture.fixtureRepo, "adopted core patch evidence fixture");
@@ -437,19 +438,20 @@ function configureAdoptedCorePatch(fixture, {
     targetPath,
   });
   fixture.map.candidateChanges.push({
-    changeType: "modified",
+    changeType: "added",
     contentSha256: blobIdentity(testPath),
-    disposition: "core_patch",
+    disposition: "private_dev_only",
     gate: { registrationId: "fixture-gate" },
     ownerTasks: ["2A"],
     reason: "Synthetic hash-bound gate implementation fixture.",
     targetMode: "100644",
-    targetPath: "tests/registered-test.js",
+    targetPath: testTargetPath,
   });
   fixture.map.candidateChanges.sort((left, right) => left.targetPath.localeCompare(right.targetPath, "en"));
   registerFixtureCoverage(fixture.registry, targetPath);
-  registerFixtureCoverage(fixture.registry, "tests/registered-test.js");
+  registerFixtureCoverage(fixture.registry, testTargetPath);
   const registration = fixture.registry.entries[0];
+  registration.testPath = testTargetPath;
   registration.testSha256 = staleHash ? "0".repeat(64) : blobIdentity(testPath);
   if (evidence) registration.relevanceEvidence = [
     {
@@ -459,7 +461,6 @@ function configureAdoptedCorePatch(fixture, {
       symbol: "readUpstream",
       targetPath,
     },
-    { mode: "self", targetPath: "tests/registered-test.js" },
   ];
   fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
 }
@@ -475,10 +476,14 @@ function configureRetirementReplacementCorePatch(fixture, {
   const absoluteTarget = path.join(fixture.fixtureRepo, targetPath);
   writeFileSync(absoluteTarget, "export const core = () => false;\n");
   if (registeredGate) {
-    const testPath = path.join(fixture.fixtureRepo, "tests", "registered-test.js");
+    const testPath = path.join(fixture.fixtureRepo, "tests", "core-evidence-test.js");
     const assertion = failingTest ? "assert.equal(observed, true);" : "assert.equal(observed, false);";
     const body = evidence === "unrelated"
       ? "const unrelated = 2 + 2; assert.equal(unrelated, 4);"
+      : evidence === "live-unasserted-dead-assert"
+        ? `core(); if (false) { const observed = core(); ${assertion} }`
+        : evidence === "unrelated-live-assert"
+          ? `core(); assert.equal(2 + 2, 4); if (false) { const observed = core(); ${assertion} }`
       : evidence === "dead"
         ? `if (false) { const observed = core(); ${assertion} }`
         : `const observed = core(); ${assertion}`;
@@ -495,7 +500,7 @@ function configureRetirementReplacementCorePatch(fixture, {
         entries: [{
           ownerTask: "2A",
           signature: "SYNTHETIC_EXPECTED_CORE_PATCH",
-          test: "registered-test.js",
+          test: "core-evidence-test.js",
         }],
         schemaVersion: 1,
       }));
@@ -517,11 +522,11 @@ function configureRetirementReplacementCorePatch(fixture, {
   if (registeredGate) candidate.gate = { registrationId: "fixture-gate" };
   fixture.map.candidateChanges.push(candidate);
   if (registeredGate) {
-    const testTargetPath = "tests/registered-test.js";
+    const testTargetPath = "tests/core-evidence-test.js";
     fixture.map.candidateChanges.push({
-      changeType: "modified",
+      changeType: "added",
       contentSha256: blobIdentity(path.join(fixture.fixtureRepo, testTargetPath)),
-      disposition: "core_patch",
+      disposition: "private_dev_only",
       gate: { registrationId: "fixture-gate" },
       ownerTasks: ["2A"],
       reason: "Synthetic behavioral gate for a retirement replacement core patch.",
@@ -545,6 +550,7 @@ function configureRetirementReplacementCorePatch(fixture, {
     registerFixtureCoverage(fixture.registry, targetPath);
     registerFixtureCoverage(fixture.registry, testTargetPath);
     const registration = fixture.registry.entries[0];
+    registration.testPath = testTargetPath;
     registration.expectedOutcome = expectedOutcome;
     registration.expectedSignature = expectedOutcome === "xfail" ? "SYNTHETIC_EXPECTED_CORE_PATCH" : null;
     registration.testSha256 = staleHash
@@ -558,7 +564,6 @@ function configureRetirementReplacementCorePatch(fixture, {
         symbol: "core",
         targetPath,
       }]),
-      { mode: "self", targetPath: testTargetPath },
     ];
     fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
   }
@@ -568,7 +573,7 @@ function configureRetirementReplacementCorePatch(fixture, {
 }
 
 function bindCorePatchToReadTest(fixture, targetPath) {
-  const testTargetPath = "tests/registered-test.js";
+  const testTargetPath = "tests/core-evidence-test.js";
   const testPath = path.join(fixture.fixtureRepo, testTargetPath);
   writeFileSync(testPath, [
     'import assert from "node:assert/strict";',
@@ -581,9 +586,9 @@ function bindCorePatchToReadTest(fixture, targetPath) {
   ].join("\n"));
   commitAll(fixture.fixtureRepo, `read-bound core patch gate ${targetPath}`);
   fixture.map.candidateChanges.push({
-    changeType: "modified",
+    changeType: "added",
     contentSha256: blobIdentity(testPath),
-    disposition: "core_patch",
+    disposition: "private_dev_only",
     gate: { registrationId: "fixture-gate" },
     ownerTasks: ["2A"],
     reason: "Synthetic read-bound core patch gate fixture.",
@@ -594,11 +599,95 @@ function bindCorePatchToReadTest(fixture, targetPath) {
   registerFixtureCoverage(fixture.registry, targetPath);
   registerFixtureCoverage(fixture.registry, testTargetPath);
   const registration = fixture.registry.entries[0];
+  registration.testPath = testTargetPath;
   registration.testSha256 = blobIdentity(testPath);
   registration.relevanceEvidence = [
     { binding: "targetSource", mode: "read", targetPath },
-    { mode: "self", targetPath: testTargetPath },
   ];
+  fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
+}
+
+function configureLiveIoDeadAssertionCorePatch(fixture, mode) {
+  const targetPath = "lib/core.js";
+  const testTargetPath = `tests/${mode}-evidence-test.js`;
+  const absoluteTarget = path.join(fixture.fixtureRepo, targetPath);
+  const testPath = path.join(fixture.fixtureRepo, testTargetPath);
+  writeFileSync(absoluteTarget, "export const core = () => false;\n");
+  const operation = mode === "read"
+    ? `const ioResult = readFileSync("${targetPath}", "utf8");`
+    : `const ioResult = spawnSync(process.execPath, ["--check", "${targetPath}"]);`;
+  const imports = mode === "read"
+    ? ['import { readFileSync } from "node:fs";']
+    : ['import { spawnSync } from "node:child_process";', 'import process from "node:process";'];
+  writeFileSync(testPath, [
+    'import assert from "node:assert/strict";',
+    ...imports,
+    'export async function run() {',
+    `  ${operation}`,
+    '  if (false) { assert.equal(ioResult.status ?? ioResult.length, 0); }',
+    '}',
+    '',
+  ].join("\n"));
+  commitAll(fixture.fixtureRepo, `live ${mode} dead assertion fixture`);
+  fixture.allowlist.entries = fixture.allowlist.entries.filter((entry) => entry.path !== targetPath);
+  fixture.allowlist.entryCount = fixture.allowlist.entries.length;
+  fixture.allowlist.manifestSha256 = sha256(canonicalJson(fixture.allowlist.entries));
+  fixture.map.candidateChanges.push({
+    changeType: "modified",
+    contentSha256: blobIdentity(absoluteTarget),
+    disposition: "core_patch",
+    gate: { registrationId: "fixture-gate" },
+    ownerTasks: ["2A"],
+    reason: `Synthetic live ${mode} dead assertion core patch.`,
+    targetMode: "100644",
+    targetPath,
+  });
+  fixture.map.candidateChanges.push({
+    changeType: "added",
+    contentSha256: blobIdentity(testPath),
+    disposition: "private_dev_only",
+    gate: { registrationId: "fixture-gate" },
+    ownerTasks: ["2A"],
+    reason: `Synthetic ${mode} evidence test.`,
+    targetMode: "100644",
+    targetPath: testTargetPath,
+  });
+  fixture.map.candidateChanges.sort((left, right) => left.targetPath.localeCompare(right.targetPath, "en"));
+  registerFixtureCoverage(fixture.registry, targetPath);
+  registerFixtureCoverage(fixture.registry, testTargetPath);
+  const registration = fixture.registry.entries[0];
+  registration.testPath = testTargetPath;
+  registration.testSha256 = blobIdentity(testPath);
+  registration.relevanceEvidence = [{ binding: "ioResult", mode, targetPath }];
+  fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
+  fixture.map.retirementContracts[0].replacementPaths = [targetPath];
+  fixture.map.retirementContractManifestSha256 = sha256(canonicalJson(fixture.map.retirementContracts));
+}
+
+function configureSelfOnlyDeadCorePatch(fixture) {
+  const testTargetPath = "tests/registered-test.js";
+  const testPath = path.join(fixture.fixtureRepo, testTargetPath);
+  writeFileSync(testPath, [
+    'import assert from "node:assert/strict";',
+    'export async function run() { if (false) { assert.equal(true, true); } }',
+    '',
+  ].join("\n"));
+  commitAll(fixture.fixtureRepo, "self-only dead evidence fixture");
+  fixture.map.candidateChanges.push({
+    changeType: "modified",
+    contentSha256: blobIdentity(testPath),
+    disposition: "core_patch",
+    gate: { registrationId: "fixture-gate" },
+    ownerTasks: ["2A"],
+    reason: "Synthetic self-only dead evidence core patch.",
+    targetMode: "100644",
+    targetPath: testTargetPath,
+  });
+  fixture.map.candidateChanges.sort((left, right) => left.targetPath.localeCompare(right.targetPath, "en"));
+  registerFixtureCoverage(fixture.registry, testTargetPath);
+  const registration = fixture.registry.entries[0];
+  registration.testSha256 = blobIdentity(testPath);
+  registration.relevanceEvidence = [{ mode: "self", targetPath: testTargetPath }];
   fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
 }
 
@@ -634,6 +723,26 @@ expectFailure("out-of-allowlist core patch cannot ship behind xfail", "GATE_EXEC
 
 expectFailure("out-of-allowlist core patch requires executed target-symbol evidence", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
   configureRetirementReplacementCorePatch(fixture, { evidence: "dead" });
+});
+
+expectFailure("live import call cannot activate a dead asserted call", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
+  configureRetirementReplacementCorePatch(fixture, { evidence: "live-unasserted-dead-assert" });
+});
+
+expectFailure("unrelated live assertion cannot activate dead target evidence", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
+  configureRetirementReplacementCorePatch(fixture, { evidence: "unrelated-live-assert" });
+});
+
+expectFailure("live read requires its consuming assertion to execute", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
+  configureLiveIoDeadAssertionCorePatch(fixture, "read");
+});
+
+expectFailure("live spawn requires its consuming assertion to execute", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
+  configureLiveIoDeadAssertionCorePatch(fixture, "spawn");
+});
+
+expectFailure("self-only dead evidence cannot qualify a core patch", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureSelfOnlyDeadCorePatch(fixture);
 });
 
 expectFailure("metadata-only fake passing coverage", "GATE_EVIDENCE_MISSING", (fixture) => {
