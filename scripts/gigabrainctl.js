@@ -5,6 +5,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { openDatabase } from '../lib/core/sqlite.js';
+import { ensureSupportedNodeRuntime } from '../lib/core/runtime-guard.js';
 
 import { loadResolvedConfig } from '../lib/core/config.js';
 import { runMaintenance } from '../lib/core/maintenance-service.js';
@@ -41,6 +42,8 @@ import {
 const THIS_FILE = fileURLToPath(import.meta.url);
 const THIS_DIR = path.dirname(THIS_FILE);
 const NIGHTLY_LOCK_STALE_MS = 6 * 60 * 60 * 1000;
+
+ensureSupportedNodeRuntime({ component: 'Gigabrain CLI' });
 
 const HELP = `Gigabrain v3 Control CLI
 
