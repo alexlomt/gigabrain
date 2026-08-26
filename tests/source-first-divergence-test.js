@@ -556,15 +556,17 @@ function configureRetirementReplacementCorePatch(fixture, {
     registration.testSha256 = staleHash
       ? "0".repeat(64)
       : blobIdentity(path.join(fixture.fixtureRepo, testTargetPath));
-    registration.relevanceEvidence = [
-      ...(evidence === "missing" ? [] : [{
+    if (evidence === "missing") {
+      delete registration.relevanceEvidence;
+    } else {
+      registration.relevanceEvidence = [{
         binding: "core",
         mode: "import",
         resultBinding: "observed",
         symbol: "core",
         targetPath,
-      }]),
-    ];
+      }];
+    }
     fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
   }
   fixture.map.candidateChanges.sort((left, right) => left.targetPath.localeCompare(right.targetPath, "en"));
