@@ -103,6 +103,57 @@ const packetEvent = (suffix) => ({
   }],
 });
 
+const processorConfig = (mode = "auto") => ({
+  capture: {
+    enabled: true,
+    autoCapture: {
+      enabled: true,
+      existingMemoryLimit: 20,
+      maxCandidates: 3,
+      minConfidence: 0.90,
+      minContentChars: 25,
+      minImportance: 0.78,
+      mode,
+      queueMinConfidence: 0.70,
+      queueMinImportance: 0.55,
+    },
+  },
+  llm: {
+    taskProfiles: {
+      auto_capture: {
+        max_tokens: 512,
+        reasoning: "off",
+        temperature: 0.1,
+        top_k: 20,
+        top_p: 0.8,
+      },
+    },
+  },
+  memoryLlm: {
+    baseUrl: "http://127.0.0.1:11434",
+    enabled: true,
+    maxRetries: 1,
+    model: "qwen3.5:9b",
+    provider: "ollama",
+    timeoutMs: 30000,
+  },
+  runtime: { paths: { reviewQueuePath: "/synthetic/review-queue.jsonl" } },
+});
+
+const processorPacket = (overrides = {}) => ({
+  decision: { action: "review", reason: "candidate_review" },
+  messages: [{
+    role: "user",
+    content: "The synthetic harbour operating model has a durable weekly governance review with named owners.",
+  }],
+  mode: "auto",
+  schemaVersion: 1,
+  scope: "profile:main",
+  sessionKey: "agent:main:processor-contract",
+  source: "openclaw.agent_end",
+  ...overrides,
+});
+
 const treeHash = (targetPath) => {
   if (!existsSync(targetPath)) return "missing";
   const hash = createHash("sha256");
@@ -150,10 +201,12 @@ const parseWorkerJson = (result) => {
 
 export async function run() {
   const queue = await importContractModule("lib/compat/auto-capture-queue.js", EXPECTED_SIGNATURE);
+  const processor = await importContractModule("lib/compat/auto-capture-processor.js", EXPECTED_SIGNATURE);
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
     if (!existsSync(workerPath)) throw new Error(EXPECTED_SIGNATURE);
     const enqueueAutoCaptureEvent = requireCallable(queue, "enqueueAutoCaptureEvent");
     const processAutoCaptureQueue = requireCallable(queue, "processAutoCaptureQueue");
+    const processAutoCaptureJob = requireCallable(processor, "processAutoCaptureJob");
     const fixtures = [];
     const fixture = (label) => {
       const value = makeFixture(label);
@@ -162,6 +215,170 @@ export async function run() {
     };
 
     try {
+      {
+        const captures = [];
+        const reviews = [];
+        let prompt = "";
+        const existing = Array.from({ length: 25 }, (_, index) => ({
+          content: `Existing synthetic memory ${index}`,
+          memory_id: `existing-${index}`,
+          scope: "profile:main",
+          type: "CONTEXT",
+        }));
+        const result = await processAutoCaptureJob({
+          config: processorConfig("auto"),
+          packet: processorPacket(),
+          completeJson: async (request) => {
+            prompt = request.prompt;
+            assert.equal(request.jsonSchema.properties.candidates.maxItems, 3);
+            assert.equal(request.profile.reasoning, "off");
+            return JSON.stringify({
+              candidates: [
+                {
+                  action: "auto_save",
+                  confidence: 0.96,
+                  content: "The synthetic harbour governance review runs weekly with named owners.",
+                  importance: 0.90,
+                  reason: "durable operating model",
+                  scope: "shared",
+                  sensitivity: "low",
+                  type: "DECISION",
+                },
+                {
+                  action: "queue_review",
+                  confidence: 0.76,
+                  content: "The synthetic harbour reporting template may become the standing default.",
+                  importance: 0.65,
+                  reason: "useful but uncertain",
+                  scope: "project:forged",
+                  sensitivity: "low",
+                  type: "PREFERENCE",
+                },
+                {
+                  action: "auto_save",
+                  confidence: 0.99,
+                  content: "The synthetic database URL is postgres://alice:s3cret@db.invalid/app.",
+                  importance: 0.99,
+                  reason: "must be rejected by deterministic policy",
+                  scope: "profile:main",
+                  sensitivity: "low",
+                  type: "CONTEXT",
+                },
+                {
+                  action: "auto_save",
+                  confidence: 0.99,
+                  content: "A fourth model candidate must never cross the exact three-candidate bound.",
+                  importance: 0.99,
+                  reason: "over limit",
+                  scope: "profile:main",
+                  sensitivity: "low",
+                  type: "CONTEXT",
+                },
+              ],
+            });
+          },
+          listExistingMemories: async ({ limit }) => {
+            assert.equal(limit, 20);
+            return existing;
+          },
+          captureCandidate: async (value) => captures.push(value),
+          queueCandidate: async (value) => reviews.push(value),
+        });
+        assert.deepEqual(result, { autoSaved: 1, queuedReview: 1 });
+        assert.equal(captures.length, 1);
+        assert.equal(reviews.length, 1);
+        assert.equal(captures[0].candidate.scope, "profile:main", "model-provided scope must be ignored");
+        assert.equal(reviews[0].candidate.scope, "profile:main", "review scope must be forced from the packet");
+        assert.equal(prompt.includes("Existing synthetic memory 19"), true);
+        assert.equal(prompt.includes("Existing synthetic memory 20"), false);
+        assert.equal(JSON.stringify([...captures, ...reviews]).includes("s3cret"), false);
+      }
+
+      {
+        const captures = [];
+        let completed = false;
+        const result = await processAutoCaptureJob({
+          config: processorConfig("auto"),
+          packet: processorPacket({
+            decision: { action: "save", reason: "explicit_durable_request" },
+            messages: [{
+              role: "user",
+              content: "Decision: Keep the synthetic harbour governance review weekly with named owners for future runs.",
+            }],
+          }),
+          completeJson: async () => {
+            completed = true;
+            throw new Error("explicit deterministic decisions must not require the provider");
+          },
+          listExistingMemories: async () => [],
+          captureCandidate: async (value) => captures.push(value),
+          queueCandidate: async () => assert.fail("explicit profile decision must not queue"),
+        });
+        assert.equal(completed, false);
+        assert.deepEqual(result, { autoSaved: 1, queuedReview: 0 });
+        assert.equal(captures.length, 1);
+        assert.equal(captures[0].candidate.scope, "profile:main");
+        assert.equal(captures[0].candidate.type, "DECISION");
+      }
+
+      {
+        const reviews = [];
+        const result = await processAutoCaptureJob({
+          config: processorConfig("auto"),
+          packet: processorPacket({
+            decision: { action: "save", reason: "explicit_durable_request" },
+            messages: [{ role: "user", content: "Decision: Keep the synthetic shared operating glossary stable for future runs." }],
+            scope: "shared",
+          }),
+          completeJson: async () => assert.fail("explicit deterministic decisions must not require the provider"),
+          listExistingMemories: async () => [],
+          captureCandidate: async () => assert.fail("shared candidates must never auto-save"),
+          queueCandidate: async (value) => reviews.push(value),
+        });
+        assert.deepEqual(result, { autoSaved: 0, queuedReview: 1 });
+        assert.equal(reviews[0].candidate.scope, "shared");
+      }
+
+      {
+        let writes = 0;
+        const result = await processAutoCaptureJob({
+          config: processorConfig("shadow"),
+          packet: processorPacket({ mode: "shadow" }),
+          completeJson: async () => JSON.stringify({ candidates: [{
+            action: "auto_save",
+            confidence: 0.99,
+            content: "The synthetic shadow candidate is durable but must remain observational.",
+            importance: 0.99,
+            reason: "shadow",
+            scope: "profile:main",
+            sensitivity: "low",
+            type: "CONTEXT",
+          }] }),
+          listExistingMemories: async () => [],
+          captureCandidate: async () => { writes += 1; },
+          queueCandidate: async () => { writes += 1; },
+        });
+        assert.deepEqual(result, { autoSaved: 0, queuedReview: 0 });
+        assert.equal(writes, 0);
+      }
+
+      for (const [label, completeJson, pattern] of [
+        ["malformed", async () => "not-json", /AUTO_CAPTURE_MODEL_RESPONSE_INVALID/],
+        ["provider", async () => { throw new Error("memory_llm_ollama_http_503"); }, /memory_llm_ollama_http_503/],
+      ]) {
+        await assert.rejects(
+          () => processAutoCaptureJob({
+            config: processorConfig("review"),
+            packet: processorPacket({ mode: "review" }),
+            completeJson,
+            listExistingMemories: async () => [],
+            captureCandidate: async () => assert.fail(`${label} must not capture`),
+            queueCandidate: async () => assert.fail(`${label} must not queue`),
+          }),
+          pattern,
+        );
+      }
+
       {
         const current = fixture("help");
         const before = stateVector(current);
@@ -304,6 +521,7 @@ export async function run() {
         assert.equal(packageJson.files.includes("scripts/auto-capture-worker.js"), true);
         for (const runtimePath of [
           "lib/compat/auto-capture-policy.js",
+          "lib/compat/auto-capture-processor.js",
           "lib/compat/auto-capture-queue.js",
           "lib/compat/native-metadata.js",
           "lib/compat/runtime-descriptor.js",

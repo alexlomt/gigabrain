@@ -100,7 +100,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "5af6b08e08ff9d986a0210cb12c9413887f9d088b7a64dd3fcaf0eee001e60fc",
+      "contentSha256": "1f1c2a0a1827bf732d7db619f7a7ac7d500a7e66c68731154ac71b466c2d344e",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -114,7 +114,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with passing Task 9 persistence-boundary privacy hashes.",
+      "reason": "Source-first registry with exact Task 9 auto-capture processor XFAIL ownership.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -1220,7 +1220,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "0879ea5cf7c261d9bc88f6447f89b7d0f2047fcb72b530ca0a1c72f0a14e99cf",
+      "contentSha256": "f48949419c7af3dd1878a24db29bcbac02bfc579403b2ce55f3e31c7abd47694",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-worker"
@@ -1229,7 +1229,7 @@
         "2B",
         "9"
       ],
-      "reason": "Passing Task 9 post-review contract proving every transitive public-mirror worker dependency is shipped.",
+      "reason": "Task 9 processor RED contract for bounded local extraction, deterministic decisions, forced scope, threshold routing, shadow no-op, and failure propagation.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-worker-test.js"
     },
@@ -1336,7 +1336,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "49dbdae4dbc35340e3bf0cfd1e3afbbb5704ca5aa8547efbac45ccc271626512",
+      "contentSha256": "b574f3efad59e20344368bc0f7b99ded36b503272f8c7e1f8eba934932f25ba1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1351,7 +1351,7 @@
         "8",
         "9"
       ],
-      "reason": "Task 9 persistence-boundary privacy XFAILs removed after both contracts passed.",
+      "reason": "Expected-failure ownership for the exact Task 9 auto-capture processor signature.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },

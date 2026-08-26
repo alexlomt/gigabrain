@@ -1,6 +1,11 @@
 {
   "entries": [
     {
+      "ownerTask": "9",
+      "signature": "COMPAT_EXPECTED_AUTO_CAPTURE missing durable bounded capture worker",
+      "test": "compat/auto-capture-worker-test.js"
+    },
+    {
       "ownerTask": "14",
       "signature": "COMPAT_EXPECTED_FULL_MIGRATION missing source-first registry migration receipt",
       "test": "compat/full-registry-migration-test.js"

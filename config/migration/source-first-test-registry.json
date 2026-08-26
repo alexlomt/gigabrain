@@ -69,8 +69,8 @@
         "scripts/auto-capture-worker.js",
         "tests/compat/auto-capture-worker-test.js"
       ],
-      "expectedOutcome": "pass",
-      "expectedSignature": null,
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_AUTO_CAPTURE missing durable bounded capture worker",
       "id": "compat-auto-capture-worker",
       "ownerSourceFirstTaskId": "9",
       "relevanceEvidence": [
@@ -98,7 +98,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/auto-capture-worker-test.js",
-      "testSha256": "0879ea5cf7c261d9bc88f6447f89b7d0f2047fcb72b530ca0a1c72f0a14e99cf"
+      "testSha256": "f48949419c7af3dd1878a24db29bcbac02bfc579403b2ce55f3e31c7abd47694"
     },
     {
       "coveredPaths": [
@@ -1695,6 +1695,6 @@
     }
   ],
   "entryCount": 90,
-  "manifestSha256": "2082ddccc243a9806e5be83c883e693dabba1d156a4ac9f690eb2d3ffc4f1eef",
+  "manifestSha256": "af4cfea79577f1af1f953c1097a8d50f574ece8cdb5a83c0472a3475d58b7771",
   "schemaVersion": 1
 }
