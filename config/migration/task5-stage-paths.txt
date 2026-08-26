@@ -40,5 +40,6 @@ tests/compat/release-provenance-test.js
 tests/compat/upstream-adoption-test.js
 tests/compat/write-mode-gate-test.js
 tests/full-test-inventory.js
+tests/source-first-divergence-test.js
 tests/unit-package-metadata-test.js
 tests/unit-plugin-runtime-test.js
