@@ -127,6 +127,14 @@ function makeFixture(mutate = () => {}) {
     path.join(fixtureRepo, "tests", "registered-test.js"),
     "export async function run() { return true; }\n",
   );
+  writeFileSync(
+    path.join(fixtureRepo, "tests", "contract-test-helpers.js"),
+    [
+      'export const importContractModule = async (relative) => import(`../${relative}`);',
+      'export const requireCallable = () => () => false;',
+      '',
+    ].join("\n"),
+  );
   commitAll(fixtureRepo, "fixture base");
 
   const base = git(fixtureRepo, ["rev-parse", "HEAD"]);
@@ -693,7 +701,105 @@ function configureSelfOnlyDeadCorePatch(fixture) {
   fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
 }
 
+function configureImmutableGateExecutionFixture(fixture) {
+  const firstTarget = "lib/0-mutator.js";
+  const secondTarget = "lib/upstream.js";
+  const firstTest = "tests/immutable-first-test.js";
+  const secondTest = "tests/immutable-second-test.js";
+  const secondWorktreePath = path.join(fixture.fixtureRepo, secondTest);
+  writeFileSync(path.join(fixture.fixtureRepo, firstTarget), "export const mutator = () => false;\n");
+  writeFileSync(path.join(fixture.fixtureRepo, secondTarget), "export const readUpstream = () => false;\n");
+  writeFileSync(path.join(fixture.fixtureRepo, firstTest), [
+    'import assert from "node:assert/strict";',
+    'import { writeFileSync } from "node:fs";',
+    'import { mutator } from "../lib/0-mutator.js";',
+    'export async function run() {',
+    '  const observed = mutator();',
+    '  assert.equal(observed, false);',
+    `  writeFileSync(${JSON.stringify(secondWorktreePath)}, 'throw new Error("mutable worktree test executed");\\n');`,
+    '}',
+    '',
+  ].join("\n"));
+  writeFileSync(path.join(fixture.fixtureRepo, secondTest), [
+    'import assert from "node:assert/strict";',
+    'import { readUpstream } from "../lib/upstream.js";',
+    'export async function run() {',
+    '  const observed = readUpstream();',
+    '  assert.equal(observed, false);',
+    '}',
+    '',
+  ].join("\n"));
+  commitAll(fixture.fixtureRepo, "immutable gate execution fixture");
+
+  const rows = [
+    [firstTarget, "added", "core_patch", "immutable-first-gate"],
+    [secondTarget, "modified", "core_patch", "immutable-second-gate"],
+    [firstTest, "added", "private_dev_only", "immutable-first-gate"],
+    [secondTest, "added", "private_dev_only", "immutable-second-gate"],
+  ];
+  for (const [targetPath, changeType, disposition, registrationId] of rows) {
+    const existing = fixture.map.candidateChanges.find((row) => row.targetPath === targetPath);
+    const row = {
+      changeType,
+      contentSha256: blobIdentity(path.join(fixture.fixtureRepo, targetPath)),
+      disposition,
+      gate: { registrationId },
+      ownerTasks: ["2A"],
+      reason: "Synthetic immutable exact-HEAD execution fixture.",
+      targetMode: "100644",
+      targetPath,
+    };
+    if (existing) Object.assign(existing, row);
+    else fixture.map.candidateChanges.push(row);
+    registerFixtureCoverage(fixture.registry, targetPath);
+  }
+  fixture.registry.entries.push(
+    {
+      coveredPaths: [firstTarget, firstTest],
+      expectedOutcome: "pass",
+      expectedSignature: null,
+      id: "immutable-first-gate",
+      ownerSourceFirstTaskId: "2A",
+      relevanceEvidence: [{
+        binding: "mutator",
+        mode: "import",
+        resultBinding: "observed",
+        symbol: "mutator",
+        targetPath: firstTarget,
+      }],
+      runner: "node",
+      testPath: firstTest,
+      testSha256: blobIdentity(path.join(fixture.fixtureRepo, firstTest)),
+    },
+    {
+      coveredPaths: [secondTarget, secondTest],
+      expectedOutcome: "pass",
+      expectedSignature: null,
+      id: "immutable-second-gate",
+      ownerSourceFirstTaskId: "2A",
+      relevanceEvidence: [{
+        binding: "readUpstream",
+        mode: "import",
+        resultBinding: "observed",
+        symbol: "readUpstream",
+        targetPath: secondTarget,
+      }],
+      runner: "node",
+      testPath: secondTest,
+      testSha256: blobIdentity(path.join(fixture.fixtureRepo, secondTest)),
+    },
+  );
+  fixture.map.candidateChanges.sort((left, right) => left.targetPath.localeCompare(right.targetPath, "en"));
+  fixture.registry.entries.sort((left, right) => left.id.localeCompare(right.id, "en"));
+  fixture.registry.entryCount = fixture.registry.entries.length;
+  fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
+}
+
 expectPass("exact classified delta", () => {});
+
+expectPass("registered tests execute from an immutable exact-HEAD cohort", (fixture) => {
+  configureImmutableGateExecutionFixture(fixture);
+});
 
 expectPass("retirement replacement may be an explicitly mapped behavioral core patch", (fixture) => {
   configureRetirementReplacementCorePatch(fixture);
@@ -777,6 +883,89 @@ expectFailure("shadowed asserted call cannot borrow an unrelated real execution"
   fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
 });
 
+expectFailure("parameter shadow cannot borrow an unrelated real execution", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'const localRead = () => false;',
+      'readUpstream();',
+      'export async function run(readUpstream = localRead) {',
+      '  const observed = readUpstream();',
+      '  assert.equal(observed, false);',
+      '}',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectFailure("destructured shadow cannot borrow an unrelated real execution", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() {',
+      '  readUpstream();',
+      '  { const { readUpstream } = { readUpstream: () => false };',
+      '    const observed = readUpstream(); assert.equal(observed, false); }',
+      '}',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectFailure("catch binding shadow cannot borrow an unrelated real execution", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() {',
+      '  readUpstream();',
+      '  try { throw { readUpstream: () => false }; }',
+      '  catch ({ readUpstream }) { const observed = readUpstream(); assert.equal(observed, false); }',
+      '}',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectFailure("shadowed result binding cannot attest the imported return value", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() {',
+      '  const observed = readUpstream();',
+      '  { const observed = false; assert.equal(observed, false); }',
+      '}',
+      '',
+    ].join("\n"),
+  });
+  const targetPath = path.join(fixture.fixtureRepo, "lib", "upstream.js");
+  writeFileSync(targetPath, "export const readUpstream = () => true;\n");
+  commitAll(fixture.fixtureRepo, "true target for result-shadow fixture");
+  fixture.map.candidateChanges.find((row) => row.targetPath === "lib/upstream.js").contentSha256 = blobIdentity(targetPath);
+});
+
+expectFailure("reassigned result binding cannot attest the imported return value", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() {',
+      '  let observed = readUpstream();',
+      '  observed = false;',
+      '  assert.equal(observed, false);',
+      '}',
+      '',
+    ].join("\n"),
+  });
+  const targetPath = path.join(fixture.fixtureRepo, "lib", "upstream.js");
+  writeFileSync(targetPath, "export const readUpstream = () => true;\n");
+  commitAll(fixture.fixtureRepo, "true target for result-reassignment fixture");
+  fixture.map.candidateChanges.find((row) => row.targetPath === "lib/upstream.js").contentSha256 = blobIdentity(targetPath);
+});
+
 expectFailure("requireCallable must use the module loaded for the target", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
   configureAdoptedCorePatch(fixture, {
     testSource: [
@@ -790,6 +979,24 @@ expectFailure("requireCallable must use the module loaded for the target", "GATE
       '  targetModule.readUpstream();',
       '  const observed = readUpstream();',
       '  assert.equal(observed, false);',
+      '}',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectFailure("nested module shadow cannot satisfy requireCallable linkage", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'const importContractModule = async (relative) => import(`../${relative}`);',
+      'const requireCallable = (module, name) => module[name];',
+      'export async function run() {',
+      '  const targetModule = await importContractModule("lib/upstream.js");',
+      '  targetModule.readUpstream();',
+      '  { const targetModule = { readUpstream: () => false };',
+      '    const readUpstream = requireCallable(targetModule, "readUpstream");',
+      '    const observed = readUpstream(); assert.equal(observed, false); }',
       '}',
       '',
     ].join("\n"),
@@ -810,6 +1017,20 @@ expectFailure("string literals cannot fabricate operation and assertion witnesse
   });
 });
 
+expectFailure("regular expression literals cannot fabricate operation and assertion witnesses", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() {',
+      '  readUpstream();',
+      '  const fake = /const observed = readUpstream(); assert.equal(observed, false);/;',
+      '  return fake.source.length;',
+      '}',
+      '',
+    ].join("\n"),
+  });
+});
+
 expectFailure("comments cannot fabricate operation and assertion witnesses", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
   configureAdoptedCorePatch(fixture, {
     testSource: [
@@ -823,14 +1044,13 @@ expectFailure("comments cannot fabricate operation and assertion witnesses", "GA
   });
 });
 
-expectFailure("child-process target execution cannot satisfy parent evidence", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
+expectFailure("child-process target execution cannot satisfy parent evidence", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
   configureAdoptedCorePatch(fixture, {
     testSource: [
       'import assert from "node:assert/strict";',
       'import { spawnSync } from "node:child_process";',
       'import process from "node:process";',
-      'const importContractModule = async (relative) => import(`../${relative}`);',
-      'const requireCallable = () => () => false;',
+      'import { importContractModule, requireCallable } from "./contract-test-helpers.js";',
       'export async function run() {',
       '  const targetModule = await importContractModule("lib/upstream.js");',
       '  const readUpstream = requireCallable(targetModule, "readUpstream");',
