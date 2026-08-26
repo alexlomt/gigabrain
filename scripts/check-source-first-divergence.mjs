@@ -35,6 +35,11 @@ const POLICY_INFRASTRUCTURE = new Set([
 const TEST_RUNNERS = new Set(["node", "python"]);
 const EXPECTED_OUTCOMES = new Set(["pass", "xfail"]);
 const RETIREMENT_ENFORCEMENTS = new Set(["forbidden_bytes", "upstream_identity"]);
+const RELEVANCE_EVIDENCE_MODES = new Set(["import", "read", "self", "spawn"]);
+const CANONICAL_REGISTRY_OWNERS = new Map([
+  ["compat-full-registry-migration", "14"],
+  ["compat-rollback-restore", "14"],
+]);
 
 // These values are filled from the reviewed forensic snapshot. They deliberately
 // bind counts and manifest hashes rather than source bytes or private literals.
@@ -649,10 +654,14 @@ function validateTestRegistry(registry) {
       "ownerSourceFirstTaskId",
       "runner",
       "testPath",
-    ]);
+    ], ["relevanceEvidence", "testSha256"]);
     nonEmptyString(row.id);
     if (ids.has(row.id)) fail("DUPLICATE_ROW", row.id);
     ids.add(row.id);
+    const canonicalOwner = CANONICAL_REGISTRY_OWNERS.get(row.id);
+    if (canonicalOwner && row.ownerSourceFirstTaskId !== canonicalOwner) {
+      fail("STALE_OWNER", row.testPath);
+    }
     if (typeof row.ownerSourceFirstTaskId !== "string" || !TASK.test(row.ownerSourceFirstTaskId)) {
       fail("MISSING_OWNER");
     }
@@ -666,6 +675,21 @@ function validateTestRegistry(registry) {
     }
     validatePathList(row.coveredPaths);
     ensureSorted(row.coveredPaths, (value) => value);
+    if (Object.hasOwn(row, "testSha256") && !SHA256.test(String(row.testSha256 || ""))) {
+      fail("SCHEMA");
+    }
+    if (Object.hasOwn(row, "relevanceEvidence")) {
+      if (!Array.isArray(row.relevanceEvidence) || row.relevanceEvidence.length === 0) fail("SCHEMA");
+      const evidencePaths = new Set();
+      for (const evidence of row.relevanceEvidence) {
+        exactKeys(evidence, ["mode", "targetPath"]);
+        if (!RELEVANCE_EVIDENCE_MODES.has(evidence.mode)) fail("SCHEMA");
+        validatePath(evidence.targetPath);
+        if (evidencePaths.has(evidence.targetPath)) fail("DUPLICATE_ROW", evidence.targetPath);
+        evidencePaths.add(evidence.targetPath);
+      }
+      ensureSorted(row.relevanceEvidence, (evidence) => evidence.targetPath);
+    }
     if (row.expectedOutcome === "xfail") {
       nonEmptyString(row.expectedSignature, "GATE_SIGNATURE_MISSING");
     } else if (row.expectedSignature !== null) {
@@ -674,6 +698,55 @@ function validateTestRegistry(registry) {
   }
   ensureSorted(registry.entries, (row) => row.id);
   checkManifest(registry.entries, registry.entryCount, registry.manifestSha256, "TEST_REGISTRY_MANIFEST");
+}
+
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function hasStaticRelevanceEvidence({ evidence, source, testPath }) {
+  if (evidence.mode === "self") return evidence.targetPath === testPath;
+  const quotedTarget = new RegExp(`["']${escapeRegex(evidence.targetPath)}["']`);
+  if (evidence.mode === "read") {
+    return quotedTarget.test(source) && /\breadFile(?:Sync)?\s*\(/.test(source);
+  }
+  if (evidence.mode === "spawn") {
+    return quotedTarget.test(source) && /\b(?:execFile|spawn)(?:Sync)?\s*\(/.test(source);
+  }
+  if (evidence.mode !== "import") return false;
+  let relative = path.posix.relative(path.posix.dirname(testPath), evidence.targetPath);
+  if (!relative.startsWith(".")) relative = `./${relative}`;
+  const quotedRelative = escapeRegex(relative);
+  const importPatterns = [
+    new RegExp(`\\bfrom\\s*["']${quotedRelative}["']`),
+    new RegExp(`\\bimport\\s*["']${quotedRelative}["']`),
+    new RegExp(`\\bimport\\s*\\(\\s*["']${quotedRelative}["']\\s*\\)`),
+    new RegExp(`\\bimportContractModule\\s*\\(\\s*["']${escapeRegex(evidence.targetPath)}["']`),
+  ];
+  return importPatterns.some((pattern) => pattern.test(source));
+}
+
+function executeRegisteredNodeTest(registration) {
+  const wrapper = [
+    'import { pathToFileURL } from "node:url";',
+    'const target = process.argv[1];',
+    'const module = await import(`${pathToFileURL(target).href}?source-first-gate=${Date.now()}`);',
+    'if (typeof module.run !== "function") throw new Error("SOURCE_FIRST_TEST_RUN_EXPORT");',
+    'await module.run();',
+  ].join("\n");
+  const result = spawnSync(process.execPath, [
+    "--input-type=module",
+    "--eval",
+    wrapper,
+    path.resolve(process.cwd(), registration.testPath),
+  ], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+    env: { ...process.env, LC_ALL: "C" },
+    maxBuffer: 16 * 1024 * 1024,
+    timeout: 30_000,
+  });
+  return !result.error && result.status === 0;
 }
 
 function ensureSorted(rows, key) {
@@ -889,8 +962,10 @@ function readExpectedFailures(head, headByPath) {
   return new Map(document.entries.map((entry) => [entry.test, entry]));
 }
 
-function validateActiveGates(map, registry, headByPath, head) {
+function validateActiveGates(map, registry, headByPath, head, allowlist) {
   const registrations = new Map(registry.entries.map((entry) => [entry.id, entry]));
+  const adoptedPaths = new Set(allowlist.entries.map((entry) => entry.path));
+  const executedTests = new Set();
   const used = new Set();
   const expectedFailures = readExpectedFailures(head, headByPath);
   for (const row of map.candidateChanges) {
@@ -920,6 +995,26 @@ function validateActiveGates(map, registry, headByPath, head) {
       }
     } else if (expected) {
       fail("GATE_SIGNATURE_MISMATCH", registration.testPath);
+    }
+    if (row.disposition === "core_patch" && adoptedPaths.has(row.targetPath)) {
+      if (registration.expectedOutcome !== "pass") fail("GATE_EXECUTION_FAILED", registration.testPath);
+      if (!registration.testSha256) fail("GATE_EVIDENCE_MISSING", registration.testPath);
+      if (sha256(blobAt(head, registration.testPath)) !== registration.testSha256) {
+        fail("GATE_TEST_HASH", registration.testPath);
+      }
+      const evidence = registration.relevanceEvidence?.find((item) => item.targetPath === row.targetPath);
+      if (!evidence) fail("GATE_EVIDENCE_MISSING", row.targetPath);
+      const testSource = blobAt(head, registration.testPath).toString("utf8");
+      if (!hasStaticRelevanceEvidence({ evidence, source: testSource, testPath: registration.testPath })) {
+        fail("GATE_RELEVANCE", row.targetPath);
+      }
+      const executionKey = `${registration.testPath}\0${registration.testSha256}`;
+      if (!executedTests.has(executionKey)) {
+        if (registration.runner !== "node" || !executeRegisteredNodeTest(registration)) {
+          fail("GATE_EXECUTION_FAILED", registration.testPath);
+        }
+        executedTests.add(executionKey);
+      }
     }
   }
   for (const registration of registry.entries) {
@@ -1028,7 +1123,7 @@ function main() {
     headByPath,
     map,
   });
-  validateActiveGates(map, testRegistry, headByPath, head);
+  validateActiveGates(map, testRegistry, headByPath, head, allowlist);
   const seenDiffs = new Set();
   const statusToChange = { A: "added", D: "deleted", M: "modified", T: "modified" };
   for (const actual of diff) {

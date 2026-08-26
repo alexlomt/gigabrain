@@ -111,9 +111,10 @@ OpenClaw mode keeps config under `plugins.entries.gigabrain.config` in `openclaw
 | `higgsfield-creator` | `higgsfield-creator`, `shared` |
 | `linkedin-public-evidence-operator` | `linkedin-public-evidence-operator`, `shared` |
 | `project:*` | exact project scope only |
+| unknown or lookalike local scope | exact requested scope only |
 | omitted local scope | `shared` only |
 
-Remote authority is always an exact-scope intersection and never receives a locally inferred shared/profile overlay. Capture scope comes from the trusted host event envelope; a model-authored `scope` attribute cannot redirect a write.
+Remote authority is always an exact-scope intersection and never receives a locally inferred shared/profile overlay. Capture scope comes from the trusted host event envelope; a model-authored `scope` attribute cannot redirect a write. Destructive memory actions resolve targets in that exact canonical event scope only; shared is never an implicit destructive overlay.
 
 ## Orchestrator and world model
 
@@ -222,7 +223,7 @@ Slot detection also applies to **entity-less, user-anchored facts** ("The user â
 }
 ```
 
-Public defaults are typed and empty. Deployment-specific entity rejects, non-person terms, memory-tier cues, surface/session-brief filters, and preferred cues belong only in protected configuration. Regex entries use `{ "pattern": "...", "flags": "i" }` and fail closed when invalid.
+Public defaults are typed and empty. Deployment-specific entity rejects, non-person terms, memory-tier cues, surface/session-brief filters, and preferred cues belong only in protected configuration. Regex entries use `{ "pattern": "...", "flags": "i" }` and fail closed when invalid. Standalone normalization also rejects malformed families, unknown keys, wrong value types, and invalid regex rather than silently dropping them.
 
 ### `worldModel.hostTrust`
 
@@ -256,6 +257,8 @@ Robustness knobs for the deterministic arbitration rule (**trust tier > corrobor
 ### `agentRegistry` (top level)
 
 `source_agent` is free text in rival stores and therefore a sock-puppet vector. The arbiter only lets an agent identity carry its host's trust tier when the identity is **registered**: built-in host-family names (exact match â€” prefix variants like `codex_fake9000` do not vouch), any key pinned in `hostTrust`, or an entry in this list. Unregistered agents cap at the unknown trust floor. Defaults to `[]`.
+
+Manual-import host classification is also exact and typed. A registered manual host retains the manual-import tier; a lookalike that merely contains `manual` remains at the unknown floor.
 
 ```json
 {

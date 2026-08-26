@@ -81,7 +81,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "0fc32cf9cf9ccdf3103165c987ac2c5975a2da757a56f521ec8e386b9f2d5944",
+      "contentSha256": "1b85b45fd79f08ed94e7f6682aa90253454d68de3098127fe22b7589d3bcde70",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -125,7 +125,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "bc58280964d54f369d27e9dbc3978eb4e5ba419dff5d8db73e70c02daf844f0d",
+      "contentSha256": "8302f6c2cf4aa0e0529eb1c719b932f24986da469fae82540aedc76a925616f1",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "compat-config-schema-parity"
@@ -155,7 +155,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "eddbfb6fd7bc3288d0a9678ca3d4c7dc274a29d3ba5f6a3c02b38b20c3cfe311",
+      "contentSha256": "d566e1f0a3b8a5b4f83086f5d85099726d7f666bf9e21a2cdcfac9f93ed9cbc5",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-config-schema-parity"
@@ -253,7 +253,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "037eaeb3a7b534e82401a90846e0821dab00cd8a730070af058c134aa8b035a3",
+      "contentSha256": "0f701cbfa540ad3354b02b6c29abd921b9d793c4ae1eb613f7982a62d32fe4d3",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-scope-visibility-matrix"
@@ -281,7 +281,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "c66897fc569d0906d0e1f35fc539d1e0618400d15966716836f8bfd7fdb1ac94",
+      "contentSha256": "8ef540b132f6ffecb5221c9f1efb1d3c4f2e39beca679cba288595ed60b4da00",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-config-schema-parity"
@@ -309,7 +309,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "9f5b2dd7851b76b2c86e951884b97964718c84bde9b23403e1606c5c8835907b",
+      "contentSha256": "fa2b8cd9fe44fa0becb4085abd88b1541a7ebb834d0c29b82eccd528466502e4",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "restored-unit-host-trust"
@@ -326,7 +326,7 @@
       "contentSha256": "521d43108a6829f9acfcf5dfb4d3e5fecefaba9594b0268b4b93d50e47a690a4",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-config-schema-parity"
+        "registrationId": "restored-integration-audit-maintenance"
       },
       "ownerTasks": [
         "4"
@@ -337,10 +337,10 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "da68b15fa0e5b4f7e408fc41a7b0f8f720d4bb3b9f9692db8e5dcf24d7e87405",
+      "contentSha256": "4c456ec281e2160a13ef7bf01bbb38dde71d861dff085b89ed70ee74306aef03",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-scope-visibility-matrix"
+        "registrationId": "restored-unit-memory-actions"
       },
       "ownerTasks": [
         "4"
@@ -464,7 +464,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "8fe1e15420b294f10c720ab769837565608c5dd39cab31a5a74172851fbacc70",
+      "contentSha256": "bf034e2bce4e20d842e66efc6b78f83d5125659fc594ac73aa860a8693aecb46",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -566,7 +566,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "4471d8730185bd9c315b01e1d1db1761b3b97c405136670b886f4fb450c9576c",
+      "contentSha256": "8fdd185105bdbb2dbc0c3a452a5fb32fd1be1fe4f89d96564838ae51e3fb7dd4",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-config-schema-parity"
@@ -637,7 +637,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "c3ebca7340c86f62cf16b48c3178d9fcfdf74cc54197cea49bb2bbae3e53b284",
+      "contentSha256": "4c4784ef7d2df1373c7377afb3a77a38b4b37d21f98b9a1490567eefbeef46ae",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "upstream-adoption"
@@ -653,14 +653,14 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "2947ee00cef0ca6e03bf8a8623193da6d8df8b8786d97ce0efb38ebb41ee7651",
+      "contentSha256": "fb0e60de57ae8cb018e37cf2e155cb53f8e5739fd2066dcfd86f94b35efb01ca",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-full-registry-migration"
       },
       "ownerTasks": [
-        "2B",
-        "4"
+        "14",
+        "2B"
       ],
       "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
       "targetMode": "100644",
@@ -787,14 +787,14 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "630a6e57259ee4381326c611a87c7f1e6424a1d0c68ac48c347e87ef2396eebf",
+      "contentSha256": "400858726cf355069381e5ed672d6adf15a5da10b15d6fc67508271ed4abe0c6",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-rollback-restore"
       },
       "ownerTasks": [
-        "2B",
-        "4"
+        "14",
+        "2B"
       ],
       "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
       "targetMode": "100644",
@@ -802,7 +802,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "8791b11dbc13d1ca1e19a498ce474ef16d9db9271025682aff1e2253d4e1ef06",
+      "contentSha256": "7748053adf90bf8556baaf8512f003a2bec8235f280d61e09b9c07d804852a35",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-scope-visibility-matrix"
@@ -874,13 +874,14 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "455e3d93e13890c70c2d685972af1a7de133192e46d1ea2e1c252049b1db45c7",
+      "contentSha256": "dbf6763f3a6fa47d922415173537c35adb3f2f93e9f2d321f5b5770ecca4160f",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
       },
       "ownerTasks": [
-        "2B"
+        "2B",
+        "4"
       ],
       "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure.",
       "targetMode": "100644",
@@ -888,7 +889,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "86178026d43c8adbb9bf073845f3c09e4d07246ed030c27edf9025dbe2c73a40",
+      "contentSha256": "27735541ad820e6c66d4d43ab3d94837f076b3aa98516af5f65fe1425ef9f03f",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "upstream-adoption"
@@ -904,13 +905,14 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "e9f0885e83fef43e130e51a925b83d510e2b96afa755ec32928fa07e3fbffdeb",
+      "contentSha256": "d17de2be99bd72553673c1d7ab259918c85eb2f801a178ed3f58af3023e83442",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "restored-integration-audit-maintenance"
       },
       "ownerTasks": [
-        "2B"
+        "2B",
+        "4"
       ],
       "reason": "Scanner-clean restored compatibility assertion or its private test infrastructure.",
       "targetMode": "100644",
@@ -1352,7 +1354,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "70a8dc5966ff139d276a1cffdc699cc0b825fadfcfaeaf45032e0e14fa1162cd",
+      "contentSha256": "d615ac5ddfd222dfb45371b463cbe07e6d87a0ee50caf6841c68610664666f3c",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1428,7 +1430,7 @@
       "contentSha256": "5ed8a9e3b21798d05b5fba537469b90bc8a67bcd12433b18554c5721a5a30d56",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-config-schema-parity"
+        "registrationId": "task4-unit-config"
       },
       "ownerTasks": [
         "4"
@@ -1467,7 +1469,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "7c97b759b4720f116015f8e5d0ef28b87321033755b05a1b98ed98935a4d2688",
+      "contentSha256": "3e8ce662c7e17c24ab996eecf67b745e649f24672d4347c467419d616869458b",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "restored-unit-host-trust"
@@ -1510,13 +1512,14 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "1164a3804dae864edc5598fb89ef85378a903c97b744c7e547c5390dd2dbfdf5",
+      "contentSha256": "1738bad6107bc2acc3d3fe8149106d09f461b4f1f7d83c2d128ded4435d3e357",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "restored-unit-memory-actions"
       },
       "ownerTasks": [
-        "2B"
+        "2B",
+        "4"
       ],
       "reason": "Scanner-clean restored compatibility assertion or its private test infrastructure.",
       "targetMode": "100644",

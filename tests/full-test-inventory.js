@@ -29,6 +29,10 @@ const RESTORE_STATES = new Set([
   "synthetic_restored",
   "upstream_replaced",
 ]);
+const CANONICAL_EXPECTED_FAILURE_OWNERS = new Map([
+  ["compat/full-registry-migration-test.js", "14"],
+  ["compat/rollback-restore-test.js", "14"],
+]);
 
 export const DEPLOYED_CLASS_COUNTS = Object.freeze({
   normal_registered: 62,
@@ -137,7 +141,7 @@ const COMPATIBILITY_TESTS = [
   ["compat/config-schema-parity-test.js", "4"],
   ["compat/dedupe-scope-isolation-test.js", "4"],
   ["compat/embedding-identity-test.js", "7"],
-  ["compat/full-registry-migration-test.js", "4"],
+  ["compat/full-registry-migration-test.js", "14"],
   ["compat/generated-surface-test.js", "5"],
   ["compat/memory-api-projection-test.js", "11"],
   ["compat/native-lock-concurrency-test.js", "6"],
@@ -146,7 +150,7 @@ const COMPATIBILITY_TESTS = [
   ["compat/openclaw-hooks-and-flush-test.js", "5"],
   ["compat/openclaw-memory-runtime-test.js", "5"],
   ["compat/operator-rules-migration-test.js", "4"],
-  ["compat/rollback-restore-test.js", "4"],
+  ["compat/rollback-restore-test.js", "14"],
   ["compat/scope-visibility-matrix-test.js", "4"],
   ["compat/upstream-adoption-test.js", "3"],
 ];
@@ -220,6 +224,10 @@ export function validateExpectedFailureManifest(entries, descriptors = NORMAL_TE
     }
     const registered = byTest.get(entry.test);
     if (!registered) throw new Error(`EXPECTED_FAILURE_UNKNOWN_TEST ${entry.test}`);
+    const canonicalOwner = CANONICAL_EXPECTED_FAILURE_OWNERS.get(entry.test);
+    if (canonicalOwner && (entry.ownerTask !== canonicalOwner || registered.ownerTask !== canonicalOwner)) {
+      throw new Error(`EXPECTED_FAILURE_STALE_OWNER ${entry.test}`);
+    }
     if (registered.ownerTask !== entry.ownerTask) {
       throw new Error(`EXPECTED_FAILURE_STALE_OWNER ${entry.test}`);
     }

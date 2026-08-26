@@ -16,6 +16,10 @@ export const OWNER_TASK = "4";
 export const EXPECTED_SIGNATURE = "COMPAT_EXPECTED_CONFIG_SCHEMA_PARITY missing canonical generated configuration schema";
 
 const repoRoot = path.resolve(import.meta.dirname, "..", "..");
+const CONFIG_DOC_PATH = "docs/configuration.md";
+const MANIFEST_PATH = "openclaw.plugin.json";
+const SCHEMA_BUILDER_PATH = "scripts/build-openclaw-config-schema.mjs";
+const SETUP_PATH = "scripts/setup-first-run.js";
 
 async function loadRealOpenClawValidator() {
   try {
@@ -196,7 +200,7 @@ export async function run() {
     const buildSchema = requireCallable(configModule, "buildOpenClawConfigSchema");
     const renderManifest = requireCallable(generator, "renderOpenClawPluginManifest");
     const schema = buildSchema();
-    const manifestText = readFileSync(path.join(repoRoot, "openclaw.plugin.json"), "utf8");
+    const manifestText = readFileSync(path.join(repoRoot, MANIFEST_PATH), "utf8");
     const manifest = JSON.parse(manifestText);
     assert.doesNotMatch(manifestText, /\/(?:home|Users)\/[A-Za-z0-9._-]+\//, "public manifest must not contain machine-specific home paths");
     assert.deepEqual(schema, configModule.V3_CONFIG_SCHEMA);
@@ -237,7 +241,7 @@ export async function run() {
     assert.equal(validateValue({ compat: { writeMode: "unsafe" } }).ok, false);
     assert.equal(validateValue({ recall: { embeddingModelFingerprint: "sha256:not-a-digest" } }).ok, false);
 
-    const docs = readFileSync(path.join(repoRoot, "docs", "configuration.md"), "utf8");
+    const docs = readFileSync(path.join(repoRoot, CONFIG_DOC_PATH), "utf8");
     const examples = [...docs.matchAll(/```json\s*([\s\S]*?)```/g)].map((match) => JSON.parse(match[1]));
     assert.ok(examples.length >= 10, "configuration docs must retain executable JSON examples");
     for (const example of examples) assert.equal(validateValue(example).ok, true, "documentation JSON must validate");
@@ -288,8 +292,8 @@ export async function run() {
     const temp = mkdtempSync(path.join(os.tmpdir(), "gigabrain-config-schema-"));
     const first = path.join(temp, "first.json");
     const second = path.join(temp, "second.json");
-    execFileSync(process.execPath, [path.join(repoRoot, "scripts", "build-openclaw-config-schema.mjs"), "--output", first]);
-    execFileSync(process.execPath, [path.join(repoRoot, "scripts", "build-openclaw-config-schema.mjs"), "--output", second]);
+    execFileSync(process.execPath, [path.join(repoRoot, SCHEMA_BUILDER_PATH), "--output", first]);
+    execFileSync(process.execPath, [path.join(repoRoot, SCHEMA_BUILDER_PATH), "--output", second]);
     assert.deepEqual(readFileSync(first), readFileSync(second));
 
     const setupRoot = mkdtempSync(path.join(os.tmpdir(), "gigabrain-task4-setup-"));
@@ -297,7 +301,7 @@ export async function run() {
     const setupWorkspace = path.join(setupRoot, "workspace");
     writeFileSync(setupConfig, "{}\n");
     const setup = JSON.parse(execFileSync(process.execPath, [
-      path.join(repoRoot, "scripts", "setup-first-run.js"),
+      path.join(repoRoot, SETUP_PATH),
       "--config", setupConfig,
       "--workspace", setupWorkspace,
       "--skip-agents",

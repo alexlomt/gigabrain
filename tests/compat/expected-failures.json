@@ -16,7 +16,7 @@
       "test": "compat/embedding-identity-test.js"
     },
     {
-      "ownerTask": "4",
+      "ownerTask": "14",
       "signature": "COMPAT_EXPECTED_FULL_MIGRATION missing source-first registry migration receipt",
       "test": "compat/full-registry-migration-test.js"
     },
@@ -56,7 +56,7 @@
       "test": "compat/openclaw-memory-runtime-test.js"
     },
     {
-      "ownerTask": "4",
+      "ownerTask": "14",
       "signature": "COMPAT_EXPECTED_ROLLBACK_RESTORE missing verified rollback restoration",
       "test": "compat/rollback-restore-test.js"
     }

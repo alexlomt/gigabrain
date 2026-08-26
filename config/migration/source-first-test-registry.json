@@ -40,19 +40,40 @@
         "docs/configuration.md",
         "lib/core/config.js",
         "lib/core/host-memory-sync.js",
-        "lib/core/maintenance-service.js",
         "openclaw.plugin.json",
         "scripts/build-openclaw-config-schema.mjs",
         "scripts/setup-first-run.js",
-        "tests/compat/config-schema-parity-test.js",
-        "tests/unit-config-test.js"
+        "tests/compat/config-schema-parity-test.js"
       ],
       "expectedOutcome": "pass",
       "expectedSignature": null,
       "id": "compat-config-schema-parity",
       "ownerSourceFirstTaskId": "4",
+      "relevanceEvidence": [
+        {
+          "mode": "read",
+          "targetPath": "docs/configuration.md"
+        },
+        {
+          "mode": "import",
+          "targetPath": "lib/core/config.js"
+        },
+        {
+          "mode": "import",
+          "targetPath": "lib/core/host-memory-sync.js"
+        },
+        {
+          "mode": "read",
+          "targetPath": "openclaw.plugin.json"
+        },
+        {
+          "mode": "spawn",
+          "targetPath": "scripts/setup-first-run.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/compat/config-schema-parity-test.js"
+      "testPath": "tests/compat/config-schema-parity-test.js",
+      "testSha256": "8fdd185105bdbb2dbc0c3a452a5fb32fd1be1fe4f89d96564838ae51e3fb7dd4"
     },
     {
       "coveredPaths": [
@@ -84,7 +105,7 @@
       "expectedOutcome": "xfail",
       "expectedSignature": "COMPAT_EXPECTED_FULL_MIGRATION missing source-first registry migration receipt",
       "id": "compat-full-registry-migration",
-      "ownerSourceFirstTaskId": "4",
+      "ownerSourceFirstTaskId": "14",
       "runner": "node",
       "testPath": "tests/compat/full-registry-migration-test.js"
     },
@@ -185,7 +206,7 @@
       "expectedOutcome": "xfail",
       "expectedSignature": "COMPAT_EXPECTED_ROLLBACK_RESTORE missing verified rollback restoration",
       "id": "compat-rollback-restore",
-      "ownerSourceFirstTaskId": "4",
+      "ownerSourceFirstTaskId": "14",
       "runner": "node",
       "testPath": "tests/compat/rollback-restore-test.js"
     },
@@ -193,15 +214,21 @@
       "coveredPaths": [
         "lib/compat/scope-policy.js",
         "lib/core/capture-service.js",
-        "lib/core/memory-actions.js",
         "tests/compat/scope-visibility-matrix-test.js"
       ],
       "expectedOutcome": "pass",
       "expectedSignature": null,
       "id": "compat-scope-visibility-matrix",
       "ownerSourceFirstTaskId": "4",
+      "relevanceEvidence": [
+        {
+          "mode": "import",
+          "targetPath": "lib/core/capture-service.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/compat/scope-visibility-matrix-test.js"
+      "testPath": "tests/compat/scope-visibility-matrix-test.js",
+      "testSha256": "7748053adf90bf8556baaf8512f003a2bec8235f280d61e09b9c07d804852a35"
     },
     {
       "coveredPaths": [
@@ -286,14 +313,22 @@
     },
     {
       "coveredPaths": [
+        "lib/core/maintenance-service.js",
         "tests/integration-audit-maintenance-test.js"
       ],
       "expectedOutcome": "pass",
       "expectedSignature": null,
       "id": "restored-integration-audit-maintenance",
-      "ownerSourceFirstTaskId": "2B",
+      "ownerSourceFirstTaskId": "4",
+      "relevanceEvidence": [
+        {
+          "mode": "import",
+          "targetPath": "lib/core/maintenance-service.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/integration-audit-maintenance-test.js"
+      "testPath": "tests/integration-audit-maintenance-test.js",
+      "testSha256": "d17de2be99bd72553673c1d7ab259918c85eb2f801a178ed3f58af3023e83442"
     },
     {
       "coveredPaths": [
@@ -612,8 +647,15 @@
       "expectedSignature": null,
       "id": "restored-unit-host-trust",
       "ownerSourceFirstTaskId": "4",
+      "relevanceEvidence": [
+        {
+          "mode": "import",
+          "targetPath": "lib/core/host-trust.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/unit-host-trust-test.js"
+      "testPath": "tests/unit-host-trust-test.js",
+      "testSha256": "3e8ce662c7e17c24ab996eecf67b745e649f24672d4347c467419d616869458b"
     },
     {
       "coveredPaths": [
@@ -639,14 +681,22 @@
     },
     {
       "coveredPaths": [
+        "lib/core/memory-actions.js",
         "tests/unit-memory-actions-test.js"
       ],
       "expectedOutcome": "pass",
       "expectedSignature": null,
       "id": "restored-unit-memory-actions",
-      "ownerSourceFirstTaskId": "2B",
+      "ownerSourceFirstTaskId": "4",
+      "relevanceEvidence": [
+        {
+          "mode": "import",
+          "targetPath": "lib/core/memory-actions.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/unit-memory-actions-test.js"
+      "testPath": "tests/unit-memory-actions-test.js",
+      "testSha256": "1738bad6107bc2acc3d3fe8149106d09f461b4f1f7d83c2d128ded4435d3e357"
     },
     {
       "coveredPaths": [
@@ -864,6 +914,24 @@
     },
     {
       "coveredPaths": [
+        "tests/unit-config-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "task4-unit-config",
+      "ownerSourceFirstTaskId": "4",
+      "relevanceEvidence": [
+        {
+          "mode": "self",
+          "targetPath": "tests/unit-config-test.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/unit-config-test.js",
+      "testSha256": "5ed8a9e3b21798d05b5fba537469b90bc8a67bcd12433b18554c5721a5a30d56"
+    },
+    {
+      "coveredPaths": [
         ".gitignore",
         "config/migration/retirement-evidence-attestation.json",
         "config/migration/task3-stage-paths.txt",
@@ -882,7 +950,7 @@
       "testPath": "tests/compat/upstream-adoption-test.js"
     }
   ],
-  "entryCount": 75,
-  "manifestSha256": "46f795b2463df021b5c376988b2e4b8ece7bdfcc0560176350e3c311cbe5c756",
+  "entryCount": 76,
+  "manifestSha256": "44a386be320db6623994a75857ef07645a0bf5ac34ac4ed8723403c43df6962a",
   "schemaVersion": 1
 }

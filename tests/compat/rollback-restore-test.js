@@ -7,7 +7,7 @@ import {
   runDirect,
 } from "./contract-test-helpers.js";
 
-export const OWNER_TASK = "4";
+export const OWNER_TASK = "14";
 export const EXPECTED_SIGNATURE = "COMPAT_EXPECTED_ROLLBACK_RESTORE missing verified rollback restoration";
 
 export async function run() {

@@ -115,6 +115,7 @@ function makeFixture(mutate = () => {}) {
   git(fixtureRepo, ["init", "--quiet"]);
   git(fixtureRepo, ["config", "user.name", "Source First Test"]);
   git(fixtureRepo, ["config", "user.email", "source-first-test@example.com"]);
+  writeFileSync(path.join(fixtureRepo, "package.json"), '{"type":"module"}\n');
   writeFileSync(path.join(fixtureRepo, "lib", "upstream.js"), "export const upstream = true;\n");
   writeFileSync(path.join(fixtureRepo, "lib", "core.js"), "export const core = true;\n");
   mkdirSync(path.join(fixtureRepo, "tests"), { recursive: true });
@@ -435,11 +436,25 @@ function configureAdoptedCorePatch(fixture, {
     targetMode: "100644",
     targetPath,
   });
+  fixture.map.candidateChanges.push({
+    changeType: "modified",
+    contentSha256: blobIdentity(testPath),
+    disposition: "core_patch",
+    gate: { registrationId: "fixture-gate" },
+    ownerTasks: ["2A"],
+    reason: "Synthetic hash-bound gate implementation fixture.",
+    targetMode: "100644",
+    targetPath: "tests/registered-test.js",
+  });
   fixture.map.candidateChanges.sort((left, right) => left.targetPath.localeCompare(right.targetPath, "en"));
   registerFixtureCoverage(fixture.registry, targetPath);
+  registerFixtureCoverage(fixture.registry, "tests/registered-test.js");
   const registration = fixture.registry.entries[0];
   registration.testSha256 = staleHash ? "0".repeat(64) : blobIdentity(testPath);
-  if (evidence) registration.relevanceEvidence = [{ mode: "import", targetPath }];
+  if (evidence) registration.relevanceEvidence = [
+    { mode: "import", targetPath },
+    { mode: "self", targetPath: "tests/registered-test.js" },
+  ];
   fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
 }
 

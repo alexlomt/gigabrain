@@ -18,10 +18,15 @@ scripts/setup-first-run.js
 tests/compat/config-schema-parity-test.js
 tests/compat/dedupe-scope-isolation-test.js
 tests/compat/expected-failures.json
+tests/compat/full-registry-migration-test.js
 tests/compat/operator-rules-migration-test.js
+tests/compat/rollback-restore-test.js
 tests/compat/scope-visibility-matrix-test.js
 tests/compat/upstream-adoption-test.js
+tests/full-test-inventory-contract-test.js
 tests/full-test-inventory.js
+tests/integration-audit-maintenance-test.js
 tests/source-first-divergence-test.js
 tests/unit-config-test.js
 tests/unit-host-trust-test.js
+tests/unit-memory-actions-test.js
