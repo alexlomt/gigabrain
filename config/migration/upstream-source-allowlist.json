@@ -781,12 +781,6 @@
       "type": "blob"
     },
     {
-      "blob": "059a982006c104a7577563e0ad833270a3dc252d",
-      "mode": "100644",
-      "path": "tests/unit-config-test.js",
-      "type": "blob"
-    },
-    {
       "blob": "fe74a468ac285b5887590841ee3bd651766094c5",
       "mode": "100644",
       "path": "tests/unit-control-plane-test.js",
@@ -832,12 +826,6 @@
       "blob": "18a1cd1acd6d3b148d8a2a73e4fb1056f6bfcbe8",
       "mode": "100644",
       "path": "tests/unit-lifecycle-hooks-test.js",
-      "type": "blob"
-    },
-    {
-      "blob": "a61b72f134b5cbd314c122c39cafde687761fe53",
-      "mode": "100644",
-      "path": "tests/unit-plugin-runtime-test.js",
       "type": "blob"
     },
     {
@@ -901,7 +889,7 @@
       "type": "blob"
     }
   ],
-  "entryCount": 136,
-  "manifestSha256": "708a3da83fda25cb4bed709d1f901e6b997e0dfd92a1c2f664f4d1e2a2ce0c3c",
+  "entryCount": 134,
+  "manifestSha256": "5cccac8ce6acf7198cdda07e147256ec0b3c106ad07ff2550a6ee6b0d1522522",
   "schemaVersion": 1
 }

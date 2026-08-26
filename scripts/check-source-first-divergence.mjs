@@ -41,7 +41,9 @@ const UPSTREAM_NON_RUNTIME_DISPOSITIONS = new Map([
   [".github/workflows/ci.yml", "private_dev_only"],
   ["tests/memory_api_security_test.py", "private_dev_only"],
   ["tests/run-all.js", "private_dev_only"],
+  ["tests/unit-config-test.js", "private_dev_only"],
   ["tests/unit-pii-scanner-test.js", "private_dev_only"],
+  ["tests/unit-plugin-runtime-test.js", "private_dev_only"],
   ["tests/unit-public-mirror-test.js", "private_dev_only"],
 ]);
 const RELEVANCE_EVIDENCE_MODES = new Set(["import", "read", "self", "spawn"]);
@@ -784,7 +786,7 @@ function extractBalancedBraceBody(source, start) {
   return "";
 }
 
-function extractNamedFunctionBody(source, name) {
+function extractNamedFunctionRecord(source, name) {
   const escapedName = escapeRegex(name);
   const declarations = [
     new RegExp(`\\b(?:export\\s+)?(?:async\\s+)?function\\s+${escapedName}\\s*\\([^)]*\\)\\s*\\{`),
@@ -795,58 +797,91 @@ function extractNamedFunctionBody(source, name) {
     match = declaration.exec(source);
     if (match) break;
   }
-  if (!match) return "";
+  if (!match) return null;
   const start = source.indexOf("{", match.index + match[0].length - 1);
-  return extractBalancedBraceBody(source, start);
+  const body = extractBalancedBraceBody(source, start);
+  if (!body) return null;
+  return {
+    body,
+    bodyEnd: start + 1 + body.length,
+    bodyStart: start + 1,
+    name,
+  };
 }
 
-function collectExecutedFunctionBodies(source) {
-  const runBody = extractNamedFunctionBody(source, "run");
-  if (!runBody) return "";
-  const bodies = [runBody];
+function collectReachableFunctionRecords(source) {
+  const run = extractNamedFunctionRecord(source, "run");
+  if (!run) return [];
+  const records = [run];
   const seen = new Set(["run"]);
-  for (let index = 0; index < bodies.length; index += 1) {
-    for (const match of bodies[index].matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)) {
+  for (let index = 0; index < records.length; index += 1) {
+    for (const match of records[index].body.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)) {
       const name = match[1];
       if (seen.has(name)) continue;
-      const body = extractNamedFunctionBody(source, name);
-      if (!body) continue;
+      const record = extractNamedFunctionRecord(source, name);
+      if (!record) continue;
       seen.add(name);
-      bodies.push(body);
+      records.push(record);
     }
   }
-  return bodies.join("\n");
+  return records;
 }
 
-function assertionBodies(runBody) {
-  return [...runBody.matchAll(/\bassert(?:\.\w+)?\s*\([\s\S]*?\);/g)].map((match) => match[0]);
+function assertionRecords(record) {
+  return [...record.body.matchAll(/\bassert(?:\.\w+)?\s*\([\s\S]*?\);/g)].map((match) => ({
+    end: record.bodyStart + match.index + match[0].length,
+    start: record.bodyStart + match.index,
+    text: match[0],
+  }));
 }
 
-function bindingStatement(runBody, binding) {
-  const startMatch = new RegExp(`\\b(?:const|let|var)\\s+${escapeRegex(binding)}\\s*=`).exec(runBody);
-  if (!startMatch) return "";
-  const end = runBody.indexOf(";", startMatch.index);
-  return runBody.slice(startMatch.index, end === -1 ? runBody.length : end + 1);
+function bindingStatementRecord(record, binding) {
+  const startMatch = new RegExp(`\\b(?:const|let|var)\\s+${escapeRegex(binding)}\\s*=`).exec(record.body);
+  if (!startMatch) return null;
+  const relativeEnd = record.body.indexOf(";", startMatch.index);
+  const end = relativeEnd === -1 ? record.body.length : relativeEnd + 1;
+  return {
+    end: record.bodyStart + end,
+    start: record.bodyStart + startMatch.index,
+    text: record.body.slice(startMatch.index, end),
+  };
 }
 
 function assessStaticRelevanceEvidence({ evidence, source, testPath }) {
-  const runBody = collectExecutedFunctionBodies(source);
-  const assertions = assertionBodies(runBody);
+  const functions = collectReachableFunctionRecords(source);
+  const allAssertions = functions.flatMap(assertionRecords);
   if (evidence.mode === "self") {
     if (evidence.targetPath !== testPath) return "missing";
-    return runBody && assertions.length > 0 ? "ok" : "behavior_missing";
+    if (functions.length === 0 || allAssertions.length === 0) return "behavior_missing";
+    return {
+      assertionOffset: allAssertions[0].start,
+      operationOffset: allAssertions[0].start,
+      status: "ok",
+    };
   }
   const quotedTarget = new RegExp(`["']${escapeRegex(evidence.targetPath)}["']`);
   if (["read", "spawn"].includes(evidence.mode)) {
-    const statement = bindingStatement(runBody, evidence.binding);
     const operation = evidence.mode === "read"
       ? /\breadFile(?:Sync)?\s*\(/
       : /\b(?:execFile|spawn)(?:Sync)?\s*\(/;
-    if (!quotedTarget.test(statement) || !operation.test(statement)) return "missing";
-    const asserted = assertions.some((assertion) => (
-      new RegExp(`\\b${escapeRegex(evidence.binding)}\\b`).test(assertion)
-    ));
-    return asserted ? "ok" : "behavior_missing";
+    let sawOperation = false;
+    for (const fn of functions) {
+      const statement = bindingStatementRecord(fn, evidence.binding);
+      if (!statement || !quotedTarget.test(statement.text)) continue;
+      const operationMatch = operation.exec(statement.text);
+      if (!operationMatch) continue;
+      sawOperation = true;
+      const assertion = assertionRecords(fn).find((item) => (
+        new RegExp(`\\b${escapeRegex(evidence.binding)}\\b`).test(item.text)
+      ));
+      if (!assertion) continue;
+      return {
+        assertionOffset: assertion.start,
+        operationOffset: statement.start + operationMatch.index,
+        status: "ok",
+      };
+    }
+    return sawOperation ? "behavior_missing" : "missing";
   }
   if (evidence.mode !== "import") return "missing";
   let relative = path.posix.relative(path.posix.dirname(testPath), evidence.targetPath);
@@ -862,32 +897,53 @@ function assessStaticRelevanceEvidence({ evidence, source, testPath }) {
   const directImport = new RegExp(
     `\\bimport\\s*\\{[^}]*\\b${escapeRegex(evidence.symbol)}(?:\\s+as\\s+${escapeRegex(evidence.binding)})?\\b[^}]*\\}\\s*from\\s*["']${quotedRelative}["']`,
   ).test(source);
-  const dynamicBinding = new RegExp(
+  const dynamicBinding = functions.some((fn) => new RegExp(
     `\\b(?:const|let|var)\\s+${escapeRegex(evidence.binding)}\\s*=\\s*requireCallable\\s*\\([^,]+,\\s*["']${escapeRegex(evidence.symbol)}["']\\s*\\)`,
-  ).test(runBody);
+  ).test(fn.body));
   if (!directImport && !dynamicBinding) return "behavior_missing";
   if (evidence.resultBinding) {
-    const assignment = new RegExp(
+    const assignmentPattern = new RegExp(
       `\\b(?:const|let|var)\\s+${escapeRegex(evidence.resultBinding)}\\s*=\\s*(?:await\\s+)?${escapeRegex(evidence.binding)}\\s*\\(`,
-    ).test(runBody);
-    const asserted = assertions.some((assertion) => (
-      new RegExp(`\\b${escapeRegex(evidence.resultBinding)}\\b`).test(assertion)
-    ));
-    return assignment && asserted ? "ok" : "behavior_missing";
+    );
+    for (const fn of functions) {
+      const assignment = assignmentPattern.exec(fn.body);
+      if (!assignment) continue;
+      const callOffset = assignment[0].lastIndexOf(evidence.binding);
+      const assertion = assertionRecords(fn).find((item) => (
+        new RegExp(`\\b${escapeRegex(evidence.resultBinding)}\\b`).test(item.text)
+      ));
+      if (!assertion) continue;
+      return {
+        assertionOffset: assertion.start,
+        operationOffset: fn.bodyStart + assignment.index + callOffset,
+        status: "ok",
+      };
+    }
+    return "behavior_missing";
   }
-  const assertedCall = assertions.some((assertion) => (
-    new RegExp(`\\b${escapeRegex(evidence.binding)}\\s*\\(`).test(assertion)
-  ));
-  return assertedCall ? "ok" : "behavior_missing";
+  const callPattern = new RegExp(`\\b${escapeRegex(evidence.binding)}\\s*\\(`);
+  for (const fn of functions) {
+    for (const assertion of assertionRecords(fn)) {
+      const call = callPattern.exec(assertion.text);
+      if (!call) continue;
+      return {
+        assertionOffset: assertion.start,
+        operationOffset: assertion.start + call.index,
+        status: "ok",
+      };
+    }
+  }
+  return "behavior_missing";
 }
 
 function collectV8Coverage(coverageDir) {
   const executed = new Map();
+  const rangesByPath = new Map();
   let documents = 0;
   try {
     for (const file of readdirSync(coverageDir).filter((name) => name.endsWith(".json"))) {
       const document = JSON.parse(readFileSync(path.join(coverageDir, file), "utf8"));
-      if (!Array.isArray(document.result)) return { executed, valid: false };
+      if (!Array.isArray(document.result)) return { executed, rangesByPath, valid: false };
       documents += 1;
       for (const script of document.result) {
         if (typeof script?.url !== "string" || !script.url.startsWith("file:")) continue;
@@ -901,10 +957,25 @@ function collectV8Coverage(coverageDir) {
           continue;
         }
         if (!executed.has(targetPath)) executed.set(targetPath, new Map());
+        if (!rangesByPath.has(targetPath)) rangesByPath.set(targetPath, []);
         const bySymbol = executed.get(targetPath);
+        const scriptRanges = rangesByPath.get(targetPath);
         for (const fn of Array.isArray(script.functions) ? script.functions : []) {
           const symbol = String(fn.functionName || "");
           const ranges = Array.isArray(fn.ranges) ? fn.ranges : [];
+          for (const range of ranges) {
+            const startOffset = Number(range.startOffset);
+            const endOffset = Number(range.endOffset);
+            const count = Number(range.count);
+            if (
+              Number.isSafeInteger(startOffset)
+              && Number.isSafeInteger(endOffset)
+              && endOffset > startOffset
+              && Number.isFinite(count)
+            ) {
+              scriptRanges.push({ count, endOffset, startOffset });
+            }
+          }
           if (!symbol || !ranges.some((range) => Number(range.count) > 0)) continue;
           const rootRange = ranges[0] || {};
           const signature = `${Number(rootRange.startOffset)}:${Number(rootRange.endOffset)}`;
@@ -914,9 +985,9 @@ function collectV8Coverage(coverageDir) {
       }
     }
   } catch {
-    return { executed, valid: false };
+    return { executed, rangesByPath, valid: false };
   }
-  return { executed, valid: documents > 0 };
+  return { executed, rangesByPath, valid: documents > 0 };
 }
 
 function hasUnambiguousExecutedTargetSymbol(coverage, targetPath, symbol) {
@@ -924,6 +995,17 @@ function hasUnambiguousExecutedTargetSymbol(coverage, targetPath, symbol) {
   const absoluteTarget = path.resolve(process.cwd(), targetPath);
   const signatures = coverage.executed.get(absoluteTarget)?.get(symbol);
   return signatures instanceof Set && signatures.size === 1;
+}
+
+function isTestSourceOffsetExecuted(coverage, testPath, offset) {
+  if (!coverage?.valid || !Number.isSafeInteger(offset) || offset < 0) return false;
+  const absoluteTestPath = path.resolve(process.cwd(), testPath);
+  const containing = (coverage.rangesByPath.get(absoluteTestPath) || [])
+    .filter((range) => range.startOffset <= offset && offset < range.endOffset);
+  if (containing.length === 0) return false;
+  const minimumWidth = Math.min(...containing.map((range) => range.endOffset - range.startOffset));
+  const mostSpecific = containing.filter((range) => range.endOffset - range.startOffset === minimumWidth);
+  return mostSpecific.length > 0 && mostSpecific.every((range) => range.count > 0);
 }
 
 function executeRegisteredNodeTest(registration) {
@@ -1217,16 +1299,18 @@ function validateActiveGates(map, registry, headByPath, head) {
       }
       const evidence = registration.relevanceEvidence?.find((item) => item.targetPath === row.targetPath);
       if (!evidence) fail("GATE_EVIDENCE_MISSING", row.targetPath);
+      if (evidence.mode === "self") fail("GATE_BEHAVIORAL_RELEVANCE", row.targetPath);
       const testSource = blobAt(head, registration.testPath).toString("utf8");
       const relevance = assessStaticRelevanceEvidence({
         evidence,
         source: testSource,
         testPath: registration.testPath,
       });
-      if (relevance === "missing") {
+      const relevanceStatus = typeof relevance === "string" ? relevance : relevance.status;
+      if (relevanceStatus === "missing") {
         fail("GATE_RELEVANCE", row.targetPath);
       }
-      if (relevance !== "ok") fail("GATE_BEHAVIORAL_RELEVANCE", row.targetPath);
+      if (relevanceStatus !== "ok") fail("GATE_BEHAVIORAL_RELEVANCE", row.targetPath);
       const executionKey = `${registration.testPath}\0${registration.testSha256}`;
       let execution = executedTests.get(executionKey);
       if (!execution) {
@@ -1240,6 +1324,12 @@ function validateActiveGates(map, registry, headByPath, head) {
       if (
         evidence.mode === "import"
         && !hasUnambiguousExecutedTargetSymbol(execution.coverage, evidence.targetPath, evidence.symbol)
+      ) {
+        fail("GATE_DYNAMIC_EVIDENCE", row.targetPath);
+      }
+      if (
+        !isTestSourceOffsetExecuted(execution.coverage, registration.testPath, relevance.operationOffset)
+        || !isTestSourceOffsetExecuted(execution.coverage, registration.testPath, relevance.assertionOffset)
       ) {
         fail("GATE_DYNAMIC_EVIDENCE", row.targetPath);
       }

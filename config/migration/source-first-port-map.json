@@ -170,7 +170,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "a4a29140bd13347e9f534de7f74468e51115ff0c4bcebaa1070cd7d8eda1df10",
+      "contentSha256": "8f5be8cfd7bd86bc8d052b98c9c2264a5ef23a55152657c0ccfd4afb6460b3ef",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "upstream-adoption"
@@ -899,7 +899,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "2fd0cbe6a677edf611679d2b1fbf006e4685dad4db43c8eed79bb37536dbf8ce",
+      "contentSha256": "bc76491ebbe745f88ef95988c11676205b2cbcce75f3d9edc7077f9b51dd20f3",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1935,7 +1935,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "670b5f0b089a82d7d78b731dc4c1291c54eaa88f5bccce6d7cc35ff6c8ab8c7a",
+      "contentSha256": "9e4f6b24286e0c6cd1ef78eb57310faa1b3f689953e18a928c6d2817e238565a",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2010,7 +2010,7 @@
     {
       "changeType": "modified",
       "contentSha256": "5ed8a9e3b21798d05b5fba537469b90bc8a67bcd12433b18554c5721a5a30d56",
-      "disposition": "core_patch",
+      "disposition": "private_dev_only",
       "gate": {
         "registrationId": "task4-unit-config"
       },
@@ -2279,7 +2279,7 @@
     {
       "changeType": "modified",
       "contentSha256": "da0416575e8259fc4617de34d9ba84c3dc8c27f925b8733149939b4b3fb6e3c9",
-      "disposition": "core_patch",
+      "disposition": "private_dev_only",
       "gate": {
         "registrationId": "task5-unit-plugin-runtime"
       },
