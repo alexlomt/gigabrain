@@ -97,7 +97,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "4697a597d2339c8df1a4d9707db3bfdd48b1ca8a9ba1269f72411b907d376fc4",
+      "contentSha256": "4619cb4dc5e0742d213394a9cf7dc76e31ed32ae331251a79a7ec2f06b22c08d",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -108,7 +108,7 @@
         "4",
         "5"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Task 5 source-first lexical evidence isolation and immutable exact-HEAD execution gate.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -780,7 +780,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "42cb6e61fff22e53cdd2afe99ee375c3d46836f85172dfbc51ebf0d14831ad93",
+      "contentSha256": "c642c7fe9fa2ba785d07370981cae96d4822d2ed887386b5a6c58a52b97ecfae",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-shipping-core-evidence"
@@ -789,13 +789,13 @@
         "1",
         "5"
       ],
-      "reason": "Task 1 compatibility-version metadata only; dependency semantics remain upstream-owned.",
+      "reason": "Task 1 compatibility-version metadata plus the Task 5 development-only source-gate parser; runtime dependency semantics remain upstream-owned.",
       "targetMode": "100644",
       "targetPath": "package-lock.json"
     },
     {
       "changeType": "modified",
-      "contentSha256": "72e7efbe68ea50945b6eecdf6ee6c67e68e781d098fc4acbeac9854654dc9d04",
+      "contentSha256": "580ddfcf35afa9246ae1f4deeb92bbbee9e22250a74d591bb2a29313d9a8b226",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-packed-entry"
@@ -899,7 +899,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "5367bae9ce0dae0c7bd0795e5bbf80503531d0a24bf62c8e5871f05a80e0fb29",
+      "contentSha256": "85213fa08dccac654620500fc57c1193b4a754295c8f99ef0bb00307d0531666",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -910,7 +910,7 @@
         "4",
         "5"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Task 5 source-first lexical evidence isolation and immutable exact-HEAD execution gate.",
       "targetMode": "100644",
       "targetPath": "scripts/check-source-first-divergence.mjs"
     },
@@ -1309,7 +1309,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "1cbb7ca547f8edab2242c45a52ba8e090dec667bafcfc395fd072731906b2c21",
+      "contentSha256": "7a0bdedb23cb687330988558524fd6e138afcf53394671a2945ca50e0fe42530",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-packed-entry"
@@ -1367,7 +1367,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "4a3cc929afa0970111225d3a5b6f2c68b0932be5374a72deb42104ab17c04163",
+      "contentSha256": "ec36c84691e9c73036660d97aed57f16cdf9e78870a4f4456bdeab6dbcc8608d",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-shipping-core-evidence"
@@ -1381,7 +1381,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "bb62a1122e4bff2c79b5fabd874b74ffbeb347a86e4bd6832b98eacfe8da965c",
+      "contentSha256": "773c444acef107909d55c03c4bda7b7ef7109f1ab3e26f14c84864c03165001d",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "upstream-adoption"
@@ -1391,7 +1391,7 @@
         "4",
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 preserves exact upstream runtime dependencies while allowing only the pinned development-only source-gate parser.",
       "targetMode": "100644",
       "targetPath": "tests/compat/upstream-adoption-test.js"
     },
@@ -1935,7 +1935,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "da75b1803c5e47be3e404e9ec4a3d4d768e3e3c14d96239a9d4dd0705702d98a",
+      "contentSha256": "d3be2d6ee8cffefe7900255895bcfbfcc23b821a4ccd4957a87142615a89fdb7",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1947,7 +1947,7 @@
         "4",
         "5"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Task 5 source-first lexical evidence isolation and immutable exact-HEAD execution gate.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },

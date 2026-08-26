@@ -235,18 +235,36 @@ function assertDependencyTreeIdentity() {
   const upstreamPackage = JSON.parse(gitBlob(BASE, "package.json").toString("utf8"));
   const candidatePackage = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"));
   assert.deepEqual(candidatePackage.dependencies, upstreamPackage.dependencies);
-  assert.deepEqual(candidatePackage.devDependencies, upstreamPackage.devDependencies);
+  assert.deepEqual(candidatePackage.devDependencies, {
+    ...upstreamPackage.devDependencies,
+    acorn: "8.18.0",
+  });
   assert.deepEqual(candidatePackage.peerDependencies, upstreamPackage.peerDependencies);
   assert.deepEqual(candidatePackage.peerDependenciesMeta, upstreamPackage.peerDependenciesMeta);
   assert.deepEqual(candidatePackage.engines, upstreamPackage.engines);
 
   const upstreamLock = JSON.parse(gitBlob(BASE, "package-lock.json").toString("utf8"));
   const candidateLock = JSON.parse(readFileSync(path.join(repoRoot, "package-lock.json"), "utf8"));
+  assert.deepEqual(candidateLock.packages["node_modules/acorn"], {
+    version: "8.18.0",
+    resolved: "https://registry.npmjs.org/acorn/-/acorn-8.18.0.tgz",
+    integrity: "sha512-lGq+9yr1/GuAWaVYIHRjvvySG5/4VfKIvC8EWxStPdcDh/Ka7FG3twP6v4d5BkravUilhIAsG4Qj83t02LWUPQ==",
+    dev: true,
+    license: "MIT",
+    bin: { acorn: "bin/acorn" },
+    engines: { node: ">=0.4.0" },
+  });
+  delete candidateLock.packages["node_modules/acorn"];
+  delete candidateLock.packages[""].devDependencies.acorn;
   upstreamLock.version = "<release-version>";
   candidateLock.version = "<release-version>";
   upstreamLock.packages[""].version = "<release-version>";
   candidateLock.packages[""].version = "<release-version>";
-  assert.deepEqual(candidateLock, upstreamLock, "dependency lock may differ only by compatibility version metadata");
+  assert.deepEqual(
+    candidateLock,
+    upstreamLock,
+    "dependency lock may differ only by compatibility version metadata and the pinned source-gate parser",
+  );
 }
 
 async function adoptionAndRetirementContract() {

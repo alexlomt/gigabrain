@@ -388,7 +388,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/packed-entry-smoke-test.js",
-      "testSha256": "1cbb7ca547f8edab2242c45a52ba8e090dec667bafcfc395fd072731906b2c21"
+      "testSha256": "7a0bdedb23cb687330988558524fd6e138afcf53394671a2945ca50e0fe42530"
     },
     {
       "coveredPaths": [
@@ -552,7 +552,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/shipping-core-evidence-test.js",
-      "testSha256": "4a3cc929afa0970111225d3a5b6f2c68b0932be5374a72deb42104ab17c04163"
+      "testSha256": "ec36c84691e9c73036660d97aed57f16cdf9e78870a4f4456bdeab6dbcc8608d"
     },
     {
       "coveredPaths": [
@@ -1430,6 +1430,6 @@
     }
   ],
   "entryCount": 83,
-  "manifestSha256": "afe0baa36db355f4b5ee7fa0f3da56ef8c60f731b52022d479481ee1dc95b66b",
+  "manifestSha256": "f2555a8898821517db9178048587a78be7352e1926d95dd3a06c8060a00f9de1",
   "schemaVersion": 1
 }
