@@ -1024,7 +1024,7 @@ function assessStaticRelevanceEvidence({ evidence, source, testPath }) {
       }
     }
   }
-  return candidates.length === 1 ? candidates[0] : "behavior_missing";
+  return candidates[0] || "behavior_missing";
 }
 
 function collectV8Coverage(coverageDir, { processId = null } = {}) {
