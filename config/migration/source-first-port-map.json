@@ -2088,7 +2088,7 @@
     {
       "changeType": "modified",
       "contentSha256": "da0416575e8259fc4617de34d9ba84c3dc8c27f925b8733149939b4b3fb6e3c9",
-      "disposition": "private_dev_only",
+      "disposition": "core_patch",
       "gate": {
         "registrationId": "task5-unit-plugin-runtime"
       },
