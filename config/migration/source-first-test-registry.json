@@ -51,29 +51,37 @@
       "ownerSourceFirstTaskId": "4",
       "relevanceEvidence": [
         {
+          "binding": "docs",
           "mode": "read",
           "targetPath": "docs/configuration.md"
         },
         {
+          "binding": "buildSchema",
           "mode": "import",
+          "resultBinding": "schema",
+          "symbol": "buildOpenClawConfigSchema",
           "targetPath": "lib/core/config.js"
         },
         {
+          "binding": "shouldAutoSync",
           "mode": "import",
+          "symbol": "shouldRunAutomaticHostSync",
           "targetPath": "lib/core/host-memory-sync.js"
         },
         {
+          "binding": "manifestText",
           "mode": "read",
           "targetPath": "openclaw.plugin.json"
         },
         {
+          "binding": "setup",
           "mode": "spawn",
           "targetPath": "scripts/setup-first-run.js"
         }
       ],
       "runner": "node",
       "testPath": "tests/compat/config-schema-parity-test.js",
-      "testSha256": "8fdd185105bdbb2dbc0c3a452a5fb32fd1be1fe4f89d96564838ae51e3fb7dd4"
+      "testSha256": "a0d24de95a0f8bd752aa5f0c721cc034d506e9caf7639e1b160d1c19a9fd4b9b"
     },
     {
       "coveredPaths": [
@@ -222,13 +230,16 @@
       "ownerSourceFirstTaskId": "4",
       "relevanceEvidence": [
         {
+          "binding": "capture",
           "mode": "import",
+          "resultBinding": "summary",
+          "symbol": "captureFromEvent",
           "targetPath": "lib/core/capture-service.js"
         }
       ],
       "runner": "node",
       "testPath": "tests/compat/scope-visibility-matrix-test.js",
-      "testSha256": "7748053adf90bf8556baaf8512f003a2bec8235f280d61e09b9c07d804852a35"
+      "testSha256": "742547ebb7f3841c39b61f11141bfaeea8973b38ff9d90cab00fc39ec5de5daf"
     },
     {
       "coveredPaths": [
@@ -322,7 +333,10 @@
       "ownerSourceFirstTaskId": "4",
       "relevanceEvidence": [
         {
+          "binding": "runMaintenance",
           "mode": "import",
+          "resultBinding": "result",
+          "symbol": "runMaintenance",
           "targetPath": "lib/core/maintenance-service.js"
         }
       ],
@@ -649,7 +663,9 @@
       "ownerSourceFirstTaskId": "4",
       "relevanceEvidence": [
         {
+          "binding": "classifyHostTier",
           "mode": "import",
+          "symbol": "classifyHostTier",
           "targetPath": "lib/core/host-trust.js"
         }
       ],
@@ -690,7 +706,10 @@
       "ownerSourceFirstTaskId": "4",
       "relevanceEvidence": [
         {
+          "binding": "applyMemoryActions",
           "mode": "import",
+          "resultBinding": "summary",
+          "symbol": "applyMemoryActions",
           "targetPath": "lib/core/memory-actions.js"
         }
       ],
@@ -951,6 +970,6 @@
     }
   ],
   "entryCount": 76,
-  "manifestSha256": "44a386be320db6623994a75857ef07645a0bf5ac34ac4ed8723403c43df6962a",
+  "manifestSha256": "56b2e1efa5569dfd9dcd6747caa35dcc8ef89a245bb08e75da6a79199d53045b",
   "schemaVersion": 1
 }

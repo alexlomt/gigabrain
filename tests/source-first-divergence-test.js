@@ -116,7 +116,7 @@ function makeFixture(mutate = () => {}) {
   git(fixtureRepo, ["config", "user.name", "Source First Test"]);
   git(fixtureRepo, ["config", "user.email", "source-first-test@example.com"]);
   writeFileSync(path.join(fixtureRepo, "package.json"), '{"type":"module"}\n');
-  writeFileSync(path.join(fixtureRepo, "lib", "upstream.js"), "export const upstream = true;\n");
+  writeFileSync(path.join(fixtureRepo, "lib", "upstream.js"), "export const readUpstream = () => true;\n");
   writeFileSync(path.join(fixtureRepo, "lib", "core.js"), "export const core = true;\n");
   mkdirSync(path.join(fixtureRepo, "tests"), { recursive: true });
   writeFileSync(
@@ -423,7 +423,7 @@ function configureAdoptedCorePatch(fixture, {
 } = {}) {
   const targetPath = "lib/upstream.js";
   const testPath = path.join(fixture.fixtureRepo, "tests", "registered-test.js");
-  writeFileSync(path.join(fixture.fixtureRepo, targetPath), "export const upstream = false;\n");
+  writeFileSync(path.join(fixture.fixtureRepo, targetPath), "export const readUpstream = () => false;\n");
   writeFileSync(testPath, testSource);
   commitAll(fixture.fixtureRepo, "adopted core patch evidence fixture");
   fixture.map.candidateChanges.push({
@@ -452,7 +452,13 @@ function configureAdoptedCorePatch(fixture, {
   const registration = fixture.registry.entries[0];
   registration.testSha256 = staleHash ? "0".repeat(64) : blobIdentity(testPath);
   if (evidence) registration.relevanceEvidence = [
-    { mode: "import", targetPath },
+    {
+      binding: "readUpstream",
+      mode: "import",
+      resultBinding: "observed",
+      symbol: "readUpstream",
+      targetPath,
+    },
     { mode: "self", targetPath: "tests/registered-test.js" },
   ];
   fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
@@ -482,13 +488,13 @@ expectFailure("fresh-hash exact import no-op", "GATE_BEHAVIORAL_RELEVANCE", (fix
 
 expectFailure("unused exact import binding", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
   configureAdoptedCorePatch(fixture, {
-    testSource: 'import { upstream } from "../lib/upstream.js";\nexport async function run() { return true; }\n',
+    testSource: 'import { readUpstream } from "../lib/upstream.js";\nexport async function run() { return true; }\n',
   });
 });
 
 expectFailure("void import use is not behavior", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
   configureAdoptedCorePatch(fixture, {
-    testSource: 'import { upstream } from "../lib/upstream.js";\nexport async function run() { void upstream; return true; }\n',
+    testSource: 'import { readUpstream } from "../lib/upstream.js";\nexport async function run() { void readUpstream; return true; }\n',
   });
 });
 
@@ -496,7 +502,7 @@ expectFailure("assert true is unrelated", "GATE_BEHAVIORAL_RELEVANCE", (fixture)
   configureAdoptedCorePatch(fixture, {
     testSource: [
       'import assert from "node:assert/strict";',
-      'import { upstream } from "../lib/upstream.js";',
+      'import { readUpstream } from "../lib/upstream.js";',
       'export async function run() { assert.equal(true, true); }',
       '',
     ].join("\n"),
@@ -507,7 +513,7 @@ expectFailure("unrelated assertion does not prove target", "GATE_BEHAVIORAL_RELE
   configureAdoptedCorePatch(fixture, {
     testSource: [
       'import assert from "node:assert/strict";',
-      'import { upstream } from "../lib/upstream.js";',
+      'import { readUpstream } from "../lib/upstream.js";',
       'export async function run() { const unrelated = 2 + 2; assert.equal(unrelated, 4); }',
       '',
     ].join("\n"),
@@ -518,8 +524,8 @@ expectFailure("unexecuted target probe is not behavior", "GATE_BEHAVIORAL_RELEVA
   configureAdoptedCorePatch(fixture, {
     testSource: [
       'import assert from "node:assert/strict";',
-      'import { upstream } from "../lib/upstream.js";',
-      'const probe = () => upstream;',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'const probe = () => readUpstream();',
       'export async function run() { assert.equal(true, true); }',
       '',
     ].join("\n"),
@@ -530,8 +536,8 @@ expectFailure("relevant but failing test is executed", "GATE_EXECUTION_FAILED", 
   configureAdoptedCorePatch(fixture, {
     testSource: [
       'import assert from "node:assert/strict";',
-      'import { upstream } from "../lib/upstream.js";',
-      'export async function run() { assert.equal(upstream, true); }',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() { const observed = readUpstream(); assert.equal(observed, true); }',
       '',
     ].join("\n"),
   });
@@ -540,7 +546,12 @@ expectFailure("relevant but failing test is executed", "GATE_EXECUTION_FAILED", 
 expectFailure("relevant test hash is stale", "GATE_TEST_HASH", (fixture) => {
   configureAdoptedCorePatch(fixture, {
     staleHash: true,
-    testSource: 'import "../lib/upstream.js";\nexport async function run() { return true; }\n',
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() { const observed = readUpstream(); assert.equal(observed, false); }',
+      '',
+    ].join("\n"),
   });
 });
 
@@ -548,8 +559,8 @@ expectPass("hash-bound executed relevant adopted core patch", (fixture) => {
   configureAdoptedCorePatch(fixture, {
     testSource: [
       'import assert from "node:assert/strict";',
-      'import { upstream } from "../lib/upstream.js";',
-      'export async function run() { assert.equal(upstream, false); }',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() { const observed = readUpstream(); assert.equal(observed, false); }',
       '',
     ].join("\n"),
   });

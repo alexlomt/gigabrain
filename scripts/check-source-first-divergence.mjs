@@ -682,9 +682,17 @@ function validateTestRegistry(registry) {
       if (!Array.isArray(row.relevanceEvidence) || row.relevanceEvidence.length === 0) fail("SCHEMA");
       const evidencePaths = new Set();
       for (const evidence of row.relevanceEvidence) {
-        exactKeys(evidence, ["mode", "targetPath"]);
+        exactKeys(evidence, ["mode", "targetPath"], ["binding", "resultBinding", "symbol"]);
         if (!RELEVANCE_EVIDENCE_MODES.has(evidence.mode)) fail("SCHEMA");
         validatePath(evidence.targetPath);
+        for (const key of ["binding", "resultBinding", "symbol"]) {
+          if (Object.hasOwn(evidence, key)) nonEmptyString(evidence[key]);
+        }
+        if (evidence.mode === "import" && (!evidence.binding || !evidence.symbol)) fail("SCHEMA");
+        if (["read", "spawn"].includes(evidence.mode) && !evidence.binding) fail("SCHEMA");
+        if (evidence.mode === "self" && (evidence.binding || evidence.resultBinding || evidence.symbol)) {
+          fail("SCHEMA");
+        }
         if (evidencePaths.has(evidence.targetPath)) fail("DUPLICATE_ROW", evidence.targetPath);
         evidencePaths.add(evidence.targetPath);
       }
@@ -704,16 +712,120 @@ function escapeRegex(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function hasStaticRelevanceEvidence({ evidence, source, testPath }) {
-  if (evidence.mode === "self") return evidence.targetPath === testPath;
+function extractBalancedBraceBody(source, start) {
+  let depth = 0;
+  let quote = "";
+  let escaped = false;
+  let lineComment = false;
+  let blockComment = false;
+  for (let index = start; index < source.length; index += 1) {
+    const char = source[index];
+    const next = source[index + 1];
+    if (lineComment) {
+      if (char === "\n") lineComment = false;
+      continue;
+    }
+    if (blockComment) {
+      if (char === "*" && next === "/") {
+        blockComment = false;
+        index += 1;
+      }
+      continue;
+    }
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === quote) quote = "";
+      continue;
+    }
+    if (char === "/" && next === "/") {
+      lineComment = true;
+      index += 1;
+      continue;
+    }
+    if (char === "/" && next === "*") {
+      blockComment = true;
+      index += 1;
+      continue;
+    }
+    if (char === '"' || char === "'" || char === "`") {
+      quote = char;
+      continue;
+    }
+    if (char === "{") depth += 1;
+    else if (char === "}") {
+      depth -= 1;
+      if (depth === 0) return source.slice(start + 1, index);
+    }
+  }
+  return "";
+}
+
+function extractNamedFunctionBody(source, name) {
+  const escapedName = escapeRegex(name);
+  const declarations = [
+    new RegExp(`\\b(?:export\\s+)?(?:async\\s+)?function\\s+${escapedName}\\s*\\([^)]*\\)\\s*\\{`),
+    new RegExp(`\\b(?:const|let|var)\\s+${escapedName}\\s*=\\s*(?:async\\s*)?(?:\\([^)]*\\)|[A-Za-z_$][\\w$]*)\\s*=>\\s*\\{`),
+  ];
+  let match = null;
+  for (const declaration of declarations) {
+    match = declaration.exec(source);
+    if (match) break;
+  }
+  if (!match) return "";
+  const start = source.indexOf("{", match.index + match[0].length - 1);
+  return extractBalancedBraceBody(source, start);
+}
+
+function collectExecutedFunctionBodies(source) {
+  const runBody = extractNamedFunctionBody(source, "run");
+  if (!runBody) return "";
+  const bodies = [runBody];
+  const seen = new Set(["run"]);
+  for (let index = 0; index < bodies.length; index += 1) {
+    for (const match of bodies[index].matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)) {
+      const name = match[1];
+      if (seen.has(name)) continue;
+      const body = extractNamedFunctionBody(source, name);
+      if (!body) continue;
+      seen.add(name);
+      bodies.push(body);
+    }
+  }
+  return bodies.join("\n");
+}
+
+function assertionBodies(runBody) {
+  return [...runBody.matchAll(/\bassert(?:\.\w+)?\s*\([\s\S]*?\);/g)].map((match) => match[0]);
+}
+
+function bindingStatement(runBody, binding) {
+  const startMatch = new RegExp(`\\b(?:const|let|var)\\s+${escapeRegex(binding)}\\s*=`).exec(runBody);
+  if (!startMatch) return "";
+  const end = runBody.indexOf(";", startMatch.index);
+  return runBody.slice(startMatch.index, end === -1 ? runBody.length : end + 1);
+}
+
+function assessStaticRelevanceEvidence({ evidence, source, testPath }) {
+  const runBody = collectExecutedFunctionBodies(source);
+  const assertions = assertionBodies(runBody);
+  if (evidence.mode === "self") {
+    if (evidence.targetPath !== testPath) return "missing";
+    return runBody && assertions.length > 0 ? "ok" : "behavior_missing";
+  }
   const quotedTarget = new RegExp(`["']${escapeRegex(evidence.targetPath)}["']`);
-  if (evidence.mode === "read") {
-    return quotedTarget.test(source) && /\breadFile(?:Sync)?\s*\(/.test(source);
+  if (["read", "spawn"].includes(evidence.mode)) {
+    const statement = bindingStatement(runBody, evidence.binding);
+    const operation = evidence.mode === "read"
+      ? /\breadFile(?:Sync)?\s*\(/
+      : /\b(?:execFile|spawn)(?:Sync)?\s*\(/;
+    if (!quotedTarget.test(statement) || !operation.test(statement)) return "missing";
+    const asserted = assertions.some((assertion) => (
+      new RegExp(`\\b${escapeRegex(evidence.binding)}\\b`).test(assertion)
+    ));
+    return asserted ? "ok" : "behavior_missing";
   }
-  if (evidence.mode === "spawn") {
-    return quotedTarget.test(source) && /\b(?:execFile|spawn)(?:Sync)?\s*\(/.test(source);
-  }
-  if (evidence.mode !== "import") return false;
+  if (evidence.mode !== "import") return "missing";
   let relative = path.posix.relative(path.posix.dirname(testPath), evidence.targetPath);
   if (!relative.startsWith(".")) relative = `./${relative}`;
   const quotedRelative = escapeRegex(relative);
@@ -723,7 +835,27 @@ function hasStaticRelevanceEvidence({ evidence, source, testPath }) {
     new RegExp(`\\bimport\\s*\\(\\s*["']${quotedRelative}["']\\s*\\)`),
     new RegExp(`\\bimportContractModule\\s*\\(\\s*["']${escapeRegex(evidence.targetPath)}["']`),
   ];
-  return importPatterns.some((pattern) => pattern.test(source));
+  if (!importPatterns.some((pattern) => pattern.test(source))) return "missing";
+  const directImport = new RegExp(
+    `\\bimport\\s*\\{[^}]*\\b${escapeRegex(evidence.symbol)}(?:\\s+as\\s+${escapeRegex(evidence.binding)})?\\b[^}]*\\}\\s*from\\s*["']${quotedRelative}["']`,
+  ).test(source);
+  const dynamicBinding = new RegExp(
+    `\\b(?:const|let|var)\\s+${escapeRegex(evidence.binding)}\\s*=\\s*requireCallable\\s*\\([^,]+,\\s*["']${escapeRegex(evidence.symbol)}["']\\s*\\)`,
+  ).test(runBody);
+  if (!directImport && !dynamicBinding) return "behavior_missing";
+  if (evidence.resultBinding) {
+    const assignment = new RegExp(
+      `\\b(?:const|let|var)\\s+${escapeRegex(evidence.resultBinding)}\\s*=\\s*(?:await\\s+)?${escapeRegex(evidence.binding)}\\s*\\(`,
+    ).test(runBody);
+    const asserted = assertions.some((assertion) => (
+      new RegExp(`\\b${escapeRegex(evidence.resultBinding)}\\b`).test(assertion)
+    ));
+    return assignment && asserted ? "ok" : "behavior_missing";
+  }
+  const assertedCall = assertions.some((assertion) => (
+    new RegExp(`\\b${escapeRegex(evidence.binding)}\\s*\\(`).test(assertion)
+  ));
+  return assertedCall ? "ok" : "behavior_missing";
 }
 
 function executeRegisteredNodeTest(registration) {
@@ -1009,9 +1141,15 @@ function validateActiveGates(map, registry, headByPath, head, allowlist) {
       const evidence = registration.relevanceEvidence?.find((item) => item.targetPath === row.targetPath);
       if (!evidence) fail("GATE_EVIDENCE_MISSING", row.targetPath);
       const testSource = blobAt(head, registration.testPath).toString("utf8");
-      if (!hasStaticRelevanceEvidence({ evidence, source: testSource, testPath: registration.testPath })) {
+      const relevance = assessStaticRelevanceEvidence({
+        evidence,
+        source: testSource,
+        testPath: registration.testPath,
+      });
+      if (relevance === "missing") {
         fail("GATE_RELEVANCE", row.targetPath);
       }
+      if (relevance !== "ok") fail("GATE_BEHAVIORAL_RELEVANCE", row.targetPath);
       const executionKey = `${registration.testPath}\0${registration.testSha256}`;
       if (!executedTests.has(executionKey)) {
         if (registration.runner !== "node" || !executeRegisteredNodeTest(registration)) {

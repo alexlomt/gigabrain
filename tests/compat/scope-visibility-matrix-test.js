@@ -76,7 +76,8 @@ export async function run() {
       requireCallable(helpers, "makeConfigObject")(temp.workspace).plugins.entries.gigabrain.config,
     );
     try {
-      const summary = requireCallable(captureModule, "captureFromEvent")({
+      const capture = requireCallable(captureModule, "captureFromEvent");
+      const summary = capture({
         db,
         config,
         event: {
