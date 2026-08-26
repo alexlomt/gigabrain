@@ -5,7 +5,7 @@ import { ensureAdaptiveTrustStore, loadAdaptiveTrustOverrides, runAdaptiveTrust 
 import { normalizeConfig } from "../../lib/core/config.js";
 import { ensureNativeStore } from "../../lib/core/native-sync.js";
 import { ensurePersonStore, rebuildEntityMentions } from "../../lib/core/person-service.js";
-import { rebuildWorldModel } from "../../lib/core/world-model.js";
+import { ensureWorldModelStore, rebuildWorldModel } from "../../lib/core/world-model.js";
 import { makeConfigObject, makeTempWorkspace, openDb, seedMemoryCurrent } from "../helpers.js";
 import { runBehaviorContract, runDirect } from "./contract-test-helpers.js";
 
@@ -40,10 +40,101 @@ const seed = (db) => {
       created_at: NOW,
       updated_at: NOW,
     },
+    {
+      memory_id: "legacy-agent-source",
+      type: "AGENT_IDENTITY",
+      content: "Harbor Wren is the synthetic agent.",
+      scope: "shared",
+      confidence: 0.97,
+      value_score: 0.92,
+      value_label: "core",
+      source_path: "MEMORY.md",
+      created_at: NOW,
+      updated_at: NOW,
+    },
+    {
+      memory_id: "legacy-protected-source",
+      type: "USER_FACT",
+      content: "Legacy Protected works as a synthetic advisor.",
+      scope: "shared",
+      confidence: 0.97,
+      value_score: 0.92,
+      value_label: "core",
+      source_path: "MEMORY.md",
+      created_at: NOW,
+      updated_at: NOW,
+    },
   ]);
   ensurePersonStore(db);
   ensureNativeStore(db);
   ensureAdaptiveTrustStore(db);
+  ensureWorldModelStore(db);
+  const insertEntity = db.prepare(`
+    INSERT INTO memory_entities (
+      entity_id, kind, display_name, normalized_name, status, confidence,
+      aliases, created_at, updated_at, payload
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const insertAlias = db.prepare(`
+    INSERT INTO memory_entity_aliases (
+      alias_id, entity_id, alias, normalized_alias, confidence, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+  const insertBelief = db.prepare(`
+    INSERT INTO memory_beliefs (
+      belief_id, entity_id, type, content, status, confidence, valid_from, valid_to,
+      supersedes_belief_id, source_memory_id, source_layer, source_path, source_line, payload
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  for (const legacy of [
+    { id: "person:harbor", name: "Harbor", normalized: "harbor", memoryId: "legacy-agent-source", type: "identity" },
+    { id: "person:legacy-protected", name: "Legacy Protected", normalized: "legacy protected", memoryId: "legacy-protected-source", type: "role" },
+  ]) {
+    insertEntity.run(
+      legacy.id,
+      "person",
+      legacy.name,
+      legacy.normalized,
+      "active",
+      0.97,
+      JSON.stringify([legacy.name]),
+      NOW,
+      NOW,
+      JSON.stringify({ scopes: ["shared"], surface_curated: true, surface_visible: true }),
+    );
+    insertAlias.run(
+      `alias:${legacy.id}`,
+      legacy.id,
+      legacy.name,
+      legacy.normalized,
+      0.97,
+      NOW,
+      NOW,
+    );
+    insertBelief.run(
+      `belief:${legacy.id}`,
+      legacy.id,
+      legacy.type,
+      legacy.type === "identity" ? "Harbor Wren is the synthetic agent." : "Legacy Protected works as a synthetic advisor.",
+      "current",
+      0.97,
+      "2026-08-26",
+      null,
+      null,
+      legacy.memoryId,
+      "registry",
+      "MEMORY.md",
+      1,
+      JSON.stringify({
+        claim_slot: legacy.type === "identity" ? "identity.preferred_name" : "role.primary_role",
+        claim_topic: legacy.type === "identity" ? "identity" : "role",
+        claim_subtopic: legacy.type === "identity" ? "preferred_name" : "primary_role",
+        memory_tier: "durable_personal",
+        scope: "shared",
+        surface_candidate: true,
+      }),
+    );
+  }
   const insertNative = db.prepare(`
     INSERT INTO memory_native_chunks (
       chunk_id, source_path, source_kind, source_date, section, line_start, line_end,
@@ -96,6 +187,7 @@ export async function run() {
       const configA = normalizeConfig(makeConfigObject(first.workspace).plugins.entries.gigabrain.config);
       const configB = normalizeConfig(makeConfigObject(second.workspace).plugins.entries.gigabrain.config);
       for (const config of [configA, configB]) {
+        config.operatorRules.entity.rejectTerms = ["legacy protected"];
         config.operatorRules.memoryTier.opsPatterns = [{ pattern: "synthetic shadow ledger", flags: "i" }];
       }
       seed(dbA);
@@ -153,6 +245,13 @@ export async function run() {
         "project",
         "native-only entities must survive the shadow rebuild",
       );
+      for (const protectedEntityId of ["person:harbor", "person:legacy-protected"]) {
+        assert.equal(
+          dbA.prepare("SELECT status FROM memory_entities WHERE entity_id = ?").get(protectedEntityId)?.status,
+          "active",
+          `${protectedEntityId} must survive as an existing protected entity`,
+        );
+      }
     } finally {
       dbA.close();
       dbB.close();
