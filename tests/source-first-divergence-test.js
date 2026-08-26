@@ -474,6 +474,58 @@ expectFailure("unrelated import is not target evidence", "GATE_RELEVANCE", (fixt
   });
 });
 
+expectFailure("fresh-hash exact import no-op", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: 'import "../lib/upstream.js";\nexport async function run() { return true; }\n',
+  });
+});
+
+expectFailure("unused exact import binding", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: 'import { upstream } from "../lib/upstream.js";\nexport async function run() { return true; }\n',
+  });
+});
+
+expectFailure("void import use is not behavior", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: 'import { upstream } from "../lib/upstream.js";\nexport async function run() { void upstream; return true; }\n',
+  });
+});
+
+expectFailure("assert true is unrelated", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { upstream } from "../lib/upstream.js";',
+      'export async function run() { assert.equal(true, true); }',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectFailure("unrelated assertion does not prove target", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { upstream } from "../lib/upstream.js";',
+      'export async function run() { const unrelated = 2 + 2; assert.equal(unrelated, 4); }',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectFailure("unexecuted target probe is not behavior", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { upstream } from "../lib/upstream.js";',
+      'const probe = () => upstream;',
+      'export async function run() { assert.equal(true, true); }',
+      '',
+    ].join("\n"),
+  });
+});
+
 expectFailure("relevant but failing test is executed", "GATE_EXECUTION_FAILED", (fixture) => {
   configureAdoptedCorePatch(fixture, {
     testSource: [
