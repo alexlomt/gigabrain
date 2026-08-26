@@ -532,6 +532,49 @@ expectFailure("unexecuted target probe is not behavior", "GATE_BEHAVIORAL_RELEVA
   });
 });
 
+expectFailure("dead branch target proof is not executed", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() {',
+      '  if (false) { const observed = readUpstream(); assert.equal(observed, false); }',
+      '  return true;',
+      '}',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectFailure("commented proof is not executed", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() {',
+      '  // const observed = readUpstream(); assert.equal(observed, false);',
+      '  return true;',
+      '}',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectFailure("shadowed declared binding is unrelated", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() {',
+      '  const readUpstream = () => false;',
+      '  const observed = readUpstream();',
+      '  assert.equal(observed, false);',
+      '}',
+      '',
+    ].join("\n"),
+  });
+});
+
 expectFailure("relevant but failing test is executed", "GATE_EXECUTION_FAILED", (fixture) => {
   configureAdoptedCorePatch(fixture, {
     testSource: [
