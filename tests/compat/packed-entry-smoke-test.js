@@ -57,11 +57,13 @@ export async function run() {
     const generatedEntrySource = readFileSync("index.js", "utf8");
     const sourceEntry = readFileSync("index.ts", "utf8");
     const npmIgnore = readFileSync(".npmignore", "utf8");
+    const gitIgnore = readFileSync(".gitignore", "utf8");
     const buildScript = readFileSync("scripts/build-runtime-js.js", "utf8");
     const stageContract = readFileSync("config/migration/task5-stage-paths.txt", "utf8");
     assert.match(generatedEntrySource, /Generated from index\.ts/);
     assert.match(sourceEntry, /registerOpenClawCompatibility/);
     assert.match(npmIgnore, /__pycache__/);
+    assert.match(gitIgnore, /task5-stage-paths/);
     assert.match(buildScript, /stripTypeScriptTypes/);
     assert.match(stageContract, /^index\.js$/m);
     assert.deepEqual(packageJson.openclaw.extensions, ["./index.js"]);
