@@ -737,6 +737,69 @@ function escapeRegex(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function maskJavaScriptNonCode(source) {
+  const masked = source.split("");
+  const blank = (index) => {
+    if (source[index] !== "\n" && source[index] !== "\r") masked[index] = " ";
+  };
+  for (let index = 0; index < source.length;) {
+    const char = source[index];
+    const next = source[index + 1];
+    if (char === "/" && next === "/") {
+      blank(index);
+      blank(index + 1);
+      index += 2;
+      while (index < source.length && source[index] !== "\n") {
+        blank(index);
+        index += 1;
+      }
+      continue;
+    }
+    if (char === "/" && next === "*") {
+      blank(index);
+      blank(index + 1);
+      index += 2;
+      while (index < source.length) {
+        if (source[index] === "*" && source[index + 1] === "/") {
+          blank(index);
+          blank(index + 1);
+          index += 2;
+          break;
+        }
+        blank(index);
+        index += 1;
+      }
+      continue;
+    }
+    if (char === '"' || char === "'" || char === "`") {
+      const quote = char;
+      blank(index);
+      index += 1;
+      while (index < source.length) {
+        const current = source[index];
+        blank(index);
+        index += 1;
+        if (current === "\\" && index < source.length) {
+          blank(index);
+          index += 1;
+          continue;
+        }
+        if (current === quote) break;
+      }
+      continue;
+    }
+    index += 1;
+  }
+  return masked.join("");
+}
+
+function findCodeMatches(source, maskedSource, pattern) {
+  const flags = [...new Set(`${pattern.flags}g`)].join("");
+  return [...source.matchAll(new RegExp(pattern.source, flags))].filter((match) => (
+    maskedSource.slice(match.index, match.index + 1) === source.slice(match.index, match.index + 1)
+  ));
+}
+
 function extractBalancedBraceBody(source, start) {
   let depth = 0;
   let quote = "";
@@ -847,8 +910,28 @@ function bindingStatementRecord(record, binding) {
   };
 }
 
+function hasLocalBindingDeclaration(record, binding) {
+  return new RegExp(
+    `\\b(?:const|let|var|function|class)\\s+${escapeRegex(binding)}\\b`,
+  ).test(record.body);
+}
+
+function hasDynamicTargetBinding(record, evidence, source) {
+  const rawBody = source.slice(record.bodyStart, record.bodyEnd);
+  const bindings = findCodeMatches(rawBody, record.body, new RegExp(
+    `\\b(?:const|let|var)\\s+${escapeRegex(evidence.binding)}\\s*=\\s*requireCallable\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*,\\s*["']${escapeRegex(evidence.symbol)}["']\\s*\\)`,
+  ));
+  return bindings.some((binding) => {
+    const moduleBinding = escapeRegex(binding[1]);
+    return findCodeMatches(rawBody, record.body, new RegExp(
+      `\\b(?:const|let|var)\\s+${moduleBinding}\\s*=\\s*(?:await\\s+)?importContractModule\\s*\\(\\s*["']${escapeRegex(evidence.targetPath)}["']`,
+    )).length === 1;
+  });
+}
+
 function assessStaticRelevanceEvidence({ evidence, source, testPath }) {
-  const functions = collectReachableFunctionRecords(source);
+  const maskedSource = maskJavaScriptNonCode(source);
+  const functions = collectReachableFunctionRecords(maskedSource);
   const allAssertions = functions.flatMap(assertionRecords);
   if (evidence.mode === "self") {
     if (evidence.targetPath !== testPath) return "missing";
@@ -867,7 +950,7 @@ function assessStaticRelevanceEvidence({ evidence, source, testPath }) {
     let sawOperation = false;
     for (const fn of functions) {
       const statement = bindingStatementRecord(fn, evidence.binding);
-      if (!statement || !quotedTarget.test(statement.text)) continue;
+      if (!statement || !quotedTarget.test(source.slice(statement.start, statement.end))) continue;
       const operationMatch = operation.exec(statement.text);
       if (!operationMatch) continue;
       sawOperation = true;
@@ -893,55 +976,67 @@ function assessStaticRelevanceEvidence({ evidence, source, testPath }) {
     new RegExp(`\\bimport\\s*\\(\\s*["']${quotedRelative}["']\\s*\\)`),
     new RegExp(`\\bimportContractModule\\s*\\(\\s*["']${escapeRegex(evidence.targetPath)}["']`),
   ];
-  if (!importPatterns.some((pattern) => pattern.test(source))) return "missing";
+  if (!importPatterns.some((pattern) => findCodeMatches(source, maskedSource, pattern).length > 0)) return "missing";
   const directImport = new RegExp(
     `\\bimport\\s*\\{[^}]*\\b${escapeRegex(evidence.symbol)}(?:\\s+as\\s+${escapeRegex(evidence.binding)})?\\b[^}]*\\}\\s*from\\s*["']${quotedRelative}["']`,
-  ).test(source);
-  const dynamicBinding = functions.some((fn) => new RegExp(
-    `\\b(?:const|let|var)\\s+${escapeRegex(evidence.binding)}\\s*=\\s*requireCallable\\s*\\([^,]+,\\s*["']${escapeRegex(evidence.symbol)}["']\\s*\\)`,
-  ).test(fn.body));
-  if (!directImport && !dynamicBinding) return "behavior_missing";
+  );
+  const hasDirectImport = findCodeMatches(source, maskedSource, directImport).length === 1;
+  const dynamicBinding = functions.some((fn) => hasDynamicTargetBinding(fn, evidence, source));
+  if (!hasDirectImport && !dynamicBinding) return "behavior_missing";
   if (evidence.resultBinding) {
     const assignmentPattern = new RegExp(
       `\\b(?:const|let|var)\\s+${escapeRegex(evidence.resultBinding)}\\s*=\\s*(?:await\\s+)?${escapeRegex(evidence.binding)}\\s*\\(`,
+      "g",
     );
+    const candidates = [];
     for (const fn of functions) {
-      const assignment = assignmentPattern.exec(fn.body);
-      if (!assignment) continue;
-      const callOffset = assignment[0].lastIndexOf(evidence.binding);
-      const assertion = assertionRecords(fn).find((item) => (
-        new RegExp(`\\b${escapeRegex(evidence.resultBinding)}\\b`).test(item.text)
-      ));
-      if (!assertion) continue;
-      return {
-        assertionOffset: assertion.start,
-        operationOffset: fn.bodyStart + assignment.index + callOffset,
-        status: "ok",
-      };
+      if (hasDirectImport && hasLocalBindingDeclaration(fn, evidence.binding)) continue;
+      if (!hasDirectImport && !hasDynamicTargetBinding(fn, evidence, source)) continue;
+      for (const assignment of fn.body.matchAll(assignmentPattern)) {
+        const callOffset = assignment[0].lastIndexOf(evidence.binding);
+        const assignmentEnd = fn.bodyStart + assignment.index + assignment[0].length;
+        const assertion = assertionRecords(fn).find((item) => (
+          item.start >= assignmentEnd
+          && new RegExp(`\\b${escapeRegex(evidence.resultBinding)}\\b`).test(item.text)
+        ));
+        if (!assertion) continue;
+        candidates.push({
+          assertionOffset: assertion.start,
+          operationOffset: fn.bodyStart + assignment.index + callOffset,
+          status: "ok",
+        });
+      }
     }
-    return "behavior_missing";
+    return candidates.length === 1 ? candidates[0] : "behavior_missing";
   }
-  const callPattern = new RegExp(`\\b${escapeRegex(evidence.binding)}\\s*\\(`);
+  const callPattern = new RegExp(`\\b${escapeRegex(evidence.binding)}\\s*\\(`, "g");
+  const candidates = [];
   for (const fn of functions) {
+    if (hasDirectImport && hasLocalBindingDeclaration(fn, evidence.binding)) continue;
+    if (!hasDirectImport && !hasDynamicTargetBinding(fn, evidence, source)) continue;
     for (const assertion of assertionRecords(fn)) {
-      const call = callPattern.exec(assertion.text);
-      if (!call) continue;
-      return {
-        assertionOffset: assertion.start,
-        operationOffset: assertion.start + call.index,
-        status: "ok",
-      };
+      for (const call of assertion.text.matchAll(callPattern)) {
+        candidates.push({
+          assertionOffset: assertion.start,
+          operationOffset: assertion.start + call.index,
+          status: "ok",
+        });
+      }
     }
   }
-  return "behavior_missing";
+  return candidates.length === 1 ? candidates[0] : "behavior_missing";
 }
 
-function collectV8Coverage(coverageDir) {
+function collectV8Coverage(coverageDir, { processId = null } = {}) {
   const executed = new Map();
   const rangesByPath = new Map();
   let documents = 0;
   try {
     for (const file of readdirSync(coverageDir).filter((name) => name.endsWith(".json"))) {
+      if (processId !== null) {
+        const coverageProcess = /^coverage-(\d+)-/.exec(file);
+        if (!coverageProcess || Number(coverageProcess[1]) !== processId) continue;
+      }
       const document = JSON.parse(readFileSync(path.join(coverageDir, file), "utf8"));
       if (!Array.isArray(document.result)) return { executed, rangesByPath, valid: false };
       documents += 1;
@@ -1036,7 +1131,7 @@ function executeRegisteredNodeTest(registration) {
       timeout: 60_000,
     });
     return {
-      coverage: collectV8Coverage(coverageDir),
+      coverage: collectV8Coverage(coverageDir, { processId: result.pid }),
       ok: !result.error && result.status === 0,
     };
   } finally {

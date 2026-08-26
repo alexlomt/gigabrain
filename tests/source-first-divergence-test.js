@@ -761,6 +761,22 @@ expectFailure("shadowed import binding cannot borrow an unrelated real execution
   });
 });
 
+expectFailure("shadowed asserted call cannot borrow an unrelated real execution", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() {',
+      '  readUpstream();',
+      '  { const readUpstream = () => false; assert.equal(readUpstream(), false); }',
+      '}',
+      '',
+    ].join("\n"),
+  });
+  delete fixture.registry.entries[0].relevanceEvidence[0].resultBinding;
+  fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
+});
+
 expectFailure("requireCallable must use the module loaded for the target", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
   configureAdoptedCorePatch(fixture, {
     testSource: [
@@ -813,12 +829,16 @@ expectFailure("child-process target execution cannot satisfy parent evidence", "
       'import assert from "node:assert/strict";',
       'import { spawnSync } from "node:child_process";',
       'import process from "node:process";',
-      'import { readUpstream } from "../lib/upstream.js";',
+      'const importContractModule = async (relative) => import(`../${relative}`);',
+      'const requireCallable = () => () => false;',
       'export async function run() {',
+      '  const targetModule = await importContractModule("lib/upstream.js");',
+      '  const readUpstream = requireCallable(targetModule, "readUpstream");',
       '  const target = new URL("../lib/upstream.js", import.meta.url).href;',
       '  const child = spawnSync(process.execPath, ["--input-type=module", "--eval", `import { readUpstream } from ${JSON.stringify(target)}; readUpstream();`], { env: process.env });',
       '  assert.equal(child.status, 0);',
-      '  { const readUpstream = () => false; const observed = readUpstream(); assert.equal(observed, false); }',
+      '  const observed = readUpstream();',
+      '  assert.equal(observed, false);',
       '}',
       '',
     ].join("\n"),
@@ -968,7 +988,7 @@ expectFailure("dead branch target proof is not executed", "GATE_DYNAMIC_EVIDENCE
   });
 });
 
-expectFailure("commented proof is not executed", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
+expectFailure("commented proof is not executed", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
   configureAdoptedCorePatch(fixture, {
     testSource: [
       'import assert from "node:assert/strict";',
@@ -982,7 +1002,7 @@ expectFailure("commented proof is not executed", "GATE_DYNAMIC_EVIDENCE", (fixtu
   });
 });
 
-expectFailure("shadowed declared binding is unrelated", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
+expectFailure("shadowed declared binding is unrelated", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
   configureAdoptedCorePatch(fixture, {
     testSource: [
       'import assert from "node:assert/strict";',
