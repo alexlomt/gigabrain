@@ -27,6 +27,7 @@ import { runAdaptiveTrust } from '../lib/core/adaptive-trust.js';
 import { proposeToVaultInbox } from '../lib/core/vault-inbox.js';
 import { atomicWriteFileSync, readFileIfExistsSync } from '../lib/core/safe-fs.js';
 import { migrateLegacyCheckpoints } from '../lib/core/checkpoint-migration.js';
+import { classifyNativeOrigins } from '../lib/core/native-sync.js';
 import { assertEntrypointAllowed, assertWriteAllowed, resolveWriteMode } from '../lib/compat/write-policy.js';
 import {
   ensureWorldModelReady,
@@ -900,11 +901,12 @@ const commandMigrate = async () => {
       usage: [
         'node scripts/gigabrainctl.js migrate legacy-checkpoints [--dry-run] [--memory-root <path>] [--scope <scope>] [--include-today] [--db <path>] [--config <path>]',
         'node scripts/gigabrainctl.js migrate legacy-drop [--dry-run] [--snapshot <path>] [--db <path>] [--config <path>]',
+        'node scripts/gigabrainctl.js migrate classify-native-origins [--dry-run] [--db <path>] [--config <path>]',
       ],
     }, null, 2));
     return;
   }
-  if (!['legacy-checkpoints', 'legacy-drop'].includes(subcommand)) {
+  if (!['classify-native-origins', 'legacy-checkpoints', 'legacy-drop'].includes(subcommand)) {
     throw new Error(`unknown migrate subcommand: ${subcommand}`);
   }
   const migrateFlags = flags.slice(1);
@@ -915,6 +917,16 @@ const commandMigrate = async () => {
   const { config, dbPath } = loadConfigAndDbPath();
   const db = openDatabase(dbPath);
   try {
+    if (subcommand === 'classify-native-origins') {
+      const result = classifyNativeOrigins({ db, dryRun });
+      console.log(JSON.stringify({
+        ok: true,
+        command: 'migrate',
+        subcommand: 'classify-native-origins',
+        ...result,
+      }, null, 2));
+      return;
+    }
     if (subcommand === 'legacy-checkpoints') {
       const result = migrateLegacyCheckpoints(db, {
         memoryRoot: readFlag('--memory-root', config.runtime.paths.memoryRoot, migrateFlags),
