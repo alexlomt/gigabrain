@@ -94,13 +94,13 @@
         "8",
         "9"
       ],
-      "reason": "Source-first evidence plus passing Task 9A policy/hook ownership and exact content hashes.",
+      "reason": "Source-first evidence plus exact Task 9B queue/worker RED ownership and content hashes.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-port-map.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "bd2e49f85fe30a1b6caef5c5d02e7c697f2ce8cc6d2ebeeb6512340915846c62",
+      "contentSha256": "3b2ecb5c50991f5dfbb5833f40f3cc70e21672b4bbbed88e4cffbb44d37f71dd",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -114,7 +114,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with the Task 9A fix-round 3 RED test hash and existing behavioral relevance evidence.",
+      "reason": "Source-first registry with exact Task 9B queue and worker XFAIL ownership.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -1162,7 +1162,21 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "a8f29e25a80b152f28d38ca84c1892dc97eb4fc3b9bde19af39f3204f3a48529",
+      "contentSha256": "792802d1b6973dc4f5133b7abcb2be4452004ca65732268e96fe2ca47bbf4082",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-auto-capture-queue"
+      },
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Task 9B RED contract for stable bounded jobs, locked state transitions, retry/circuit behavior, terminal scrubbing, and observational no-op paths.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/auto-capture-queue-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "780af74016d98d43bf090e9e737d68b7fa217483ec614c873d23bb75bbe12fa9",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-worker"
@@ -1171,7 +1185,7 @@
         "2B",
         "9"
       ],
-      "reason": "Task 9B queue/worker XFAIL retained after Task 9A takes capture-policy classification ownership.",
+      "reason": "Task 9B RED worker contract for help, dry-run, empty/no-processable paths, descriptor-only routing, and strict CLI bounds.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-worker-test.js"
     },
@@ -1277,7 +1291,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "b574f3efad59e20344368bc0f7b99ded36b503272f8c7e1f8eba934932f25ba1",
+      "contentSha256": "e6b5f0405125c997a7148d71dda46ca3e97839ef89ddbb6359568ed36ad26666",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1292,7 +1306,7 @@
         "8",
         "9"
       ],
-      "reason": "Task 9A policy/hook XFAIL removed after GREEN while the distinct Task 9B queue/worker XFAIL remains.",
+      "reason": "Expected-failure ownership for the two exact Task 9B queue and worker RED signatures.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1663,7 +1677,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "9d444919ea034034ed15e23a613fd64e45013434bdd499107c0c0747f844a000",
+      "contentSha256": "8572f38d16fdcb87b23b3133f9ac1d49e61a20cc015039482ff5bbbc7f5fb7a9",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1677,7 +1691,7 @@
         "8",
         "9"
       ],
-      "reason": "Compatibility inventory including the exact Task 9A policy/hook RED contract.",
+      "reason": "Compatibility inventory including both exact Task 9B queue and worker RED contracts.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory.js"
     },
@@ -2132,7 +2146,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "c81865b506c26ae9c509fbde8a93550e0e6d90ba714473f4fa9dce2117ff9663",
+      "contentSha256": "1edae9e5671c498049050ba270c0f68e49aff9ca495598808fa94c2835dc5a2d",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2147,7 +2161,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first policy contract updated for the passing Task 9A policy/hook candidate set.",
+      "reason": "Source-first policy contract updated for the classified Task 9B queue test candidate.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },

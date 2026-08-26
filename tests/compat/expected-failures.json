@@ -2,6 +2,11 @@
   "entries": [
     {
       "ownerTask": "9",
+      "signature": "COMPAT_EXPECTED_AUTO_CAPTURE_QUEUE missing durable bounded queue state machine",
+      "test": "compat/auto-capture-queue-test.js"
+    },
+    {
+      "ownerTask": "9",
       "signature": "COMPAT_EXPECTED_AUTO_CAPTURE missing durable bounded capture worker",
       "test": "compat/auto-capture-worker-test.js"
     },

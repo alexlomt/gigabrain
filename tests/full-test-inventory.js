@@ -149,6 +149,7 @@ const PUBLIC_TEST_FILES = [
 
 const COMPATIBILITY_TESTS = [
   ["compat/auto-capture-policy-test.js", "9"],
+  ["compat/auto-capture-queue-test.js", "9"],
   ["compat/auto-capture-worker-test.js", "9"],
   ["compat/checkpoint-promotion-isolation-test.js", "6"],
   ["compat/config-schema-parity-test.js", "4"],
