@@ -10,6 +10,15 @@ export async function run() {
   assert.equal(classifyHostTier("nimbus"), "own_agent");
   assert.equal(classifyHostTier("nimbus_fake"), "unknown");
   assert.equal(classifyHostTier("codex_fake9000"), "unknown");
+  assert.equal(classifyHostTier("nimbus_manual"), "unknown");
+  assert.equal(classifyHostTier("codex_manual"), "unknown");
+  for (const manualHost of [
+    "cloud_manual",
+    "chatgpt_manual",
+    "gemini_manual",
+    "copilot_manual",
+    "claude_manual",
+  ]) assert.equal(classifyHostTier(manualHost), "manual_import", `${manualHost} must remain an exact manual import`);
   const config = {
     agentRegistry: [
       "paperclip-ceo",

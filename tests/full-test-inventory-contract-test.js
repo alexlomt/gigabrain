@@ -88,6 +88,49 @@ export async function run() {
     () => inventory.validatePhysicalInventory(["compat/unregistered-test.js"], descriptors),
     /TEST_INVENTORY_UNCLASSIFIED/,
   );
+
+  const task14Contracts = [
+    "compat/full-registry-migration-test.js",
+    "compat/rollback-restore-test.js",
+  ];
+  const expectedFailures = JSON.parse(readFileSync(
+    path.join(repoRoot, "tests", "compat", "expected-failures.json"),
+    "utf8",
+  ));
+  const sourceRegistry = JSON.parse(readFileSync(
+    path.join(repoRoot, "config", "migration", "source-first-test-registry.json"),
+    "utf8",
+  ));
+  const portMap = JSON.parse(readFileSync(
+    path.join(repoRoot, "config", "migration", "source-first-port-map.json"),
+    "utf8",
+  ));
+  for (const file of task14Contracts) {
+    assert.equal(inventory.NORMAL_TEST_DESCRIPTORS.find((row) => row.file === file)?.ownerTask, "14");
+    assert.equal(expectedFailures.entries.find((row) => row.test === file)?.ownerTask, "14");
+    assert.equal(
+      sourceRegistry.entries.find((row) => row.testPath === `tests/${file}`)?.ownerSourceFirstTaskId,
+      "14",
+    );
+    const candidate = portMap.candidateChanges.find((row) => row.targetPath === `tests/${file}`);
+    assert.equal(candidate?.ownerTasks.includes("14"), true);
+    assert.equal(candidate?.ownerTasks.includes("4"), false);
+  }
+  const mutuallyWrongDescriptor = [{
+    file: "compat/full-registry-migration-test.js",
+    ownerTask: "4",
+    runner: "module",
+  }];
+  const mutuallyWrongEntry = [{
+    test: "compat/full-registry-migration-test.js",
+    ownerTask: "4",
+    signature: "MUTUALLY_WRONG_OWNER",
+  }];
+  assert.throws(
+    () => inventory.validateExpectedFailureManifest(mutuallyWrongEntry, mutuallyWrongDescriptor, false),
+    /EXPECTED_FAILURE_STALE_OWNER/,
+    "mutually consistent wrong owner labels must not bypass the canonical source-first plan",
+  );
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {

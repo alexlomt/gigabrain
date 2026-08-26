@@ -415,24 +415,77 @@ function expectFailure(name, code, mutate, extraArgs = []) {
   }
 }
 
-expectPass("exact classified delta", () => {});
-
-expectPass("hash-bound tested patch to adopted module", ({ fixtureRepo, map, registry }) => {
+function configureAdoptedCorePatch(fixture, {
+  evidence = true,
+  staleHash = false,
+  testSource = "export async function run() { return true; }\n",
+} = {}) {
   const targetPath = "lib/upstream.js";
-  writeFileSync(path.join(fixtureRepo, targetPath), "export const upstream = false;\n");
-  commitAll(fixtureRepo, "tested adopted core patch fixture");
-  map.candidateChanges.push({
+  const testPath = path.join(fixture.fixtureRepo, "tests", "registered-test.js");
+  writeFileSync(path.join(fixture.fixtureRepo, targetPath), "export const upstream = false;\n");
+  writeFileSync(testPath, testSource);
+  commitAll(fixture.fixtureRepo, "adopted core patch evidence fixture");
+  fixture.map.candidateChanges.push({
     changeType: "modified",
-    contentSha256: blobIdentity(path.join(fixtureRepo, targetPath)),
+    contentSha256: blobIdentity(path.join(fixture.fixtureRepo, targetPath)),
     disposition: "core_patch",
     gate: { registrationId: "fixture-gate" },
     ownerTasks: ["2A"],
-    reason: "Synthetic hash-bound patch to an adopted module.",
+    reason: "Synthetic adopted core patch evidence fixture.",
     targetMode: "100644",
     targetPath,
   });
-  map.candidateChanges.sort((left, right) => left.targetPath.localeCompare(right.targetPath, "en"));
-  registerFixtureCoverage(registry, targetPath);
+  fixture.map.candidateChanges.sort((left, right) => left.targetPath.localeCompare(right.targetPath, "en"));
+  registerFixtureCoverage(fixture.registry, targetPath);
+  const registration = fixture.registry.entries[0];
+  registration.testSha256 = staleHash ? "0".repeat(64) : blobIdentity(testPath);
+  if (evidence) registration.relevanceEvidence = [{ mode: "import", targetPath }];
+  fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
+}
+
+expectPass("exact classified delta", () => {});
+
+expectFailure("metadata-only fake passing coverage", "GATE_EVIDENCE_MISSING", (fixture) => {
+  configureAdoptedCorePatch(fixture, { evidence: false });
+});
+
+expectFailure("declared import evidence without import", "GATE_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture);
+});
+
+expectFailure("unrelated import is not target evidence", "GATE_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: 'import "../lib/core.js";\nexport async function run() { return true; }\n',
+  });
+});
+
+expectFailure("relevant but failing test is executed", "GATE_EXECUTION_FAILED", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { upstream } from "../lib/upstream.js";',
+      'export async function run() { assert.equal(upstream, true); }',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectFailure("relevant test hash is stale", "GATE_TEST_HASH", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    staleHash: true,
+    testSource: 'import "../lib/upstream.js";\nexport async function run() { return true; }\n',
+  });
+});
+
+expectPass("hash-bound executed relevant adopted core patch", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { upstream } from "../lib/upstream.js";',
+      'export async function run() { assert.equal(upstream, false); }',
+      '',
+    ].join("\n"),
+  });
 });
 
 expectFailure("adoption contracts are hash-bound", "ADOPTION_CONTRACT_MANIFEST", ({ allowlist }) => {

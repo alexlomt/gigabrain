@@ -46,6 +46,9 @@ export async function run() {
     assert.deepEqual(resolve({ requestedScope: "project:oasis" }), ["project:oasis"]);
     assert.deepEqual(resolve({ requestedScope: "", remote: false }), ["shared"]);
     assert.deepEqual(resolve({ requestedScope: "profile:main", includeShared: false }), ["profile:main"]);
+    assert.deepEqual(resolve({ requestedScope: "paperclip-ceo-lookalike" }), ["paperclip-ceo-lookalike"]);
+    assert.deepEqual(resolve({ requestedScope: "unregistered-local-agent" }), ["unregistered-local-agent"]);
+    assert.deepEqual(resolve({ requestedScope: "profile:unregistered" }), ["profile:unregistered"]);
 
     // A remote authority supplies exact scopes only. Local shared/profile
     // overlays are never inferred across that trust boundary.

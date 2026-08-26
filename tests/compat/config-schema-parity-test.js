@@ -257,6 +257,24 @@ export async function run() {
     assert.deepEqual(defaults.agentRegistry, []);
     assert.deepEqual(defaults.worldModel.customSlotRules, []);
 
+    const invalidOperatorConfigs = [
+      { operatorRules: [] },
+      { operatorRules: { entity: [] } },
+      { operatorRules: { unknownFamily: {} } },
+      { operatorRules: { entity: { unknownRule: [] } } },
+      { operatorRules: { entity: { rejectTerms: "not-an-array" } } },
+      { operatorRules: { entity: { rejectPatterns: {} } } },
+      { operatorRules: { entity: { rejectPatterns: [{ pattern: "synthetic", flags: "i", extra: true }] } } },
+      { operatorRules: { entity: { rejectPatterns: [{ pattern: "[", flags: "i" }] } } },
+    ];
+    for (const invalid of invalidOperatorConfigs) {
+      assert.throws(() => configModule.normalizeConfig(invalid), /OPERATOR_RULES_(?:SCHEMA|INVALID_REGEX)/);
+      assert.throws(
+        () => configModule.loadResolvedConfig({ config: invalid, mode: "standalone", workspaceRoot: repoRoot }),
+        /OPERATOR_RULES_(?:SCHEMA|INVALID_REGEX)/,
+      );
+    }
+
     const shouldAutoSync = requireCallable(hostSyncModule, "shouldRunAutomaticHostSync");
     const resolveHostScope = requireCallable(hostSyncModule, "resolveHostScope");
     assert.equal(shouldAutoSync(defaults, "setup"), false);
