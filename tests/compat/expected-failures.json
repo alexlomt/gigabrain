@@ -16,6 +16,16 @@
       "test": "compat/memory-api-projection-test.js"
     },
     {
+      "ownerTask": "9",
+      "signature": "COMPAT_EXPECTED_NIGHTLY_QUEUE_REVIEW missing bounded nightly review integration",
+      "test": "compat/nightly-review-integration-test.js"
+    },
+    {
+      "ownerTask": "9",
+      "signature": "COMPAT_EXPECTED_QUEUE_REVIEW_SERVICE missing bounded durable queue review",
+      "test": "compat/queue-review-service-test.js"
+    },
+    {
       "ownerTask": "14",
       "signature": "COMPAT_EXPECTED_ROLLBACK_RESTORE missing verified rollback restoration",
       "test": "compat/rollback-restore-test.js"

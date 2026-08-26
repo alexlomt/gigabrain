@@ -371,6 +371,17 @@
     },
     {
       "coveredPaths": [
+        "tests/compat/nightly-review-integration-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_NIGHTLY_QUEUE_REVIEW missing bounded nightly review integration",
+      "id": "compat-nightly-review-integration",
+      "ownerSourceFirstTaskId": "9",
+      "runner": "node",
+      "testPath": "tests/compat/nightly-review-integration-test.js"
+    },
+    {
+      "coveredPaths": [
         "lib/core/adaptive-trust.js",
         "lib/core/native-sync.js",
         "lib/core/orchestrator.js",
@@ -597,6 +608,17 @@
       "runner": "node",
       "testPath": "tests/compat/packed-entry-smoke-test.js",
       "testSha256": "7a0bdedb23cb687330988558524fd6e138afcf53394671a2945ca50e0fe42530"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/queue-review-service-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_QUEUE_REVIEW_SERVICE missing bounded durable queue review",
+      "id": "compat-queue-review-service",
+      "ownerSourceFirstTaskId": "9",
+      "runner": "node",
+      "testPath": "tests/compat/queue-review-service-test.js"
     },
     {
       "coveredPaths": [
@@ -1701,7 +1723,7 @@
       "testPath": "tests/compat/upstream-adoption-test.js"
     }
   ],
-  "entryCount": 90,
-  "manifestSha256": "b642ccb98e4adc601a2a4cb0bcfcc4abdebc428a5de687d0fe09503504a50cdf",
+  "entryCount": 92,
+  "manifestSha256": "c96ab76f83274c1375aec79dfd21fe3d0d58380b1c5dbc1aad6aae1304e8bdfa",
   "schemaVersion": 1
 }

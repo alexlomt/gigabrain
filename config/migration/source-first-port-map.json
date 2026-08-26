@@ -100,7 +100,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "9893adc26cd61c765622d178aa492b629f2c48629ef2a9641c2246cb4024b441",
+      "contentSha256": "a36aad94a2ecdd56586f136f56b2366a109d57809220e7af1dfd07ecdc1a453a",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -114,7 +114,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with the passing Task 9 auto-capture processor hash and worker relevance evidence.",
+      "reason": "Source-first registry with exact Task 9D queue-review and nightly-integration XFAIL ownership.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -1350,7 +1350,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "49dbdae4dbc35340e3bf0cfd1e3afbbb5704ca5aa8547efbac45ccc271626512",
+      "contentSha256": "10ca96a263520430c37239f1c22291c79e7c0bd1a2a8768e556ed910c3381eb6",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1365,7 +1365,7 @@
         "8",
         "9"
       ],
-      "reason": "Task 9 processor XFAIL removed after the worker and processor contract passed.",
+      "reason": "Expected-failure ownership for the exact Task 9D queue-review and nightly-integration signatures.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1457,6 +1457,20 @@
       "reason": "Substantive Task 6 typed-native-metadata red compatibility contract; no runtime behavior.",
       "targetMode": "100644",
       "targetPath": "tests/compat/native-metadata-promotion-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "a2a421d56f8d5a355395aa072ca63fb4ee58af37613a0457dc926d9d63f458cc",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-nightly-review-integration"
+      },
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Task 9D RED contract for bounded nightly queue-review ordering, dry-run retention safety, config limits, and release inclusion.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/nightly-review-integration-test.js"
     },
     {
       "changeType": "added",
@@ -1558,6 +1572,20 @@
       "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/packed-entry-smoke-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "f5688e6bd9bf68211d4e3dad861fa4b0445d50f6b86d50b8f66dd3b5533db599",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-queue-review-service"
+      },
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Task 9D RED contract for local-only bounded review, durable transitions, no-op hashes, scrubbing, failure isolation, and concurrent append preservation.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/queue-review-service-test.js"
     },
     {
       "changeType": "added",
@@ -1750,7 +1778,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "0a9f839fd394c81dc69b5bd65a387b416066fb99988550df3268462eede241b9",
+      "contentSha256": "80e4c0351aaa3cf9ab6e583cd5fef1ca609a95a0dbcce7cdc61c8410e01561ed",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1764,7 +1792,7 @@
         "8",
         "9"
       ],
-      "reason": "Compatibility inventory including the passing Task 9C memory-LLM contract.",
+      "reason": "Compatibility inventory including both exact Task 9D RED contracts.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory.js"
     },
@@ -2219,7 +2247,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "94566f155da97d7f8998ac6e079f9cf2eb7e013be04203393c0ee693cb155ef2",
+      "contentSha256": "9b4ae730d2fce62128b25206b2d33f3c4a8fd97663c86ca5b4cc0879b3d66655",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2234,7 +2262,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first policy contract updated for the passing Task 9 processor module and worker candidate set.",
+      "reason": "Source-first policy contract updated for the classified Task 9D test candidate set.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },
