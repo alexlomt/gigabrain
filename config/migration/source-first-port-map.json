@@ -156,7 +156,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "50ccb853a251894c8d6f3325166bc844a12b2db68002c371b71cc2e6839e2f73",
+      "contentSha256": "a8b49e8c9b1ea29249f2c102c0d9e3ef6c344a826d1e26e152c2b99744c0a551",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "compat-packed-entry"
@@ -1744,7 +1744,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "c33e0fe351d388b81a3c445239eefedd464ae49d9497fa74f96fcf25f783a956",
+      "contentSha256": "86795bb28c5934d80d90b80d4c18a9033c729b73b2ca5b23e1e77bf380943da9",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1753,9 +1753,10 @@
         "2A",
         "2B",
         "3",
-        "4"
+        "4",
+        "5"
       ],
-      "reason": "Synthetic regression coverage for source-first policy failures.",
+      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },
