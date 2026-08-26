@@ -100,7 +100,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "472a85dfb360d9fd0aecef6ec348878849b8766361f44c176b655e6ea9d8d515",
+      "contentSha256": "fc4a4f94f9ba1a15f3f85b7f0601263e68e9fced45f5897802fb93a97890cfb6",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -114,7 +114,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with the passing Task 9B fix-round 3 queue test hash and behavioral relevance evidence.",
+      "reason": "Source-first registry with exact Task 9C memory-LLM XFAIL ownership.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -1321,7 +1321,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "49dbdae4dbc35340e3bf0cfd1e3afbbb5704ca5aa8547efbac45ccc271626512",
+      "contentSha256": "95af4c09f8d254b36bdb2f256447b1d0ca9dc73da5a4c0150153a1dcedbe464d",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1336,7 +1336,7 @@
         "8",
         "9"
       ],
-      "reason": "Task 9B fix-round 3 queue XFAIL removed after the final bounded legacy-processing edge passed.",
+      "reason": "Expected-failure ownership including the exact Task 9C memory-LLM RED signature.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1384,6 +1384,20 @@
       "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
       "targetMode": "100644",
       "targetPath": "tests/compat/memory-api-projection-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "bd0a7acca557dc8e39a5344e0cd4cc54b1787a010cfbdaa71049d27ab2941bca",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-memory-llm-client"
+      },
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Task 9C RED contract for a stateless loopback-only Ollama client with retry bounds and no recursive gateway fallback.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/memory-llm-client-test.js"
     },
     {
       "changeType": "added",
@@ -1707,7 +1721,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "8572f38d16fdcb87b23b3133f9ac1d49e61a20cc015039482ff5bbbc7f5fb7a9",
+      "contentSha256": "0a9f839fd394c81dc69b5bd65a387b416066fb99988550df3268462eede241b9",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1721,7 +1735,7 @@
         "8",
         "9"
       ],
-      "reason": "Compatibility inventory including the passing Task 9B queue and worker contracts.",
+      "reason": "Compatibility inventory including the exact Task 9C memory-LLM RED contract.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory.js"
     },
@@ -2176,7 +2190,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "f6edee04e79c0ab0f730bf14bf8d912c90d6249adbe0b5cafc3a601e68caae10",
+      "contentSha256": "e3b919ffacc9fee45d29a297566c6e158a5f32edc425b5716d535899b42ed43f",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2191,7 +2205,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first policy contract updated for the passing Task 9B queue module and worker candidate set.",
+      "reason": "Source-first policy contract updated for the classified Task 9C memory-LLM test candidate.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },

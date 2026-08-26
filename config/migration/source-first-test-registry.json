@@ -278,6 +278,17 @@
     },
     {
       "coveredPaths": [
+        "tests/compat/memory-llm-client-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_MEMORY_LLM_CLIENT missing loopback-only stateless memory LLM",
+      "id": "compat-memory-llm-client",
+      "ownerSourceFirstTaskId": "9",
+      "runner": "node",
+      "testPath": "tests/compat/memory-llm-client-test.js"
+    },
+    {
+      "coveredPaths": [
         "lib/compat/runtime-descriptor.js",
         "tests/compat/native-lock-concurrency-test.js"
       ],
@@ -1659,7 +1670,7 @@
       "testPath": "tests/compat/upstream-adoption-test.js"
     }
   ],
-  "entryCount": 89,
-  "manifestSha256": "518bcd5b7e62833fa88d46bcbb3919165e2cf8af91210f9d9eab2ffdaa445b56",
+  "entryCount": 90,
+  "manifestSha256": "70385ee168552b8d635889121003f8c95e4adb60a67793aa2a57fd6c898ab9f4",
   "schemaVersion": 1
 }

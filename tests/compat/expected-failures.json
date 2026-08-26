@@ -16,6 +16,11 @@
       "test": "compat/memory-api-projection-test.js"
     },
     {
+      "ownerTask": "9",
+      "signature": "COMPAT_EXPECTED_MEMORY_LLM_CLIENT missing loopback-only stateless memory LLM",
+      "test": "compat/memory-llm-client-test.js"
+    },
+    {
       "ownerTask": "14",
       "signature": "COMPAT_EXPECTED_ROLLBACK_RESTORE missing verified rollback restoration",
       "test": "compat/rollback-restore-test.js"
