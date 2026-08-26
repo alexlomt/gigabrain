@@ -6,10 +6,10 @@ config/migration/task5-stage-paths.txt
 index.js
 index.ts
 lib/compat/flush-plan.js
+lib/compat/observational-diagnostics.js
 lib/compat/openclaw-adapter.js
 lib/compat/openclaw-memory-cli.js
 lib/compat/openclaw-memory-runtime.js
-lib/compat/observational-diagnostics.js
 lib/compat/release-provenance.js
 lib/compat/scope-policy.js
 lib/compat/write-policy.js

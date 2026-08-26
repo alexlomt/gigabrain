@@ -156,7 +156,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "b1fb1a89a8ff996dd741e7f6b478a61f03d3efc508c93067a11c189670557588",
+      "contentSha256": "94f7c82385fdc024295bcb730c13c9d967f645fb2254b1720e2b022e3e6f3fe0",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "compat-packed-entry"
