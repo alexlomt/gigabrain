@@ -335,7 +335,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "05558b69576016c933c6fd300778ab4d68ebce3958b62b18cac277ef72d6d396",
+      "contentSha256": "d40ea6fcfd90f9199be25fc8e07d130962c3cb6d8d5a37cad14d67798ef9c1f7",
       "disposition": "compat_module",
       "gate": {
         "registrationId": "compat-auto-capture-policy"
