@@ -98,7 +98,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "e84662d34d2aa15cc588b77d98e410947a340bd9c5244210aa4f8f54807cb84e",
+      "contentSha256": "e1ab6988297325b47a71b7b8d337e9245941551db6b376ee0d273e4c6d779b2b",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -485,16 +485,17 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "53a4557f68969202e3cabb5fddfab202cb200768b38b0b09603f9ac0547fb382",
+      "contentSha256": "c7115314dedaed5021cd45d15aa53080e21b5a32aba5658210c4919ae08c469d",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-write-mode-gate"
       },
       "ownerTasks": [
         "4",
-        "5"
+        "5",
+        "7"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 capture behavior retained while Task 7 excludes incompatible embedding cache rows.",
       "targetMode": "100644",
       "targetPath": "lib/core/capture-service.js"
     },
@@ -542,15 +543,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "8ef540b132f6ffecb5221c9f1efb1d3c4f2e39beca679cba288595ed60b4da00",
+      "contentSha256": "0fb9f69c2297aaaaf9ed8f69316aa3265e89e9b28103a11e0c3c1c17e8d7edfa",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-config-schema-parity"
       },
       "ownerTasks": [
-        "4"
+        "4",
+        "7"
       ],
-      "reason": "Canonical Task 4 configuration, schema generation, disabled automation and host-sync gate behavior.",
+      "reason": "Canonical Task 4 configuration plus Task 7 Qwen embedding parity defaults.",
       "targetMode": "100644",
       "targetPath": "lib/core/config.js"
     },
@@ -568,6 +570,20 @@
       "reason": "Task 5 compatibility behavior retained while Task 6 adds governed native-memory semantics.",
       "targetMode": "100644",
       "targetPath": "lib/core/control-plane.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "203636ef63d26bde2eed646aa251cc7b3a46a00afad9f6e221bf774a6ecd94d8",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-embedding-identity"
+      },
+      "ownerTasks": [
+        "7"
+      ],
+      "reason": "Task 7 enforces exact Qwen cache identity, vector validity, and provenance binding.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/embedding-service.js"
     },
     {
       "changeType": "modified",
@@ -843,15 +859,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "3b45c6ad006415b723d3b4e3f982af79c4ded11780d0964b45520711e5ed3f2a",
+      "contentSha256": "3fc588698885ec3db924c1a4a60add3346f29b978e1fff064949af4379a65bb4",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-config-schema-parity"
       },
       "ownerTasks": [
-        "4"
+        "4",
+        "7"
       ],
-      "reason": "Canonical Task 4 configuration, schema generation, disabled automation and host-sync gate behavior.",
+      "reason": "Canonical Task 4 configuration plus Task 7 Qwen embedding parity defaults.",
       "targetMode": "100644",
       "targetPath": "openclaw.plugin.json"
     },
@@ -1193,7 +1210,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "de2729c4244ec56084857d9f44f7229f0718887d09c6edf90785a62d81c67494",
+      "contentSha256": "84e37600dd1e1d399dc783fdf16584ba0545dfb975b25750ebca8c0b4022e37a",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-embedding-identity"
@@ -1202,13 +1219,13 @@
         "2B",
         "7"
       ],
-      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "reason": "Task 7 exact Qwen identity and legacy-cache provenance contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/embedding-identity-test.js"
     },
     {
       "changeType": "added",
-      "contentSha256": "e2b839ca0be7369897775dfac6b5e6a4bd532b10b3816d259ec473586c4fe8b7",
+      "contentSha256": "b574f3efad59e20344368bc0f7b99ded36b503272f8c7e1f8eba934932f25ba1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1218,9 +1235,10 @@
         "3",
         "4",
         "5",
-        "6"
+        "6",
+        "7"
       ],
-      "reason": "Expected-failure ownership after the three Task 6 native contracts became passing gates.",
+      "reason": "Expected-failure ownership after Task 7 embedding identity became a passing gate.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1402,6 +1420,20 @@
     },
     {
       "changeType": "added",
+      "contentSha256": "ec10324819b9ca4156c0b38a8171d2711dfec79bee5c06d3529821dbc6464d39",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-qwen-embedding-smoke"
+      },
+      "ownerTasks": [
+        "7"
+      ],
+      "reason": "Task 7 loopback-only Qwen embedding smoke contract.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/qwen-embedding-smoke-test.js"
+    },
+    {
+      "changeType": "added",
       "contentSha256": "a6a8f9cc8760ab3ed0983d7581582f93d0aad9dce6cc5dac167926f3ba88974f",
       "disposition": "private_dev_only",
       "gate": {
@@ -1549,7 +1581,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "6c1c7b1de4f8c5cd034b9b6292937b9407c50711b2fe93884c7cb78b31979fd1",
+      "contentSha256": "0d5886ed6f93c5e44756eaf3890d5fc8e6f909b344f600a1da5144526f097c8f",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1558,9 +1590,10 @@
         "2B",
         "3",
         "4",
-        "5"
+        "5",
+        "7"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Task 5 inventory plus the Task 7 local Qwen smoke contract.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory.js"
     },
@@ -2015,7 +2048,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "5076f3d9d48fe77ca74b8f2cad15b5d2055602cebe6b53cb1b006eca2b09aa8f",
+      "contentSha256": "8ff143409173b5d22ab7a8a1e099691e989f264dae0170117a905eb47f49b53b",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2028,7 +2061,7 @@
         "5",
         "6"
       ],
-      "reason": "Source-first policy contract with the four Task 6 production candidate records.",
+      "reason": "Source-first policy contract with the Task 6 and Task 7 production candidate records.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },

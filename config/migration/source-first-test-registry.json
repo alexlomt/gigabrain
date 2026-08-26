@@ -108,14 +108,25 @@
     },
     {
       "coveredPaths": [
+        "lib/core/embedding-service.js",
         "tests/compat/embedding-identity-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_EMBEDDING_IDENTITY missing model/dimension/query identity",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-embedding-identity",
       "ownerSourceFirstTaskId": "7",
+      "relevanceEvidence": [
+        {
+          "binding": "resolveIdentity",
+          "mode": "import",
+          "resultBinding": "identity",
+          "symbol": "resolveEmbeddingIdentity",
+          "targetPath": "lib/core/embedding-service.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/compat/embedding-identity-test.js"
+      "testPath": "tests/compat/embedding-identity-test.js",
+      "testSha256": "84e37600dd1e1d399dc783fdf16584ba0545dfb975b25750ebca8c0b4022e37a"
     },
     {
       "coveredPaths": [
@@ -429,6 +440,18 @@
       "runner": "node",
       "testPath": "tests/compat/packed-entry-smoke-test.js",
       "testSha256": "7a0bdedb23cb687330988558524fd6e138afcf53394671a2945ca50e0fe42530"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/qwen-embedding-smoke-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "compat-qwen-embedding-smoke",
+      "ownerSourceFirstTaskId": "7",
+      "runner": "node",
+      "testPath": "tests/compat/qwen-embedding-smoke-test.js",
+      "testSha256": "ec10324819b9ca4156c0b38a8171d2711dfec79bee5c06d3529821dbc6464d39"
     },
     {
       "coveredPaths": [
@@ -1469,7 +1492,7 @@
       "testPath": "tests/compat/upstream-adoption-test.js"
     }
   ],
-  "entryCount": 83,
-  "manifestSha256": "289481649716a4aa64a2a70e287fa0e21ae75f5c7c8ce26bc618361c455710ee",
+  "entryCount": 84,
+  "manifestSha256": "3afe5fa15635f0ab358b10febb9fb633980899bd1e33f92bee149e3748713567",
   "schemaVersion": 1
 }

@@ -6,11 +6,6 @@
       "test": "compat/auto-capture-worker-test.js"
     },
     {
-      "ownerTask": "7",
-      "signature": "COMPAT_EXPECTED_EMBEDDING_IDENTITY missing model/dimension/query identity",
-      "test": "compat/embedding-identity-test.js"
-    },
-    {
       "ownerTask": "14",
       "signature": "COMPAT_EXPECTED_FULL_MIGRATION missing source-first registry migration receipt",
       "test": "compat/full-registry-migration-test.js"
