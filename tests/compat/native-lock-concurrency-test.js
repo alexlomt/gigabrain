@@ -89,6 +89,22 @@ export async function run() {
     };
 
     try {
+      const priorOpenClawRoot = process.env.OPENCLAW_ROOT;
+      const isolatedOpenClawRoot = path.join(root, "isolated-openclaw-root");
+      try {
+        process.env.OPENCLAW_ROOT = isolatedOpenClawRoot;
+        const isolatedDescriptorModule = await import(
+          `${pathToFileURL(path.resolve(import.meta.dirname, "..", "..", "lib", "compat", "runtime-descriptor.js")).href}?isolated-root=${Date.now()}`,
+        );
+        assert.equal(
+          isolatedDescriptorModule.DEFAULT_RUNTIME_DESCRIPTOR_PATH,
+          path.join(isolatedOpenClawRoot, "runtime", "gigabrain-release.json"),
+          "the runtime descriptor default must derive from OPENCLAW_ROOT rather than an operator home path",
+        );
+      } finally {
+        if (priorOpenClawRoot === undefined) delete process.env.OPENCLAW_ROOT;
+        else process.env.OPENCLAW_ROOT = priorOpenClawRoot;
+      }
       assert.deepEqual(loadRuntimeDescriptor(descriptorPath), descriptor);
       assert.throws(
         () => loadRuntimeDescriptor(path.join(runtimeRoot, "missing-release.json")),

@@ -169,7 +169,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/native-lock-concurrency-test.js",
-      "testSha256": "7e526073d95e44dc09577583f14e2358393a2bc7ca3fe16d4efa954cb7198559"
+      "testSha256": "e72c406e37e6cb41e10d123192a7ee321b63ee667e2a716aa04a5a95a61bc16c"
     },
     {
       "coveredPaths": [
@@ -1470,6 +1470,6 @@
     }
   ],
   "entryCount": 83,
-  "manifestSha256": "dc78edc16312d85f684f67d5e76a678ae058ed00215289f7f37f413ccde83411",
+  "manifestSha256": "289481649716a4aa64a2a70e287fa0e21ae75f5c7c8ce26bc618361c455710ee",
   "schemaVersion": 1
 }
