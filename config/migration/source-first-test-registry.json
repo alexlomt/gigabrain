@@ -36,6 +36,28 @@
     },
     {
       "coveredPaths": [
+        "tests/compat/config-schema-parity-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_CONFIG_SCHEMA_PARITY missing canonical generated configuration schema",
+      "id": "compat-config-schema-parity",
+      "ownerSourceFirstTaskId": "4",
+      "runner": "node",
+      "testPath": "tests/compat/config-schema-parity-test.js"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/dedupe-scope-isolation-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_DEDUPE_SCOPE_ISOLATION missing same-scope automatic dedupe isolation",
+      "id": "compat-dedupe-scope-isolation",
+      "ownerSourceFirstTaskId": "4",
+      "runner": "node",
+      "testPath": "tests/compat/dedupe-scope-isolation-test.js"
+    },
+    {
+      "coveredPaths": [
         "tests/compat/embedding-identity-test.js"
       ],
       "expectedOutcome": "xfail",
@@ -135,6 +157,17 @@
     },
     {
       "coveredPaths": [
+        "tests/compat/operator-rules-migration-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_OPERATOR_RULES_MIGRATION missing protected deterministic operator rules migration",
+      "id": "compat-operator-rules-migration",
+      "ownerSourceFirstTaskId": "4",
+      "runner": "node",
+      "testPath": "tests/compat/operator-rules-migration-test.js"
+    },
+    {
+      "coveredPaths": [
         "tests/compat/rollback-restore-test.js"
       ],
       "expectedOutcome": "xfail",
@@ -151,7 +184,7 @@
       "expectedOutcome": "xfail",
       "expectedSignature": "COMPAT_EXPECTED_SCOPE_VISIBILITY missing fail-closed scope visibility matrix",
       "id": "compat-scope-visibility-matrix",
-      "ownerSourceFirstTaskId": "5",
+      "ownerSourceFirstTaskId": "4",
       "runner": "node",
       "testPath": "tests/compat/scope-visibility-matrix-test.js"
     },
@@ -833,7 +866,7 @@
       "testPath": "tests/compat/upstream-adoption-test.js"
     }
   ],
-  "entryCount": 72,
-  "manifestSha256": "1b2379c287e060b363042ea52c3c30e46b012d0ca99d77ad6b038efbce340f5f",
+  "entryCount": 75,
+  "manifestSha256": "fb572ce5101e94187a67ac76819a2be52774d6261453e71ab178587be7bd282a",
   "schemaVersion": 1
 }

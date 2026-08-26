@@ -134,6 +134,8 @@ const PUBLIC_TEST_FILES = [
 const COMPATIBILITY_TESTS = [
   ["compat/auto-capture-worker-test.js", "9"],
   ["compat/checkpoint-promotion-isolation-test.js", "6"],
+  ["compat/config-schema-parity-test.js", "4"],
+  ["compat/dedupe-scope-isolation-test.js", "4"],
   ["compat/embedding-identity-test.js", "7"],
   ["compat/full-registry-migration-test.js", "4"],
   ["compat/generated-surface-test.js", "5"],
@@ -143,8 +145,9 @@ const COMPATIBILITY_TESTS = [
   ["compat/observational-diagnostics-test.js", "12"],
   ["compat/openclaw-hooks-and-flush-test.js", "5"],
   ["compat/openclaw-memory-runtime-test.js", "5"],
+  ["compat/operator-rules-migration-test.js", "4"],
   ["compat/rollback-restore-test.js", "4"],
-  ["compat/scope-visibility-matrix-test.js", "5"],
+  ["compat/scope-visibility-matrix-test.js", "4"],
   ["compat/upstream-adoption-test.js", "3"],
 ];
 

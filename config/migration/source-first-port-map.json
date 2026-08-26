@@ -580,7 +580,7 @@
       },
       "ownerTasks": [
         "2B",
-        "5"
+        "4"
       ],
       "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
       "targetMode": "100644",
