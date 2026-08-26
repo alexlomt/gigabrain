@@ -91,15 +91,16 @@
         "4",
         "5",
         "6",
-        "8"
+        "8",
+        "9"
       ],
-      "reason": "Source-first evidence plus exact Task 8 red-gate ownership metadata.",
+      "reason": "Source-first evidence plus exact Task 9A policy/hook red-gate ownership metadata.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-port-map.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "cf897c89d05106ebcc7ba5a8e12f19ed08502a1bc3642a37817917b5e81870cc",
+      "contentSha256": "ad01b24639c4a2a6f1aac2ceb5c5c847e6a4f9a0cf843709c1b41492e253619b",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -110,9 +111,10 @@
         "4",
         "5",
         "6",
-        "8"
+        "8",
+        "9"
       ],
-      "reason": "Source-first registry with exact Task 8 entity, shadow, and scoped-brief red gates.",
+      "reason": "Source-first registry with the exact Task 9A policy/hook XFAIL signature and ownership.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -1128,7 +1130,21 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "3785622bde8398fb632189b858fc8c81297aa70640323c52e0c1e512ec9bd10a",
+      "contentSha256": "8fdcf0e8962b435676cc537bb7daf40b488471218136f1c46c4ffbfce48e2a0a",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-auto-capture-policy"
+      },
+      "ownerTasks": [
+        "9"
+      ],
+      "reason": "Task 9A RED contract for exact capture policy, provider limits, trusted scope, privacy exclusions, and enqueue-only OpenClaw hook behavior.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/auto-capture-policy-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "a8f29e25a80b152f28d38ca84c1892dc97eb4fc3b9bde19af39f3204f3a48529",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-worker"
@@ -1137,7 +1153,7 @@
         "2B",
         "9"
       ],
-      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "reason": "Task 9B queue/worker XFAIL retained after Task 9A takes capture-policy classification ownership.",
       "targetMode": "100644",
       "targetPath": "tests/compat/auto-capture-worker-test.js"
     },
@@ -1243,7 +1259,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "b574f3efad59e20344368bc0f7b99ded36b503272f8c7e1f8eba934932f25ba1",
+      "contentSha256": "b1e4089bc694dfa6ae6ceea3570a9b3cee90bb08885f05e8cebc0ea712aa56d5",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1255,9 +1271,10 @@
         "5",
         "6",
         "7",
-        "8"
+        "8",
+        "9"
       ],
-      "reason": "Expected-failure ownership after the Task 8 repeated protected-entity lifecycle regression became a passing contract.",
+      "reason": "Expected-failure ownership including the exact Task 9A policy/hook signature and retained Task 9B worker signature.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1628,7 +1645,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "c648f7852c2dadb1d4cdafdb878f984279f4d597ee3a02fac92cd3ecd088aac8",
+      "contentSha256": "9d444919ea034034ed15e23a613fd64e45013434bdd499107c0c0747f844a000",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1639,9 +1656,10 @@
         "4",
         "5",
         "7",
-        "8"
+        "8",
+        "9"
       ],
-      "reason": "Compatibility inventory including all three exact Task 8 red gates.",
+      "reason": "Compatibility inventory including the exact Task 9A policy/hook RED contract.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory.js"
     },
@@ -2096,7 +2114,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "30cc5468dfb986a0d47b80263758d8bb50b8dc2738f9e3b0b74e20149fcedee1",
+      "contentSha256": "d8994555d287e9e6555458d4c3a25f77caca430fe0ba9a11df393314b5254c8e",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2108,9 +2126,10 @@
         "4",
         "5",
         "6",
-        "8"
+        "8",
+        "9"
       ],
-      "reason": "Source-first policy contract with the three classified Task 8 red tests.",
+      "reason": "Source-first policy contract with the classified Task 9A policy/hook RED test.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },

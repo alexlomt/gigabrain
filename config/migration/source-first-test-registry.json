@@ -2,6 +2,17 @@
   "entries": [
     {
       "coveredPaths": [
+        "tests/compat/auto-capture-policy-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_AUTO_CAPTURE_POLICY missing bounded capture policy and enqueue-only hook",
+      "id": "compat-auto-capture-policy",
+      "ownerSourceFirstTaskId": "9",
+      "runner": "node",
+      "testPath": "tests/compat/auto-capture-policy-test.js"
+    },
+    {
+      "coveredPaths": [
         "tests/compat/auto-capture-worker-test.js"
       ],
       "expectedOutcome": "xfail",
@@ -1570,7 +1581,7 @@
       "testPath": "tests/compat/upstream-adoption-test.js"
     }
   ],
-  "entryCount": 87,
-  "manifestSha256": "b02d4e14c58e76d17af04131dcb627107b673a4c14465cc23ad30666eb543f2a",
+  "entryCount": 88,
+  "manifestSha256": "f5f8c9eaaefdb236994101395fa46ada8ce9a7eb3500647c98eb8b88f45465bd",
   "schemaVersion": 1
 }
