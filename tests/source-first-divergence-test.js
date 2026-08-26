@@ -747,6 +747,147 @@ expectFailure("self-only dead evidence cannot qualify a core patch", "GATE_BEHAV
   configureSelfOnlyDeadCorePatch(fixture);
 });
 
+expectFailure("shadowed import binding cannot borrow an unrelated real execution", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() {',
+      '  readUpstream();',
+      '  { const readUpstream = () => false; const observed = readUpstream(); assert.equal(observed, false); }',
+      '}',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectFailure("requireCallable must use the module loaded for the target", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'const importContractModule = async (relative) => import(`../${relative}`);',
+      'const requireCallable = (module, name) => module[name];',
+      'export async function run() {',
+      '  const targetModule = await importContractModule("lib/upstream.js");',
+      '  const wrongModule = { readUpstream: () => false };',
+      '  const readUpstream = requireCallable(wrongModule, "readUpstream");',
+      '  targetModule.readUpstream();',
+      '  const observed = readUpstream();',
+      '  assert.equal(observed, false);',
+      '}',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectFailure("string literals cannot fabricate operation and assertion witnesses", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() {',
+      '  readUpstream();',
+      '  const fake = "const observed = readUpstream(); assert.equal(observed, false);";',
+      '  return fake.length;',
+      '}',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectFailure("comments cannot fabricate operation and assertion witnesses", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() {',
+      '  readUpstream();',
+      '  /* const observed = readUpstream(); assert.equal(observed, false); */',
+      '}',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectFailure("child-process target execution cannot satisfy parent evidence", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { spawnSync } from "node:child_process";',
+      'import process from "node:process";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() {',
+      '  const target = new URL("../lib/upstream.js", import.meta.url).href;',
+      '  const child = spawnSync(process.execPath, ["--input-type=module", "--eval", `import { readUpstream } from ${JSON.stringify(target)}; readUpstream();`], { env: process.env });',
+      '  assert.equal(child.status, 0);',
+      '  { const readUpstream = () => false; const observed = readUpstream(); assert.equal(observed, false); }',
+      '}',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectFailure("uninvoked helper cannot provide behavioral evidence", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'const verifyTarget = () => { const observed = readUpstream(); assert.equal(observed, false); };',
+      'export async function run() { readUpstream(); if (false) verifyTarget(); }',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectFailure("ambiguous duplicate evidence witnesses fail closed", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() {',
+      '  { const observed = readUpstream(); assert.equal(observed, false); }',
+      '  { const observed = readUpstream(); assert.equal(observed, false); }',
+      '}',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectPass("nested async callback evidence preserves exact offsets", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() {',
+      '  await Promise.resolve().then(async () => { const observed = readUpstream(); assert.equal(observed, false); });',
+      '}',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectPass("transitively called helper evidence is accepted", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'const verifyTarget = () => { const observed = readUpstream(); assert.equal(observed, false); };',
+      'export async function run() { verifyTarget(); }',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectPass("CRLF and non-ASCII prefixes preserve UTF-16 coverage alignment", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      '// π synthetic prefix',
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() { const observed = readUpstream(); assert.equal(observed, false); }',
+      '',
+    ].join("\r\n"),
+  });
+});
+
 expectFailure("metadata-only fake passing coverage", "GATE_EVIDENCE_MISSING", (fixture) => {
   configureAdoptedCorePatch(fixture, { evidence: false });
 });
