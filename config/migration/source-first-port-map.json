@@ -2623,7 +2623,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "929539e9e6a5ca62070b08a0d149545b5b4fb852547e0ad87ee18e607e0f8a2b",
+      "contentSha256": "2889d110af20f3007c4a08ba74f9d7d2bd2ee051337b7fb912d311b0cb685de4",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "npm-pack-schema"
@@ -2631,7 +2631,7 @@
       "ownerTasks": [
         "2B"
       ],
-      "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure.",
+      "reason": "Private public-mirror contract binds the exact reviewed Task 9 repository and npm inventory counts.",
       "targetMode": "100644",
       "targetPath": "tests/unit-public-mirror-test.js"
     },

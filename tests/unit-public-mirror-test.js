@@ -508,7 +508,15 @@ const testReleaseManifestStaysNarrow = () => {
     new URL('../public-release-manifest.json', import.meta.url),
     'utf8',
   )));
-  assert.ok(manifest.repository.files.length < 160, 'repository inventory must remain deliberately narrow');
+  assert.deepEqual(
+    {
+      npmFiles: manifest.npm.files.length,
+      packageFiles: manifest.npm.packageFiles.length,
+      repositoryFiles: manifest.repository.files.length,
+    },
+    { npmFiles: 111, packageFiles: 53, repositoryFiles: 164 },
+    'reviewed public inventories must remain exact and deliberately narrow',
+  );
   for (const required of [
     '.github/workflows/ci.yml',
     '.github/workflows/codeql.yml',
