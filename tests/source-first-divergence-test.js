@@ -1044,7 +1044,7 @@ expectFailure("comments cannot fabricate operation and assertion witnesses", "GA
   });
 });
 
-expectFailure("child-process target execution cannot satisfy parent evidence", "GATE_BEHAVIORAL_RELEVANCE", (fixture) => {
+expectFailure("child-process target execution cannot satisfy parent evidence", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
   configureAdoptedCorePatch(fixture, {
     testSource: [
       'import assert from "node:assert/strict";',
@@ -1098,6 +1098,20 @@ expectPass("nested async callback evidence preserves exact offsets", (fixture) =
       'import { readUpstream } from "../lib/upstream.js";',
       'export async function run() {',
       '  await Promise.resolve().then(async () => { const observed = readUpstream(); assert.equal(observed, false); });',
+      '}',
+      '',
+    ].join("\n"),
+  });
+});
+
+expectPass("awaited import result binding is accepted", (fixture) => {
+  configureAdoptedCorePatch(fixture, {
+    testSource: [
+      'import assert from "node:assert/strict";',
+      'import { readUpstream } from "../lib/upstream.js";',
+      'export async function run() {',
+      '  const observed = await readUpstream();',
+      '  assert.equal(observed, false);',
       '}',
       '',
     ].join("\n"),
