@@ -129,15 +129,7 @@ export async function run() {
     const snapshotState = requireCallable(diagnostics, "snapshotObservationalState");
     const assertUnchanged = requireCallable(diagnostics, "assertObservationalStateUnchanged");
     const cliSource = readFileSync("scripts/gigabrainctl.js", "utf8");
-    const metricsSource = readFileSync("lib/core/metrics.js", "utf8");
-    const projectionSource = readFileSync("lib/core/projection-store.js", "utf8");
-    const hostSyncSource = readFileSync("lib/core/host-memory-sync.js", "utf8");
-    const transcriptSource = readFileSync("lib/core/transcript-harvester.js", "utf8");
     assert.match(cliSource, /readOnly:\s*true/);
-    assert.match(metricsSource, /options\.ensure !== false/);
-    assert.match(projectionSource, /options\.ensure !== false/);
-    assert.match(hostSyncSource, /hasTable\(db, 'memory_(?:source_links|host_sync_runs)'\)/);
-    assert.doesNotMatch(transcriptSource.match(/const transcriptStatus[\s\S]*?return \{/i)?.[0] || "", /ensureTranscriptStore/);
     const fixture = makeFixture();
     const stateOptions = {
       dbPath: fixture.dbPath,

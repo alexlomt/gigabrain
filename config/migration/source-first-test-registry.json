@@ -208,7 +208,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/observational-diagnostics-test.js",
-      "testSha256": "c151bb3220736f0c7b6233e2691d4758b55f3c7aad459431bde0e2e20e855558"
+      "testSha256": "03be7536199e05dc90cced3048c286bfb1344a3fa0e1d3d8280196c96eddb073"
     },
     {
       "coveredPaths": [
@@ -1273,6 +1273,6 @@
     }
   ],
   "entryCount": 81,
-  "manifestSha256": "50beb25cf9d430483e9423af20f0d6b5ccd73368e881f663bedde838e0317e3e",
+  "manifestSha256": "16353960941275b8b4041fb06f4b0a8013cb9ddfb8f06d24052df12c8b9aa5de",
   "schemaVersion": 1
 }
