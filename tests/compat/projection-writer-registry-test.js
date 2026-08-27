@@ -188,7 +188,7 @@ const assertVerdictProjectionAuthority = ({ ensureProjectionStore, recordVerdict
     assert.deepEqual(summaryEvents[0].payload.winnerId, "verdict-winner");
     assert.deepEqual(summaryEvents[0].payload.loserIds, ["verdict-loser-a", "verdict-loser-b"]);
     assert.deepEqual(rowMutationEvents.map(({ action, memory_id }) => ({ action, memory_id })), [
-      { action: "arbiter:verdict", memory_id: "verdict-winner" },
+      { action: "arbiter:winner_temporal", memory_id: "verdict-winner" },
       { action: "arbiter:supersede", memory_id: "verdict-loser-a" },
       { action: "arbiter:supersede", memory_id: "verdict-loser-b" },
     ]);
@@ -2455,6 +2455,9 @@ export async function run() {
       && directWrite.test(readFileSync(path.join(repoRoot, relative), "utf8")));
     assert.deepEqual(offenders, [], `projection writers bypassed the authority: ${offenders.join(",")}`);
     const projectionSource = readFileSync("lib/core/projection-store.js", "utf8");
+    const eventStoreTestSource = readFileSync("tests/unit-event-store-test.js", "utf8");
+    assert.match(eventStoreTestSource, /arbiter:winner_temporal:flip-a:row/);
+    assert.match(eventStoreTestSource, /arbiter:verdict:flip-a:operation_summary/);
     for (const required of ["withProjectionMutationBatch", "mutateCurrentMemoryWithLegacyProjection", "memory_console_metadata", "BEGIN IMMEDIATE", "SAVEPOINT", "projection:upsert", "projection:status"]) {
       assert.equal(projectionSource.includes(required), true, `projection authority omitted ${required}`);
     }

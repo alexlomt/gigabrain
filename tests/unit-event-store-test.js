@@ -125,18 +125,22 @@ const run = async () => {
     // Replaying the append-only log reconstructs the flip history in order:
     // verdict(A) → supersede(B) → verdict(B) → reinstate(B) → supersede(A).
     const flipHistory = db.prepare(`
-      SELECT action, memory_id FROM memory_events
-      WHERE memory_id IN ('flip-a', 'flip-b')
+      SELECT action, memory_id, payload FROM memory_events
+      WHERE component = 'arbiter' AND memory_id IN ('flip-a', 'flip-b')
       ORDER BY rowid
-    `).all().map((e) => `${e.action}:${e.memory_id}`);
+    `).all().map((e) => {
+      const payload = JSON.parse(e.payload);
+      return `${e.action}:${e.memory_id}:${payload.projection_event_kind}`;
+    });
     assert.deepEqual(
       flipHistory,
       [
-        'arbiter:verdict:flip-a',
-        'arbiter:supersede:flip-b',
-        'arbiter:verdict:flip-b',
-        'arbiter:reinstate:flip-b',
-        'arbiter:supersede:flip-a',
+        'arbiter:verdict:flip-a:operation_summary',
+        'arbiter:winner_temporal:flip-a:row',
+        'arbiter:supersede:flip-b:row',
+        'arbiter:verdict:flip-b:operation_summary',
+        'arbiter:reinstate:flip-b:row',
+        'arbiter:supersede:flip-a:row',
       ],
       'replaying events reconstructs the flip history in order',
     );

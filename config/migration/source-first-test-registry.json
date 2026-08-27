@@ -719,7 +719,8 @@
         "lib/core/transcript-harvester.js",
         "lib/core/wiki-project.js",
         "scripts/gigabrainctl.js",
-        "tests/compat/projection-writer-registry-test.js"
+        "tests/compat/projection-writer-registry-test.js",
+        "tests/unit-event-store-test.js"
       ],
       "expectedOutcome": "pass",
       "expectedSignature": null,
@@ -820,11 +821,16 @@
           "binding": "paths",
           "mode": "inventory_scan",
           "targetPath": "scripts/gigabrainctl.js"
+        },
+        {
+          "binding": "eventStoreTestSource",
+          "mode": "read",
+          "targetPath": "tests/unit-event-store-test.js"
         }
       ],
       "runner": "node",
       "testPath": "tests/compat/projection-writer-registry-test.js",
-      "testSha256": "0488be02679d90a3e0fdc29ffbe3d5c3f6d2783c02d279b64f9d271524e45010"
+      "testSha256": "fdfc2f6dd04f2e34b757621bdbd62bea06056172e0c1c70ca5284459fe3fb32e"
     },
     {
       "coveredPaths": [
@@ -2076,7 +2082,7 @@
       ],
       "runner": "node",
       "testPath": "tests/source-first-divergence-test.js",
-      "testSha256": "be3879aef2adb69fb2729658812412d3cc4685fc9e8799423c3024661322077c"
+      "testSha256": "31fe02facf4303001827fdc447d4b6a451cad24856c8be4bb484760ac9167410"
     },
     {
       "coveredPaths": [
@@ -2089,7 +2095,7 @@
       "ownerSourceFirstTaskId": "1",
       "runner": "node",
       "testPath": "tests/source-first-divergence-test.js",
-      "testSha256": "be3879aef2adb69fb2729658812412d3cc4685fc9e8799423c3024661322077c"
+      "testSha256": "31fe02facf4303001827fdc447d4b6a451cad24856c8be4bb484760ac9167410"
     },
     {
       "coveredPaths": [
@@ -2149,6 +2155,6 @@
     }
   ],
   "entryCount": 96,
-  "manifestSha256": "59990a330d0cf14112ad0f85e735064792097b4856967b2aaf7a4cd76361e5fa",
+  "manifestSha256": "08f5b287c40cd3cfee9883c678cbb31f805109220ff98a69b2ad54fa8708504a",
   "schemaVersion": 1
 }

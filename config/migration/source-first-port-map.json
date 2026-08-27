@@ -101,7 +101,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "f80f751ab3cbf59bf39230ccb9d608163eb520e07e36f9c1f1baefcdf65490cd",
+      "contentSha256": "5f9736a35de05234ffd341c5ff154bd8695bbba4eaaa55dd364119d7be60b865",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -896,7 +896,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "35eb16a19754348cd3742c0764e864061d5b89c099796ebd3ca9070eca6bf5fb",
+      "contentSha256": "32cc4c6f5fd765159b2c354992383bd13c12c5350fe301ab63fcf4e7131d5fc3",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-projection-writer-registry"
@@ -1790,7 +1790,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "0488be02679d90a3e0fdc29ffbe3d5c3f6d2783c02d279b64f9d271524e45010",
+      "contentSha256": "fdfc2f6dd04f2e34b757621bdbd62bea06056172e0c1c70ca5284459fe3fb32e",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-projection-writer-registry"
@@ -2522,7 +2522,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "be3879aef2adb69fb2729658812412d3cc4685fc9e8799423c3024661322077c",
+      "contentSha256": "31fe02facf4303001827fdc447d4b6a451cad24856c8be4bb484760ac9167410",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2640,6 +2640,20 @@
       "reason": "Scanner-clean restored compatibility assertion or its private test infrastructure.",
       "targetMode": "100644",
       "targetPath": "tests/unit-eval-harness-test.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "bab1eaf5f6472eda40d53f454ba9a2372421fc5f906cd231a8d7a3b05f2f5726",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-projection-writer-registry"
+      },
+      "ownerTasks": [
+        "11"
+      ],
+      "reason": "Task 11 verifies complete arbiter event taxonomy and replay semantics through the executable writer registry.",
+      "targetMode": "100644",
+      "targetPath": "tests/unit-event-store-test.js"
     },
     {
       "changeType": "added",
