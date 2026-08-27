@@ -140,15 +140,16 @@
         "6",
         "8",
         "9",
-        "14"
+        "14",
+        "15"
       ],
-      "reason": "Source-first evidence through completed Task 14 migration and candidate-safety gates.",
+      "reason": "Source-first evidence through Task 15 canonical immutable-release provenance and local-integrity gates.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-port-map.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "78d2d68612c52a80113b282b94879110ea36ae628c0f5f53db29c526e871604b",
+      "contentSha256": "f588e212a922e49254e76e241914a834a0e10b34b1faf26afd14a4dc97476966",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -165,9 +166,10 @@
         "8",
         "9",
         "13",
-        "14"
+        "14",
+        "15"
       ],
-      "reason": "Source-first registry promotes all three Task 14 contracts to passing gates while preserving Task 13 GREEN.",
+      "reason": "Source-first registry preserves Task 14 GREEN and binds Task 15 canonical release provenance tests.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -621,15 +623,16 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "6fccc57fc930ceec21f4097e559c0db798170a687c1d052adeb5a2f3776aab60",
+      "contentSha256": "a5096d164ada810f6070e63996d4d379f92df7964e50780f7e5001d64a7a3aeb",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-shipping-core-evidence"
       },
       "ownerTasks": [
-        "5"
+        "5",
+        "15"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Task 5 runtime provenance compatibility extended by Task 15 exact gigabrain-release-manifest.1 payload, dependency and local-integrity builders.",
       "targetMode": "100644",
       "targetPath": "lib/compat/release-provenance.js"
     },
@@ -2090,15 +2093,16 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "9bb12b84a0d60b90b27ee0b028a2c58ba913f650275712933d5585f598ce36c2",
+      "contentSha256": "9fe1c98e7f6ea86acb0b00172bca5d3a90cafa9e401ebe11dcb608f381c2f7de",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-release-provenance"
       },
       "ownerTasks": [
-        "5"
+        "5",
+        "15"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Task 5 runtime provenance contract extended with Task 15 cross-runtime exact-schema release and local-integrity evidence.",
       "targetMode": "100644",
       "targetPath": "tests/compat/release-provenance-test.js"
     },

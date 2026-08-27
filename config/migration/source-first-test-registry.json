@@ -1175,7 +1175,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/release-provenance-test.js",
-      "testSha256": "9bb12b84a0d60b90b27ee0b028a2c58ba913f650275712933d5585f598ce36c2"
+      "testSha256": "9fe1c98e7f6ea86acb0b00172bca5d3a90cafa9e401ebe11dcb608f381c2f7de"
     },
     {
       "coveredPaths": [
@@ -2511,6 +2511,6 @@
     }
   ],
   "entryCount": 104,
-  "manifestSha256": "d263c7897e4ec1e40b610a5edbf8b82ce0d2bf01a195979a03fcd0788e1c69ad",
+  "manifestSha256": "8d43433b23bb5fd89b6d63cd4bd197c593a11b8739128d6cd191fae9e9d7e195",
   "schemaVersion": 1
 }
