@@ -542,6 +542,56 @@ export async function run() {
       rmSync(linkedRoot.root, { recursive: true, force: true });
     }
 
+    const fifoRelease = makeRelease();
+    try {
+      const releasePath = path.join(fifoRelease.root, "RELEASE.json");
+      unlinkSync(releasePath);
+      execFileSync("/usr/bin/mkfifo", [releasePath]);
+      const started = process.hrtime.bigint();
+      assert.throws(
+        () => load(fifoRelease.root),
+        /GIGABRAIN_RELEASE_PROVENANCE_INVALID/,
+        "open-first provenance reads must reject a FIFO without blocking",
+      );
+      const elapsedMs = Number(process.hrtime.bigint() - started) / 1_000_000;
+      assert.ok(elapsedMs < 1_000, `FIFO rejection exceeded the bound: ${elapsedMs}ms`);
+    } finally {
+      rmSync(fifoRelease.root, { recursive: true, force: true });
+    }
+
+    const growingRelease = makeRelease();
+    const growingReleasePath = path.join(growingRelease.root, "RELEASE.json");
+    const growingIdentity = fs.lstatSync(growingReleasePath);
+    const originalReadSync = fs.readSync;
+    let growthInjected = false;
+    let targetBytesRead = 0;
+    fs.readSync = function patchedReadSync(descriptor, ...args) {
+      const opened = fs.fstatSync(descriptor);
+      const isTarget = opened.dev === growingIdentity.dev && opened.ino === growingIdentity.ino;
+      if (isTarget && !growthInjected) {
+        growthInjected = true;
+        fs.appendFileSync(growingReleasePath, Buffer.alloc(512 * 1024, 0x20));
+      }
+      const bytesRead = originalReadSync.call(this, descriptor, ...args);
+      if (isTarget) targetBytesRead += bytesRead;
+      return bytesRead;
+    };
+    try {
+      assert.throws(
+        () => load(growingRelease.root),
+        /GIGABRAIN_RELEASE_PROVENANCE_INVALID/,
+        "a concurrently growing provenance file must fail at the byte cap",
+      );
+      assert.equal(growthInjected, true, "growth fault must execute");
+      assert.ok(
+        targetBytesRead <= (256 * 1024) + 1,
+        `bounded reader consumed ${targetBytesRead} bytes beyond its 256 KiB contract`,
+      );
+    } finally {
+      fs.readSync = originalReadSync;
+      rmSync(growingRelease.root, { recursive: true, force: true });
+    }
+
     const assertReplacementRaceRejected = (operation, expected) => {
       const candidate = makeInstalledRelease();
       const target = path.join(candidate.root, "lib/a.js");
@@ -561,7 +611,7 @@ export async function run() {
         assert.throws(
           () => operation(candidate.root),
           expected,
-          "lstat metadata and opened content must be bound to one stable inode",
+          "inventory/path churn must fail closed around the opened descriptor snapshot",
         );
         assert.equal(replaced, true, "replacement race hook must execute");
       } finally {
@@ -571,11 +621,11 @@ export async function run() {
     };
     assertReplacementRaceRejected(
       (releaseRoot) => buildReleasePayloadManifest({ releaseRoot }),
-      /GIGABRAIN_RELEASE_PAYLOAD_UNSTABLE/,
+      /GIGABRAIN_RELEASE_PAYLOAD_(?:MISSING|UNSTABLE)/,
     );
     assertReplacementRaceRejected(
       (releaseRoot) => computeLocalIntegrity({ releaseRoot }),
-      /GIGABRAIN_RELEASE_LOCAL_INTEGRITY_UNSTABLE/,
+      /GIGABRAIN_RELEASE_LOCAL_INTEGRITY_(?:MISSING|UNSTABLE)/,
     );
 
     const dependencyFixture = makeDependencyFixture();
