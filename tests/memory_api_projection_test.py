@@ -380,6 +380,55 @@ class MemoryApiProjectionTest(unittest.TestCase):
             "valid_until": None,
         })
 
+    def test_empty_normalized_rows_match_node_in_both_directions(self):
+        created = self.client.post("/memories", headers=self.headers, json={
+            "id": "python-empty-normalized",
+            "content": "!!!",
+        })
+        self.assertEqual(created.status_code, 200, created.text)
+        current = self.rows(
+            "SELECT normalized,normalized_hash FROM memory_current "
+            "WHERE memory_id='python-empty-normalized'"
+        )[0]
+        legacy = self.rows(
+            "SELECT normalized FROM memories WHERE id='python-empty-normalized'"
+        )[0]
+        self.assertEqual(current, {"normalized": "", "normalized_hash": ""})
+        self.assertEqual(legacy, {"normalized": ""})
+        events = self.rows(
+            "SELECT payload FROM memory_events WHERE memory_id='python-empty-normalized' ORDER BY rowid"
+        )
+        self.assertEqual(len(events), 1)
+        self.assertEqual(json.loads(events[0]["payload"])["projection_event_kind"], "row")
+
+        observed = run_node_projection("""
+          import { openDatabase } from './lib/core/sqlite.js';
+          import { getCurrentMemory, upsertCurrentMemory } from './lib/core/projection-store.js';
+          const [dbPath] = process.argv.slice(1);
+          const db = openDatabase(dbPath);
+          try {
+            const pythonRow = getCurrentMemory(db, 'python-empty-normalized', { ensure: false });
+            const nodeRow = upsertCurrentMemory(db, {
+              memory_id: 'node-empty-normalized', content: '!!!', scope: 'shared',
+            }, { now: '2026-08-27T10:00:00.000Z', operationId: 'node-empty-normalized' });
+            console.log(JSON.stringify({
+              node: { normalized: nodeRow.normalized, normalized_hash: nodeRow.normalized_hash },
+              python: { normalized: pythonRow.normalized, normalized_hash: pythonRow.normalized_hash },
+            }));
+          } finally {
+            db.close();
+          }
+        """, self.root / "state" / "registry.sqlite")
+        self.assertEqual(observed, {
+            "node": {"normalized": "", "normalized_hash": ""},
+            "python": {"normalized": "", "normalized_hash": ""},
+        })
+
+        response = self.client.get("/memories/node-empty-normalized", headers=self.headers)
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["content"], "!!!")
+        self.assertEqual(response.json()["normalized"], "")
+
 
 class MemoryApiLegacyUpgradeTest(unittest.TestCase):
     def test_pre_task11_legacy_schema_is_upgraded_additively(self):
