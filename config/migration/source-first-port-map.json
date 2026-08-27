@@ -1152,7 +1152,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "c728b43fd113b107d3070c56398ac05e9f8832e5890833ed3bf608b7b454069d",
+      "contentSha256": "d09b5df26f0705c92969882a4f744071b61a649fa44f772999b87d05877a6965",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-shipping-core-evidence"
@@ -1162,7 +1162,7 @@
         "11",
         "5"
       ],
-      "reason": "Task 11 adds only the exact development OpenClaw validator graph; the production dependency closure remains byte-identical.",
+      "reason": "Task 11 adds only the exact development OpenClaw validator graph in a lock accepted by npm 10 and npm 12; the production dependency closure remains byte-identical.",
       "targetMode": "100644",
       "targetPath": "package-lock.json"
     },
