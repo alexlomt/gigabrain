@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { openDatabase } from '../lib/core/sqlite.js';
 import { ensureSupportedNodeRuntime } from '../lib/core/runtime-guard.js';
@@ -141,6 +142,31 @@ const hasTableReadOnly = (db, tableName) => Boolean(db.prepare(`
 const LEGACY_COMPATIBILITY_REASON = 'v0.11 rollback window requires the legacy memories projection';
 export const TASK14_MEMORY_CONSOLE_METADATA_MIGRATION_ID = 'gigabrain-schema-0.11-compat-v1:memory-console-metadata-backfill';
 const TASK14_MIGRATION_LEDGER_TABLE = 'memory_schema_migrations';
+const TASK14_RECEIPT_CONTRACT_VERSION = 'gigabrain-memory-console-metadata-receipt-v1';
+const TASK14_SCHEMA_CONTRACT_VERSION = 'gigabrain-memory-console-metadata-schema-v1';
+const TASK14_LOGICAL_ROOT_CONTRACT_VERSION = 'gigabrain-memory-console-metadata-logical-root-v1';
+const TASK14_MAX_METADATA_ROWS = 10_000_000;
+export const TASK14_MEMORY_CONSOLE_METADATA_RECEIPT_CONTRACT = Object.freeze({
+  version: TASK14_RECEIPT_CONTRACT_VERSION,
+  migrationId: TASK14_MEMORY_CONSOLE_METADATA_MIGRATION_ID,
+  ledgerTable: TASK14_MIGRATION_LEDGER_TABLE,
+  ledgerColumns: Object.freeze(['migration_id', 'status', 'receipt_hash', 'schema_hash', 'receipt_json']),
+  receiptKeys: Object.freeze(['contract', 'migration_id', 'status', 'schema_hash', 'counts', 'metadata_roots']),
+  countKeys: Object.freeze(['legacy_metadata_rows', 'sidecar_metadata_rows']),
+  metadataRootKeys: Object.freeze(['legacy_sha256', 'sidecar_sha256']),
+  logicalRootContract: TASK14_LOGICAL_ROOT_CONTRACT_VERSION,
+  maxMetadataRows: TASK14_MAX_METADATA_ROWS,
+});
+export const TASK14_MEMORY_CONSOLE_METADATA_SCHEMA_CONTRACT = Object.freeze({
+  version: TASK14_SCHEMA_CONTRACT_VERSION,
+  schemaKeys: Object.freeze(['contract', 'table', 'index']),
+  tableName: 'memory_console_metadata',
+  tableKeys: Object.freeze(['name', 'sql', 'columns']),
+  tableColumnKeys: Object.freeze(['cid', 'name', 'type', 'notnull', 'dflt_value', 'pk']),
+  indexName: 'idx_memory_console_metadata_concept_pinned',
+  indexKeys: Object.freeze(['name', 'sql', 'columns']),
+  indexColumnKeys: Object.freeze(['seqno', 'cid', 'name']),
+});
 const SQLITE_HEADER_MAGIC = Buffer.from('SQLite format 3\0', 'utf8');
 const RECEIPT_HASH_RE = /^[0-9a-f]{64}$/;
 
@@ -168,6 +194,217 @@ const inspectDoctorPreOpenSafety = (dbPath) => {
   return { diagnostic: '', permitted: true };
 };
 
+const sha256Text = (value) => createHash('sha256').update(String(value || ''), 'utf8').digest('hex');
+
+const hasExactObjectKeys = (value, expectedKeys) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const keys = Object.keys(value);
+  return keys.length === expectedKeys.length && keys.every((key, index) => key === expectedKeys[index]);
+};
+
+const task14SchemaEvidence = (db) => {
+  const schemaRow = db.prepare('SELECT sql FROM sqlite_master WHERE type = ? AND name = ?');
+  const table = schemaRow.get('table', TASK14_MEMORY_CONSOLE_METADATA_SCHEMA_CONTRACT.tableName);
+  const index = schemaRow.get('index', TASK14_MEMORY_CONSOLE_METADATA_SCHEMA_CONTRACT.indexName);
+  const evidence = {
+    contract: TASK14_SCHEMA_CONTRACT_VERSION,
+    table: {
+      name: TASK14_MEMORY_CONSOLE_METADATA_SCHEMA_CONTRACT.tableName,
+      sql: String(table?.sql || ''),
+      columns: db.prepare('PRAGMA table_info(memory_console_metadata)').all().map((row) => ({
+        cid: Number(row.cid),
+        name: String(row.name || ''),
+        type: String(row.type || ''),
+        notnull: Number(row.notnull),
+        dflt_value: row.dflt_value === null || row.dflt_value === undefined ? null : String(row.dflt_value),
+        pk: Number(row.pk),
+      })),
+    },
+    index: {
+      name: TASK14_MEMORY_CONSOLE_METADATA_SCHEMA_CONTRACT.indexName,
+      sql: String(index?.sql || ''),
+      columns: db.prepare('PRAGMA index_info(idx_memory_console_metadata_concept_pinned)').all().map((row) => ({
+        seqno: Number(row.seqno),
+        cid: Number(row.cid),
+        name: String(row.name || ''),
+      })),
+    },
+  };
+  const canonical = JSON.stringify(evidence);
+  return { canonical, hash: sha256Text(canonical) };
+};
+
+const normalizeTask14MetadataRow = (row) => ({
+  memory_id: String(row?.memory_id || ''),
+  concept: row?.concept === null || row?.concept === undefined ? null : String(row.concept),
+  source_message_id: row?.source_message_id === null || row?.source_message_id === undefined ? null : String(row.source_message_id),
+  last_injected_at: row?.last_injected_at === null || row?.last_injected_at === undefined ? null : String(row.last_injected_at),
+  last_confirmed_at: row?.last_confirmed_at === null || row?.last_confirmed_at === undefined ? null : String(row.last_confirmed_at),
+  ttl_days: row?.ttl_days === null || row?.ttl_days === undefined ? null : Number(row.ttl_days),
+  pinned: Number(row?.pinned || 0),
+  review_version: row?.review_version === null || row?.review_version === undefined ? null : String(row.review_version),
+  review_reason: row?.review_reason === null || row?.review_reason === undefined ? null : String(row.review_reason),
+});
+
+const task14MetadataEvidence = (db) => {
+  const legacyCount = Number(db.prepare('SELECT COUNT(*) AS c FROM memories').get()?.c);
+  const sidecarCount = Number(db.prepare('SELECT COUNT(*) AS c FROM memory_console_metadata').get()?.c);
+  const counts = [legacyCount, sidecarCount];
+  if (counts.some((count) => !Number.isSafeInteger(count) || count < 0 || count > TASK14_MAX_METADATA_ROWS)) {
+    return { bounded: false, counts: null, roots: null };
+  }
+  const legacyRows = db.prepare(`
+    SELECT id AS memory_id, concept, source_message_id, last_injected_at,
+           last_confirmed_at, ttl_days, pinned, review_version, review_reason
+    FROM memories
+    ORDER BY id COLLATE BINARY
+  `).all().map(normalizeTask14MetadataRow);
+  const sidecarRows = db.prepare(`
+    SELECT memory_id, concept, source_message_id, last_injected_at,
+           last_confirmed_at, ttl_days, pinned, review_version, review_reason
+    FROM memory_console_metadata
+    ORDER BY memory_id COLLATE BINARY
+  `).all().map(normalizeTask14MetadataRow);
+  const root = (rows) => sha256Text(JSON.stringify({
+    contract: TASK14_LOGICAL_ROOT_CONTRACT_VERSION,
+    rows,
+  }));
+  return {
+    bounded: true,
+    counts: {
+      legacy_metadata_rows: legacyCount,
+      sidecar_metadata_rows: sidecarCount,
+    },
+    roots: {
+      legacy_sha256: root(legacyRows),
+      sidecar_sha256: root(sidecarRows),
+    },
+  };
+};
+
+const parseTask14Receipt = (rawReceiptJson) => {
+  let parsed = null;
+  try {
+    parsed = JSON.parse(String(rawReceiptJson || ''));
+  } catch {
+    return { receipt: null, reason: 'receipt_json_invalid' };
+  }
+  const contract = TASK14_MEMORY_CONSOLE_METADATA_RECEIPT_CONTRACT;
+  if (
+    !hasExactObjectKeys(parsed, contract.receiptKeys)
+    || !hasExactObjectKeys(parsed.counts, contract.countKeys)
+    || !hasExactObjectKeys(parsed.metadata_roots, contract.metadataRootKeys)
+    || typeof parsed.contract !== 'string'
+    || typeof parsed.migration_id !== 'string'
+    || typeof parsed.status !== 'string'
+    || typeof parsed.schema_hash !== 'string'
+    || typeof parsed.counts.legacy_metadata_rows !== 'number'
+    || typeof parsed.counts.sidecar_metadata_rows !== 'number'
+    || typeof parsed.metadata_roots.legacy_sha256 !== 'string'
+    || typeof parsed.metadata_roots.sidecar_sha256 !== 'string'
+  ) {
+    return { receipt: null, reason: 'receipt_contract_invalid' };
+  }
+  const canonical = JSON.stringify({
+    contract: parsed.contract,
+    migration_id: parsed.migration_id,
+    status: parsed.status,
+    schema_hash: parsed.schema_hash,
+    counts: {
+      legacy_metadata_rows: parsed.counts.legacy_metadata_rows,
+      sidecar_metadata_rows: parsed.counts.sidecar_metadata_rows,
+    },
+    metadata_roots: {
+      legacy_sha256: parsed.metadata_roots.legacy_sha256,
+      sidecar_sha256: parsed.metadata_roots.sidecar_sha256,
+    },
+  });
+  return {
+    canonical,
+    receipt: parsed,
+    reason: String(rawReceiptJson || '') === canonical ? '' : 'receipt_json_noncanonical',
+  };
+};
+
+const validateTask14MigrationEvidence = ({ db, migrationRow }) => {
+  const reasons = [];
+  const pushReason = (reason) => {
+    if (reason && !reasons.includes(reason)) reasons.push(reason);
+  };
+  const migrationStatus = String(migrationRow?.status || '');
+  if (migrationStatus === 'schema_only') pushReason('migration_schema_only');
+  else if (migrationStatus !== 'completed') pushReason('migration_incomplete');
+
+  const receiptHash = String(migrationRow?.receipt_hash || '');
+  const schemaHash = String(migrationRow?.schema_hash || '');
+  if (!RECEIPT_HASH_RE.test(receiptHash)) pushReason('receipt_hash_invalid');
+  if (!RECEIPT_HASH_RE.test(schemaHash)) pushReason('schema_hash_invalid');
+
+  const parsed = parseTask14Receipt(migrationRow?.receipt_json);
+  pushReason(parsed.reason);
+  const receipt = parsed.receipt;
+  if (RECEIPT_HASH_RE.test(receiptHash) && sha256Text(String(migrationRow?.receipt_json || '')) !== receiptHash) {
+    pushReason('receipt_hash_mismatch');
+  }
+  if (receipt) {
+    if (
+      receipt.contract !== TASK14_RECEIPT_CONTRACT_VERSION
+      || receipt.migration_id !== TASK14_MEMORY_CONSOLE_METADATA_MIGRATION_ID
+      || receipt.status !== migrationStatus
+    ) pushReason('receipt_contract_mismatch');
+    if (receipt.schema_hash !== schemaHash) pushReason('receipt_schema_hash_mismatch');
+  }
+
+  if (RECEIPT_HASH_RE.test(schemaHash)) {
+    try {
+      if (task14SchemaEvidence(db).hash !== schemaHash) pushReason('schema_hash_mismatch');
+    } catch {
+      pushReason('schema_evidence_unavailable');
+    }
+  }
+
+  if (receipt) {
+    const receiptCounts = [
+      receipt.counts.legacy_metadata_rows,
+      receipt.counts.sidecar_metadata_rows,
+    ];
+    const receiptCountsBounded = receiptCounts.every((count) => (
+      Number.isSafeInteger(count) && count >= 0 && count <= TASK14_MAX_METADATA_ROWS
+    ));
+    if (!receiptCountsBounded) {
+      pushReason('metadata_count_out_of_bounds');
+    } else if (
+      !RECEIPT_HASH_RE.test(receipt.metadata_roots.legacy_sha256)
+      || !RECEIPT_HASH_RE.test(receipt.metadata_roots.sidecar_sha256)
+    ) {
+      pushReason('receipt_contract_invalid');
+    } else {
+      try {
+        const actual = task14MetadataEvidence(db);
+        if (!actual.bounded) {
+          pushReason('metadata_count_out_of_bounds');
+        } else {
+          if (
+            receiptCounts[0] !== receiptCounts[1]
+            || actual.counts.legacy_metadata_rows !== actual.counts.sidecar_metadata_rows
+            || receiptCounts[0] !== actual.counts.legacy_metadata_rows
+            || receiptCounts[1] !== actual.counts.sidecar_metadata_rows
+          ) pushReason('metadata_count_mismatch');
+          if (
+            receipt.metadata_roots.legacy_sha256 !== receipt.metadata_roots.sidecar_sha256
+            || actual.roots.legacy_sha256 !== actual.roots.sidecar_sha256
+            || receipt.metadata_roots.legacy_sha256 !== actual.roots.legacy_sha256
+            || receipt.metadata_roots.sidecar_sha256 !== actual.roots.sidecar_sha256
+          ) pushReason('metadata_root_mismatch');
+        }
+      } catch {
+        pushReason('metadata_evidence_unavailable');
+      }
+    }
+  }
+  return reasons;
+};
+
 const inspectLegacyCompatibility = (
   dbPath,
   { db: suppliedDb = null, allowOpen = false, preOpenSafety: suppliedSafety = null } = {},
@@ -179,6 +416,7 @@ const inspectLegacyCompatibility = (
   let ledgerPresent = false;
   let ledgerColumnsPresent = false;
   let migrationRow = null;
+  let migrationEvidenceReasons = [];
   let inspected = false;
   let diagnostic = '';
   let db = suppliedDb;
@@ -202,19 +440,21 @@ const inspectLegacyCompatibility = (
       `).get());
       ledgerPresent = hasTableReadOnly(db, TASK14_MIGRATION_LEDGER_TABLE);
       if (ledgerPresent) {
-        const columns = new Set(
-          db.prepare(`PRAGMA table_info(${TASK14_MIGRATION_LEDGER_TABLE})`).all()
-            .map((row) => String(row?.name || '')),
-        );
-        ledgerColumnsPresent = ['migration_id', 'status', 'receipt_hash', 'schema_hash']
-          .every((column) => columns.has(column));
+        const columns = db.prepare(`PRAGMA table_info(${TASK14_MIGRATION_LEDGER_TABLE})`).all()
+          .map((row) => String(row?.name || ''));
+        const requiredColumns = TASK14_MEMORY_CONSOLE_METADATA_RECEIPT_CONTRACT.ledgerColumns;
+        ledgerColumnsPresent = columns.length === requiredColumns.length
+          && columns.every((column, index) => column === requiredColumns[index]);
         if (ledgerColumnsPresent) {
           migrationRow = db.prepare(`
-            SELECT status, receipt_hash, schema_hash
+            SELECT migration_id, status, receipt_hash, schema_hash, receipt_json
             FROM ${TASK14_MIGRATION_LEDGER_TABLE}
             WHERE migration_id = ?
             LIMIT 1
           `).get(TASK14_MEMORY_CONSOLE_METADATA_MIGRATION_ID) || null;
+          if (migrationRow) {
+            migrationEvidenceReasons = validateTask14MigrationEvidence({ db, migrationRow });
+          }
         }
       }
     } catch {
@@ -225,6 +465,7 @@ const inspectLegacyCompatibility = (
       ledgerPresent = false;
       ledgerColumnsPresent = false;
       migrationRow = null;
+      migrationEvidenceReasons = [];
       inspected = false;
       diagnostic = 'registry_inspection_failed';
     } finally {
@@ -236,7 +477,6 @@ const inspectLegacyCompatibility = (
   if (!inspected && !diagnostic) diagnostic = preOpenSafety.diagnostic || 'registry_not_inspected';
   const schemaPresent = sidecarPresent && sidecarIndexPresent;
   const receiptPresent = Boolean(migrationRow);
-  const migrationStatus = String(migrationRow?.status || '');
   const pendingReasons = [];
   if (!inspected) {
     pendingReasons.push('registry_not_inspected');
@@ -249,10 +489,7 @@ const inspectLegacyCompatibility = (
     } else if (!migrationRow) {
       pendingReasons.push('migration_receipt_missing');
     } else {
-      if (migrationStatus === 'schema_only') pendingReasons.push('migration_schema_only');
-      else if (migrationStatus !== 'completed') pendingReasons.push('migration_incomplete');
-      if (!RECEIPT_HASH_RE.test(String(migrationRow.receipt_hash || ''))) pendingReasons.push('receipt_hash_invalid');
-      if (!RECEIPT_HASH_RE.test(String(migrationRow.schema_hash || ''))) pendingReasons.push('schema_hash_invalid');
+      pendingReasons.push(...migrationEvidenceReasons);
     }
   }
   const task14Ready = pendingReasons.length === 0;
@@ -275,6 +512,9 @@ const inspectLegacyCompatibility = (
       migrationId: TASK14_MEMORY_CONSOLE_METADATA_MIGRATION_ID,
       ledgerTable: TASK14_MIGRATION_LEDGER_TABLE,
       requiredStatus: 'completed',
+      receiptContract: TASK14_RECEIPT_CONTRACT_VERSION,
+      schemaContract: TASK14_SCHEMA_CONTRACT_VERSION,
+      maxMetadataRows: TASK14_MAX_METADATA_ROWS,
       schemaPresent,
       receiptRequired: true,
       receiptPresent,
@@ -1677,39 +1917,75 @@ const pendingDoctorStoreHealth = ({ config, dbPath, diagnostic, target = 'projec
   diagnostic,
 });
 
+const selectedCodexDoctorStores = ({ context, target = 'both' } = {}) => {
+  const normalized = String(target || '').trim().toLowerCase();
+  const targets = normalized === 'project'
+    ? ['project']
+    : normalized === 'user' ? ['user'] : ['project', 'user'];
+  return targets.map((storeTarget) => {
+    const storeConfig = storeTarget === 'project' ? context?.projectConfig : context?.userConfig;
+    const storeDbPath = String(storeConfig?.runtime?.paths?.registryPath || '').trim();
+    return {
+      config: storeConfig || null,
+      dbPath: storeDbPath,
+      preOpenSafety: storeConfig
+        ? inspectDoctorPreOpenSafety(storeDbPath)
+        : { diagnostic: 'store_not_configured', permitted: true },
+      target: storeTarget,
+    };
+  });
+};
+
 const commandDoctor = async () => {
   const { configPath, source, config, dbPath } = loadConfigAndDbPath();
   const target = readFlag('--target', 'both');
-  const preOpenSafety = inspectDoctorPreOpenSafety(dbPath);
-  let compatibility = inspectLegacyCompatibility(dbPath, { preOpenSafety });
   if (source === 'standalone' && config?.codex?.enabled !== false) {
-    if (!preOpenSafety.permitted) {
+    const codexOptions = {
+      configPath,
+      target,
+      workspaceRoot: readFlag('--workspace', ''),
+      mode: readFlag('--mode', source),
+    };
+    const { loadCodexContext, runDoctor } = await import('../lib/core/codex-service.js');
+    const context = loadCodexContext(codexOptions);
+    const stores = selectedCodexDoctorStores({ context, target });
+    const unsafeStores = stores.filter((store) => store.config && !store.preOpenSafety.permitted);
+    const compatibilityStore = target === 'user'
+      ? stores.find((store) => store.target === 'user')
+      : stores.find((store) => store.target === 'project') || stores[0];
+    let compatibility = inspectLegacyCompatibility(compatibilityStore?.dbPath || '', {
+      preOpenSafety: compatibilityStore?.preOpenSafety,
+    });
+    if (unsafeStores.length > 0) {
       console.log(JSON.stringify({
         ok: false,
         observational: true,
         source,
         config_path: configPath,
-        stores: [pendingDoctorStoreHealth({
-          config,
-          dbPath,
-          diagnostic: preOpenSafety.diagnostic,
-          target: target === 'user' ? 'user' : 'project',
-        })],
+        stores: stores.map((store) => pendingDoctorStoreHealth({
+          config: store.config,
+          dbPath: store.dbPath,
+          diagnostic: !store.config
+            ? 'store_not_configured'
+            : store.preOpenSafety.permitted
+              ? 'selected_store_preopen_blocked'
+              : store.preOpenSafety.diagnostic,
+          target: store.target,
+        })),
         compatibility,
       }, null, 2));
       return;
     }
-    compatibility = inspectLegacyCompatibility(dbPath, { allowOpen: true, preOpenSafety });
-    const { runDoctor } = await import('../lib/core/codex-service.js');
-    const result = await runDoctor({
-      configPath,
-      target,
-      workspaceRoot: readFlag('--workspace', ''),
-      mode: readFlag('--mode', source),
+    compatibility = inspectLegacyCompatibility(compatibilityStore?.dbPath || '', {
+      allowOpen: Boolean(compatibilityStore?.config),
+      preOpenSafety: compatibilityStore?.preOpenSafety,
     });
+    const result = await runDoctor(codexOptions);
     console.log(JSON.stringify({ ...result, observational: true, compatibility }, null, 2));
     return;
   }
+  const preOpenSafety = inspectDoctorPreOpenSafety(dbPath);
+  let compatibility = inspectLegacyCompatibility(dbPath, { preOpenSafety });
   const checks = [];
   checks.push({ name: 'config_loaded', ok: Boolean(config) });
   checks.push({ name: 'db_exists', ok: Boolean(dbPath) });

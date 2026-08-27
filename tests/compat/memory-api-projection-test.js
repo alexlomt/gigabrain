@@ -40,8 +40,10 @@ const projectionCounts = (db) => ({
 const repoRoot = path.resolve(import.meta.dirname, "..", "..");
 const cliPath = path.join(repoRoot, "scripts", "gigabrainctl.js");
 const TASK14_SIDECAR_MIGRATION_ID = "gigabrain-schema-0.11-compat-v1:memory-console-metadata-backfill";
-const VALID_RECEIPT_HASH = "a".repeat(64);
-const VALID_SCHEMA_HASH = "b".repeat(64);
+const TASK14_RECEIPT_CONTRACT = "gigabrain-memory-console-metadata-receipt-v1";
+const TASK14_SCHEMA_CONTRACT = "gigabrain-memory-console-metadata-schema-v1";
+const TASK14_LOGICAL_ROOT_CONTRACT = "gigabrain-memory-console-metadata-logical-root-v1";
+const TASK14_MAX_METADATA_ROWS = 10_000_000;
 const hashBytes = (value) => createHash("sha256").update(value).digest("hex");
 const snapshotTree = (root) => {
   if (!existsSync(root)) return [];
@@ -88,11 +90,114 @@ const task14MigrationState = ({
   migrationId: TASK14_SIDECAR_MIGRATION_ID,
   ledgerTable: "memory_schema_migrations",
   requiredStatus: "completed",
+  receiptContract: TASK14_RECEIPT_CONTRACT,
+  schemaContract: TASK14_SCHEMA_CONTRACT,
+  maxMetadataRows: TASK14_MAX_METADATA_ROWS,
   schemaPresent,
   receiptRequired: true,
   receiptPresent,
   pendingReasons,
 });
+
+const task14SchemaEvidence = (db) => {
+  const schemaRow = db.prepare("SELECT sql FROM sqlite_master WHERE type = ? AND name = ?");
+  const table = schemaRow.get("table", "memory_console_metadata");
+  const index = schemaRow.get("index", "idx_memory_console_metadata_concept_pinned");
+  const evidence = {
+    contract: TASK14_SCHEMA_CONTRACT,
+    table: {
+      name: "memory_console_metadata",
+      sql: String(table?.sql || ""),
+      columns: db.prepare("PRAGMA table_info(memory_console_metadata)").all().map((row) => ({
+        cid: Number(row.cid),
+        name: String(row.name || ""),
+        type: String(row.type || ""),
+        notnull: Number(row.notnull),
+        dflt_value: row.dflt_value === null || row.dflt_value === undefined ? null : String(row.dflt_value),
+        pk: Number(row.pk),
+      })),
+    },
+    index: {
+      name: "idx_memory_console_metadata_concept_pinned",
+      sql: String(index?.sql || ""),
+      columns: db.prepare("PRAGMA index_info(idx_memory_console_metadata_concept_pinned)").all().map((row) => ({
+        seqno: Number(row.seqno),
+        cid: Number(row.cid),
+        name: String(row.name || ""),
+      })),
+    },
+  };
+  return {
+    canonical: JSON.stringify(evidence),
+    hash: hashBytes(JSON.stringify(evidence)),
+  };
+};
+
+const task14MetadataRows = (db, source) => {
+  const rows = source === "legacy"
+    ? db.prepare(`
+        SELECT id AS memory_id, concept, source_message_id, last_injected_at,
+               last_confirmed_at, ttl_days, pinned, review_version, review_reason
+        FROM memories
+        ORDER BY id COLLATE BINARY
+      `).all()
+    : db.prepare(`
+        SELECT memory_id, concept, source_message_id, last_injected_at,
+               last_confirmed_at, ttl_days, pinned, review_version, review_reason
+        FROM memory_console_metadata
+        ORDER BY memory_id COLLATE BINARY
+      `).all();
+  return rows.map((row) => ({
+    memory_id: String(row.memory_id || ""),
+    concept: row.concept === null || row.concept === undefined ? null : String(row.concept),
+    source_message_id: row.source_message_id === null || row.source_message_id === undefined ? null : String(row.source_message_id),
+    last_injected_at: row.last_injected_at === null || row.last_injected_at === undefined ? null : String(row.last_injected_at),
+    last_confirmed_at: row.last_confirmed_at === null || row.last_confirmed_at === undefined ? null : String(row.last_confirmed_at),
+    ttl_days: row.ttl_days === null || row.ttl_days === undefined ? null : Number(row.ttl_days),
+    pinned: Number(row.pinned || 0),
+    review_version: row.review_version === null || row.review_version === undefined ? null : String(row.review_version),
+    review_reason: row.review_reason === null || row.review_reason === undefined ? null : String(row.review_reason),
+  }));
+};
+
+const task14MetadataEvidence = (db) => {
+  const legacyRows = task14MetadataRows(db, "legacy");
+  const sidecarRows = task14MetadataRows(db, "sidecar");
+  const root = (rows) => hashBytes(JSON.stringify({
+    contract: TASK14_LOGICAL_ROOT_CONTRACT,
+    rows,
+  }));
+  return {
+    counts: {
+      legacy_metadata_rows: legacyRows.length,
+      sidecar_metadata_rows: sidecarRows.length,
+    },
+    roots: {
+      legacy_sha256: root(legacyRows),
+      sidecar_sha256: root(sidecarRows),
+    },
+  };
+};
+
+const buildTask14Receipt = (db, overrides = {}) => {
+  const schema = task14SchemaEvidence(db);
+  const metadata = task14MetadataEvidence(db);
+  const receipt = {
+    contract: TASK14_RECEIPT_CONTRACT,
+    migration_id: String(overrides.migration_id || TASK14_SIDECAR_MIGRATION_ID),
+    status: String(overrides.status || "completed"),
+    schema_hash: String(overrides.schema_hash || schema.hash),
+    counts: overrides.counts || metadata.counts,
+    metadata_roots: overrides.metadata_roots || metadata.roots,
+  };
+  const canonical = JSON.stringify(receipt);
+  return {
+    canonical,
+    hash: hashBytes(canonical),
+    receipt,
+    schemaHash: schema.hash,
+  };
+};
 
 const createTask14Ledger = (db, row = null) => {
   db.exec(`
@@ -100,23 +205,32 @@ const createTask14Ledger = (db, row = null) => {
       migration_id TEXT PRIMARY KEY,
       status TEXT NOT NULL,
       receipt_hash TEXT NOT NULL,
-      schema_hash TEXT NOT NULL
+      schema_hash TEXT NOT NULL,
+      receipt_json TEXT NOT NULL
     )
   `);
   if (!row) return;
+  const built = buildTask14Receipt(db, row.receipt || row);
+  const receiptJson = String(row.receipt_json ?? built.canonical);
   db.prepare(`
     INSERT INTO memory_schema_migrations (
-      migration_id, status, receipt_hash, schema_hash
-    ) VALUES (?, ?, ?, ?)
+      migration_id, status, receipt_hash, schema_hash, receipt_json
+    ) VALUES (?, ?, ?, ?, ?)
   `).run(
     String(row.migration_id || TASK14_SIDECAR_MIGRATION_ID),
     String(row.status || "completed"),
-    String(row.receipt_hash ?? VALID_RECEIPT_HASH),
-    String(row.schema_hash ?? VALID_SCHEMA_HASH),
+    String(row.receipt_hash ?? hashBytes(receiptJson)),
+    String(row.schema_hash ?? built.receipt.schema_hash),
+    receiptJson,
   );
 };
 
-const writeStandaloneConfig = (configPath, workspaceRoot, registryPath) => {
+const writeStandaloneConfig = (
+  configPath,
+  workspaceRoot,
+  registryPath,
+  { userProfilePath = "" } = {},
+) => {
   writeFileSync(configPath, `${JSON.stringify({
     enabled: true,
     compat: { writeMode: "read_only" },
@@ -132,7 +246,7 @@ const writeStandaloneConfig = (configPath, workspaceRoot, registryPath) => {
       enabled: true,
       projectRoot: workspaceRoot,
       projectStorePath: workspaceRoot,
-      userProfilePath: "",
+      userProfilePath,
     },
     recall: { semanticRerankEnabled: false },
   }, null, 2)}\n`, { mode: 0o600 });
@@ -286,6 +400,8 @@ const assertTask14MigrationLedgerReadiness = ({ ensureProjectionStore, upsertCur
     /export const TASK14_MEMORY_CONSOLE_METADATA_MIGRATION_ID = ['"]gigabrain-schema-0\.11-compat-v1:memory-console-metadata-backfill['"];/,
     "the exact Task 14 receipt identity must be a named CLI export",
   );
+  assert.match(cliSource, /export const TASK14_MEMORY_CONSOLE_METADATA_RECEIPT_CONTRACT = Object\.freeze\(/);
+  assert.match(cliSource, /export const TASK14_MEMORY_CONSOLE_METADATA_SCHEMA_CONTRACT = Object\.freeze\(/);
   const variants = [
     {
       name: "missing-ledger-table",
@@ -304,6 +420,34 @@ const assertTask14MigrationLedgerReadiness = ({ ensureProjectionStore, upsertCur
         status: "pending",
       }),
       setup: (db) => createTask14Ledger(db),
+    },
+    {
+      name: "missing-receipt-json-column",
+      expected: task14MigrationState({
+        pendingReasons: ["migration_ledger_invalid"],
+        receiptPresent: false,
+        status: "pending",
+      }),
+      setup: (db) => db.exec(`
+        CREATE TABLE memory_schema_migrations (
+          migration_id TEXT PRIMARY KEY,
+          status TEXT NOT NULL,
+          receipt_hash TEXT NOT NULL,
+          schema_hash TEXT NOT NULL
+        )
+      `),
+    },
+    {
+      name: "extra-ledger-column",
+      expected: task14MigrationState({
+        pendingReasons: ["migration_ledger_invalid"],
+        receiptPresent: false,
+        status: "pending",
+      }),
+      setup: (db) => {
+        createTask14Ledger(db, { status: "completed" });
+        db.exec("ALTER TABLE memory_schema_migrations ADD COLUMN unexpected_column TEXT");
+      },
     },
     {
       name: "incomplete-receipt",
@@ -345,6 +489,146 @@ const assertTask14MigrationLedgerReadiness = ({ ensureProjectionStore, upsertCur
       }),
       setup: (db) => createTask14Ledger(db, { schema_hash: "not-a-schema-hash" }),
     },
+    {
+      name: "arbitrary-well-formed-receipt-hash",
+      expected: task14MigrationState({
+        pendingReasons: ["receipt_hash_mismatch"],
+        status: "pending",
+      }),
+      setup: (db) => createTask14Ledger(db, { receipt_hash: "d".repeat(64) }),
+    },
+    {
+      name: "arbitrary-well-formed-schema-hash",
+      expected: task14MigrationState({
+        pendingReasons: ["schema_hash_mismatch"],
+        status: "pending",
+      }),
+      setup: (db) => createTask14Ledger(db, { schema_hash: "c".repeat(64) }),
+    },
+    {
+      name: "invalid-receipt-json",
+      expected: task14MigrationState({
+        pendingReasons: ["receipt_json_invalid"],
+        status: "pending",
+      }),
+      setup: (db) => createTask14Ledger(db, {
+        receipt_json: "{",
+        receipt_hash: hashBytes("{"),
+      }),
+    },
+    {
+      name: "noncanonical-receipt-json",
+      expected: task14MigrationState({
+        pendingReasons: ["receipt_json_noncanonical"],
+        status: "pending",
+      }),
+      setup: (db) => {
+        const built = buildTask14Receipt(db);
+        const receiptJson = JSON.stringify(built.receipt, null, 2);
+        createTask14Ledger(db, { receipt_json: receiptJson, receipt_hash: hashBytes(receiptJson) });
+      },
+    },
+    {
+      name: "receipt-shape-extra-field",
+      expected: task14MigrationState({
+        pendingReasons: ["receipt_contract_invalid"],
+        status: "pending",
+      }),
+      setup: (db) => {
+        const built = buildTask14Receipt(db);
+        const receiptJson = JSON.stringify({ ...built.receipt, extra: 1 });
+        createTask14Ledger(db, { receipt_json: receiptJson, receipt_hash: hashBytes(receiptJson) });
+      },
+    },
+    {
+      name: "receipt-schema-mismatch",
+      expected: task14MigrationState({
+        pendingReasons: ["receipt_schema_hash_mismatch"],
+        status: "pending",
+      }),
+      setup: (db) => {
+        const built = buildTask14Receipt(db, { schema_hash: "c".repeat(64) });
+        createTask14Ledger(db, {
+          receipt_json: built.canonical,
+          receipt_hash: built.hash,
+          schema_hash: task14SchemaEvidence(db).hash,
+        });
+      },
+    },
+    {
+      name: "receipt-count-out-of-bounds",
+      expected: task14MigrationState({
+        pendingReasons: ["metadata_count_out_of_bounds"],
+        status: "pending",
+      }),
+      setup: (db) => createTask14Ledger(db, { receipt: {
+        counts: {
+          legacy_metadata_rows: TASK14_MAX_METADATA_ROWS + 1,
+          sidecar_metadata_rows: TASK14_MAX_METADATA_ROWS + 1,
+        },
+      } }),
+    },
+    {
+      name: "receipt-count-mismatch",
+      expected: task14MigrationState({
+        pendingReasons: ["metadata_count_mismatch"],
+        status: "pending",
+      }),
+      setup: (db) => createTask14Ledger(db, { receipt: {
+        counts: {
+          legacy_metadata_rows: 2,
+          sidecar_metadata_rows: 2,
+        },
+      } }),
+    },
+    {
+      name: "altered-index-contract",
+      expected: task14MigrationState({
+        pendingReasons: ["schema_hash_mismatch"],
+        status: "pending",
+      }),
+      setup: (db) => {
+        createTask14Ledger(db, { status: "completed" });
+        db.exec(`
+          DROP INDEX idx_memory_console_metadata_concept_pinned;
+          CREATE INDEX idx_memory_console_metadata_concept_pinned
+            ON memory_console_metadata(pinned, concept, memory_id);
+        `);
+      },
+    },
+    {
+      name: "altered-table-contract",
+      expected: task14MigrationState({
+        pendingReasons: ["schema_hash_mismatch"],
+        status: "pending",
+      }),
+      setup: (db) => {
+        createTask14Ledger(db, { status: "completed" });
+        db.exec("ALTER TABLE memory_console_metadata ADD COLUMN unexpected_task14_column TEXT");
+      },
+    },
+    {
+      name: "unequal-metadata-counts",
+      expected: task14MigrationState({
+        pendingReasons: ["metadata_count_mismatch", "metadata_root_mismatch"],
+        status: "pending",
+      }),
+      setup: (db) => {
+        createTask14Ledger(db, { status: "completed" });
+        db.exec("DELETE FROM memory_console_metadata");
+      },
+    },
+    {
+      name: "unequal-metadata-roots",
+      expected: task14MigrationState({
+        pendingReasons: ["metadata_root_mismatch"],
+        status: "pending",
+      }),
+      setup: (db) => {
+        createTask14Ledger(db, { status: "completed" });
+        db.exec("UPDATE memory_console_metadata SET concept = 'altered-after-receipt'");
+      },
+    },
   ];
 
   for (const variant of variants) {
@@ -357,7 +641,10 @@ const assertTask14MigrationLedgerReadiness = ({ ensureProjectionStore, upsertCur
     const db = openDatabase(dbPath);
     try {
       ensureProjectionStore(db);
-      upsertCurrentMemory(db, memory(`task14-${variant.name}`), { operationId: `task14-${variant.name}` });
+      upsertCurrentMemory(db, memory(`task14-${variant.name}`), {
+        metadata: { concept: `task14-${variant.name}`, pinned: false },
+        operationId: `task14-${variant.name}`,
+      });
       variant.setup(db);
       writeOpenClawConfig(configPath, workspace, dbPath);
       const before = observationalTree(root);
@@ -368,7 +655,7 @@ const assertTask14MigrationLedgerReadiness = ({ ensureProjectionStore, upsertCur
       assert.deepEqual(payload.compatibility.task14SidecarMigration, variant.expected, variant.name);
       assert.doesNotMatch(
         JSON.stringify(payload.compatibility.task14SidecarMigration),
-        new RegExp(`${VALID_RECEIPT_HASH}|${VALID_SCHEMA_HASH}`),
+        /[0-9a-f]{64}/,
         `${variant.name}: diagnostics must not expose receipt material`,
       );
       assert.deepEqual(observationalTree(root), before, `${variant.name}: doctor must preserve the file tree`);
@@ -452,7 +739,10 @@ const assertCodexDoctorPreOpenSafety = ({ ensureProjectionStore, upsertCurrentMe
   const db = openDatabase(dbPath);
   try {
     ensureProjectionStore(db);
-    upsertCurrentMemory(db, memory("codex-preopen-safe"), { operationId: "codex-preopen-safe" });
+    upsertCurrentMemory(db, memory("codex-preopen-safe"), {
+      metadata: { concept: "codex-preopen-safe", pinned: false },
+      operationId: "codex-preopen-safe",
+    });
     createTask14Ledger(db, { status: "completed" });
     writeStandaloneConfig(configPath, workspace, dbPath);
     const before = observationalTree(root);
@@ -467,6 +757,112 @@ const assertCodexDoctorPreOpenSafety = ({ ensureProjectionStore, upsertCurrentMe
     assert.deepEqual(observationalTree(root), before, "safe Codex doctor must remain observational");
   } finally {
     db.close();
+    rmSync(root, { recursive: true, force: true });
+  }
+};
+
+const assertCodexDoctorSelectedStoreSafety = ({ ensureProjectionStore, upsertCurrentMemory }) => {
+  const createStore = ({ dbPath, id, safe }) => {
+    mkdirSync(path.dirname(dbPath), { recursive: true, mode: 0o700 });
+    const db = openDatabase(dbPath);
+    ensureProjectionStore(db);
+    upsertCurrentMemory(db, memory(id), { operationId: id });
+    if (safe) {
+      assert.equal(existsSync(`${dbPath}-wal`), true, `${id}: safe store must retain WAL`);
+      assert.equal(existsSync(`${dbPath}-shm`), true, `${id}: safe store must retain SHM`);
+      return db;
+    }
+    db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+    db.close();
+    const header = readFileSync(dbPath).subarray(0, 20);
+    assert.deepEqual([header[18], header[19]], [2, 2], `${id}: unsafe fixture must retain a WAL header`);
+    assert.equal(existsSync(`${dbPath}-wal`), false, `${id}: unsafe store starts without WAL`);
+    assert.equal(existsSync(`${dbPath}-shm`), false, `${id}: unsafe store starts without SHM`);
+    return null;
+  };
+
+  for (const unsafeTarget of ["project", "user"]) {
+    const root = mkdtempSync(path.join(tmpdir(), `gigabrain-task11-selected-${unsafeTarget}-unsafe-`));
+    const projectRoot = path.join(root, "project-store");
+    const userRoot = path.join(root, "user-store");
+    const projectDbPath = path.join(projectRoot, "memory", "registry.sqlite");
+    const userDbPath = path.join(userRoot, "memory", "registry.sqlite");
+    const configPath = path.join(root, "gigabrain.json");
+    const projectDb = createStore({
+      dbPath: projectDbPath,
+      id: `selected-${unsafeTarget}-project`,
+      safe: unsafeTarget !== "project",
+    });
+    const userDb = createStore({
+      dbPath: userDbPath,
+      id: `selected-${unsafeTarget}-user`,
+      safe: unsafeTarget !== "user",
+    });
+    writeStandaloneConfig(configPath, projectRoot, projectDbPath, { userProfilePath: userRoot });
+    try {
+      const before = snapshotTree(root);
+      const doctor = runCli(["doctor", "--config", configPath, "--mode", "standalone", "--target", "both"]);
+      assert.equal(doctor.status, 0, `${unsafeTarget}: ${doctor.stderr || doctor.stdout}`);
+      const payload = JSON.parse(doctor.stdout);
+      assert.equal(payload.ok, false, unsafeTarget);
+      assert.equal(payload.observational, true, unsafeTarget);
+      assert.equal(Object.hasOwn(payload, "build"), false, `${unsafeTarget}: one unsafe selection must bypass runDoctor`);
+      assert.deepEqual(
+        payload.stores.map((store) => ({
+          db_path: store.db_path,
+          diagnostic: store.diagnostic,
+          status: store.status,
+          target: store.target,
+        })),
+        [
+          {
+            db_path: projectDbPath,
+            diagnostic: unsafeTarget === "project"
+              ? "wal_coordination_sidecars_unavailable"
+              : "selected_store_preopen_blocked",
+            status: "pending",
+            target: "project",
+          },
+          {
+            db_path: userDbPath,
+            diagnostic: unsafeTarget === "user"
+              ? "wal_coordination_sidecars_unavailable"
+              : "selected_store_preopen_blocked",
+            status: "pending",
+            target: "user",
+          },
+        ],
+        unsafeTarget,
+      );
+      assert.deepEqual(snapshotTree(root), before, `${unsafeTarget}: no selected store may be opened or changed`);
+    } finally {
+      projectDb?.close();
+      userDb?.close();
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+
+  const root = mkdtempSync(path.join(tmpdir(), "gigabrain-task11-selected-both-safe-"));
+  const projectRoot = path.join(root, "project-store");
+  const userRoot = path.join(root, "user-store");
+  const projectDbPath = path.join(projectRoot, "memory", "registry.sqlite");
+  const userDbPath = path.join(userRoot, "memory", "registry.sqlite");
+  const configPath = path.join(root, "gigabrain.json");
+  const projectDb = createStore({ dbPath: projectDbPath, id: "selected-safe-project", safe: true });
+  const userDb = createStore({ dbPath: userDbPath, id: "selected-safe-user", safe: true });
+  writeStandaloneConfig(configPath, projectRoot, projectDbPath, { userProfilePath: userRoot });
+  try {
+    const before = observationalTree(root);
+    const doctor = runCli(["doctor", "--config", configPath, "--mode", "standalone", "--target", "both"]);
+    assert.equal(doctor.status, 0, doctor.stderr || doctor.stdout);
+    const payload = JSON.parse(doctor.stdout);
+    assert.equal(payload.ok, true);
+    assert.equal(Object.hasOwn(payload, "build"), true, "both safe stores may reach runDoctor");
+    assert.deepEqual(payload.stores.map((store) => [store.target, store.ok]), [["project", true], ["user", true]]);
+    assert.deepEqual(observationalTree(root), before, "normal both-store doctor remains observational");
+  } finally {
+    projectDb.close();
+    userDb.close();
     rmSync(root, { recursive: true, force: true });
   }
 };
@@ -530,6 +926,7 @@ export async function run() {
     assertDoctorCompatibilityDiagnostics({ ensureProjectionStore, upsertCurrentMemory });
     assertTask14MigrationLedgerReadiness({ ensureProjectionStore, upsertCurrentMemory });
     assertCodexDoctorPreOpenSafety({ ensureProjectionStore, upsertCurrentMemory });
+    assertCodexDoctorSelectedStoreSafety({ ensureProjectionStore, upsertCurrentMemory });
     const db = openDatabase(":memory:");
     try {
       ensureProjectionStore(db);

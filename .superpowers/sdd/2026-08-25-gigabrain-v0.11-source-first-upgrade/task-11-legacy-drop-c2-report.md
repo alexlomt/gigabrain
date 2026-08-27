@@ -98,3 +98,59 @@ After the minimal CLI changes, `node tests/compat/memory-api-projection-test.js`
 | `node tests/compat/write-mode-gate-test.js` | **RED, unchanged and not waived** |
 
 The unwaived write-mode RED remains the previously isolated `captureFromEvent` ordering issue (`captureFromEvent requires db` instead of `GIGABRAIN_WRITE_FORBIDDEN`). It is outside the three files owned by C2 fix 2.1 and remains a separate bounded Task 11 round.
+
+## C2 fix 2.2
+
+Date: 2026-08-27
+Base: `5b8f1a2872af596c6dbc78d0cb6578efc566b53d`
+
+### Selected-store pre-open closure
+
+- Standalone doctor now uses the authoritative exported `loadCodexContext` resolver to obtain the normalized project and user store configurations used by `runDoctor`; it does not synthesize or scan broader paths.
+- Every store selected by `--target project|user|both` is header/sidecar-preflighted before `runDoctor`. If one configured store is unsafe, `runDoctor` is not called and no selected SQLite database is opened. Each selected store receives a pending, content-free diagnostic: its own safety reason, `selected_store_preopen_blocked` for a safe peer, or `store_not_configured` when applicable.
+- TDD fixtures cover safe-project/unsafe-user and unsafe-project/safe-user under `--target both`. They require exact hashes for the main DB, WAL, SHM, config, and every other path to remain unchanged. A both-safe fixture proves normal two-store Codex doctor health still runs; only pre-existing SHM lock bytes are treated as volatile on that allowed path.
+
+### Exact Task 14 evidence contract
+
+Fix 2.2 supersedes the provisional four-column ledger check documented in fix 2.1. The exported contract now requires exactly these ordered ledger columns:
+
+```text
+migration_id,status,receipt_hash,schema_hash,receipt_json
+```
+
+The canonical receipt is one-line UTF-8 JSON with keys in this exact order and no extras:
+
+```json
+{"contract":"gigabrain-memory-console-metadata-receipt-v1","migration_id":"gigabrain-schema-0.11-compat-v1:memory-console-metadata-backfill","status":"completed","schema_hash":"<64-lower-hex>","counts":{"legacy_metadata_rows":0,"sidecar_metadata_rows":0},"metadata_roots":{"legacy_sha256":"<64-lower-hex>","sidecar_sha256":"<64-lower-hex>"}}
+```
+
+- Both counts must be safe integers from zero through `10000000`, equal each other, and equal the current read-only database counts.
+- Both metadata roots must be lowercase SHA-256, equal each other, and equal freshly computed roots over fixed-key metadata rows ordered by binary memory ID. The logical-root envelope is `gigabrain-memory-console-metadata-logical-root-v1`.
+- `receipt_hash` is recomputed from the exact canonical `receipt_json` bytes.
+- The schema hash is recomputed from canonical `gigabrain-memory-console-metadata-schema-v1` JSON containing the exact `sqlite_master.sql`, ordered `PRAGMA table_info(memory_console_metadata)` fields, exact index SQL, and ordered `PRAGMA index_info(idx_memory_console_metadata_concept_pinned)` fields. The recomputed value must match both the ledger row and canonical receipt.
+- The exact receipt and schema definitions are exported as `TASK14_MEMORY_CONSOLE_METADATA_RECEIPT_CONTRACT` and `TASK14_MEMORY_CONSOLE_METADATA_SCHEMA_CONTRACT` for the Task 14 implementation. Doctor creates or mutates none of this evidence and returns only stable reason codes, never receipt JSON, hashes, or metadata.
+
+### TDD evidence
+
+- Multi-store RED: the project-only safety branch returned only the unsafe project record and did not resolve/report the selected user store; the inverse direction could reach `runDoctor` through a safe project preflight.
+- Cryptographic RED: arbitrary 64-hex values and schema presence were sufficient for `ready`; the payload lacked the exported receipt/schema contract identifiers.
+- GREEN covers exact ready evidence plus missing/extra ledger columns, missing row, incomplete/case-mismatched/`schema_only` status, malformed and arbitrary hashes, invalid/noncanonical/extra-field JSON, receipt/schema disagreement, bounded/mismatched counts, altered table/index contracts, and unequal logical counts/roots.
+
+### Fix 2.2 verification
+
+| Command | Result |
+| --- | --- |
+| `node tests/compat/memory-api-projection-test.js` | PASS (`memory-api-projection-test.js: ok`) |
+| `node tests/compat/projection-writer-registry-test.js` | PASS (`projection-writer-registry-test.js: ok`) |
+| `node tests/compat/observational-diagnostics-test.js` | PASS (`observational-diagnostics-test.js: ok`) |
+| `node tests/compat/observational-core-patches-test.js` | PASS (`observational-core-patches-test.js: ok`) |
+| `node tests/unit-codex-service-test.js` | PASS (`unit-codex-service-test.js: ok`) |
+| `node tests/integration-codex-mcp-test.js` | PASS (`integration-codex-mcp-test.js: ok`) |
+| `node tests/unit-runtime-guard-test.js` | PASS |
+| `node tests/compat/release-provenance-test.js` | PASS (`release-provenance-test.js: ok`) |
+| `node tests/release-live-codex-cli-test.js` | PASS |
+| `node tests/unit-standalone-client-test.js` | PASS |
+| `node scripts/package-smoke.js` | PASS (`{"ok":true,"smoke":"installed-package-runtime"}`) |
+| `node tests/compat/write-mode-gate-test.js` | **RED, unchanged and not waived** |
+
+The remaining write-mode RED is still the separately scoped `captureFromEvent` DB-vs-policy ordering issue; fix 2.2 does not conceal or waive it.
