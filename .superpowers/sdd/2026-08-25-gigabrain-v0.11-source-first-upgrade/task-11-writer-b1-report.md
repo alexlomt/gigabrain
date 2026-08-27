@@ -163,3 +163,53 @@ No Task 14 file or expected-failure manifest was changed to hide that gate.
 
 This report is committed atomically with the owned implementation and tests.
 The immutable SHA is recorded in the parent handoff response.
+
+---
+
+## Fix 1.1 — malformed cloud export source isolation
+
+### RED evidence
+
+The executable B1 registry first added a directory with malformed
+`a-malformed.json` followed by valid `b-valid.json`. Before the production
+change, malformed JSON was converted to an empty successful parse outside the
+per-file error boundary:
+
+```text
+AssertionError [ERR_ASSERTION]: one malformed source must be reported without aborting the directory scan
+true !== false
+exit 1
+```
+
+That behavior incorrectly marked the malformed file `scanned` and advanced its
+cloud state, incremental cursor, and sync receipt.
+
+### Fix
+
+- Malformed JSON now raises a content-free, filename-only parse error.
+- `parseCloudExportFile` runs inside the existing per-file `try` boundary.
+- A malformed independent export is recorded as a source-level error and the
+  directory scan continues to the next export.
+- No row, link, cursor, cloud-state row, receipt, or event is written for the
+  malformed source. The valid following source commits all six exactly once.
+- Repeating the scan reports the malformed source again, treats the valid
+  source as unchanged, and does not duplicate its row event or receipt.
+- Global setup/configuration errors remain outside this per-source catch.
+
+### GREEN evidence
+
+```text
+node --input-type=module -e '<run only runTask11WriterB1>'
+task11-writer-b1: ok
+
+node tests/compat/projection-writer-registry-test.js
+projection-writer-registry-test.js: ok
+
+<invoke exported run() for unit-cloud-inbox-test.js and unit-host-memory-sync-test.js>
+cloud-inbox drop-folder ingest (#6): all assertions passed (NO network, secrets stripped, manual_import floor)
+tests/unit-cloud-inbox-test.js: ok
+tests/unit-host-memory-sync-test.js: ok
+```
+
+Fix 1.1 is committed separately; its immutable SHA is recorded in the parent
+handoff response.

@@ -1514,11 +1514,63 @@ const assertCloudInboxWriter = () => {
   }
 };
 
+const assertMalformedCloudInboxSourceIsolation = () => {
+  const temp = makeTempWorkspace("task11-cloud-malformed-source-");
+  const db = openDb(temp.dbPath);
+  const inbox = path.join(temp.root, "cloud-inbox", "chatgpt");
+  mkdirSync(inbox, { recursive: true });
+  const malformedPath = path.join(inbox, "a-malformed.json");
+  const validPath = path.join(inbox, "b-valid.json");
+  writeFileSync(malformedPath, '{"conversations":[', "utf8");
+  writeFileSync(validPath, JSON.stringify({
+    conversations: [{
+      messages: [{ role: "user", content: "Cloud B1 valid source commits after a malformed independent export." }],
+    }],
+  }), "utf8");
+  const config = { native: { cloudInbox: { dir: path.dirname(inbox), enabled: true } } };
+  try {
+    const first = scanCloudInbox({ config, db, incremental: true, scope: "profile:main" });
+    const malformed = first.sources.find((row) => row.source_path === malformedPath);
+    const valid = first.sources.find((row) => row.source_path === validPath);
+    assert.equal(first.ok, false, "one malformed source must be reported without aborting the directory scan");
+    assert.equal(malformed.status, "error");
+    assert.match(malformed.error, /json|parse/i);
+    assert.equal(valid.status, "scanned");
+    assert.equal(countRows(db, "memory_current"), 1);
+    assert.equal(countRows(db, "memory_source_links"), 1);
+    assert.equal(countRows(db, "memory_host_sync_cursor"), 1);
+    assert.equal(countRows(db, "memory_cloud_inbox_state"), 1);
+    assert.equal(countRows(db, "memory_host_sync_runs"), 1);
+    assert.equal(countEvents(db), 1);
+    assert.equal(db.prepare("SELECT content FROM memory_current").get().content.includes("valid source"), true);
+    assert.equal(db.prepare("SELECT source_path FROM memory_host_sync_cursor").get().source_path, validPath);
+    assert.equal(db.prepare("SELECT source_path FROM memory_host_sync_runs").get().source_path, validPath);
+
+    const retry = scanCloudInbox({ config, db, incremental: true, scope: "profile:main" });
+    assert.equal(retry.sources.find((row) => row.source_path === malformedPath).status, "error");
+    assert.equal(retry.sources.find((row) => row.source_path === validPath).status, "unchanged");
+    assert.equal(countRows(db, "memory_current"), 1);
+    assert.equal(countRows(db, "memory_source_links"), 1);
+    assert.equal(countRows(db, "memory_host_sync_cursor"), 1);
+    assert.equal(countRows(db, "memory_cloud_inbox_state"), 1);
+    assert.equal(countRows(db, "memory_host_sync_runs"), 1);
+    assert.equal(countEvents(db), 1, "valid source retry must not duplicate its row event");
+    assert.deepEqual(
+      db.prepare("SELECT action FROM memory_events").all().map((row) => row.action),
+      ["cloud_inbox_inserted"],
+    );
+  } finally {
+    db.close();
+    rmSync(temp.root, { force: true, recursive: true });
+  }
+};
+
 export const runTask11WriterB1 = () => {
   assertOpenClawImportWriter();
   assertHandoffImportWriter();
   assertHostSyncWriter();
   assertCloudInboxWriter();
+  assertMalformedCloudInboxSourceIsolation();
 };
 
 const countEvents = (db) => Number(db.prepare("SELECT COUNT(*) AS c FROM memory_events").get()?.c || 0);
