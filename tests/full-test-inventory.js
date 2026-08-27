@@ -30,6 +30,7 @@ const RESTORE_STATES = new Set([
   "upstream_replaced",
 ]);
 const CANONICAL_EXPECTED_FAILURE_OWNERS = new Map([
+  ["compat/candidate-safety-guard-test.js", "14"],
   ["compat/checkpoint-concurrency-test.js", "13"],
   ["compat/entity-taxonomy-test.js", "8"],
   ["compat/generated-surface-test.js", "10"],
@@ -158,6 +159,7 @@ const COMPATIBILITY_TESTS = [
   ["compat/auto-capture-queue-test.js", "9"],
   ["compat/auto-capture-worker-test.js", "9"],
   ["compat/backup-restore-test.js", "12"],
+  ["compat/candidate-safety-guard-test.js", "14"],
   ["compat/checkpoint-concurrency-test.js", "13"],
   ["compat/memory-llm-client-test.js", "9"],
   ["compat/checkpoint-promotion-isolation-test.js", "6"],

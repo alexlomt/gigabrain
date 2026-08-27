@@ -143,6 +143,18 @@
     },
     {
       "coveredPaths": [
+        "tests/compat/candidate-safety-guard-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_CANDIDATE_SAFETY_GUARD missing receipt-bound candidate mutation guard",
+      "id": "compat-candidate-safety-guard",
+      "ownerSourceFirstTaskId": "14",
+      "runner": "node",
+      "testPath": "tests/compat/candidate-safety-guard-test.js",
+      "testSha256": "1e47e3672eb27f2e9a27303b8847ffcd5ad86bb404b4518dc478160cf5cb033b"
+    },
+    {
+      "coveredPaths": [
         "docs/checkpoint-control-plane.md",
         "lib/core/capture-service.js",
         "lib/core/checkpoint-migration.js",
@@ -335,6 +347,7 @@
     },
     {
       "coveredPaths": [
+        "config/migration/registry-shape-v0.7-custom.json",
         "tests/compat/full-registry-migration-test.js"
       ],
       "expectedOutcome": "xfail",
@@ -343,7 +356,7 @@
       "ownerSourceFirstTaskId": "14",
       "runner": "node",
       "testPath": "tests/compat/full-registry-migration-test.js",
-      "testSha256": "fb0e60de57ae8cb018e37cf2e155cb53f8e5739fd2066dcfd86f94b35efb01ca"
+      "testSha256": "54e5bb11fad9eb1550fba1ccb0876ef7df651e12777891b57ca926562f78e200"
     },
     {
       "coveredPaths": [
@@ -1083,7 +1096,7 @@
       "ownerSourceFirstTaskId": "14",
       "runner": "node",
       "testPath": "tests/compat/rollback-restore-test.js",
-      "testSha256": "400858726cf355069381e5ed672d6adf15a5da10b15d6fc67508271ed4abe0c6"
+      "testSha256": "fbd51c2c25c0ddea0c0a97435ca95a465f4832acd48968177d6042f65ef4129d"
     },
     {
       "coveredPaths": [
@@ -1513,7 +1526,7 @@
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
       "testPath": "tests/full-test-inventory-contract-test.js",
-      "testSha256": "5e73b2bc6a359b807dc0a93b3e4ce3c2280e4a4801f99d0a1a64bfd38683ad34"
+      "testSha256": "0261ff5ff211cc63d897075501167d623ec2e2443f4bf2acc2a74f4857c289fb"
     },
     {
       "coveredPaths": [
@@ -2324,7 +2337,7 @@
       ],
       "runner": "node",
       "testPath": "tests/source-first-divergence-test.js",
-      "testSha256": "df6d2071ee17ae09fc3b1c13482c321ec5378b839eabcb86c16eac1433e3c6df"
+      "testSha256": "d939911effffabba0951156f852c262e4c508a3ff70730c47fe830d5537e2379"
     },
     {
       "coveredPaths": [
@@ -2396,7 +2409,7 @@
       "testSha256": "4cfb4d8c9030b9a093717fb1daf7b5ee2be0e0e639de60fb8690461209493e0c"
     }
   ],
-  "entryCount": 103,
-  "manifestSha256": "87a3a6f545321cecac32392fd912cff8ef6e47f8bafe1efb0f7a4b4cdcbb681d",
+  "entryCount": 104,
+  "manifestSha256": "84f749b7834054f866637449a72675a51624fc31baec4fb32fb1ef8f0a3764bc",
   "schemaVersion": 1
 }

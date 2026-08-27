@@ -1,0 +1,3272 @@
+{
+  "contentFree": true,
+  "contract": "gigabrain-registry-shape-v0.7-custom/1",
+  "createStatements": [
+    "CREATE TABLE documents (\n            id TEXT PRIMARY KEY,\n            title TEXT,\n            source TEXT,\n            url TEXT,\n            path TEXT,\n            status TEXT,\n            tags TEXT,\n            created_at TEXT,\n            updated_at TEXT,\n            last_indexed_at TEXT\n        )",
+    "CREATE TABLE evidence (\n            id INTEGER PRIMARY KEY AUTOINCREMENT,\n            memory_id TEXT,\n            text_snippet TEXT,\n            created_at TEXT\n        )",
+    "CREATE TABLE memories (\n      id TEXT PRIMARY KEY,\n      type TEXT NOT NULL DEFAULT 'CONTEXT',\n      content TEXT NOT NULL,\n      normalized TEXT NOT NULL DEFAULT '',\n      source TEXT NOT NULL DEFAULT 'capture',\n      source_agent TEXT,\n      source_session TEXT,\n      source_message_id TEXT,\n      confidence REAL DEFAULT 0.6,\n      status TEXT NOT NULL DEFAULT 'active',\n      scope TEXT NOT NULL DEFAULT 'shared',\n      tags TEXT,\n      created_at TEXT,\n      updated_at TEXT,\n      last_injected_at TEXT,\n      last_confirmed_at TEXT,\n      ttl_days INTEGER,\n      pinned INTEGER DEFAULT 0,\n      superseded_by TEXT,\n      concept TEXT,\n      content_time TEXT,\n      valid_until TEXT,\n      value_score REAL,\n      value_label TEXT,\n      review_version TEXT,\n      review_reason TEXT,\n      archived_at TEXT,\n      last_reviewed_at TEXT\n    , source_layer TEXT NOT NULL DEFAULT 'registry', source_path TEXT, source_line INTEGER, source_host TEXT NOT NULL DEFAULT 'gigabrain', source_kind TEXT NOT NULL DEFAULT 'registry', sync_policy TEXT NOT NULL DEFAULT 'read_only')",
+    "CREATE TABLE memory_beliefs (\n      belief_id TEXT PRIMARY KEY,\n      entity_id TEXT NOT NULL,\n      type TEXT NOT NULL,\n      content TEXT NOT NULL,\n      status TEXT NOT NULL DEFAULT 'current',\n      confidence REAL NOT NULL DEFAULT 0.5,\n      valid_from TEXT,\n      valid_to TEXT,\n      supersedes_belief_id TEXT,\n      source_memory_id TEXT,\n      source_layer TEXT,\n      source_path TEXT,\n      source_line INTEGER,\n      payload TEXT NOT NULL DEFAULT '{}'\n    )",
+    "CREATE TABLE memory_claims (\n      memory_id TEXT PRIMARY KEY,\n      memory_tier TEXT NOT NULL,\n      claim_slot TEXT NOT NULL,\n      consolidation_op TEXT NOT NULL,\n      source_strength TEXT NOT NULL,\n      surface_candidate INTEGER NOT NULL DEFAULT 0,\n      updated_at TEXT NOT NULL,\n      payload TEXT NOT NULL DEFAULT '{}'\n    )",
+    "CREATE TABLE memory_current (\n      memory_id TEXT PRIMARY KEY,\n      type TEXT NOT NULL DEFAULT 'CONTEXT',\n      content TEXT NOT NULL,\n      normalized TEXT NOT NULL DEFAULT '',\n      normalized_hash TEXT NOT NULL DEFAULT '',\n      source TEXT NOT NULL DEFAULT 'capture',\n      source_agent TEXT,\n      source_session TEXT,\n      confidence REAL DEFAULT 0.6,\n      scope TEXT NOT NULL DEFAULT 'shared',\n      status TEXT NOT NULL DEFAULT 'active',\n      value_score REAL,\n      value_label TEXT,\n      created_at TEXT,\n      updated_at TEXT,\n      archived_at TEXT,\n      last_reviewed_at TEXT,\n      tags TEXT,\n      superseded_by TEXT,\n      content_time TEXT,\n      valid_until TEXT\n    , source_layer TEXT NOT NULL DEFAULT 'registry', source_path TEXT, source_line INTEGER, source_host TEXT NOT NULL DEFAULT 'gigabrain', source_kind TEXT NOT NULL DEFAULT 'registry', sync_policy TEXT NOT NULL DEFAULT 'read_only')",
+    "CREATE TABLE \"memory_embeddings\" (\n      memory_id   TEXT PRIMARY KEY,\n      model       TEXT NOT NULL DEFAULT 'qwen3-embedding:4b',\n      embedding   BLOB NOT NULL,\n      dims        INTEGER NOT NULL DEFAULT 2560,\n      computed_at TEXT NOT NULL\n    )",
+    "CREATE TABLE memory_entities (\n      entity_id TEXT PRIMARY KEY,\n      kind TEXT NOT NULL,\n      display_name TEXT NOT NULL,\n      normalized_name TEXT NOT NULL,\n      status TEXT NOT NULL DEFAULT 'active',\n      confidence REAL NOT NULL DEFAULT 0.5,\n      aliases TEXT NOT NULL DEFAULT '[]',\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL,\n      payload TEXT NOT NULL DEFAULT '{}'\n    )",
+    "CREATE TABLE memory_entity_aliases (\n      alias_id TEXT PRIMARY KEY,\n      entity_id TEXT NOT NULL,\n      alias TEXT NOT NULL,\n      normalized_alias TEXT NOT NULL,\n      confidence REAL NOT NULL DEFAULT 0.5,\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL\n    )",
+    "CREATE TABLE memory_entity_mentions (\n      id TEXT PRIMARY KEY,\n      memory_id TEXT NOT NULL,\n      entity_key TEXT NOT NULL,\n      entity_display TEXT NOT NULL,\n      role TEXT NOT NULL,\n      confidence REAL NOT NULL,\n      source TEXT NOT NULL,\n      scope TEXT NOT NULL DEFAULT 'shared',\n      source_path TEXT,\n      linked_memory_id TEXT\n    )",
+    "CREATE TABLE memory_entity_relationships (\n      relationship_id TEXT PRIMARY KEY,\n      entity_id_a TEXT NOT NULL,\n      entity_id_b TEXT NOT NULL,\n      relationship_type TEXT,\n      evidence_count INTEGER DEFAULT 1,\n      source_memory_ids TEXT DEFAULT '[]',\n      confidence REAL DEFAULT 0.5,\n      created_at TEXT,\n      updated_at TEXT\n    )",
+    "CREATE TABLE memory_episodes (\n      episode_id TEXT PRIMARY KEY,\n      title TEXT NOT NULL,\n      summary TEXT NOT NULL,\n      start_date TEXT,\n      end_date TEXT,\n      status TEXT NOT NULL DEFAULT 'completed',\n      primary_entity_id TEXT,\n      source_memory_ids TEXT NOT NULL DEFAULT '[]',\n      payload TEXT NOT NULL DEFAULT '{}'\n    )",
+    "CREATE TABLE memory_eval_history (\n      id TEXT PRIMARY KEY,\n      run_date TEXT NOT NULL,\n      version TEXT,\n      precision_at_1 REAL,\n      precision_at_3 REAL,\n      precision_at_5 REAL,\n      mrr REAL,\n      ndcg_at_5 REAL,\n      hit_rate REAL,\n      case_count INTEGER,\n      strategy_accuracy REAL\n    , avg_injection_tokens REAL, latency_median_ms REAL, latency_p95_ms REAL)",
+    "CREATE TABLE memory_events (\n      event_id TEXT PRIMARY KEY,\n      timestamp TEXT NOT NULL,\n      component TEXT NOT NULL,\n      action TEXT NOT NULL,\n      reason_codes TEXT NOT NULL DEFAULT '[]',\n      memory_id TEXT NOT NULL,\n      cleanup_version TEXT NOT NULL,\n      run_id TEXT NOT NULL,\n      review_version TEXT NOT NULL,\n      similarity REAL,\n      matched_memory_id TEXT,\n      payload TEXT\n    )",
+    "CREATE VIRTUAL TABLE memory_fts USING fts5(\n        memory_id UNINDEXED,\n        content,\n        normalized,\n        type UNINDEXED,\n        tokenize = 'unicode61 remove_diacritics 2'\n      )",
+    "CREATE TABLE memory_native_chunks (\n      chunk_id TEXT PRIMARY KEY,\n      source_path TEXT NOT NULL,\n      source_kind TEXT NOT NULL,\n      source_date TEXT,\n      section TEXT,\n      line_start INTEGER,\n      line_end INTEGER,\n      content TEXT NOT NULL,\n      normalized TEXT NOT NULL,\n      hash TEXT NOT NULL,\n      scope TEXT,\n      linked_memory_id TEXT,\n      first_seen_at TEXT NOT NULL,\n      last_seen_at TEXT NOT NULL,\n      status TEXT NOT NULL DEFAULT 'active'\n    , memory_type TEXT)",
+    "CREATE TABLE memory_native_sync_state (\n      source_path TEXT PRIMARY KEY,\n      mtime_ms INTEGER NOT NULL,\n      size_bytes INTEGER NOT NULL,\n      hash TEXT NOT NULL,\n      last_synced_at TEXT NOT NULL\n    )",
+    "CREATE TABLE memory_open_loops (\n      loop_id TEXT PRIMARY KEY,\n      kind TEXT NOT NULL,\n      title TEXT NOT NULL,\n      status TEXT NOT NULL DEFAULT 'open',\n      priority REAL NOT NULL DEFAULT 0.5,\n      related_entity_id TEXT,\n      source_memory_ids TEXT NOT NULL DEFAULT '[]',\n      payload TEXT NOT NULL DEFAULT '{}'\n    )",
+    "CREATE TABLE memory_quality_reviews (\n      id TEXT PRIMARY KEY,\n      memory_id TEXT NOT NULL,\n      reviewed_at TEXT NOT NULL,\n      review_version TEXT NOT NULL,\n      action TEXT NOT NULL,\n      config_fingerprint TEXT,\n      score REAL,\n      reason_codes TEXT,\n      before_status TEXT,\n      after_status TEXT,\n      features TEXT\n    )",
+    "CREATE TABLE memory_relations (\n            id TEXT PRIMARY KEY,\n            from_memory_id TEXT NOT NULL,\n            to_memory_id TEXT NOT NULL,\n            relation_type TEXT NOT NULL,\n            created_at TEXT,\n            source TEXT,\n            confidence REAL\n        )",
+    "CREATE TABLE memory_syntheses (\n      synthesis_id TEXT PRIMARY KEY,\n      kind TEXT NOT NULL,\n      subject_type TEXT NOT NULL,\n      subject_id TEXT NOT NULL,\n      content TEXT NOT NULL,\n      stale INTEGER NOT NULL DEFAULT 0,\n      confidence REAL NOT NULL DEFAULT 0.5,\n      generated_at TEXT NOT NULL,\n      input_hash TEXT NOT NULL,\n      payload TEXT NOT NULL DEFAULT '{}'\n    )",
+    "CREATE INDEX idx_documents_path ON documents(path)",
+    "CREATE INDEX idx_documents_status ON documents(status)",
+    "CREATE INDEX idx_evidence_memory_id ON evidence(memory_id)",
+    "CREATE INDEX idx_memories_normalized ON memories(normalized, type)",
+    "CREATE INDEX idx_memories_normalized_scope ON memories(normalized, scope)",
+    "CREATE INDEX idx_memories_scope_concept ON memories(scope, concept)",
+    "CREATE INDEX idx_memories_scope_created ON memories(scope, created_at)",
+    "CREATE INDEX idx_memories_scope_normalized ON memories(scope, normalized)",
+    "CREATE INDEX idx_memories_status ON memories(status)",
+    "CREATE INDEX idx_memories_status_scope ON memories(status, scope)",
+    "CREATE INDEX idx_memory_beliefs_entity ON memory_beliefs(entity_id, status)",
+    "CREATE INDEX idx_memory_beliefs_source_memory ON memory_beliefs(source_memory_id)",
+    "CREATE INDEX idx_memory_claims_slot ON memory_claims(claim_slot)",
+    "CREATE INDEX idx_memory_claims_tier ON memory_claims(memory_tier, updated_at)",
+    "CREATE INDEX idx_memory_current_norm_scope ON memory_current(normalized_hash, scope, status)",
+    "CREATE INDEX idx_memory_current_status_scope ON memory_current(status, scope)",
+    "CREATE INDEX idx_memory_entities_kind ON memory_entities(kind, status)",
+    "CREATE INDEX idx_memory_entities_name ON memory_entities(normalized_name)",
+    "CREATE INDEX idx_memory_entity_aliases_alias ON memory_entity_aliases(normalized_alias)",
+    "CREATE INDEX idx_memory_entity_aliases_entity ON memory_entity_aliases(entity_id)",
+    "CREATE INDEX idx_memory_entity_mentions_entity ON memory_entity_mentions(entity_key, role)",
+    "CREATE INDEX idx_memory_entity_mentions_memory ON memory_entity_mentions(memory_id, source)",
+    "CREATE INDEX idx_memory_entity_mentions_scope_entity ON memory_entity_mentions(scope, entity_key)",
+    "CREATE INDEX idx_memory_entity_relationships_a ON memory_entity_relationships(entity_id_a)",
+    "CREATE INDEX idx_memory_entity_relationships_b ON memory_entity_relationships(entity_id_b)",
+    "CREATE INDEX idx_memory_episodes_entity ON memory_episodes(primary_entity_id, start_date)",
+    "CREATE INDEX idx_memory_events_memory_ts ON memory_events(memory_id, timestamp)",
+    "CREATE INDEX idx_memory_events_review ON memory_events(review_version, action)",
+    "CREATE INDEX idx_memory_events_run ON memory_events(run_id, timestamp)",
+    "CREATE INDEX idx_memory_native_chunks_date ON memory_native_chunks(source_date, status)",
+    "CREATE INDEX idx_memory_native_chunks_kind ON memory_native_chunks(source_kind, status)",
+    "CREATE INDEX idx_memory_native_chunks_linked ON memory_native_chunks(linked_memory_id)",
+    "CREATE INDEX idx_memory_native_chunks_scope ON memory_native_chunks(scope, status)",
+    "CREATE INDEX idx_memory_native_chunks_source ON memory_native_chunks(source_path, status)",
+    "CREATE INDEX idx_memory_native_sync_state_synced ON memory_native_sync_state(last_synced_at)",
+    "CREATE INDEX idx_memory_open_loops_entity ON memory_open_loops(related_entity_id, status)",
+    "CREATE INDEX idx_memory_open_loops_kind ON memory_open_loops(kind, status)",
+    "CREATE INDEX idx_memory_quality_reviews_memory ON memory_quality_reviews(memory_id, reviewed_at)",
+    "CREATE INDEX idx_memory_quality_reviews_version ON memory_quality_reviews(review_version, action)",
+    "CREATE INDEX idx_memory_relations_from ON memory_relations(from_memory_id)",
+    "CREATE INDEX idx_memory_relations_to ON memory_relations(to_memory_id)",
+    "CREATE INDEX idx_memory_relations_type ON memory_relations(relation_type)",
+    "CREATE INDEX idx_memory_syntheses_kind ON memory_syntheses(kind, generated_at)",
+    "CREATE INDEX idx_memory_syntheses_subject ON memory_syntheses(subject_type, subject_id, kind)",
+    "ALTER TABLE memory_current ADD COLUMN valid_from TEXT",
+    "ALTER TABLE memory_events ADD COLUMN agent_id TEXT",
+    "CREATE TABLE memory_console_metadata (\n      memory_id TEXT PRIMARY KEY,\n      concept TEXT,\n      source_message_id TEXT,\n      last_injected_at TEXT,\n      last_confirmed_at TEXT,\n      ttl_days INTEGER CHECK (ttl_days IS NULL OR ttl_days >= 0),\n      pinned INTEGER NOT NULL DEFAULT 0 CHECK (pinned IN (0, 1)),\n      review_version TEXT,\n      review_reason TEXT,\n      FOREIGN KEY (memory_id) REFERENCES memory_current(memory_id) ON DELETE CASCADE\n    )",
+    "CREATE INDEX idx_memory_console_metadata_concept_pinned\n      ON memory_console_metadata(concept, pinned, memory_id)"
+  ],
+  "manifestSha256": "c4b80869da5cc03e5b75fea2843c6e63d6b07e98e1b4f8fa11de9d56d27392ec",
+  "objects": [
+    {
+      "name": "idx_documents_path",
+      "sql": "CREATE INDEX idx_documents_path ON documents(path)",
+      "sqlSha256": "c5ed9f545f6a5802edf491733567874834d602fac07432910a31fc3662937b22",
+      "table": "documents",
+      "type": "index"
+    },
+    {
+      "name": "idx_documents_status",
+      "sql": "CREATE INDEX idx_documents_status ON documents(status)",
+      "sqlSha256": "d1f6f5147dfd1a3f3cff3715b1b92bce1f49dac97760bd7e773a25022f4d07e1",
+      "table": "documents",
+      "type": "index"
+    },
+    {
+      "name": "idx_evidence_memory_id",
+      "sql": "CREATE INDEX idx_evidence_memory_id ON evidence(memory_id)",
+      "sqlSha256": "9d8cec87a7c2846e2b7acd7802344be82184398c44bc3a0a5aaa5c8ceeb87946",
+      "table": "evidence",
+      "type": "index"
+    },
+    {
+      "name": "idx_memories_normalized",
+      "sql": "CREATE INDEX idx_memories_normalized ON memories(normalized, type)",
+      "sqlSha256": "66f13f78def1217bb7824c25a64225bf2cf81658d6ed08c24825f6158790d7e0",
+      "table": "memories",
+      "type": "index"
+    },
+    {
+      "name": "idx_memories_normalized_scope",
+      "sql": "CREATE INDEX idx_memories_normalized_scope ON memories(normalized, scope)",
+      "sqlSha256": "88f8326a48e29926c9541e381c9ddf25937b7d712c5811ee848d82c462d2d813",
+      "table": "memories",
+      "type": "index"
+    },
+    {
+      "name": "idx_memories_scope_concept",
+      "sql": "CREATE INDEX idx_memories_scope_concept ON memories(scope, concept)",
+      "sqlSha256": "2261ca8461bc593ae867775e1ee1bd6e288846ecd45ba41c63c4f5a76ada99c6",
+      "table": "memories",
+      "type": "index"
+    },
+    {
+      "name": "idx_memories_scope_created",
+      "sql": "CREATE INDEX idx_memories_scope_created ON memories(scope, created_at)",
+      "sqlSha256": "dae663ffc02d8917a9966a034abc3434b016e4a45cd5bda64b2ed08e47311916",
+      "table": "memories",
+      "type": "index"
+    },
+    {
+      "name": "idx_memories_scope_normalized",
+      "sql": "CREATE INDEX idx_memories_scope_normalized ON memories(scope, normalized)",
+      "sqlSha256": "ce6711fb32e75188b2c3ba48f5571eeb897ce3cbf354379607c41d4f5961fe76",
+      "table": "memories",
+      "type": "index"
+    },
+    {
+      "name": "idx_memories_status",
+      "sql": "CREATE INDEX idx_memories_status ON memories(status)",
+      "sqlSha256": "4c3b45d83965726d942f209e8df2045b803c009effc3d419a7b734d90344ae5d",
+      "table": "memories",
+      "type": "index"
+    },
+    {
+      "name": "idx_memories_status_scope",
+      "sql": "CREATE INDEX idx_memories_status_scope ON memories(status, scope)",
+      "sqlSha256": "fdd512c633cce97fa83cad9eec208b956ce8298661920aee61dcf091fa498c6d",
+      "table": "memories",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_beliefs_entity",
+      "sql": "CREATE INDEX idx_memory_beliefs_entity ON memory_beliefs(entity_id, status)",
+      "sqlSha256": "545269d6ea0a9bf975e2c1685f5e5ebf23642d16e5e819279b8972537edc0838",
+      "table": "memory_beliefs",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_beliefs_source_memory",
+      "sql": "CREATE INDEX idx_memory_beliefs_source_memory ON memory_beliefs(source_memory_id)",
+      "sqlSha256": "b729fa159edc946949d1ce02305c3b902b9d4b138e647cbceb2ed4cb974ea4ae",
+      "table": "memory_beliefs",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_claims_slot",
+      "sql": "CREATE INDEX idx_memory_claims_slot ON memory_claims(claim_slot)",
+      "sqlSha256": "1decac00fa5243301da588d01d6ac9f2969250613e67d64cf346926549478c73",
+      "table": "memory_claims",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_claims_tier",
+      "sql": "CREATE INDEX idx_memory_claims_tier ON memory_claims(memory_tier, updated_at)",
+      "sqlSha256": "3730d253b5ef0e3ea54c6bf458e889dee6c38547167c338ee7163103fbf0ad41",
+      "table": "memory_claims",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_console_metadata_concept_pinned",
+      "sql": "CREATE INDEX idx_memory_console_metadata_concept_pinned\n      ON memory_console_metadata(concept, pinned, memory_id)",
+      "sqlSha256": "f16b25264e6b1176c30e8abe0496546660b5d4f05a4293dbc4a5b597f2c32b35",
+      "table": "memory_console_metadata",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_current_norm_scope",
+      "sql": "CREATE INDEX idx_memory_current_norm_scope ON memory_current(normalized_hash, scope, status)",
+      "sqlSha256": "aa0f83f7a60a76ac6b2d87187b997d84168743579d486fc5472d101aff09e6db",
+      "table": "memory_current",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_current_status_scope",
+      "sql": "CREATE INDEX idx_memory_current_status_scope ON memory_current(status, scope)",
+      "sqlSha256": "602f26714dee9003e431e2a878c1292ed053320b2dfcaf224bbba6ac91e8390a",
+      "table": "memory_current",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_entities_kind",
+      "sql": "CREATE INDEX idx_memory_entities_kind ON memory_entities(kind, status)",
+      "sqlSha256": "7ec3738c6fe0581dea10efa3e2b4f1b928e5115846faa05dc387990f56b488fd",
+      "table": "memory_entities",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_entities_name",
+      "sql": "CREATE INDEX idx_memory_entities_name ON memory_entities(normalized_name)",
+      "sqlSha256": "7b4e5cfd07bd5219df6dd5585bd01316ffe43ef49135b09fb19ca96a4ae02f30",
+      "table": "memory_entities",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_entity_aliases_alias",
+      "sql": "CREATE INDEX idx_memory_entity_aliases_alias ON memory_entity_aliases(normalized_alias)",
+      "sqlSha256": "b622e3a16b5bbb8d6b057c73bd61ba4cd6686369a57e39424d5e325bfa36310f",
+      "table": "memory_entity_aliases",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_entity_aliases_entity",
+      "sql": "CREATE INDEX idx_memory_entity_aliases_entity ON memory_entity_aliases(entity_id)",
+      "sqlSha256": "23d8bfb292d9545049b828e98ea3930cffbe3bfdbc06a22e02f271f5e6a1bbd7",
+      "table": "memory_entity_aliases",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_entity_mentions_entity",
+      "sql": "CREATE INDEX idx_memory_entity_mentions_entity ON memory_entity_mentions(entity_key, role)",
+      "sqlSha256": "06b04d6f8067be1bd5ef53df9df1adee73ab92a06152d8c6d1b720329c0ee7bb",
+      "table": "memory_entity_mentions",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_entity_mentions_memory",
+      "sql": "CREATE INDEX idx_memory_entity_mentions_memory ON memory_entity_mentions(memory_id, source)",
+      "sqlSha256": "a937984088db7efb21159c80c2afbf843e39fe5044c9a3aa5a6affaa7bac8e68",
+      "table": "memory_entity_mentions",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_entity_mentions_scope_entity",
+      "sql": "CREATE INDEX idx_memory_entity_mentions_scope_entity ON memory_entity_mentions(scope, entity_key)",
+      "sqlSha256": "ecb25e91b044725a044e7510d8c7c94ec3472e1b765d81a9f8d884b66610d170",
+      "table": "memory_entity_mentions",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_entity_relationships_a",
+      "sql": "CREATE INDEX idx_memory_entity_relationships_a ON memory_entity_relationships(entity_id_a)",
+      "sqlSha256": "43e107144fda7ded32489c8853cec3b5185bd9199f67a6d219516e153e2fb833",
+      "table": "memory_entity_relationships",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_entity_relationships_b",
+      "sql": "CREATE INDEX idx_memory_entity_relationships_b ON memory_entity_relationships(entity_id_b)",
+      "sqlSha256": "3c7dbe4e7725eeae8869c6cfc57725fe4c5ff61d8f0a014719688feff23810f3",
+      "table": "memory_entity_relationships",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_episodes_entity",
+      "sql": "CREATE INDEX idx_memory_episodes_entity ON memory_episodes(primary_entity_id, start_date)",
+      "sqlSha256": "6bf9e39f7e3f1985095063f64436304a2cefe9d165bb11d3e0fa1dca4211dcd2",
+      "table": "memory_episodes",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_events_memory_ts",
+      "sql": "CREATE INDEX idx_memory_events_memory_ts ON memory_events(memory_id, timestamp)",
+      "sqlSha256": "5d8a76027f40a9f2fcc61853d60852fa9214143b1fabbc43aecd7cc181471973",
+      "table": "memory_events",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_events_review",
+      "sql": "CREATE INDEX idx_memory_events_review ON memory_events(review_version, action)",
+      "sqlSha256": "88b7cb3111178bd76d2749b9a5c23f4b844421752e0d1255044a7fa7bb089054",
+      "table": "memory_events",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_events_run",
+      "sql": "CREATE INDEX idx_memory_events_run ON memory_events(run_id, timestamp)",
+      "sqlSha256": "2ef83868355bfbdb1d8eece1c573797ab513a4cd40217b3d7a3b0fa2a87fc83b",
+      "table": "memory_events",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_native_chunks_date",
+      "sql": "CREATE INDEX idx_memory_native_chunks_date ON memory_native_chunks(source_date, status)",
+      "sqlSha256": "7c844b7f25d831d3c1daa4bc356488f2265e32f329b10f1777cdd8df8eb70512",
+      "table": "memory_native_chunks",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_native_chunks_kind",
+      "sql": "CREATE INDEX idx_memory_native_chunks_kind ON memory_native_chunks(source_kind, status)",
+      "sqlSha256": "c012592259a837cb985a790d24cdc06b9a052d10069de7e3ea2bd2d0836458fe",
+      "table": "memory_native_chunks",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_native_chunks_linked",
+      "sql": "CREATE INDEX idx_memory_native_chunks_linked ON memory_native_chunks(linked_memory_id)",
+      "sqlSha256": "0f0a871c3ad1a8866556035fc564787abc2f5bac471066afe1c593fbe9080b91",
+      "table": "memory_native_chunks",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_native_chunks_scope",
+      "sql": "CREATE INDEX idx_memory_native_chunks_scope ON memory_native_chunks(scope, status)",
+      "sqlSha256": "a2f1b114878071d144cd445f571a14d20412cdff29808d299bfd9232d671ad68",
+      "table": "memory_native_chunks",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_native_chunks_source",
+      "sql": "CREATE INDEX idx_memory_native_chunks_source ON memory_native_chunks(source_path, status)",
+      "sqlSha256": "145e4ace2908b7014d21cfed5908dcf462ce36ddbc417e1bc61c90358d07742b",
+      "table": "memory_native_chunks",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_native_sync_state_synced",
+      "sql": "CREATE INDEX idx_memory_native_sync_state_synced ON memory_native_sync_state(last_synced_at)",
+      "sqlSha256": "e166749983518310cbbb5923a09d83ca1a226e0677a8f5311a366e0d30262651",
+      "table": "memory_native_sync_state",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_open_loops_entity",
+      "sql": "CREATE INDEX idx_memory_open_loops_entity ON memory_open_loops(related_entity_id, status)",
+      "sqlSha256": "94d15093fdd80f043e04f20d09f57aadcec4fee3b92050935ada82ed71543754",
+      "table": "memory_open_loops",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_open_loops_kind",
+      "sql": "CREATE INDEX idx_memory_open_loops_kind ON memory_open_loops(kind, status)",
+      "sqlSha256": "cf64ff186fd3a6b8659cc4d75cacf20cc07486a5a53c9b8283f75753639dc242",
+      "table": "memory_open_loops",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_quality_reviews_memory",
+      "sql": "CREATE INDEX idx_memory_quality_reviews_memory ON memory_quality_reviews(memory_id, reviewed_at)",
+      "sqlSha256": "cfa3c4cbb4759d77c626d7ff015ecdac15d6f6ad8437411fa69b142a7d958a09",
+      "table": "memory_quality_reviews",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_quality_reviews_version",
+      "sql": "CREATE INDEX idx_memory_quality_reviews_version ON memory_quality_reviews(review_version, action)",
+      "sqlSha256": "231fa6120c431b4067841e9b2626858e709a85d242b6c30b8490a69ea5dd5eba",
+      "table": "memory_quality_reviews",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_relations_from",
+      "sql": "CREATE INDEX idx_memory_relations_from ON memory_relations(from_memory_id)",
+      "sqlSha256": "4debdd8ba8c35fef8b7f96e1d2c87a90ceb62b4b4be669d526a1cc627e53d0ca",
+      "table": "memory_relations",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_relations_to",
+      "sql": "CREATE INDEX idx_memory_relations_to ON memory_relations(to_memory_id)",
+      "sqlSha256": "fac3f7b134d6a1d8a9b92a88e056e4468125cbc2f7a072c46d640e49e50eef09",
+      "table": "memory_relations",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_relations_type",
+      "sql": "CREATE INDEX idx_memory_relations_type ON memory_relations(relation_type)",
+      "sqlSha256": "cb5afbd8ad0dd67b06fa3dac9a8998519235a9cb4092e3a78ed5ef30cfa69235",
+      "table": "memory_relations",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_syntheses_kind",
+      "sql": "CREATE INDEX idx_memory_syntheses_kind ON memory_syntheses(kind, generated_at)",
+      "sqlSha256": "dd7b07a71f8984862800984804736f33231b2096b91777336f6dde1318ccb9cb",
+      "table": "memory_syntheses",
+      "type": "index"
+    },
+    {
+      "name": "idx_memory_syntheses_subject",
+      "sql": "CREATE INDEX idx_memory_syntheses_subject ON memory_syntheses(subject_type, subject_id, kind)",
+      "sqlSha256": "5e3b4394998d0feedd592b930f04c4ad7f6f50c3435ce2fad07698eb2464e173",
+      "table": "memory_syntheses",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_documents_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "documents",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memories_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memories",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_beliefs_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_beliefs",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_claims_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_claims",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_console_metadata_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_console_metadata",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_current_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_current",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_embeddings_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_embeddings",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_entities_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_entities",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_entity_aliases_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_entity_aliases",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_entity_mentions_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_entity_mentions",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_entity_relationships_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_entity_relationships",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_episodes_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_episodes",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_eval_history_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_eval_history",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_events_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_events",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_native_chunks_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_native_chunks",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_native_sync_state_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_native_sync_state",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_open_loops_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_open_loops",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_quality_reviews_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_quality_reviews",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_relations_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_relations",
+      "type": "index"
+    },
+    {
+      "name": "sqlite_autoindex_memory_syntheses_1",
+      "sql": null,
+      "sqlSha256": null,
+      "table": "memory_syntheses",
+      "type": "index"
+    },
+    {
+      "name": "documents",
+      "sql": "CREATE TABLE documents (\n            id TEXT PRIMARY KEY,\n            title TEXT,\n            source TEXT,\n            url TEXT,\n            path TEXT,\n            status TEXT,\n            tags TEXT,\n            created_at TEXT,\n            updated_at TEXT,\n            last_indexed_at TEXT\n        )",
+      "sqlSha256": "fff2b1b329b3819043da2e29d1e743ae9d6e2794ea03bd57ad22be3557f455da",
+      "table": "documents",
+      "type": "table"
+    },
+    {
+      "name": "evidence",
+      "sql": "CREATE TABLE evidence (\n            id INTEGER PRIMARY KEY AUTOINCREMENT,\n            memory_id TEXT,\n            text_snippet TEXT,\n            created_at TEXT\n        )",
+      "sqlSha256": "fbe9f16f67305200d1a80239a012577325b19bc641272799e146e7e9d334b5b9",
+      "table": "evidence",
+      "type": "table"
+    },
+    {
+      "name": "memories",
+      "sql": "CREATE TABLE memories (\n      id TEXT PRIMARY KEY,\n      type TEXT NOT NULL DEFAULT 'CONTEXT',\n      content TEXT NOT NULL,\n      normalized TEXT NOT NULL DEFAULT '',\n      source TEXT NOT NULL DEFAULT 'capture',\n      source_agent TEXT,\n      source_session TEXT,\n      source_message_id TEXT,\n      confidence REAL DEFAULT 0.6,\n      status TEXT NOT NULL DEFAULT 'active',\n      scope TEXT NOT NULL DEFAULT 'shared',\n      tags TEXT,\n      created_at TEXT,\n      updated_at TEXT,\n      last_injected_at TEXT,\n      last_confirmed_at TEXT,\n      ttl_days INTEGER,\n      pinned INTEGER DEFAULT 0,\n      superseded_by TEXT,\n      concept TEXT,\n      content_time TEXT,\n      valid_until TEXT,\n      value_score REAL,\n      value_label TEXT,\n      review_version TEXT,\n      review_reason TEXT,\n      archived_at TEXT,\n      last_reviewed_at TEXT\n    , source_layer TEXT NOT NULL DEFAULT 'registry', source_path TEXT, source_line INTEGER, source_host TEXT NOT NULL DEFAULT 'gigabrain', source_kind TEXT NOT NULL DEFAULT 'registry', sync_policy TEXT NOT NULL DEFAULT 'read_only')",
+      "sqlSha256": "da59e9fbc0eb3eea429b6825cc4863543ab2c12ba2b25a79130b06f216d046c2",
+      "table": "memories",
+      "type": "table"
+    },
+    {
+      "name": "memory_beliefs",
+      "sql": "CREATE TABLE memory_beliefs (\n      belief_id TEXT PRIMARY KEY,\n      entity_id TEXT NOT NULL,\n      type TEXT NOT NULL,\n      content TEXT NOT NULL,\n      status TEXT NOT NULL DEFAULT 'current',\n      confidence REAL NOT NULL DEFAULT 0.5,\n      valid_from TEXT,\n      valid_to TEXT,\n      supersedes_belief_id TEXT,\n      source_memory_id TEXT,\n      source_layer TEXT,\n      source_path TEXT,\n      source_line INTEGER,\n      payload TEXT NOT NULL DEFAULT '{}'\n    )",
+      "sqlSha256": "30820deda0f7259e3c37bfcbcb17e49a14e2f4bf4d30526637f479e1486a1313",
+      "table": "memory_beliefs",
+      "type": "table"
+    },
+    {
+      "name": "memory_claims",
+      "sql": "CREATE TABLE memory_claims (\n      memory_id TEXT PRIMARY KEY,\n      memory_tier TEXT NOT NULL,\n      claim_slot TEXT NOT NULL,\n      consolidation_op TEXT NOT NULL,\n      source_strength TEXT NOT NULL,\n      surface_candidate INTEGER NOT NULL DEFAULT 0,\n      updated_at TEXT NOT NULL,\n      payload TEXT NOT NULL DEFAULT '{}'\n    )",
+      "sqlSha256": "b24dfec84808287a21804386bc5bf1fb9517b9ada4e16c0da3279589bc7746c4",
+      "table": "memory_claims",
+      "type": "table"
+    },
+    {
+      "name": "memory_console_metadata",
+      "sql": "CREATE TABLE memory_console_metadata (\n      memory_id TEXT PRIMARY KEY,\n      concept TEXT,\n      source_message_id TEXT,\n      last_injected_at TEXT,\n      last_confirmed_at TEXT,\n      ttl_days INTEGER CHECK (ttl_days IS NULL OR ttl_days >= 0),\n      pinned INTEGER NOT NULL DEFAULT 0 CHECK (pinned IN (0, 1)),\n      review_version TEXT,\n      review_reason TEXT,\n      FOREIGN KEY (memory_id) REFERENCES memory_current(memory_id) ON DELETE CASCADE\n    )",
+      "sqlSha256": "7eba53a742252bbe6c735a091ea458485500eaab9af27996cbb03d40e11afcb3",
+      "table": "memory_console_metadata",
+      "type": "table"
+    },
+    {
+      "name": "memory_current",
+      "sql": "CREATE TABLE memory_current (\n      memory_id TEXT PRIMARY KEY,\n      type TEXT NOT NULL DEFAULT 'CONTEXT',\n      content TEXT NOT NULL,\n      normalized TEXT NOT NULL DEFAULT '',\n      normalized_hash TEXT NOT NULL DEFAULT '',\n      source TEXT NOT NULL DEFAULT 'capture',\n      source_agent TEXT,\n      source_session TEXT,\n      confidence REAL DEFAULT 0.6,\n      scope TEXT NOT NULL DEFAULT 'shared',\n      status TEXT NOT NULL DEFAULT 'active',\n      value_score REAL,\n      value_label TEXT,\n      created_at TEXT,\n      updated_at TEXT,\n      archived_at TEXT,\n      last_reviewed_at TEXT,\n      tags TEXT,\n      superseded_by TEXT,\n      content_time TEXT,\n      valid_until TEXT\n    , source_layer TEXT NOT NULL DEFAULT 'registry', source_path TEXT, source_line INTEGER, source_host TEXT NOT NULL DEFAULT 'gigabrain', source_kind TEXT NOT NULL DEFAULT 'registry', sync_policy TEXT NOT NULL DEFAULT 'read_only', valid_from TEXT)",
+      "sqlSha256": "72bf5dd498b8bd091dc46c4e857290b94d4fb838b4d92503b5896d4a2d825168",
+      "table": "memory_current",
+      "type": "table"
+    },
+    {
+      "name": "memory_embeddings",
+      "sql": "CREATE TABLE \"memory_embeddings\" (\n      memory_id   TEXT PRIMARY KEY,\n      model       TEXT NOT NULL DEFAULT 'qwen3-embedding:4b',\n      embedding   BLOB NOT NULL,\n      dims        INTEGER NOT NULL DEFAULT 2560,\n      computed_at TEXT NOT NULL\n    )",
+      "sqlSha256": "644c68bff5b02e63c4523650ff1c4a9503ad1b1d8096ac437ae97f7532247092",
+      "table": "memory_embeddings",
+      "type": "table"
+    },
+    {
+      "name": "memory_entities",
+      "sql": "CREATE TABLE memory_entities (\n      entity_id TEXT PRIMARY KEY,\n      kind TEXT NOT NULL,\n      display_name TEXT NOT NULL,\n      normalized_name TEXT NOT NULL,\n      status TEXT NOT NULL DEFAULT 'active',\n      confidence REAL NOT NULL DEFAULT 0.5,\n      aliases TEXT NOT NULL DEFAULT '[]',\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL,\n      payload TEXT NOT NULL DEFAULT '{}'\n    )",
+      "sqlSha256": "f5bddff9980243bbc3abd035290f79179e4c2d2a7c1b25c80b4097619091b26a",
+      "table": "memory_entities",
+      "type": "table"
+    },
+    {
+      "name": "memory_entity_aliases",
+      "sql": "CREATE TABLE memory_entity_aliases (\n      alias_id TEXT PRIMARY KEY,\n      entity_id TEXT NOT NULL,\n      alias TEXT NOT NULL,\n      normalized_alias TEXT NOT NULL,\n      confidence REAL NOT NULL DEFAULT 0.5,\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL\n    )",
+      "sqlSha256": "7e3a8d84c311f070e9918ef3dbff6c84cb30402969ab75fe178e0117904a0f9f",
+      "table": "memory_entity_aliases",
+      "type": "table"
+    },
+    {
+      "name": "memory_entity_mentions",
+      "sql": "CREATE TABLE memory_entity_mentions (\n      id TEXT PRIMARY KEY,\n      memory_id TEXT NOT NULL,\n      entity_key TEXT NOT NULL,\n      entity_display TEXT NOT NULL,\n      role TEXT NOT NULL,\n      confidence REAL NOT NULL,\n      source TEXT NOT NULL,\n      scope TEXT NOT NULL DEFAULT 'shared',\n      source_path TEXT,\n      linked_memory_id TEXT\n    )",
+      "sqlSha256": "2cb41bb63844e2132f4aeeb6a46bf196fa2915e9b080bfe34e3402caed041a86",
+      "table": "memory_entity_mentions",
+      "type": "table"
+    },
+    {
+      "name": "memory_entity_relationships",
+      "sql": "CREATE TABLE memory_entity_relationships (\n      relationship_id TEXT PRIMARY KEY,\n      entity_id_a TEXT NOT NULL,\n      entity_id_b TEXT NOT NULL,\n      relationship_type TEXT,\n      evidence_count INTEGER DEFAULT 1,\n      source_memory_ids TEXT DEFAULT '[]',\n      confidence REAL DEFAULT 0.5,\n      created_at TEXT,\n      updated_at TEXT\n    )",
+      "sqlSha256": "2d52f84bc907a8881ba17b3a33fbe66addb1d085e8ee8806cd81c3fe20176d5b",
+      "table": "memory_entity_relationships",
+      "type": "table"
+    },
+    {
+      "name": "memory_episodes",
+      "sql": "CREATE TABLE memory_episodes (\n      episode_id TEXT PRIMARY KEY,\n      title TEXT NOT NULL,\n      summary TEXT NOT NULL,\n      start_date TEXT,\n      end_date TEXT,\n      status TEXT NOT NULL DEFAULT 'completed',\n      primary_entity_id TEXT,\n      source_memory_ids TEXT NOT NULL DEFAULT '[]',\n      payload TEXT NOT NULL DEFAULT '{}'\n    )",
+      "sqlSha256": "250a630acfbcdd201ba1cb98a36cb01de7c53853384091830ebee76426899e44",
+      "table": "memory_episodes",
+      "type": "table"
+    },
+    {
+      "name": "memory_eval_history",
+      "sql": "CREATE TABLE memory_eval_history (\n      id TEXT PRIMARY KEY,\n      run_date TEXT NOT NULL,\n      version TEXT,\n      precision_at_1 REAL,\n      precision_at_3 REAL,\n      precision_at_5 REAL,\n      mrr REAL,\n      ndcg_at_5 REAL,\n      hit_rate REAL,\n      case_count INTEGER,\n      strategy_accuracy REAL\n    , avg_injection_tokens REAL, latency_median_ms REAL, latency_p95_ms REAL)",
+      "sqlSha256": "6755d12d41d3e143a8f9204454d7721a06e180fba20735a5958440733f7010f9",
+      "table": "memory_eval_history",
+      "type": "table"
+    },
+    {
+      "name": "memory_events",
+      "sql": "CREATE TABLE memory_events (\n      event_id TEXT PRIMARY KEY,\n      timestamp TEXT NOT NULL,\n      component TEXT NOT NULL,\n      action TEXT NOT NULL,\n      reason_codes TEXT NOT NULL DEFAULT '[]',\n      memory_id TEXT NOT NULL,\n      cleanup_version TEXT NOT NULL,\n      run_id TEXT NOT NULL,\n      review_version TEXT NOT NULL,\n      similarity REAL,\n      matched_memory_id TEXT,\n      payload TEXT\n    , agent_id TEXT)",
+      "sqlSha256": "d2ed18eb06b33c9c5094700f513aa9cf444fc1b49dfb6473f6784f85a910fbcb",
+      "table": "memory_events",
+      "type": "table"
+    },
+    {
+      "name": "memory_fts",
+      "sql": "CREATE VIRTUAL TABLE memory_fts USING fts5(\n        memory_id UNINDEXED,\n        content,\n        normalized,\n        type UNINDEXED,\n        tokenize = 'unicode61 remove_diacritics 2'\n      )",
+      "sqlSha256": "6f0a02826485943541a141eeea68626caeab572ef46bb2005a3edb9bd30907c3",
+      "table": "memory_fts",
+      "type": "table"
+    },
+    {
+      "name": "memory_fts_config",
+      "sql": "CREATE TABLE 'memory_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID",
+      "sqlSha256": "ca30e7abc6a8bd4612e2e3a040e2da8b1bca38f8f6504f61433bdc9e3b8e5dd5",
+      "table": "memory_fts_config",
+      "type": "table"
+    },
+    {
+      "name": "memory_fts_content",
+      "sql": "CREATE TABLE 'memory_fts_content'(id INTEGER PRIMARY KEY, c0, c1, c2, c3)",
+      "sqlSha256": "2741c365d4223c0a3b8acaccc51e1a064afa58b233f9d1d7331c510483256472",
+      "table": "memory_fts_content",
+      "type": "table"
+    },
+    {
+      "name": "memory_fts_data",
+      "sql": "CREATE TABLE 'memory_fts_data'(id INTEGER PRIMARY KEY, block BLOB)",
+      "sqlSha256": "93b52e095b47154761c193ced8b414fcacea6fac63eed9511ad5abf921c56c04",
+      "table": "memory_fts_data",
+      "type": "table"
+    },
+    {
+      "name": "memory_fts_docsize",
+      "sql": "CREATE TABLE 'memory_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB)",
+      "sqlSha256": "cc150b821d680f56db29bc0b199b2026cb08ffeaf1a4f2ac083412ec79f82649",
+      "table": "memory_fts_docsize",
+      "type": "table"
+    },
+    {
+      "name": "memory_fts_idx",
+      "sql": "CREATE TABLE 'memory_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID",
+      "sqlSha256": "d313d0853892d8e0942312d965dcc3c80684847d8bddad60b6cab7a9c97944ca",
+      "table": "memory_fts_idx",
+      "type": "table"
+    },
+    {
+      "name": "memory_native_chunks",
+      "sql": "CREATE TABLE memory_native_chunks (\n      chunk_id TEXT PRIMARY KEY,\n      source_path TEXT NOT NULL,\n      source_kind TEXT NOT NULL,\n      source_date TEXT,\n      section TEXT,\n      line_start INTEGER,\n      line_end INTEGER,\n      content TEXT NOT NULL,\n      normalized TEXT NOT NULL,\n      hash TEXT NOT NULL,\n      scope TEXT,\n      linked_memory_id TEXT,\n      first_seen_at TEXT NOT NULL,\n      last_seen_at TEXT NOT NULL,\n      status TEXT NOT NULL DEFAULT 'active'\n    , memory_type TEXT)",
+      "sqlSha256": "0b61aaac94916e9fae776a8c6462e7dac9b70491a8e4366097c38a367dfbde5e",
+      "table": "memory_native_chunks",
+      "type": "table"
+    },
+    {
+      "name": "memory_native_sync_state",
+      "sql": "CREATE TABLE memory_native_sync_state (\n      source_path TEXT PRIMARY KEY,\n      mtime_ms INTEGER NOT NULL,\n      size_bytes INTEGER NOT NULL,\n      hash TEXT NOT NULL,\n      last_synced_at TEXT NOT NULL\n    )",
+      "sqlSha256": "fd04739f34a78c8914d2a7a6223dbce053f155f21469f861960719518f206816",
+      "table": "memory_native_sync_state",
+      "type": "table"
+    },
+    {
+      "name": "memory_open_loops",
+      "sql": "CREATE TABLE memory_open_loops (\n      loop_id TEXT PRIMARY KEY,\n      kind TEXT NOT NULL,\n      title TEXT NOT NULL,\n      status TEXT NOT NULL DEFAULT 'open',\n      priority REAL NOT NULL DEFAULT 0.5,\n      related_entity_id TEXT,\n      source_memory_ids TEXT NOT NULL DEFAULT '[]',\n      payload TEXT NOT NULL DEFAULT '{}'\n    )",
+      "sqlSha256": "bfa9bcb47d811779a26b983f5ace27d7ce73cfb5ecb5c3150baa07c35f4887a6",
+      "table": "memory_open_loops",
+      "type": "table"
+    },
+    {
+      "name": "memory_quality_reviews",
+      "sql": "CREATE TABLE memory_quality_reviews (\n      id TEXT PRIMARY KEY,\n      memory_id TEXT NOT NULL,\n      reviewed_at TEXT NOT NULL,\n      review_version TEXT NOT NULL,\n      action TEXT NOT NULL,\n      config_fingerprint TEXT,\n      score REAL,\n      reason_codes TEXT,\n      before_status TEXT,\n      after_status TEXT,\n      features TEXT\n    )",
+      "sqlSha256": "cedbce410e240fcbdc5307f7b4027e32bf193d6fcb3879619661a238417f15f1",
+      "table": "memory_quality_reviews",
+      "type": "table"
+    },
+    {
+      "name": "memory_relations",
+      "sql": "CREATE TABLE memory_relations (\n            id TEXT PRIMARY KEY,\n            from_memory_id TEXT NOT NULL,\n            to_memory_id TEXT NOT NULL,\n            relation_type TEXT NOT NULL,\n            created_at TEXT,\n            source TEXT,\n            confidence REAL\n        )",
+      "sqlSha256": "3618776cb91e308da2dd21864d66967215f581c5b893e165a4ef2bce8a2102b1",
+      "table": "memory_relations",
+      "type": "table"
+    },
+    {
+      "name": "memory_syntheses",
+      "sql": "CREATE TABLE memory_syntheses (\n      synthesis_id TEXT PRIMARY KEY,\n      kind TEXT NOT NULL,\n      subject_type TEXT NOT NULL,\n      subject_id TEXT NOT NULL,\n      content TEXT NOT NULL,\n      stale INTEGER NOT NULL DEFAULT 0,\n      confidence REAL NOT NULL DEFAULT 0.5,\n      generated_at TEXT NOT NULL,\n      input_hash TEXT NOT NULL,\n      payload TEXT NOT NULL DEFAULT '{}'\n    )",
+      "sqlSha256": "28d8cd225e66df1692b6cac5383dcdec6169901eb263cd55be57aadaa02a6135",
+      "table": "memory_syntheses",
+      "type": "table"
+    },
+    {
+      "name": "sqlite_sequence",
+      "sql": "CREATE TABLE sqlite_sequence(name,seq)",
+      "sqlSha256": "4cb1eaf14467f226196148cb5688569660cb290d414bae4c1c450b149b62befd",
+      "table": "sqlite_sequence",
+      "type": "table"
+    }
+  ],
+  "schemaVersion": 1,
+  "source": {
+    "schemaOnly": true,
+    "tableCount": 28,
+    "version": "production-v0.7.1-plus-reviewed-pre-task14-additions"
+  },
+  "tables": [
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "title",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "url",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "path",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 5,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "status",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 6,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "tags",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 7,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "created_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 8,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "updated_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 9,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "last_indexed_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "documents",
+      "sql": "CREATE TABLE documents (\n            id TEXT PRIMARY KEY,\n            title TEXT,\n            source TEXT,\n            url TEXT,\n            path TEXT,\n            status TEXT,\n            tags TEXT,\n            created_at TEXT,\n            updated_at TEXT,\n            last_indexed_at TEXT\n        )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "memory_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "text_snippet",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "created_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "evidence",
+      "sql": "CREATE TABLE evidence (\n            id INTEGER PRIMARY KEY AUTOINCREMENT,\n            memory_id TEXT,\n            text_snippet TEXT,\n            created_at TEXT\n        )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": "'CONTEXT'",
+          "hidden": 0,
+          "name": "type",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "content",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": "''",
+          "hidden": 0,
+          "name": "normalized",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": "'capture'",
+          "hidden": 0,
+          "name": "source",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 5,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_agent",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 6,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_session",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 7,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_message_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 8,
+          "dflt_value": "0.6",
+          "hidden": 0,
+          "name": "confidence",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 9,
+          "dflt_value": "'active'",
+          "hidden": 0,
+          "name": "status",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 10,
+          "dflt_value": "'shared'",
+          "hidden": 0,
+          "name": "scope",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 11,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "tags",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 12,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "created_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 13,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "updated_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 14,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "last_injected_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 15,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "last_confirmed_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 16,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "ttl_days",
+          "notnull": 0,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 17,
+          "dflt_value": "0",
+          "hidden": 0,
+          "name": "pinned",
+          "notnull": 0,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 18,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "superseded_by",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 19,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "concept",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 20,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "content_time",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 21,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "valid_until",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 22,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "value_score",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 23,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "value_label",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 24,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "review_version",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 25,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "review_reason",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 26,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "archived_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 27,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "last_reviewed_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 28,
+          "dflt_value": "'registry'",
+          "hidden": 0,
+          "name": "source_layer",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 29,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_path",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 30,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_line",
+          "notnull": 0,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 31,
+          "dflt_value": "'gigabrain'",
+          "hidden": 0,
+          "name": "source_host",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 32,
+          "dflt_value": "'registry'",
+          "hidden": 0,
+          "name": "source_kind",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 33,
+          "dflt_value": "'read_only'",
+          "hidden": 0,
+          "name": "sync_policy",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memories",
+      "sql": "CREATE TABLE memories (\n      id TEXT PRIMARY KEY,\n      type TEXT NOT NULL DEFAULT 'CONTEXT',\n      content TEXT NOT NULL,\n      normalized TEXT NOT NULL DEFAULT '',\n      source TEXT NOT NULL DEFAULT 'capture',\n      source_agent TEXT,\n      source_session TEXT,\n      source_message_id TEXT,\n      confidence REAL DEFAULT 0.6,\n      status TEXT NOT NULL DEFAULT 'active',\n      scope TEXT NOT NULL DEFAULT 'shared',\n      tags TEXT,\n      created_at TEXT,\n      updated_at TEXT,\n      last_injected_at TEXT,\n      last_confirmed_at TEXT,\n      ttl_days INTEGER,\n      pinned INTEGER DEFAULT 0,\n      superseded_by TEXT,\n      concept TEXT,\n      content_time TEXT,\n      valid_until TEXT,\n      value_score REAL,\n      value_label TEXT,\n      review_version TEXT,\n      review_reason TEXT,\n      archived_at TEXT,\n      last_reviewed_at TEXT\n    , source_layer TEXT NOT NULL DEFAULT 'registry', source_path TEXT, source_line INTEGER, source_host TEXT NOT NULL DEFAULT 'gigabrain', source_kind TEXT NOT NULL DEFAULT 'registry', sync_policy TEXT NOT NULL DEFAULT 'read_only')"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "belief_id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "entity_id",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "type",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "content",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": "'current'",
+          "hidden": 0,
+          "name": "status",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 5,
+          "dflt_value": "0.5",
+          "hidden": 0,
+          "name": "confidence",
+          "notnull": 1,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 6,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "valid_from",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 7,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "valid_to",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 8,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "supersedes_belief_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 9,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_memory_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 10,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_layer",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 11,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_path",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 12,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_line",
+          "notnull": 0,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 13,
+          "dflt_value": "'{}'",
+          "hidden": 0,
+          "name": "payload",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memory_beliefs",
+      "sql": "CREATE TABLE memory_beliefs (\n      belief_id TEXT PRIMARY KEY,\n      entity_id TEXT NOT NULL,\n      type TEXT NOT NULL,\n      content TEXT NOT NULL,\n      status TEXT NOT NULL DEFAULT 'current',\n      confidence REAL NOT NULL DEFAULT 0.5,\n      valid_from TEXT,\n      valid_to TEXT,\n      supersedes_belief_id TEXT,\n      source_memory_id TEXT,\n      source_layer TEXT,\n      source_path TEXT,\n      source_line INTEGER,\n      payload TEXT NOT NULL DEFAULT '{}'\n    )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "memory_id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "memory_tier",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "claim_slot",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "consolidation_op",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_strength",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 5,
+          "dflt_value": "0",
+          "hidden": 0,
+          "name": "surface_candidate",
+          "notnull": 1,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 6,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "updated_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 7,
+          "dflt_value": "'{}'",
+          "hidden": 0,
+          "name": "payload",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memory_claims",
+      "sql": "CREATE TABLE memory_claims (\n      memory_id TEXT PRIMARY KEY,\n      memory_tier TEXT NOT NULL,\n      claim_slot TEXT NOT NULL,\n      consolidation_op TEXT NOT NULL,\n      source_strength TEXT NOT NULL,\n      surface_candidate INTEGER NOT NULL DEFAULT 0,\n      updated_at TEXT NOT NULL,\n      payload TEXT NOT NULL DEFAULT '{}'\n    )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "memory_id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "concept",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_message_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "last_injected_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "last_confirmed_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 5,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "ttl_days",
+          "notnull": 0,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 6,
+          "dflt_value": "0",
+          "hidden": 0,
+          "name": "pinned",
+          "notnull": 1,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 7,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "review_version",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 8,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "review_reason",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memory_console_metadata",
+      "sql": "CREATE TABLE memory_console_metadata (\n      memory_id TEXT PRIMARY KEY,\n      concept TEXT,\n      source_message_id TEXT,\n      last_injected_at TEXT,\n      last_confirmed_at TEXT,\n      ttl_days INTEGER CHECK (ttl_days IS NULL OR ttl_days >= 0),\n      pinned INTEGER NOT NULL DEFAULT 0 CHECK (pinned IN (0, 1)),\n      review_version TEXT,\n      review_reason TEXT,\n      FOREIGN KEY (memory_id) REFERENCES memory_current(memory_id) ON DELETE CASCADE\n    )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "memory_id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": "'CONTEXT'",
+          "hidden": 0,
+          "name": "type",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "content",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": "''",
+          "hidden": 0,
+          "name": "normalized",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": "''",
+          "hidden": 0,
+          "name": "normalized_hash",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 5,
+          "dflt_value": "'capture'",
+          "hidden": 0,
+          "name": "source",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 6,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_agent",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 7,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_session",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 8,
+          "dflt_value": "0.6",
+          "hidden": 0,
+          "name": "confidence",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 9,
+          "dflt_value": "'shared'",
+          "hidden": 0,
+          "name": "scope",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 10,
+          "dflt_value": "'active'",
+          "hidden": 0,
+          "name": "status",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 11,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "value_score",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 12,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "value_label",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 13,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "created_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 14,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "updated_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 15,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "archived_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 16,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "last_reviewed_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 17,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "tags",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 18,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "superseded_by",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 19,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "content_time",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 20,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "valid_until",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 21,
+          "dflt_value": "'registry'",
+          "hidden": 0,
+          "name": "source_layer",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 22,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_path",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 23,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_line",
+          "notnull": 0,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 24,
+          "dflt_value": "'gigabrain'",
+          "hidden": 0,
+          "name": "source_host",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 25,
+          "dflt_value": "'registry'",
+          "hidden": 0,
+          "name": "source_kind",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 26,
+          "dflt_value": "'read_only'",
+          "hidden": 0,
+          "name": "sync_policy",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 27,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "valid_from",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memory_current",
+      "sql": "CREATE TABLE memory_current (\n      memory_id TEXT PRIMARY KEY,\n      type TEXT NOT NULL DEFAULT 'CONTEXT',\n      content TEXT NOT NULL,\n      normalized TEXT NOT NULL DEFAULT '',\n      normalized_hash TEXT NOT NULL DEFAULT '',\n      source TEXT NOT NULL DEFAULT 'capture',\n      source_agent TEXT,\n      source_session TEXT,\n      confidence REAL DEFAULT 0.6,\n      scope TEXT NOT NULL DEFAULT 'shared',\n      status TEXT NOT NULL DEFAULT 'active',\n      value_score REAL,\n      value_label TEXT,\n      created_at TEXT,\n      updated_at TEXT,\n      archived_at TEXT,\n      last_reviewed_at TEXT,\n      tags TEXT,\n      superseded_by TEXT,\n      content_time TEXT,\n      valid_until TEXT\n    , source_layer TEXT NOT NULL DEFAULT 'registry', source_path TEXT, source_line INTEGER, source_host TEXT NOT NULL DEFAULT 'gigabrain', source_kind TEXT NOT NULL DEFAULT 'registry', sync_policy TEXT NOT NULL DEFAULT 'read_only', valid_from TEXT)"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "memory_id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": "'qwen3-embedding:4b'",
+          "hidden": 0,
+          "name": "model",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "embedding",
+          "notnull": 1,
+          "pk": 0,
+          "type": "BLOB"
+        },
+        {
+          "cid": 3,
+          "dflt_value": "2560",
+          "hidden": 0,
+          "name": "dims",
+          "notnull": 1,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 4,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "computed_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memory_embeddings",
+      "sql": "CREATE TABLE \"memory_embeddings\" (\n      memory_id   TEXT PRIMARY KEY,\n      model       TEXT NOT NULL DEFAULT 'qwen3-embedding:4b',\n      embedding   BLOB NOT NULL,\n      dims        INTEGER NOT NULL DEFAULT 2560,\n      computed_at TEXT NOT NULL\n    )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "entity_id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "kind",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "display_name",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "normalized_name",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": "'active'",
+          "hidden": 0,
+          "name": "status",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 5,
+          "dflt_value": "0.5",
+          "hidden": 0,
+          "name": "confidence",
+          "notnull": 1,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 6,
+          "dflt_value": "'[]'",
+          "hidden": 0,
+          "name": "aliases",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 7,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "created_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 8,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "updated_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 9,
+          "dflt_value": "'{}'",
+          "hidden": 0,
+          "name": "payload",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memory_entities",
+      "sql": "CREATE TABLE memory_entities (\n      entity_id TEXT PRIMARY KEY,\n      kind TEXT NOT NULL,\n      display_name TEXT NOT NULL,\n      normalized_name TEXT NOT NULL,\n      status TEXT NOT NULL DEFAULT 'active',\n      confidence REAL NOT NULL DEFAULT 0.5,\n      aliases TEXT NOT NULL DEFAULT '[]',\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL,\n      payload TEXT NOT NULL DEFAULT '{}'\n    )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "alias_id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "entity_id",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "alias",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "normalized_alias",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": "0.5",
+          "hidden": 0,
+          "name": "confidence",
+          "notnull": 1,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 5,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "created_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 6,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "updated_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memory_entity_aliases",
+      "sql": "CREATE TABLE memory_entity_aliases (\n      alias_id TEXT PRIMARY KEY,\n      entity_id TEXT NOT NULL,\n      alias TEXT NOT NULL,\n      normalized_alias TEXT NOT NULL,\n      confidence REAL NOT NULL DEFAULT 0.5,\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL\n    )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "memory_id",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "entity_key",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "entity_display",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "role",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 5,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "confidence",
+          "notnull": 1,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 6,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 7,
+          "dflt_value": "'shared'",
+          "hidden": 0,
+          "name": "scope",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 8,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_path",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 9,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "linked_memory_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memory_entity_mentions",
+      "sql": "CREATE TABLE memory_entity_mentions (\n      id TEXT PRIMARY KEY,\n      memory_id TEXT NOT NULL,\n      entity_key TEXT NOT NULL,\n      entity_display TEXT NOT NULL,\n      role TEXT NOT NULL,\n      confidence REAL NOT NULL,\n      source TEXT NOT NULL,\n      scope TEXT NOT NULL DEFAULT 'shared',\n      source_path TEXT,\n      linked_memory_id TEXT\n    )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "relationship_id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "entity_id_a",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "entity_id_b",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "relationship_type",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": "1",
+          "hidden": 0,
+          "name": "evidence_count",
+          "notnull": 0,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 5,
+          "dflt_value": "'[]'",
+          "hidden": 0,
+          "name": "source_memory_ids",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 6,
+          "dflt_value": "0.5",
+          "hidden": 0,
+          "name": "confidence",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 7,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "created_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 8,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "updated_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memory_entity_relationships",
+      "sql": "CREATE TABLE memory_entity_relationships (\n      relationship_id TEXT PRIMARY KEY,\n      entity_id_a TEXT NOT NULL,\n      entity_id_b TEXT NOT NULL,\n      relationship_type TEXT,\n      evidence_count INTEGER DEFAULT 1,\n      source_memory_ids TEXT DEFAULT '[]',\n      confidence REAL DEFAULT 0.5,\n      created_at TEXT,\n      updated_at TEXT\n    )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "episode_id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "title",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "summary",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "start_date",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "end_date",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 5,
+          "dflt_value": "'completed'",
+          "hidden": 0,
+          "name": "status",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 6,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "primary_entity_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 7,
+          "dflt_value": "'[]'",
+          "hidden": 0,
+          "name": "source_memory_ids",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 8,
+          "dflt_value": "'{}'",
+          "hidden": 0,
+          "name": "payload",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memory_episodes",
+      "sql": "CREATE TABLE memory_episodes (\n      episode_id TEXT PRIMARY KEY,\n      title TEXT NOT NULL,\n      summary TEXT NOT NULL,\n      start_date TEXT,\n      end_date TEXT,\n      status TEXT NOT NULL DEFAULT 'completed',\n      primary_entity_id TEXT,\n      source_memory_ids TEXT NOT NULL DEFAULT '[]',\n      payload TEXT NOT NULL DEFAULT '{}'\n    )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "run_date",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "version",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "precision_at_1",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 4,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "precision_at_3",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 5,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "precision_at_5",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 6,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "mrr",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 7,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "ndcg_at_5",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 8,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "hit_rate",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 9,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "case_count",
+          "notnull": 0,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 10,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "strategy_accuracy",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 11,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "avg_injection_tokens",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 12,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "latency_median_ms",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 13,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "latency_p95_ms",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        }
+      ],
+      "name": "memory_eval_history",
+      "sql": "CREATE TABLE memory_eval_history (\n      id TEXT PRIMARY KEY,\n      run_date TEXT NOT NULL,\n      version TEXT,\n      precision_at_1 REAL,\n      precision_at_3 REAL,\n      precision_at_5 REAL,\n      mrr REAL,\n      ndcg_at_5 REAL,\n      hit_rate REAL,\n      case_count INTEGER,\n      strategy_accuracy REAL\n    , avg_injection_tokens REAL, latency_median_ms REAL, latency_p95_ms REAL)"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "event_id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "timestamp",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "component",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "action",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": "'[]'",
+          "hidden": 0,
+          "name": "reason_codes",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 5,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "memory_id",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 6,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "cleanup_version",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 7,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "run_id",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 8,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "review_version",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 9,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "similarity",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 10,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "matched_memory_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 11,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "payload",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 12,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "agent_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memory_events",
+      "sql": "CREATE TABLE memory_events (\n      event_id TEXT PRIMARY KEY,\n      timestamp TEXT NOT NULL,\n      component TEXT NOT NULL,\n      action TEXT NOT NULL,\n      reason_codes TEXT NOT NULL DEFAULT '[]',\n      memory_id TEXT NOT NULL,\n      cleanup_version TEXT NOT NULL,\n      run_id TEXT NOT NULL,\n      review_version TEXT NOT NULL,\n      similarity REAL,\n      matched_memory_id TEXT,\n      payload TEXT\n    , agent_id TEXT)"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "memory_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "content",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "normalized",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "type",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        },
+        {
+          "cid": 4,
+          "dflt_value": null,
+          "hidden": 1,
+          "name": "memory_fts",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        },
+        {
+          "cid": 5,
+          "dflt_value": null,
+          "hidden": 1,
+          "name": "rank",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        }
+      ],
+      "name": "memory_fts",
+      "sql": "CREATE VIRTUAL TABLE memory_fts USING fts5(\n        memory_id UNINDEXED,\n        content,\n        normalized,\n        type UNINDEXED,\n        tokenize = 'unicode61 remove_diacritics 2'\n      )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "k",
+          "notnull": 1,
+          "pk": 1,
+          "type": ""
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "v",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        }
+      ],
+      "name": "memory_fts_config",
+      "sql": "CREATE TABLE 'memory_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "c0",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "c1",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "c2",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        },
+        {
+          "cid": 4,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "c3",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        }
+      ],
+      "name": "memory_fts_content",
+      "sql": "CREATE TABLE 'memory_fts_content'(id INTEGER PRIMARY KEY, c0, c1, c2, c3)"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "block",
+          "notnull": 0,
+          "pk": 0,
+          "type": "BLOB"
+        }
+      ],
+      "name": "memory_fts_data",
+      "sql": "CREATE TABLE 'memory_fts_data'(id INTEGER PRIMARY KEY, block BLOB)"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "sz",
+          "notnull": 0,
+          "pk": 0,
+          "type": "BLOB"
+        }
+      ],
+      "name": "memory_fts_docsize",
+      "sql": "CREATE TABLE 'memory_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB)"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "segid",
+          "notnull": 1,
+          "pk": 1,
+          "type": ""
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "term",
+          "notnull": 1,
+          "pk": 2,
+          "type": ""
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "pgno",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        }
+      ],
+      "name": "memory_fts_idx",
+      "sql": "CREATE TABLE 'memory_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "chunk_id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_path",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_kind",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_date",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "section",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 5,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "line_start",
+          "notnull": 0,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 6,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "line_end",
+          "notnull": 0,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 7,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "content",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 8,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "normalized",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 9,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "hash",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 10,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "scope",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 11,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "linked_memory_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 12,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "first_seen_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 13,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "last_seen_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 14,
+          "dflt_value": "'active'",
+          "hidden": 0,
+          "name": "status",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 15,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "memory_type",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memory_native_chunks",
+      "sql": "CREATE TABLE memory_native_chunks (\n      chunk_id TEXT PRIMARY KEY,\n      source_path TEXT NOT NULL,\n      source_kind TEXT NOT NULL,\n      source_date TEXT,\n      section TEXT,\n      line_start INTEGER,\n      line_end INTEGER,\n      content TEXT NOT NULL,\n      normalized TEXT NOT NULL,\n      hash TEXT NOT NULL,\n      scope TEXT,\n      linked_memory_id TEXT,\n      first_seen_at TEXT NOT NULL,\n      last_seen_at TEXT NOT NULL,\n      status TEXT NOT NULL DEFAULT 'active'\n    , memory_type TEXT)"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source_path",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "mtime_ms",
+          "notnull": 1,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "size_bytes",
+          "notnull": 1,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "hash",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "last_synced_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memory_native_sync_state",
+      "sql": "CREATE TABLE memory_native_sync_state (\n      source_path TEXT PRIMARY KEY,\n      mtime_ms INTEGER NOT NULL,\n      size_bytes INTEGER NOT NULL,\n      hash TEXT NOT NULL,\n      last_synced_at TEXT NOT NULL\n    )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "loop_id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "kind",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "title",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": "'open'",
+          "hidden": 0,
+          "name": "status",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": "0.5",
+          "hidden": 0,
+          "name": "priority",
+          "notnull": 1,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 5,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "related_entity_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 6,
+          "dflt_value": "'[]'",
+          "hidden": 0,
+          "name": "source_memory_ids",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 7,
+          "dflt_value": "'{}'",
+          "hidden": 0,
+          "name": "payload",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memory_open_loops",
+      "sql": "CREATE TABLE memory_open_loops (\n      loop_id TEXT PRIMARY KEY,\n      kind TEXT NOT NULL,\n      title TEXT NOT NULL,\n      status TEXT NOT NULL DEFAULT 'open',\n      priority REAL NOT NULL DEFAULT 0.5,\n      related_entity_id TEXT,\n      source_memory_ids TEXT NOT NULL DEFAULT '[]',\n      payload TEXT NOT NULL DEFAULT '{}'\n    )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "memory_id",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "reviewed_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "review_version",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "action",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 5,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "config_fingerprint",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 6,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "score",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 7,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "reason_codes",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 8,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "before_status",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 9,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "after_status",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 10,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "features",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memory_quality_reviews",
+      "sql": "CREATE TABLE memory_quality_reviews (\n      id TEXT PRIMARY KEY,\n      memory_id TEXT NOT NULL,\n      reviewed_at TEXT NOT NULL,\n      review_version TEXT NOT NULL,\n      action TEXT NOT NULL,\n      config_fingerprint TEXT,\n      score REAL,\n      reason_codes TEXT,\n      before_status TEXT,\n      after_status TEXT,\n      features TEXT\n    )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "from_memory_id",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "to_memory_id",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "relation_type",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "created_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 5,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "source",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 6,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "confidence",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        }
+      ],
+      "name": "memory_relations",
+      "sql": "CREATE TABLE memory_relations (\n            id TEXT PRIMARY KEY,\n            from_memory_id TEXT NOT NULL,\n            to_memory_id TEXT NOT NULL,\n            relation_type TEXT NOT NULL,\n            created_at TEXT,\n            source TEXT,\n            confidence REAL\n        )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "synthesis_id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "kind",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 2,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "subject_type",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 3,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "subject_id",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 4,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "content",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 5,
+          "dflt_value": "0",
+          "hidden": 0,
+          "name": "stale",
+          "notnull": 1,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "cid": 6,
+          "dflt_value": "0.5",
+          "hidden": 0,
+          "name": "confidence",
+          "notnull": 1,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "cid": 7,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "generated_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 8,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "input_hash",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "cid": 9,
+          "dflt_value": "'{}'",
+          "hidden": 0,
+          "name": "payload",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "name": "memory_syntheses",
+      "sql": "CREATE TABLE memory_syntheses (\n      synthesis_id TEXT PRIMARY KEY,\n      kind TEXT NOT NULL,\n      subject_type TEXT NOT NULL,\n      subject_id TEXT NOT NULL,\n      content TEXT NOT NULL,\n      stale INTEGER NOT NULL DEFAULT 0,\n      confidence REAL NOT NULL DEFAULT 0.5,\n      generated_at TEXT NOT NULL,\n      input_hash TEXT NOT NULL,\n      payload TEXT NOT NULL DEFAULT '{}'\n    )"
+    },
+    {
+      "columns": [
+        {
+          "cid": 0,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "name",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        },
+        {
+          "cid": 1,
+          "dflt_value": null,
+          "hidden": 0,
+          "name": "seq",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        }
+      ],
+      "name": "sqlite_sequence",
+      "sql": "CREATE TABLE sqlite_sequence(name,seq)"
+    }
+  ]
+}

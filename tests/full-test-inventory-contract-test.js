@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -90,6 +90,7 @@ export async function run() {
   );
 
   const task14Contracts = [
+    "compat/candidate-safety-guard-test.js",
     "compat/full-registry-migration-test.js",
     "compat/rollback-restore-test.js",
   ];
@@ -105,6 +106,14 @@ export async function run() {
     path.join(repoRoot, "config", "migration", "source-first-port-map.json"),
     "utf8",
   ));
+  const registryShape = "config/migration/registry-shape-v0.7-custom.json";
+  assert.equal(existsSync(path.join(repoRoot, registryShape)), true);
+  assert.notEqual(spawnSync("git", ["check-ignore", "--quiet", registryShape], { cwd: repoRoot }).status, 0);
+  assert.equal(
+    sourceRegistry.entries.find((row) => row.id === "compat-full-registry-migration")?.coveredPaths.includes(registryShape),
+    true,
+  );
+  assert.equal(portMap.candidateChanges.find((row) => row.targetPath === registryShape)?.ownerTasks.includes("14"), true);
   for (const file of task14Contracts) {
     assert.equal(inventory.NORMAL_TEST_DESCRIPTORS.find((row) => row.file === file)?.ownerTask, "14");
     assert.equal(expectedFailures.entries.find((row) => row.test === file)?.ownerTask, "14");
