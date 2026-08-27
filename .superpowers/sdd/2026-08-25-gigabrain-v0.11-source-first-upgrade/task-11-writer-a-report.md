@@ -412,3 +412,69 @@ exit 0: unit-memory-actions-test.js: ok
 
 Round A2 is committed separately; its immutable SHA is recorded in the parent
 handoff response.
+
+---
+
+## Fix round A3 — merge receipt-backed and newly reviewed audit rows
+
+### RED evidence
+
+A real mixed retry fixture was added before the fix:
+
+1. Audit commits receipt-backed row A.
+2. External output completion fails.
+3. Newly eligible row B is inserted before retry.
+4. Retry must reconstruct A without review and review B once.
+
+The executable registry failed because the recovery branch only ran when
+`rows.length === 0`; B made the array non-empty, so A disappeared from resumed
+output:
+
+```text
+timeout 360 node tests/compat/projection-writer-registry-test.js
+exit 1: COMPAT_EXPECTED_PROJECTION_WRITER_REGISTRY missing centralized projection authority
+```
+
+### Fix
+
+- Audit now always merges pre-existing receipt-backed completed rows with newly
+  classified rows during apply retries.
+- Only memory IDs present in the receipt set loaded before classification are
+  reconstructed; a newly committed B event cannot cause B to be reconstructed
+  twice in the same run.
+- Merge is keyed by stable `memory_id`, with completed rows ordered
+  deterministically before newly reviewed rows; each subgroup orders by
+  `reviewed_at`, then `memory_id`.
+- A remains unreviewed, unretimestamped, and single-event. B is reviewed once
+  and receives one review/event. Resumed output contains both committed actions.
+
+### GREEN evidence
+
+```text
+node --check lib/core/audit-service.js \
+  && node --check tests/compat/projection-writer-registry-test.js
+exit 0
+
+git diff --check -- lib/core/audit-service.js \
+  tests/compat/projection-writer-registry-test.js
+exit 0
+
+timeout 120 node tests/compat/memory-api-projection-test.js
+exit 0: memory-api-projection-test.js: ok
+
+timeout 360 node tests/compat/projection-writer-registry-test.js
+exit 0: projection-writer-registry-test.js: ok
+
+timeout 180 node tests/integration-audit-maintenance-test.js
+exit 0: integration-audit-maintenance-test.js: ok
+```
+
+### Self-review
+
+- The change is confined to audit recovery merging; scoring, model review,
+  receipts, DB mutation, and output formats are unchanged.
+- Deduplication uses stable memory identity, not content or current model output.
+- No other writer, Task 12 ordering, or production service was changed.
+
+Round A3 is committed separately; its immutable SHA is recorded in the parent
+handoff response.

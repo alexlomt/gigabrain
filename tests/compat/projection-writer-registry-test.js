@@ -482,6 +482,7 @@ const assertAuditCompletionRetry = async () => {
   const temp = makeTempWorkspace("task11-writer-audit-completion-");
   const config = writerConfig(temp.workspace);
   const memoryId = "audit-completion-row";
+  const newMemoryId = "audit-completion-new-row";
   const db = openDb(temp.dbPath);
   seedMemoryCurrent(db, [projectionMemory(memoryId, "The user prefers durable completion receipts for audit output.", {
     type: "PREFERENCE",
@@ -526,6 +527,12 @@ const assertAuditCompletionRetry = async () => {
       assert.equal(rowBefore.status, "archived", "first LLM override must be the committed audit action");
       assert.equal(rowEvents(committed, memoryId).length, 1);
       assert.equal(existsSync(paths.out), false);
+      seedMemoryCurrent(committed, [projectionMemory(
+        newMemoryId,
+        "The user prefers newly eligible review rows to join resumed audit output.",
+        { type: "PREFERENCE" },
+      )]);
+      committed.prepare("DELETE FROM memory_events WHERE memory_id=?").run(newMemoryId);
     } finally {
       committed.close();
     }
@@ -546,10 +553,15 @@ const assertAuditCompletionRetry = async () => {
         { ...rowBefore },
       );
       assert.equal(rowEvents(retried, memoryId).length, 1);
+      assert.deepEqual(rowEvents(retried, newMemoryId).map((row) => row.action), ["audit_keep"]);
       assert.equal(existsSync(paths.out), true, "audit retry must resume external output completion");
       const completedRows = readFileSync(paths.out, "utf8").trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-      assert.deepEqual(completedRows.map((row) => row.action), ["archive"], "audit retry must reconstruct the committed model override");
-      assert.equal(reviewerCalls, 1, "audit receipt must be checked before changed model output is requested");
+      assert.deepEqual(
+        completedRows.map((row) => [row.memory_id, row.action]),
+        [[memoryId, "archive"], [newMemoryId, "keep"]],
+        "audit retry must merge committed receipt rows with newly reviewed rows in deterministic order",
+      );
+      assert.equal(reviewerCalls, 2, "receipt-backed A is not reviewed again; newly eligible B is reviewed exactly once");
     } finally {
       retried.close();
     }
