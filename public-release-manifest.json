@@ -454,20 +454,10 @@
   "transforms": {
     "packageJson": {
       "omitScripts": [
-        "build:public-mirror",
-        "check:pii",
-        "check:public-mirror",
-        "eval:deep-recall",
-        "release:initial-public-mirror",
-        "release:public-mirror",
-        "test:gates",
-        "test:integration",
-        "test:performance",
-        "test:public-mirror",
-        "test:regression",
-        "test:release",
+        "test:full",
+        "test:inventory",
         "test:release-live",
-        "test:unit"
+        "test:source-first"
       ],
       "setScripts": {
         "test": "node scripts/package-smoke.js"

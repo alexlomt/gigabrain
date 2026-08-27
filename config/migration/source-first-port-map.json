@@ -1323,7 +1323,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "5367ea27e60924889297ac3d6209884873839b745f035ab1efed621fc1e88925",
+      "contentSha256": "5bc9dedd28ea4780a3b1a996b48c226a1204dd5f1cb0b8752155cc5afe28bf29",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-auto-capture-worker"
@@ -1333,15 +1333,16 @@
         "11",
         "2B",
         "5",
-        "9"
+        "9",
+        "15"
       ],
-      "reason": "Task 11 pins OpenClaw 2026.7.1-2 as a development-only validator while retaining the Task 9 worker package contract.",
+      "reason": "Task 15 restores exact package/public allowlist ordering while preserving the Task 11 validator pin and Task 9 worker contract.",
       "targetMode": "100644",
       "targetPath": "package.json"
     },
     {
       "changeType": "modified",
-      "contentSha256": "b54b3351e2626cf0cf41b75bf64bd5ebdd4df36a2602e4e0a0baf8a98068c20c",
+      "contentSha256": "4e93d2ec4df55dbf0541bb14ccc889d7c4dcfa53da64ef58b0dc96f4e71fed70",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-auto-capture-worker"
@@ -1351,9 +1352,10 @@
         "2B",
         "5",
         "9",
-        "14"
+        "14",
+        "15"
       ],
-      "reason": "Narrow public/runtime allowlist additions for Task 14 guard, audit, and migration CLI.",
+      "reason": "Task 15 binds the public package transform to the exact current private source-script set while preserving the reviewed runtime allowlists.",
       "targetMode": "100644",
       "targetPath": "public-release-manifest.json"
     },
@@ -3229,7 +3231,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "45bc620272f66faa193b2a26f9a83b3a21dab746e21e64a203c8f2676a436bac",
+      "contentSha256": "a660a7cd1c3717719f0fd90706522d09adcd21d00794b009cd6902ad80cbe2f5",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "npm-pack-schema"
@@ -3237,9 +3239,10 @@
       "ownerTasks": [
         "11",
         "12",
-        "2B"
+        "2B",
+        "15"
       ],
-      "reason": "Private public-mirror contract binds the Task 11 validator pin, CI dependency ordering, production-only audit gate, and Task 12 full-history checkout requirement.",
+      "reason": "Private public-mirror contract adds Task 15 fresh-root coverage for total current package-script transforms without weakening partial-transform rejection.",
       "targetMode": "100644",
       "targetPath": "tests/unit-public-mirror-test.js"
     },
