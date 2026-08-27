@@ -100,7 +100,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "ed2ad7de797579b9c203710237c4e277319cb037f335e1970f7994e9399c4900",
+      "contentSha256": "682818b9412664eb8cfc93d85bf295686b7970c0866ee894f0c4c67f04f28542",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1712,7 +1712,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "60c19417ce0d21f64df414a04c424adcc375622afd1b1cdbeaf6ab048533d639",
+      "contentSha256": "fb5e11a65ba6adcf84a6257c280ad4d85a238945eb99f2707855afa13fdc88fd",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-setup-generated-surface"

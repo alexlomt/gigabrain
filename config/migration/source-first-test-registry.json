@@ -790,9 +790,9 @@
       "ownerSourceFirstTaskId": "10",
       "relevanceEvidence": [
         {
-          "binding": "WRITER_REGISTRY",
+          "binding": "assertWriteAllowed",
           "mode": "import",
-          "symbol": "WRITER_REGISTRY",
+          "symbol": "assertWriteAllowed",
           "targetPath": "lib/compat/write-policy.js"
         },
         {
@@ -819,7 +819,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/setup-generated-surface-test.js",
-      "testSha256": "60c19417ce0d21f64df414a04c424adcc375622afd1b1cdbeaf6ab048533d639"
+      "testSha256": "fb5e11a65ba6adcf84a6257c280ad4d85a238945eb99f2707855afa13fdc88fd"
     },
     {
       "coveredPaths": [
@@ -1853,6 +1853,6 @@
     }
   ],
   "entryCount": 94,
-  "manifestSha256": "9dd8a1eaef7b163dae8781972be718b0f79cf45a33d4e5cd689e15d037ed0df5",
+  "manifestSha256": "0f1c35ed04e21107156fb4fcb7bf48ebb95e0d165ee9b5f36007fd4058625e00",
   "schemaVersion": 1
 }

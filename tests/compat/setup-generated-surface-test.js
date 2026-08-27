@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { WRITER_REGISTRY } from "../../lib/compat/write-policy.js";
+import { assertWriteAllowed, WRITER_REGISTRY } from "../../lib/compat/write-policy.js";
 
 import {
   importContractModule,
@@ -26,6 +26,11 @@ export async function run() {
     assert.match(cliSource, /buildGeneratedSurface/);
     assert.match(cliSource, /inspectGeneratedSurface/);
     assert.deepEqual(WRITER_REGISTRY["cli.surface_build"].allowedModes, ["full"]);
+    assert.equal(assertWriteAllowed({ mode: "full", operation: "cli.surface_build" }).operation, "cli.surface_build");
+    assert.throws(
+      () => assertWriteAllowed({ mode: "read_only", operation: "cli.surface_build" }),
+      /GIGABRAIN_WRITE_FORBIDDEN/,
+    );
     const setupSource = readFileSync("scripts/setup-first-run.js", "utf8");
     assert.doesNotMatch(setupSource, /buildGeneratedSurface\s*\(/, "setup must not implicitly materialize private memory content");
     const release = JSON.parse(readFileSync("public-release-manifest.json", "utf8"));
