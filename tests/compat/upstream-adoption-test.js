@@ -238,6 +238,7 @@ function assertDependencyTreeIdentity() {
   assert.deepEqual(candidatePackage.devDependencies, {
     ...upstreamPackage.devDependencies,
     acorn: "8.18.0",
+    openclaw: "2026.7.1-2",
   });
   assert.deepEqual(candidatePackage.peerDependencies, upstreamPackage.peerDependencies);
   assert.deepEqual(candidatePackage.peerDependenciesMeta, upstreamPackage.peerDependenciesMeta);
@@ -254,8 +255,20 @@ function assertDependencyTreeIdentity() {
     bin: { acorn: "bin/acorn" },
     engines: { node: ">=0.4.0" },
   });
-  delete candidateLock.packages["node_modules/acorn"];
+  assert.equal(candidateLock.packages["node_modules/openclaw"]?.version, "2026.7.1-2");
+  assert.equal(candidateLock.packages["node_modules/openclaw"]?.dev, true);
+  const addedDevPaths = Object.keys(candidateLock.packages)
+    .filter((packagePath) => !Object.hasOwn(upstreamLock.packages, packagePath));
+  assert.ok(addedDevPaths.includes("node_modules/acorn"));
+  assert.ok(addedDevPaths.includes("node_modules/openclaw"));
+  assert.equal(
+    addedDevPaths.every((packagePath) => candidateLock.packages[packagePath]?.dev === true),
+    true,
+    "every package added to the upstream lock must remain development-only",
+  );
+  for (const packagePath of addedDevPaths) delete candidateLock.packages[packagePath];
   delete candidateLock.packages[""].devDependencies.acorn;
+  delete candidateLock.packages[""].devDependencies.openclaw;
   upstreamLock.version = "<release-version>";
   candidateLock.version = "<release-version>";
   upstreamLock.packages[""].version = "<release-version>";
@@ -263,7 +276,7 @@ function assertDependencyTreeIdentity() {
   assert.deepEqual(
     candidateLock,
     upstreamLock,
-    "dependency lock may differ only by compatibility version metadata and the pinned source-gate parser",
+    "production dependency lock may differ only by compatibility version metadata and development-only validation tooling",
   );
 }
 

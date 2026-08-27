@@ -102,7 +102,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "9c355392af68593170405fed3da7661d2c57b4b8b662e0efa5a0a7f48b230f5e",
+      "contentSha256": "e71b05286ad31661daedef9f7a345d119950e95c8d8a6b5750f62bee9c93ddfe",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1987,17 +1987,18 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "773c444acef107909d55c03c4bda7b7ef7109f1ab3e26f14c84864c03165001d",
+      "contentSha256": "4cfb4d8c9030b9a093717fb1daf7b5ee2be0e0e639de60fb8690461209493e0c",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "upstream-adoption"
       },
       "ownerTasks": [
+        "11",
         "3",
         "4",
         "5"
       ],
-      "reason": "Task 5 preserves exact upstream runtime dependencies while allowing only the pinned development-only source-gate parser.",
+      "reason": "Task 11 proves the exact OpenClaw validator graph is development-only and leaves the upstream production dependency closure unchanged.",
       "targetMode": "100644",
       "targetPath": "tests/compat/upstream-adoption-test.js"
     },

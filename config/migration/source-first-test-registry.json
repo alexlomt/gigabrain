@@ -2274,10 +2274,10 @@
       "ownerSourceFirstTaskId": "3",
       "runner": "node",
       "testPath": "tests/compat/upstream-adoption-test.js",
-      "testSha256": "773c444acef107909d55c03c4bda7b7ef7109f1ab3e26f14c84864c03165001d"
+      "testSha256": "4cfb4d8c9030b9a093717fb1daf7b5ee2be0e0e639de60fb8690461209493e0c"
     }
   ],
   "entryCount": 101,
-  "manifestSha256": "bea3b3e552d955d2f11a3fc0d90c81debe1abb9ea69e2737ae2ce6d87891b6ee",
+  "manifestSha256": "bfd6f6bfc24894c764e74cd17fd0b98547c898ad279850eb4050df37e8ed1e70",
   "schemaVersion": 1
 }
