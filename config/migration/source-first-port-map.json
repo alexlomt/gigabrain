@@ -6,7 +6,7 @@
   "candidateChanges": [
     {
       "changeType": "modified",
-      "contentSha256": "5bacdaac6c2a1f3a91c9e23c19f58a1e814db38989079445ed680aa2f89ea3fe",
+      "contentSha256": "0e1f4b63299b6a59ddcb5c708f592821ab9dc888f5ca7a3445c33f306ca95f9c",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -15,7 +15,7 @@
         "11",
         "2B"
       ],
-      "reason": "Exact private compatibility matrix with Task 11 Python 3.10 production bridge on Node 22 and Node 26.",
+      "reason": "Task 11 CI installs locked dependencies before source-first enforcement and supplies the exact OpenClaw schema validator runtime.",
       "targetMode": "100644",
       "targetPath": ".github/workflows/ci.yml"
     },
@@ -1152,33 +1152,35 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "c642c7fe9fa2ba785d07370981cae96d4822d2ed887386b5a6c58a52b97ecfae",
+      "contentSha256": "c728b43fd113b107d3070c56398ac05e9f8832e5890833ed3bf608b7b454069d",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-shipping-core-evidence"
       },
       "ownerTasks": [
         "1",
+        "11",
         "5"
       ],
-      "reason": "Task 1 compatibility-version metadata plus the Task 5 development-only source-gate parser; runtime dependency semantics remain upstream-owned.",
+      "reason": "Task 11 adds only the exact development OpenClaw validator graph; the production dependency closure remains byte-identical.",
       "targetMode": "100644",
       "targetPath": "package-lock.json"
     },
     {
       "changeType": "modified",
-      "contentSha256": "7d0e397625968a04f1a1d01bd751e5fb244314ddf0db54fd743a92d98a1543e3",
+      "contentSha256": "6ce87ebbdb681cc1cab5a99c2bc44362a740a29d39b7e8b8eefa67ee54807aba",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-auto-capture-worker"
       },
       "ownerTasks": [
         "1",
+        "11",
         "2B",
         "5",
         "9"
       ],
-      "reason": "Task 5 package contract retained while Task 9B explicitly ships the auto-capture worker executable.",
+      "reason": "Task 11 pins OpenClaw 2026.7.1-2 as a development-only validator while retaining the Task 9 worker package contract.",
       "targetMode": "100644",
       "targetPath": "package.json"
     },
@@ -2983,15 +2985,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "d21da948e3b90f540147f60c918d624b074c60574910408e7155daa7a78e59a0",
+      "contentSha256": "8020f59a63dbdf4c6524c1e19f76f8829bb3244bfa79b70512ca22b319e74927",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "npm-pack-schema"
       },
       "ownerTasks": [
+        "11",
         "2B"
       ],
-      "reason": "Private public-mirror contract binds the exact reviewed Task 10 repository and npm inventory counts.",
+      "reason": "Private public-mirror contract binds the exact Task 11 validator pin and CI dependency ordering.",
       "targetMode": "100644",
       "targetPath": "tests/unit-public-mirror-test.js"
     },
