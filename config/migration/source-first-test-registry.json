@@ -143,51 +143,12 @@
     },
     {
       "coveredPaths": [
-        "docs/checkpoint-control-plane.md",
-        "lib/core/checkpoint-migration.js",
-        "lib/core/codex-service.js",
-        "lib/core/control-plane.js",
-        "lib/core/lifecycle-hooks.js",
         "tests/compat/checkpoint-concurrency-test.js"
       ],
       "expectedOutcome": "xfail",
       "expectedSignature": "COMPAT_EXPECTED_CHECKPOINT_CONCURRENCY missing atomic scope-session checkpoint governance",
       "id": "compat-checkpoint-concurrency",
       "ownerSourceFirstTaskId": "13",
-      "relevanceEvidence": [
-        {
-          "binding": "checkpointDocs",
-          "mode": "read",
-          "targetPath": "docs/checkpoint-control-plane.md"
-        },
-        {
-          "binding": "migrateLegacyCheckpoints",
-          "mode": "import",
-          "resultBinding": "dryResult",
-          "symbol": "migrateLegacyCheckpoints",
-          "targetPath": "lib/core/checkpoint-migration.js"
-        },
-        {
-          "binding": "runCheckpoint",
-          "mode": "import",
-          "resultBinding": "mainThreadCheckpoint",
-          "symbol": "runCheckpoint",
-          "targetPath": "lib/core/codex-service.js"
-        },
-        {
-          "binding": "appendCheckpointEpisode",
-          "mode": "import",
-          "symbol": "appendCheckpointEpisode",
-          "targetPath": "lib/core/control-plane.js"
-        },
-        {
-          "binding": "buildSessionHookCommand",
-          "mode": "import",
-          "resultBinding": "hook",
-          "symbol": "buildSessionHookCommand",
-          "targetPath": "lib/core/lifecycle-hooks.js"
-        }
-      ],
       "runner": "node",
       "testPath": "tests/compat/checkpoint-concurrency-test.js",
       "testSha256": "a5a04e3d28ffc2f75237c8ca95193ab820bed56eea8de77cff6dc1424d8c0f01"
@@ -359,52 +320,12 @@
     },
     {
       "coveredPaths": [
-        "SECURITY.md",
-        "docs/configuration.md",
-        "docs/handoff-record.md",
-        "docs/upgrading.md",
-        "lib/core/handoff-bundle.js",
-        "scripts/gigabrainctl.js",
         "tests/compat/handoff-fidelity-test.js"
       ],
       "expectedOutcome": "xfail",
       "expectedSignature": "COMPAT_EXPECTED_HANDOFF_V2_FIDELITY missing canonical zero-write Handoff v2 contract",
       "id": "compat-handoff-fidelity",
       "ownerSourceFirstTaskId": "13",
-      "relevanceEvidence": [
-        {
-          "binding": "securitySource",
-          "mode": "read",
-          "targetPath": "SECURITY.md"
-        },
-        {
-          "binding": "configurationDocs",
-          "mode": "read",
-          "targetPath": "docs/configuration.md"
-        },
-        {
-          "binding": "handoffDocs",
-          "mode": "read",
-          "targetPath": "docs/handoff-record.md"
-        },
-        {
-          "binding": "upgradingDocs",
-          "mode": "read",
-          "targetPath": "docs/upgrading.md"
-        },
-        {
-          "binding": "exportHandoffBundle",
-          "mode": "import",
-          "resultBinding": "bundle",
-          "symbol": "exportHandoffBundle",
-          "targetPath": "lib/core/handoff-bundle.js"
-        },
-        {
-          "binding": "gigabrainCtlSource",
-          "mode": "read",
-          "targetPath": "scripts/gigabrainctl.js"
-        }
-      ],
       "runner": "node",
       "testPath": "tests/compat/handoff-fidelity-test.js",
       "testSha256": "60fe041a171fb55580bda86b612d65993ed3709a06287f4fe6dc47ac2199c638"
@@ -2381,6 +2302,6 @@
     }
   ],
   "entryCount": 103,
-  "manifestSha256": "f6405d5fdd132dd32d35b644330d9b04b2481ba4caf2ad2de35828708ed0ced2",
+  "manifestSha256": "09a06da560b82b129a78342667048cfefc1daca28063d7232e4985beae975df6",
   "schemaVersion": 1
 }
