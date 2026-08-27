@@ -100,7 +100,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "682818b9412664eb8cfc93d85bf295686b7970c0866ee894f0c4c67f04f28542",
+      "contentSha256": "775a2a277cad0d7722fab2cdb37d204df797e5c484202ff059e0912681cd7ee1",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -113,9 +113,10 @@
         "6",
         "8",
         "9",
-        "10"
+        "10",
+        "11"
       ],
-      "reason": "Source-first registry with passing Task 10 generated-surface hashes and relevance evidence.",
+      "reason": "Source-first registry with exact Task 11 projection authority XFAIL ownership.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -1400,7 +1401,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "1eb6f201129f00fec623605573eb0df3bacf453350936aa36373235c7afc8c36",
+      "contentSha256": "a24fc14e8a830a418cab0deb944ef6b56fa0ab21c9058db9cb51314452178dbd",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1414,9 +1415,10 @@
         "7",
         "8",
         "9",
-        "10"
+        "10",
+        "11"
       ],
-      "reason": "Task 10 generated-surface XFAILs removed after all three contracts passed.",
+      "reason": "Expected-failure ownership for the exact Task 11 projection authority signatures.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1452,7 +1454,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "77ec68d42df8cf608c14bc6c55b83230196216f807eaee7505f709b429eac604",
+      "contentSha256": "d26f6ace9fa011de0eaaf146bbdbd1549309c16a63878e08b317ab412135156c",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-memory-api-projection"
@@ -1461,7 +1463,7 @@
         "11",
         "2B"
       ],
-      "reason": "Scanner-clean compatibility contract or expected-failure ownership metadata; no runtime behavior.",
+      "reason": "Task 11 RED contract for atomic current/legacy/metadata/event projection writes, nested savepoints, and fault rollback.",
       "targetMode": "100644",
       "targetPath": "tests/compat/memory-api-projection-test.js"
     },
@@ -1623,6 +1625,20 @@
       "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
       "targetMode": "100644",
       "targetPath": "tests/compat/packed-entry-smoke-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "d33afbec471c1c2587f9091239d696f8f4463f4a5dd1151181ff712fed3f8f4a",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-projection-writer-registry"
+      },
+      "ownerTasks": [
+        "11"
+      ],
+      "reason": "Task 11 RED contract for centralized Node projection writers and rollback-window legacy-drop blocking.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/projection-writer-registry-test.js"
     },
     {
       "changeType": "added",
@@ -1858,7 +1874,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "8380a4372b472107f36862d766eaaa865289a268c3df9fab51b4f24734604d00",
+      "contentSha256": "69e94b02d86d0dc95bce610164dd203a18f3ee8d63c3467fa60697d97156e270",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1871,9 +1887,10 @@
         "7",
         "8",
         "9",
-        "10"
+        "10",
+        "11"
       ],
-      "reason": "Compatibility inventory including all three passing Task 10 surface contracts.",
+      "reason": "Compatibility inventory including the exact Task 11 projection writer RED contract.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory.js"
     },
@@ -2173,6 +2190,20 @@
       "targetPath": "tests/isolated-release-live-helpers.js"
     },
     {
+      "changeType": "added",
+      "contentSha256": "fe2805d3657b72f014da4e453e53f04551802103ee081bcbb6c8f2f0d3d46692",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-memory-api-projection"
+      },
+      "ownerTasks": [
+        "11"
+      ],
+      "reason": "Task 11 RED Python route contract for authoritative current reads, dual projection writes, metadata parity, and read-only startup.",
+      "targetMode": "100644",
+      "targetPath": "tests/memory_api_projection_test.py"
+    },
+    {
       "changeType": "modified",
       "contentSha256": "54984f38980192cceb7187641745fd63218beb217a257fb101cf6c33d8d26422",
       "disposition": "private_dev_only",
@@ -2328,7 +2359,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "e15312980e3921dc81df3297c829ef9a7fb72b792239b8a7124360cfc69c9234",
+      "contentSha256": "4cbc045febfc20341712a90119557703078884846645a8bf2574a9737c848f1e",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2342,9 +2373,10 @@
         "6",
         "8",
         "9",
-        "10"
+        "10",
+        "11"
       ],
-      "reason": "Source-first policy contract updated for the passing Task 10 modules and test candidate set.",
+      "reason": "Source-first policy contract updated for the classified Task 11 test candidate set.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },

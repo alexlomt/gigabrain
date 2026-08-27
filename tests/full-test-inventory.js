@@ -172,6 +172,7 @@ const COMPATIBILITY_TESTS = [
   ["compat/openclaw-memory-runtime-test.js", "5"],
   ["compat/operator-rules-migration-test.js", "4"],
   ["compat/packed-entry-smoke-test.js", "5"],
+  ["compat/projection-writer-registry-test.js", "11"],
   ["compat/queue-review-service-test.js", "9"],
   ["compat/qwen-embedding-smoke-test.js", "7"],
   ["compat/release-provenance-test.js", "5"],

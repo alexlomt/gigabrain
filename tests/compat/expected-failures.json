@@ -11,6 +11,11 @@
       "test": "compat/memory-api-projection-test.js"
     },
     {
+      "ownerTask": "11",
+      "signature": "COMPAT_EXPECTED_PROJECTION_WRITER_REGISTRY missing centralized projection authority",
+      "test": "compat/projection-writer-registry-test.js"
+    },
+    {
       "ownerTask": "14",
       "signature": "COMPAT_EXPECTED_ROLLBACK_RESTORE missing verified rollback restoration",
       "test": "compat/rollback-restore-test.js"

@@ -284,7 +284,8 @@
     },
     {
       "coveredPaths": [
-        "tests/compat/memory-api-projection-test.js"
+        "tests/compat/memory-api-projection-test.js",
+        "tests/memory_api_projection_test.py"
       ],
       "expectedOutcome": "xfail",
       "expectedSignature": "COMPAT_EXPECTED_MEMORY_API_PROJECTION missing projection sync contract",
@@ -648,6 +649,17 @@
       "runner": "node",
       "testPath": "tests/compat/packed-entry-smoke-test.js",
       "testSha256": "7a0bdedb23cb687330988558524fd6e138afcf53394671a2945ca50e0fe42530"
+    },
+    {
+      "coveredPaths": [
+        "tests/compat/projection-writer-registry-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_PROJECTION_WRITER_REGISTRY missing centralized projection authority",
+      "id": "compat-projection-writer-registry",
+      "ownerSourceFirstTaskId": "11",
+      "runner": "node",
+      "testPath": "tests/compat/projection-writer-registry-test.js"
     },
     {
       "coveredPaths": [
@@ -1852,7 +1864,7 @@
       "testPath": "tests/compat/upstream-adoption-test.js"
     }
   ],
-  "entryCount": 94,
-  "manifestSha256": "0f1c35ed04e21107156fb4fcb7bf48ebb95e0d165ee9b5f36007fd4058625e00",
+  "entryCount": 95,
+  "manifestSha256": "9d8f71b27042f4a2d40316b673d6f2099cd85c7962bf7a93cb06525324e81a74",
   "schemaVersion": 1
 }
