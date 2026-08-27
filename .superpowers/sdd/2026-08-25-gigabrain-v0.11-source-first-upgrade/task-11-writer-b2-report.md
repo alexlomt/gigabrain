@@ -194,7 +194,8 @@ winner and loser row events commit, including `arbiter:supersede`, but no
 summary is emitted because the just-inserted winner's `valid_from` patch in
 `projection-store.js#recordVerdict` is a true no-op. That core code dates to
 `02861db`, is outside B2 ownership, and was not changed here. B2 does not hide or
-waive the failure.
+waive the failure. Fix 2.1 below closes this finding after projection-store was
+explicitly added to the owned scope.
 
 ## Self-review and remaining concerns
 
@@ -213,3 +214,94 @@ waive the failure.
 
 This report is committed atomically with the owned implementation and tests.
 The immutable SHA is recorded in the parent handoff response.
+
+---
+
+## Fix 2.1 — mandatory verdict summary and durable wiki completion
+
+### RED evidence
+
+The true-no-op verdict case and existing capture contradiction regression were
+run before the projection-store change:
+
+```text
+node tests/compat/projection-writer-registry-test.js
+exit 1: COMPAT_EXPECTED_PROJECTION_WRITER_REGISTRY missing centralized projection authority
+
+unit-capture-service-test.js
+CONTRADICT should emit exactly one arbiter verdict event
+0 !== 1
+```
+
+The wiki durability fixture then failed before production edits because the
+plain state writer exposed none of the required atomic-write stages:
+
+```text
+actual:   []
+expected: [after_temp_open, after_temp_write, after_temp_fsync,
+           after_state_rename, after_directory_fsync]
+exit 1
+```
+
+Additional RED cases committed the DB receipt, replaced the state file with an
+empty/truncated document, partial JSON, or corrupt text, and required receipt-
+only recovery. The prior implementation trusted the state file for `baseSha`,
+returned `no_generated_baseline`, and could not discover the committed receipt.
+
+### Verdict fix
+
+- `recordVerdict` now appends exactly one content-free `arbiter:verdict`
+  operation-summary event before any row mutation. Its payload carries only
+  winner ID, unique loser IDs, signals and projection operation metadata.
+- A real winner temporal change may still emit its row event. A true no-op
+  winner emits no fake row event; loser mutations retain one
+  `arbiter:supersede` row event each.
+- Reinstatement links to the mandatory summary event as before.
+- Summary insertion and all winner/loser current, legacy, FTS and row events
+  remain in the same projection batch. A summary trigger failure leaves every
+  row and event unchanged.
+
+### Wiki durability and recovery fix
+
+- Every state write now creates an adjacent exclusive temp file with mode
+  `0600`, writes the complete JSON document, flushes and fsyncs the file,
+  atomically renames it over the state path, fsyncs the containing directory,
+  and removes any leftover temp on every exit path.
+- Project and reconcile surfaces pass a narrow state fault seam used to prove
+  temp mode, exact stage order, pre-rename preservation and cleanup.
+- Reconciliation parses state with explicit validity instead of silently
+  treating corrupt JSON as an empty trusted document.
+- Before relying on `baseSha`, reconciliation queries durable receipts by the
+  canonical wiki directory and current Git HEAD. A single matching receipt is
+  validated against its deterministic operation ID, summary identity and
+  intended `generatedSha`, then resumes only atomic state-file completion.
+- Empty, partial and corrupt state recovery preserves memory/adjudication/event
+  counts and timestamps. Multiple receipts matching one HEAD fail with
+  `WIKI_RECEIPT_AMBIGUOUS`; corrupt state plus only non-matching receipts fails
+  with `WIKI_RECEIPT_MISMATCH`. No candidate is guessed.
+
+### GREEN evidence
+
+```text
+node --input-type=module -e '<run only runTask11WriterB2>'
+writer-b2-fix21: ok
+
+node tests/compat/projection-writer-registry-test.js
+projection-writer-registry-test.js: ok
+
+tests/unit-capture-service-test.js: ok
+tests/unit-projection-store-test.js: ok
+tests/unit-belief-trust-test.js: ok
+tests/unit-git-wiki-test.js: ok
+tests/unit-bitemporal-test.js: ok
+tests/compat/memory-api-projection-test.js: ok
+```
+
+An extra `unit-event-store-test.js` run remains outside the authorized test
+paths and asserts a pre-Task11 raw event sequence that omits projection seed
+events. It now also observes the required verdict summary beside a genuine
+winner temporal row event. The failure is recorded rather than hidden; that
+test file was not changed.
+
+Fix 2.1 is committed separately. Its immutable SHA is recorded in the parent
+handoff response.

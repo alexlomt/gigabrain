@@ -6,6 +6,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
@@ -174,17 +175,23 @@ const assertVerdictProjectionAuthority = ({ ensureProjectionStore, recordVerdict
       winnerId: "verdict-winner",
     }, { timestamp: "2026-08-26T12:00:00.000Z" });
     assert.equal(verdict.supersedeEvents.length, 2, "duplicate loser ids must not duplicate row events");
-    const rowEvents = db.prepare(`
+    const verdictEvents = db.prepare(`
       SELECT action, memory_id, payload FROM memory_events
       WHERE memory_id IN ('verdict-winner', 'verdict-loser-a', 'verdict-loser-b')
-      ORDER BY memory_id, action
+      ORDER BY rowid
     `).all().map((row) => ({ ...row, payload: JSON.parse(row.payload) }));
-    assert.deepEqual(rowEvents.map(({ action, memory_id }) => ({ action, memory_id })), [
+    const summaryEvents = verdictEvents.filter((row) => row.payload.projection_event_kind === "operation_summary");
+    const rowMutationEvents = verdictEvents.filter((row) => row.payload.projection_event_kind === "row");
+    assert.equal(summaryEvents.length, 1, "every verdict operation must append exactly one summary event");
+    assert.equal(summaryEvents[0].action, "arbiter:verdict");
+    assert.deepEqual(summaryEvents[0].payload.winnerId, "verdict-winner");
+    assert.deepEqual(summaryEvents[0].payload.loserIds, ["verdict-loser-a", "verdict-loser-b"]);
+    assert.deepEqual(rowMutationEvents.map(({ action, memory_id }) => ({ action, memory_id })), [
+      { action: "arbiter:verdict", memory_id: "verdict-winner" },
       { action: "arbiter:supersede", memory_id: "verdict-loser-a" },
       { action: "arbiter:supersede", memory_id: "verdict-loser-b" },
-      { action: "arbiter:verdict", memory_id: "verdict-winner" },
     ]);
-    assert.equal(rowEvents.every((row) => row.payload.projection_event_kind === "row"), true);
+    assert.equal(rowMutationEvents.every((row) => row.payload.projection_event_kind === "row"), true);
     for (const loserId of ["verdict-loser-a", "verdict-loser-b"]) {
       const current = db.prepare("SELECT status, superseded_by, valid_until FROM memory_current WHERE memory_id=?").get(loserId);
       const legacy = db.prepare("SELECT status, superseded_by, valid_until FROM memories WHERE id=?").get(loserId);
@@ -233,6 +240,66 @@ const assertVerdictProjectionAuthority = ({ ensureProjectionStore, recordVerdict
       ],
     );
     assert.equal(countEvents(db), 0);
+
+    for (const row of [
+      projectionMemory("noop-winner", "No-op temporal winner.", {
+        created_at: "2026-08-26T14:00:00.000Z",
+        updated_at: "2026-08-26T14:00:00.000Z",
+      }),
+      projectionMemory("noop-loser", "No-op temporal loser.", {
+        created_at: "2026-08-26T13:00:00.000Z",
+        updated_at: "2026-08-26T13:00:00.000Z",
+      }),
+    ]) upsertCurrentMemory(db, row);
+    clearEvents(db);
+    const noOpVerdict = recordVerdict(db, {
+      loserIds: ["noop-loser"],
+      signals: { decided_by: "trust", support: 1 },
+      winnerId: "noop-winner",
+    }, {
+      operationId: "task11-noop-verdict",
+      timestamp: "2026-08-26T14:00:00.000Z",
+    });
+    assert.equal(noOpVerdict.verdictEvent.payload.projection_event_kind, "operation_summary");
+    const noOpEvents = rowEvents(db, "noop-winner");
+    assert.equal(
+      noOpEvents.filter((row) => row.payload.projection_event_kind === "operation_summary").length,
+      1,
+      "true-no-op winner still requires one verdict summary",
+    );
+    assert.equal(
+      noOpEvents.filter((row) => row.payload.projection_event_kind === "row").length,
+      0,
+      "true-no-op winner must not receive a fake row event",
+    );
+    assert.deepEqual(
+      rowEvents(db, "noop-loser").filter((row) => row.payload.projection_event_kind === "row").map((row) => row.action),
+      ["arbiter:supersede"],
+    );
+
+    upsertCurrentMemory(db, projectionMemory("summary-fault-winner", "Summary fault winner.", {
+      created_at: "2026-08-26T15:00:00.000Z",
+      updated_at: "2026-08-26T15:00:00.000Z",
+    }));
+    upsertCurrentMemory(db, projectionMemory("summary-fault-loser", "Summary fault loser."));
+    clearEvents(db);
+    db.exec(`
+      CREATE TRIGGER fail_verdict_operation_summary
+      BEFORE INSERT ON memory_events
+      WHEN NEW.action='arbiter:verdict'
+        AND json_extract(NEW.payload, '$.projection_event_kind')='operation_summary'
+      BEGIN SELECT RAISE(ABORT, 'synthetic verdict summary failure'); END
+    `);
+    assert.throws(() => recordVerdict(db, {
+      loserIds: ["summary-fault-loser"],
+      winnerId: "summary-fault-winner",
+    }, {
+      operationId: "task11-summary-fault",
+      timestamp: "2026-08-26T15:00:00.000Z",
+    }), /synthetic verdict summary failure/);
+    assertCurrentLegacyStatus(db, "summary-fault-winner", { status: "active", superseded_by: null });
+    assertCurrentLegacyStatus(db, "summary-fault-loser", { status: "active", superseded_by: null });
+    assert.equal(countEvents(db), 0, "summary failure must roll back the complete verdict batch");
   } finally {
     db.close();
   }
@@ -2142,12 +2209,152 @@ const assertWikiWriter = () => {
   }
 };
 
+const assertWikiStateDurability = () => {
+  const temp = makeTempWorkspace("task11-wiki-state-durable-");
+  const wikiDir = path.join(temp.root, "wiki");
+  const config = writerConfig(temp.workspace);
+  config.native.wiki = { enabled: true, dir: wikiDir };
+  const db = openDb(temp.dbPath);
+  const stages = [];
+  try {
+    upsertCurrentMemory(db, projectionMemory("wiki-state-first", "Wiki state durability first fact."));
+    projectWiki({
+      config,
+      db,
+      stateFaultInjector: (stage, context = {}) => {
+        stages.push(stage);
+        if (stage === "after_temp_open") {
+          assert.equal(path.dirname(context.tempPath), wikiDir, "state temp must be adjacent to final state");
+          assert.equal(statSync(context.tempPath).mode & 0o777, 0o600, "state temp must open mode 0600");
+        }
+      },
+    });
+    assert.deepEqual(stages, [
+      "after_temp_open",
+      "after_temp_write",
+      "after_temp_fsync",
+      "after_state_rename",
+      "after_directory_fsync",
+    ]);
+    const statePath = path.join(wikiDir, STATE_FILE);
+    assert.equal(statSync(statePath).mode & 0o777, 0o600, "final wiki state must retain private mode");
+    const stateBefore = readFileSync(statePath, "utf8");
+
+    upsertCurrentMemory(db, projectionMemory("wiki-state-second", "Wiki state durability second fact."));
+    assert.throws(() => projectWiki({
+      config,
+      db,
+      stateFaultInjector: (stage) => {
+        if (stage === "after_temp_fsync") throw new Error("synthetic wiki state fsync failure");
+      },
+    }), /synthetic wiki state fsync failure/);
+    assert.equal(readFileSync(statePath, "utf8"), stateBefore, "pre-rename failure must preserve prior complete state");
+    assert.deepEqual(
+      readdirSync(wikiDir).filter((name) => name.startsWith(`${STATE_FILE}.`) && name.endsWith(".tmp")),
+      [],
+      "state temp must be cleaned after failure",
+    );
+  } finally {
+    db.close();
+    rmSync(temp.root, { force: true, recursive: true });
+  }
+};
+
+const assertWikiReceiptRecovery = () => {
+  for (const [label, corruptState] of [
+    ["truncated", ""],
+    ["partial", '{"generatedSha":'],
+    ["corrupt", "not-json"],
+  ]) {
+    const fixture = wikiReconcileFixture(`receipt-${label}`);
+    try {
+      assert.throws(() => reconcileWiki({
+        completionFaultInjector: (stage) => {
+          if (stage === "before_wiki_state_completion") throw new Error(`wiki ${label} completion failure`);
+        },
+        config: fixture.config,
+        db: fixture.db,
+      }), new RegExp(`wiki ${label} completion failure`));
+      const human = fixture.db.prepare("SELECT memory_id, updated_at FROM memory_current WHERE source_host=?").get(HUMAN_WIKI_HOST);
+      const before = {
+        agent: { ...fixture.db.prepare("SELECT status, superseded_by, updated_at FROM memory_current WHERE memory_id=?").get(fixture.agentId) },
+        events: countEvents(fixture.db),
+        humanUpdated: human.updated_at,
+        receipts: countRows(fixture.db, "memory_wiki_reconcile_receipts"),
+      };
+      writeFileSync(fixture.statePath, corruptState, "utf8");
+      const resumed = reconcileWiki({
+        config: fixture.config,
+        db: fixture.db,
+        faultInjector: () => { throw new Error("wiki corrupt-state retry repeated DB decision"); },
+      });
+      assert.equal(resumed.resumed, true, `${label} state must recover from DB receipt`);
+      assert.equal(JSON.parse(readFileSync(fixture.statePath, "utf8")).generatedSha, fixture.humanHead);
+      assert.equal(statSync(fixture.statePath).mode & 0o777, 0o600);
+      assert.deepEqual({
+        agent: { ...fixture.db.prepare("SELECT status, superseded_by, updated_at FROM memory_current WHERE memory_id=?").get(fixture.agentId) },
+        events: countEvents(fixture.db),
+        humanUpdated: fixture.db.prepare("SELECT updated_at FROM memory_current WHERE memory_id=?").get(human.memory_id).updated_at,
+        receipts: countRows(fixture.db, "memory_wiki_reconcile_receipts"),
+      }, before, `${label} recovery must perform external completion only`);
+    } finally {
+      fixture.db.close();
+      rmSync(fixture.temp.root, { force: true, recursive: true });
+    }
+  }
+
+  const mismatch = wikiReconcileFixture("receipt-mismatch");
+  try {
+    assert.throws(() => reconcileWiki({
+      completionFaultInjector: () => { throw new Error("wiki mismatch completion failure"); },
+      config: mismatch.config,
+      db: mismatch.db,
+    }), /wiki mismatch completion failure/);
+    mismatch.db.prepare("UPDATE memory_wiki_reconcile_receipts SET head_sha=?").run("0".repeat(40));
+    writeFileSync(mismatch.statePath, "not-json", "utf8");
+    assert.throws(() => reconcileWiki({ config: mismatch.config, db: mismatch.db }), /WIKI_RECEIPT_MISMATCH/);
+  } finally {
+    mismatch.db.close();
+    rmSync(mismatch.temp.root, { force: true, recursive: true });
+  }
+
+  const ambiguous = wikiReconcileFixture("receipt-ambiguous");
+  try {
+    assert.throws(() => reconcileWiki({
+      completionFaultInjector: () => { throw new Error("wiki ambiguous completion failure"); },
+      config: ambiguous.config,
+      db: ambiguous.db,
+    }), /wiki ambiguous completion failure/);
+    const receipt = ambiguous.db.prepare("SELECT * FROM memory_wiki_reconcile_receipts").get();
+    ambiguous.db.prepare(`
+      INSERT INTO memory_wiki_reconcile_receipts (
+        operation_id, wiki_dir, base_sha, head_sha, created_at, summary_json, state_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      "wiki-reconcile-ambiguous-second",
+      receipt.wiki_dir,
+      "1".repeat(40),
+      receipt.head_sha,
+      "2026-08-27T23:59:59.000Z",
+      receipt.summary_json,
+      receipt.state_json,
+    );
+    writeFileSync(ambiguous.statePath, '{"generatedSha":', "utf8");
+    assert.throws(() => reconcileWiki({ config: ambiguous.config, db: ambiguous.db }), /WIKI_RECEIPT_AMBIGUOUS/);
+  } finally {
+    ambiguous.db.close();
+    rmSync(ambiguous.temp.root, { force: true, recursive: true });
+  }
+};
+
 export const runTask11WriterB2 = () => {
   assertBeliefArbitrationWriter();
   assertControlPlaneWriter();
   assertCodexClaimWriter();
   assertTranscriptWriter();
   assertWikiWriter();
+  assertWikiStateDurability();
+  assertWikiReceiptRecovery();
 };
 
 const countEvents = (db) => Number(db.prepare("SELECT COUNT(*) AS c FROM memory_events").get()?.c || 0);
