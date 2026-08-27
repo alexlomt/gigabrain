@@ -15,6 +15,7 @@ import json
 import subprocess
 import threading
 import time
+import math
 from io import BytesIO
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Any, Annotated
@@ -445,7 +446,8 @@ def projection_batch(conn: sqlite3.Connection, operation_id: str):
 def _memory_api_row(conn: sqlite3.Connection, memory_id: str):
     return conn.execute(f"SELECT * FROM {MEMORY_ROWSET} WHERE id = ?", (memory_id,)).fetchone()
 
-def _append_projection_event(conn, memory_id, action, operation_id, reason_codes, timestamp=None):
+def _append_projection_event(conn, memory_id, action, operation_id, reason_codes, timestamp=None,
+                             projection_mutation=None):
     conn.execute("""
         INSERT INTO memory_events (
           event_id,timestamp,component,action,reason_codes,memory_id,cleanup_version,
@@ -454,7 +456,11 @@ def _append_projection_event(conn, memory_id, action, operation_id, reason_codes
     """, (
         str(uuid.uuid4()), timestamp or _iso_utc(), "memory_api", action,
         json.dumps(reason_codes), memory_id, "v0.11-compat", operation_id, "",
-        None, None, "memory_api", json.dumps({"operation_id": operation_id, "projection_mutation": action.split(":")[-1]}),
+        None, None, "memory_api", json.dumps({
+            "operation_id": operation_id,
+            "projection_event_kind": "row",
+            "projection_mutation": projection_mutation or action.split(":")[-1],
+        }),
     ))
 
 def _sync_legacy_from_authority(conn, memory_id):
@@ -490,7 +496,15 @@ def _sync_legacy_from_authority(conn, memory_id):
     """, values)
     return row
 
-def _projection_upsert(conn, row, metadata, operation_id, event_action="projection:upsert"):
+def _projection_upsert(conn, row, metadata, operation_id, *, now=None,
+                       event_action="projection:upsert", projection_mutation="upsert",
+                       reason_codes=None):
+    existing = conn.execute(
+        "SELECT * FROM memory_current WHERE memory_id=?",
+        (str(row.get("memory_id") or row.get("id") or "").strip(),),
+    ).fetchone()
+    row = _canonical_current_row(row, dict(existing) if existing else None, now)
+    metadata = _canonical_console_metadata(metadata)
     conn.execute("""
       INSERT INTO memory_current (
         memory_id,type,content,normalized,normalized_hash,source,source_agent,source_session,
@@ -511,7 +525,7 @@ def _projection_upsert(conn, row, metadata, operation_id, event_action="projecti
         value_score=excluded.value_score,value_label=excluded.value_label,updated_at=excluded.updated_at,
         archived_at=excluded.archived_at,last_reviewed_at=excluded.last_reviewed_at,tags=excluded.tags,
         superseded_by=excluded.superseded_by,content_time=excluded.content_time,
-        valid_until=excluded.valid_until,valid_from=COALESCE(memory_current.valid_from,excluded.valid_from)
+        valid_until=excluded.valid_until,valid_from=excluded.valid_from
     """, row)
     conn.execute("INSERT OR IGNORE INTO memory_console_metadata (memory_id,pinned) VALUES (?,0)", (row["memory_id"],))
     if metadata:
@@ -521,25 +535,46 @@ def _projection_upsert(conn, row, metadata, operation_id, event_action="projecti
             conn.execute(f"UPDATE memory_console_metadata SET {','.join(f'{key}=?' for key in keys)} WHERE memory_id=?",
                          [1 if key == "pinned" and metadata[key] else metadata[key] for key in keys] + [row["memory_id"]])
     _sync_legacy_from_authority(conn, row["memory_id"])
-    _append_projection_event(conn, row["memory_id"], event_action, operation_id, ["upsert"], row["updated_at"])
+    _append_projection_event(
+        conn,
+        row["memory_id"],
+        event_action,
+        operation_id,
+        reason_codes or [projection_mutation],
+        row["updated_at"],
+        projection_mutation,
+    )
     return _memory_api_row(conn, row["memory_id"])
 
 def _projection_status(conn, memory_id, status, operation_id, *, superseded_by=None, clear_superseded=False,
                        metadata=None, timestamp=None, event_action="projection:status"):
-    now = timestamp or _iso_utc()
-    conn.execute("""UPDATE memory_current SET status=?,updated_at=?,
-      superseded_by=CASE WHEN ? THEN NULL ELSE ? END,
-      archived_at=CASE WHEN ?='archived' THEN ? ELSE NULL END
-      WHERE memory_id=?""",
-      (status, now, 1 if clear_superseded else 0, superseded_by, status, now, memory_id))
-    if metadata:
-        conn.execute("INSERT OR IGNORE INTO memory_console_metadata (memory_id,pinned) VALUES (?,0)", (memory_id,))
-        keys = [key for key in ("last_confirmed_at", "review_version", "review_reason") if key in metadata]
-        if keys:
-            conn.execute(f"UPDATE memory_console_metadata SET {','.join(f'{key}=?' for key in keys)} WHERE memory_id=?",
-                         [metadata[key] for key in keys] + [memory_id])
-    _sync_legacy_from_authority(conn, memory_id)
-    _append_projection_event(conn, memory_id, event_action, operation_id, [status], now)
+    now = _canonical_optional_iso(timestamp) or _iso_utc()
+    existing = conn.execute("SELECT * FROM memory_current WHERE memory_id=?", (memory_id,)).fetchone()
+    if not existing:
+        return 0
+    existing = dict(existing)
+    target_status = _canonical_status(status)
+    desired = {
+        **existing,
+        "archived_at": now if target_status == "archived" else None,
+        "last_reviewed_at": now,
+        "status": target_status,
+        "superseded_by": None if clear_superseded else (
+            str(superseded_by) if superseded_by else existing.get("superseded_by")
+        ),
+        "updated_at": now,
+    }
+    _projection_upsert(
+        conn,
+        desired,
+        metadata or {},
+        operation_id,
+        now=now,
+        event_action=event_action,
+        projection_mutation="status",
+        reason_codes=[target_status],
+    )
+    return 1
 
 
 def _is_admin(auth: dict) -> bool:
@@ -872,10 +907,168 @@ def _parse_iso(value: str) -> Optional[datetime]:
 
 
 def _canonical_iso_text(value: Optional[str]) -> Optional[str]:
-    if value is None:
+    return _canonical_optional_iso(value)
+
+
+_SCOPE_SEGMENT_RE = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
+_CANONICAL_STATUSES = {"active", "archived", "pending", "rejected", "superseded"}
+_CONSOLE_METADATA_FIELDS = {
+    "concept", "source_message_id", "last_injected_at", "last_confirmed_at",
+    "ttl_days", "pinned", "review_version", "review_reason",
+}
+
+
+def _canonical_datetime(value: Any) -> Optional[datetime]:
+    if value is None or value == "":
         return None
-    parsed = _parse_iso(str(value))
-    return _iso_utc(parsed) if parsed is not None else str(value)
+    raw = str(value).strip()
+    if not raw:
+        return None
+    if raw[-1:].lower() == "z":
+        raw = f"{raw[:-1]}+00:00"
+    try:
+        parsed = datetime.fromisoformat(raw)
+    except (TypeError, ValueError):
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _canonical_optional_iso(value: Any) -> Optional[str]:
+    parsed = _canonical_datetime(value)
+    return _iso_utc(parsed) if parsed is not None else None
+
+
+def _canonical_content_time(value: Any) -> Optional[str]:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw):
+        return raw
+    return _canonical_optional_iso(raw)
+
+
+def _canonical_status(value: Any) -> str:
+    key = str(value or "").strip().lower()
+    return key if key in _CANONICAL_STATUSES else "active"
+
+
+def _normalize_projection_scope(value: Any = "", *, allow_empty: bool = False,
+                                fallback: str = "shared") -> str:
+    raw = str(value or "").strip()
+    if not raw:
+        return "" if allow_empty else str(fallback or "shared")
+    lowered = raw.lower()
+    if lowered == "default":
+        return "shared"
+    if lowered in {"shared", "main"}:
+        return lowered
+    segments = raw.split(":")
+    if len(segments) == 1 and _SCOPE_SEGMENT_RE.fullmatch(raw):
+        return raw
+    if len(segments) < 2 or not all(_SCOPE_SEGMENT_RE.fullmatch(segment or "") for segment in segments):
+        raise HTTPException(status_code=422, detail=f"Invalid Gigabrain scope: {raw}")
+    return raw
+
+
+def _finite_number(value: Any, fallback: Optional[float]) -> Optional[float]:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return fallback
+    return number if math.isfinite(number) else fallback
+
+
+def _canonical_console_metadata(metadata: Optional[dict]) -> dict:
+    output = {}
+    for field, value in (metadata or {}).items():
+        if field not in _CONSOLE_METADATA_FIELDS:
+            continue
+        if field == "pinned":
+            output[field] = 1 if value is True or _finite_number(value, None) == 1 else 0
+        elif field == "ttl_days":
+            number = _finite_number(value, None)
+            output[field] = max(0, math.trunc(number)) if number is not None else None
+        elif field in {"last_injected_at", "last_confirmed_at"}:
+            output[field] = _canonical_optional_iso(value)
+        else:
+            output[field] = None if value is None or value == "" else str(value)
+    return output
+
+
+def _canonical_current_row(memory: dict, existing: Optional[dict] = None,
+                           now: Optional[str] = None) -> dict:
+    now_iso = _canonical_optional_iso(now) or _iso_utc()
+    memory_id = str(memory.get("memory_id") or memory.get("id") or "").strip()
+    if not memory_id:
+        raise HTTPException(status_code=422, detail="memory_id is required")
+    content = str(memory.get("content") or "").strip()
+    if not content:
+        raise HTTPException(status_code=422, detail="content is required")
+    normalized = normalize_content(content)
+    content_time = _canonical_content_time(memory.get("content_time"))
+    content_datetime = _canonical_datetime(content_time)
+    now_datetime = _canonical_datetime(now_iso)
+    if content_datetime and now_datetime and content_datetime > now_datetime:
+        content_time = now_iso
+    created_at = (
+        existing.get("created_at")
+        if existing is not None
+        else (_canonical_optional_iso(memory.get("created_at")) or now_iso)
+    )
+    explicit_valid_from = _canonical_optional_iso(memory.get("valid_from"))
+    if explicit_valid_from is None and content_time:
+        explicit_valid_from = _canonical_optional_iso(content_time)
+
+    source_line = None
+    raw_source_line = memory.get("source_line")
+    if raw_source_line is not None and raw_source_line != "":
+        parsed_source_line = _finite_number(raw_source_line, None)
+        if parsed_source_line is not None:
+            source_line = max(1, math.trunc(parsed_source_line))
+
+    raw_tags = memory.get("tags")
+    if isinstance(raw_tags, list):
+        tags = json.dumps(raw_tags, ensure_ascii=False, separators=(",", ":"))
+    else:
+        tags = str(raw_tags) if raw_tags else "[]"
+
+    return {
+        "memory_id": memory_id,
+        "type": str(memory.get("type") or "CONTEXT").strip().upper() or "CONTEXT",
+        "content": content,
+        "normalized": normalized,
+        "normalized_hash": normalized_hash(normalized),
+        "source": str(memory.get("source") or "capture"),
+        "source_agent": str(memory["source_agent"]) if memory.get("source_agent") else None,
+        "source_session": str(memory["source_session"]) if memory.get("source_session") else None,
+        "source_layer": str(memory.get("source_layer") or "registry"),
+        "source_path": str(memory["source_path"]) if memory.get("source_path") else None,
+        "source_line": source_line,
+        "source_host": str(memory.get("source_host") or "gigabrain"),
+        "source_kind": str(memory.get("source_kind") or "registry"),
+        "sync_policy": str(memory.get("sync_policy") or "read_only"),
+        "confidence": _finite_number(memory.get("confidence"), 0.6),
+        "scope": _normalize_projection_scope(memory.get("scope") or "shared"),
+        "status": _canonical_status(memory.get("status") or "active"),
+        "value_score": _finite_number(memory.get("value_score"), None),
+        "value_label": str(memory["value_label"]) if memory.get("value_label") else None,
+        "created_at": created_at,
+        "updated_at": _canonical_optional_iso(memory.get("updated_at")) or now_iso,
+        "archived_at": _canonical_optional_iso(memory.get("archived_at")),
+        "last_reviewed_at": _canonical_optional_iso(memory.get("last_reviewed_at")),
+        "tags": tags,
+        "superseded_by": str(memory["superseded_by"]) if memory.get("superseded_by") else None,
+        "content_time": content_time,
+        "valid_until": _canonical_optional_iso(memory.get("valid_until")),
+        "valid_from": (
+            explicit_valid_from
+            or (existing.get("valid_from") if existing else None)
+            or created_at
+            or now_iso
+        ),
+    }
 
 
 def _is_expired(row: dict, now: datetime) -> bool:
@@ -1697,11 +1890,8 @@ def _is_duplicate_memory_id_error(exc: sqlite3.IntegrityError) -> bool:
 @app.post("/memories")
 def create_memory(payload: MemoryCreatePayload, auth: dict = Depends(require_token)):
     mem_id = payload.id or str(uuid.uuid4())
-    content = payload.content
-    mem_type = payload.type or "CONTEXT"
-    scope_value = (payload.scope or "shared").strip() or "shared"
+    scope_value = _normalize_projection_scope(payload.scope or "shared")
     _ensure_scope_allowed(scope_value, auth)
-    now = _iso_utc()
     conn = get_db()
     try:
         try:
@@ -1709,26 +1899,20 @@ def create_memory(payload: MemoryCreatePayload, auth: dict = Depends(require_tok
                 if conn.execute("SELECT 1 FROM memory_current WHERE memory_id=?", (mem_id,)).fetchone():
                     raise HTTPException(status_code=409, detail="Memory id already exists")
                 _projection_upsert(conn, {
-                    "memory_id": mem_id, "type": mem_type, "content": content,
-                    "normalized": normalize_content(content), "normalized_hash": normalized_hash(content),
+                    "memory_id": mem_id, "type": payload.type, "content": payload.content,
                     "source": payload.source or "user", "source_agent": payload.source_agent or "ui",
-                    "source_session": payload.source_session or "ui", "source_layer": "registry",
-                    "source_path": None, "source_line": None, "source_host": "gigabrain",
-                    "source_kind": "api", "sync_policy": "read_only", "confidence": payload.confidence,
-                    "scope": scope_value, "status": payload.status or "active", "value_score": None,
-                    "value_label": None, "created_at": now, "updated_at": now, "archived_at": None,
-                    "last_reviewed_at": None, "tags": json.dumps(payload.tags or []),
+                    "source_session": payload.source_session or "ui", "source_kind": "api",
+                    "confidence": payload.confidence, "scope": scope_value,
+                    "status": payload.status or "active", "tags": payload.tags or [],
                     "superseded_by": payload.superseded_by,
-                    "content_time": _canonical_iso_text(payload.content_time),
-                    "valid_until": _canonical_iso_text(payload.valid_until),
-                    "valid_from": _canonical_iso_text(payload.content_time) or now,
+                    "content_time": payload.content_time,
+                    "valid_until": payload.valid_until,
                 }, {
                     "concept": payload.concept, "source_message_id": payload.source_message_id,
-                    "last_confirmed_at": _canonical_iso_text(payload.last_confirmed_at),
-                    "ttl_days": payload.ttl_days,
+                    "last_confirmed_at": payload.last_confirmed_at, "ttl_days": payload.ttl_days,
                     "pinned": payload.pinned, "review_version": payload.review_version,
                     "review_reason": payload.review_reason,
-                }, batch["operation_id"])
+                }, batch["operation_id"], now=batch["now"])
         except sqlite3.IntegrityError as exc:
             if _is_duplicate_memory_id_error(exc):
                 raise HTTPException(status_code=409, detail="Memory id already exists") from exc
@@ -1749,26 +1933,18 @@ def update_memory(memory_id: str, payload: MemoryUpdatePayload, auth: dict = Dep
         with projection_batch(conn, f"api-update-{memory_id}") as batch:
             core = dict(conn.execute("SELECT * FROM memory_current WHERE memory_id=?", (memory_id,)).fetchone())
             content_value = payload_data.get("content", core["content"])
-            for key in ("type", "status", "superseded_by", "confidence"):
+            for key in ("type", "status", "content_time", "valid_until", "superseded_by", "confidence"):
                 if key in payload_data:
                     core[key] = payload_data[key]
-            for key in ("content_time", "valid_until"):
-                if key in payload_data:
-                    core[key] = _canonical_iso_text(payload_data[key])
             if "tags" in payload_data:
-                core["tags"] = json.dumps(payload_data.get("tags") or [])
+                core["tags"] = payload_data.get("tags") or []
             core["content"] = content_value
-            core["normalized"] = normalize_content(content_value)
-            core["normalized_hash"] = normalized_hash(content_value)
-            core["updated_at"] = _iso_utc()
+            core["updated_at"] = batch["now"]
             metadata = {key: payload_data[key] for key in (
                 "concept", "source_message_id", "last_injected_at", "last_confirmed_at",
                 "ttl_days", "pinned", "review_version", "review_reason",
             ) if key in payload_data}
-            for key in ("last_injected_at", "last_confirmed_at"):
-                if key in metadata:
-                    metadata[key] = _canonical_iso_text(metadata[key])
-            _projection_upsert(conn, core, metadata, batch["operation_id"])
+            _projection_upsert(conn, core, metadata, batch["operation_id"], now=batch["now"])
     finally:
         conn.close()
     return {"ok": True}

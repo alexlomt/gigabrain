@@ -1,8 +1,10 @@
 import importlib.util
 import hashlib
+import json
 import os
 import sqlite3
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 
@@ -30,6 +32,17 @@ def load_app(name, root, read_only=False):
     finally:
         os.environ.clear()
         os.environ.update(previous)
+
+
+def run_node_projection(script, *args):
+    completed = subprocess.run(
+        ["node", "--input-type=module", "-e", script, *(str(arg) for arg in args)],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(completed.stdout)
 
 class MemoryApiProjectionTest(unittest.TestCase):
     def setUp(self):
@@ -168,6 +181,204 @@ class MemoryApiProjectionTest(unittest.TestCase):
         self.assertEqual(current, {key: expected[key] for key in ("content_time", "valid_until")})
         self.assertEqual(metadata, {key: expected[key] for key in ("last_injected_at", "last_confirmed_at")})
         self.assertEqual(legacy, expected)
+
+    def test_every_python_memory_mutation_uses_reviewed_node_canonical_rows(self):
+        created = self.client.post("/memories", headers=self.headers, json={
+            "id": "python-canonical",
+            "content": "  [m:a] Mixed CASE Grüße 東京  ",
+            "type": " decision ",
+            "status": " PENDING ",
+            "scope": " DEFAULT ",
+            "source": " user ",
+            "tags": ["Mixed", "東京"],
+            "content_time": "2001-02-03",
+            "valid_until": "not-a-timestamp",
+            "last_confirmed_at": "not-a-timestamp",
+        })
+        self.assertEqual(created.status_code, 200, created.text)
+        first = self.rows("SELECT * FROM memory_current WHERE memory_id='python-canonical'")[0]
+        self.assertEqual({key: first[key] for key in (
+            "type", "content", "normalized", "normalized_hash", "source", "scope", "status",
+            "tags", "content_time", "valid_until", "valid_from",
+        )}, {
+            "type": "DECISION",
+            "content": "[m:a] Mixed CASE Grüße 東京",
+            "normalized": "m a mixed case grüße 東京",
+            "normalized_hash": "747170b4093c5df116a297375c00148002a01a5e5b1783667dd2a18c4cf339cf",
+            "source": " user ",
+            "scope": "shared",
+            "status": "pending",
+            "tags": '["Mixed","東京"]',
+            "content_time": "2001-02-03",
+            "valid_until": None,
+            "valid_from": "2001-02-03T00:00:00.000Z",
+        })
+        self.assertEqual(first["created_at"], first["updated_at"])
+        metadata = self.rows(
+            "SELECT last_confirmed_at FROM memory_console_metadata WHERE memory_id='python-canonical'"
+        )[0]
+        self.assertIsNone(metadata["last_confirmed_at"])
+        event = self.rows(
+            "SELECT payload FROM memory_events WHERE memory_id='python-canonical' ORDER BY rowid"
+        )[0]
+        self.assertEqual(json.loads(event["payload"]), {
+            "operation_id": "api-create-python-canonical",
+            "projection_event_kind": "row",
+            "projection_mutation": "upsert",
+        })
+
+        updated = self.client.patch("/memories/python-canonical", headers=self.headers, json={
+            "type": " context ",
+            "status": "not-a-status",
+            "valid_until": "2026-09-26T14:30:00+02:00",
+            "last_injected_at": "not-a-timestamp",
+        })
+        self.assertEqual(updated.status_code, 200, updated.text)
+        second = self.rows("SELECT * FROM memory_current WHERE memory_id='python-canonical'")[0]
+        self.assertEqual({key: second[key] for key in (
+            "type", "content", "scope", "status", "content_time", "valid_until", "valid_from", "created_at",
+        )}, {
+            "type": "CONTEXT",
+            "content": "[m:a] Mixed CASE Grüße 東京",
+            "scope": "shared",
+            "status": "active",
+            "content_time": "2001-02-03",
+            "valid_until": "2026-09-26T12:30:00.000Z",
+            "valid_from": "2001-02-03T00:00:00.000Z",
+            "created_at": first["created_at"],
+        })
+        self.assertIsNone(self.rows(
+            "SELECT last_injected_at FROM memory_console_metadata WHERE memory_id='python-canonical'"
+        )[0]["last_injected_at"])
+
+        rejected = self.client.post("/memories/python-canonical/reject", headers=self.headers)
+        self.assertEqual(rejected.status_code, 200, rejected.text)
+        status_row = self.rows(
+            "SELECT type,content,scope,status,updated_at,last_reviewed_at FROM memory_current "
+            "WHERE memory_id='python-canonical'"
+        )[0]
+        self.assertEqual(status_row["type"], "CONTEXT")
+        self.assertEqual(status_row["content"], "[m:a] Mixed CASE Grüße 東京")
+        self.assertEqual(status_row["scope"], "shared")
+        self.assertEqual(status_row["status"], "rejected")
+        self.assertEqual(status_row["last_reviewed_at"], status_row["updated_at"])
+
+        future = self.client.post("/memories", headers=self.headers, json={
+            "id": "python-future",
+            "content": "  Future trusted ingest clock  ",
+            "scope": " Project:Alpha ",
+            "content_time": "2999-01-01T00:00:00+01:00",
+        })
+        self.assertEqual(future.status_code, 200, future.text)
+        future_row = self.rows("SELECT * FROM memory_current WHERE memory_id='python-future'")[0]
+        self.assertEqual(future_row["content"], "Future trusted ingest clock")
+        self.assertEqual(future_row["scope"], "Project:Alpha")
+        self.assertEqual(
+            future_row["content_time"],
+            future_row["created_at"],
+            "future content_time must clamp to the trusted batch clock",
+        )
+        self.assertEqual(future_row["valid_from"], future_row["created_at"])
+        self.assertEqual(future_row["updated_at"], future_row["created_at"])
+
+        invalid_scope = self.client.post("/memories", headers=self.headers, json={
+            "content": "Invalid scope must not reach a projection write",
+            "scope": "project:bad scope",
+        })
+        self.assertEqual(invalid_scope.status_code, 422, invalid_scope.text)
+
+    def test_python_and_node_observe_each_others_real_canonical_rows(self):
+        created = self.client.post("/memories", headers=self.headers, json={
+            "id": "python-to-node",
+            "content": "  Python to Node Mixed CASE Grüße 東京  ",
+            "type": " decision ",
+            "status": " PENDING ",
+            "scope": " DEFAULT ",
+            "content_time": "2001-02-03",
+            "valid_until": "not-a-timestamp",
+        })
+        self.assertEqual(created.status_code, 200, created.text)
+        patched = self.client.patch("/memories/python-to-node", headers=self.headers, json={
+            "status": "invalid-status",
+            "valid_until": "2026-09-26T14:30:00+02:00",
+        })
+        self.assertEqual(patched.status_code, 200, patched.text)
+
+        observed = run_node_projection("""
+          import { openDatabase } from './lib/core/sqlite.js';
+          import { getCurrentMemory, listCurrentMemories, searchCurrentMemories } from './lib/core/projection-store.js';
+          const [dbPath, memoryId] = process.argv.slice(1);
+          const db = openDatabase(dbPath, { observational: true, readOnly: true });
+          try {
+            const row = getCurrentMemory(db, memoryId, { ensure: false });
+            const listed = listCurrentMemories(db, {
+              ensure: false, limit: 100, scope: 'shared', statuses: ['ACTIVE'],
+            }).some((item) => item.memory_id === memoryId);
+            const recalled = searchCurrentMemories(db, {
+              ensure: false, query: 'Mixed CASE Grüße', scope: 'shared', statuses: ['ACTIVE'], topK: 10,
+            }).some((item) => item.memory_id === memoryId);
+            console.log(JSON.stringify({
+              listed,
+              recalled,
+              row: Object.fromEntries([
+                'memory_id', 'type', 'content', 'normalized', 'normalized_hash', 'scope', 'status',
+                'content_time', 'valid_until', 'valid_from',
+              ].map((key) => [key, row[key]])),
+            }));
+          } finally {
+            db.close();
+          }
+        """, self.root / "state" / "registry.sqlite", "python-to-node")
+        self.assertTrue(observed["listed"])
+        self.assertTrue(observed["recalled"])
+        self.assertEqual(observed["row"], {
+            "memory_id": "python-to-node",
+            "type": "DECISION",
+            "content": "Python to Node Mixed CASE Grüße 東京",
+            "normalized": "python to node mixed case grüße 東京",
+            "normalized_hash": "655cb26ee904681fd39ede26cf745ade3a814486600aafc025a5087e4a7761e6",
+            "scope": "shared",
+            "status": "active",
+            "content_time": "2001-02-03",
+            "valid_until": "2026-09-26T12:30:00.000Z",
+            "valid_from": "2001-02-03T00:00:00.000Z",
+        })
+
+        node_written = run_node_projection("""
+          import { openDatabase } from './lib/core/sqlite.js';
+          import { upsertCurrentMemory } from './lib/core/projection-store.js';
+          const [dbPath] = process.argv.slice(1);
+          const db = openDatabase(dbPath);
+          try {
+            const row = upsertCurrentMemory(db, {
+              memory_id: 'node-to-python',
+              content: '  Node to Python Mixed CASE Grüße  ',
+              type: ' preference ',
+              status: ' PENDING ',
+              scope: ' DEFAULT ',
+              content_time: '2002-03-04',
+              valid_until: 'not-a-timestamp',
+            }, { now: '2026-08-27T10:00:00.000Z', operationId: 'node-to-python' });
+            console.log(JSON.stringify(row));
+          } finally {
+            db.close();
+          }
+        """, self.root / "state" / "registry.sqlite")
+        self.assertEqual(node_written["content"], "Node to Python Mixed CASE Grüße")
+        response = self.client.get("/memories/node-to-python", headers=self.headers)
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual({key: response.json()[key] for key in (
+            "id", "type", "content", "normalized", "scope", "status", "content_time", "valid_until",
+        )}, {
+            "id": "node-to-python",
+            "type": "PREFERENCE",
+            "content": "Node to Python Mixed CASE Grüße",
+            "normalized": "node to python mixed case grüße",
+            "scope": "shared",
+            "status": "pending",
+            "content_time": "2002-03-04",
+            "valid_until": None,
+        })
 
 
 class MemoryApiLegacyUpgradeTest(unittest.TestCase):
