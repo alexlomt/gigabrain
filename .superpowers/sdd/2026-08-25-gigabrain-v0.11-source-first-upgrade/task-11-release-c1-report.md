@@ -214,3 +214,68 @@ npm 10.9.4 lifecycle npm pack --dry-run
 
 This report is committed atomically with the owned release implementation,
 artifacts and tests. The immutable SHA is recorded in the parent handoff.
+
+---
+
+## Fix 1.1 — bind selected wheels to lock hashes and Python 3.10 tags
+
+### RED evidence
+
+Negative fixtures first recomputed the manifest inventory hash after replacing
+an authorized wheel digest, switching to an arbitrary HTTPS mirror, or changing
+the wheel filename/tags. The prior verifier accepted those self-consistent but
+unauthorized manifests:
+
+```text
+node tests/compat/release-provenance-test.js
+COMPAT_EXPECTED_RELEASE_PROVENANCE missing immutable release identity round-trip
+exit 1
+```
+
+The RED matrix covered unauthorized digest, mirror, credentials, trailing slash,
+query and fragment provenance; slash/backslash paths; distribution/version/build
+drift; cp311 and mismatched ABI; Windows, macOS and aarch64 platforms.
+
+### Implementation
+
+- The production lock parser now retains the exact sorted set of SHA-256 hashes
+  for every normalized distribution/version and rejects unhashed requirements.
+- Every selected manifest wheel digest must belong to the matching requirement's
+  lock hash set. Recomputing `inventorySha256` cannot authorize a new artifact.
+- The manifest and every wheel entry must use the exact canonical index
+  `https://pypi.org/simple`; mirrors, userinfo, query, fragment and slash drift
+  fail closed.
+- Wheel filenames must be plain trimmed basenames with no slash, backslash or
+  control byte. The release accepts the five-field no-build PEP 427 shape only.
+- Filename distribution and version must match the declared normalized values.
+- Pure wheels must be `py3-none-any`. Binary wheels must be
+  `cp310-cp310` and every compressed platform tag must be manylinux x86_64.
+  Windows, macOS, generic Linux, aarch64, other Python/ABI tags and build-tag
+  variants are rejected.
+- The committed 27-wheel manifest was not changed.
+
+### GREEN evidence
+
+```text
+node tests/compat/release-provenance-test.js
+release-provenance-test.js: ok
+
+node tests/compat/packed-entry-smoke-test.js
+packed-entry-smoke-test.js: ok
+
+node tests/unit-public-mirror-test.js
+{"ok":true,"test":"unit-public-mirror-test.js"}
+```
+
+The reviewed live inventory still produces the exact C1 roots:
+
+```text
+dependencyRoot  dd35394b92d91737119e035e6ffa94e93187a94ea9da529936c1030a33b0df2a
+nodeRoot        29c33c6a3067f9e3fcdff63ff7f2fb252e61e01f3867e650f7b8fc0104aaa230
+pythonRoot      80074b43430e71e51781b3e4f2f44ac23c1543bcf2a41e7723b91a341b358331
+Node packages   94
+Python dists    27
+```
+
+Fix 1.1 is committed separately. Its immutable SHA is recorded in the parent
+handoff response.

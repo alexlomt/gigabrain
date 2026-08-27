@@ -214,13 +214,82 @@ export async function run() {
     }, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_HASH/);
     rejectDependency("wheel provenance drift", (candidate) => {
       candidate.manifest.packages[0].index = "https://mirror.invalid/simple";
-      writeDependencyManifest(candidate.root, candidate.manifest);
-    }, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_PROVENANCE/);
-    rejectDependency("lock and wheel set drift", (candidate) => {
-      candidate.manifest.packages[0].version = "1.0.1";
       candidate.manifest.inventorySha256 = sha(JSON.stringify(candidate.manifest.packages));
       writeDependencyManifest(candidate.root, candidate.manifest);
-    }, /GIGABRAIN_RELEASE_DEPENDENCY_LOCK_INVENTORY/);
+    }, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_PROVENANCE/);
+    rejectDependency("unauthorized wheel digest with recomputed inventory", (candidate) => {
+      candidate.manifest.packages[0].sha256 = "c".repeat(64);
+      candidate.manifest.inventorySha256 = sha(JSON.stringify(candidate.manifest.packages));
+      writeDependencyManifest(candidate.root, candidate.manifest);
+    }, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_LOCK_HASH/);
+    rejectDependency("arbitrary HTTPS mirror with recomputed inventory", (candidate) => {
+      candidate.manifest.index = "https://mirror.invalid/simple";
+      for (const entry of candidate.manifest.packages) entry.index = candidate.manifest.index;
+      candidate.manifest.inventorySha256 = sha(JSON.stringify(candidate.manifest.packages));
+      writeDependencyManifest(candidate.root, candidate.manifest);
+    }, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_PROVENANCE/);
+    for (const invalidIndex of [
+      "https://user:pass@pypi.org/simple",
+      "https://pypi.org/simple/",
+      "https://pypi.org/simple?mirror=1",
+      "https://pypi.org/simple#fragment",
+    ]) rejectDependency(`noncanonical index ${invalidIndex}`, (candidate) => {
+      candidate.manifest.index = invalidIndex;
+      for (const entry of candidate.manifest.packages) entry.index = invalidIndex;
+      candidate.manifest.inventorySha256 = sha(JSON.stringify(candidate.manifest.packages));
+      writeDependencyManifest(candidate.root, candidate.manifest);
+    }, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_PROVENANCE/);
+    const rejectWheelFilename = (label, filename, expected) => rejectDependency(label, (candidate) => {
+      candidate.manifest.packages[0].filename = filename;
+      candidate.manifest.inventorySha256 = sha(JSON.stringify(candidate.manifest.packages));
+      writeDependencyManifest(candidate.root, candidate.manifest);
+    }, expected);
+    rejectWheelFilename(
+      "wheel filename path traversal",
+      "../alpha_py-1.0.0-py3-none-any.whl",
+      /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_FILENAME/,
+    );
+    rejectWheelFilename(
+      "wheel filename backslash path",
+      "subdir\\alpha_py-1.0.0-py3-none-any.whl",
+      /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_FILENAME/,
+    );
+    rejectWheelFilename(
+      "wheel distribution mismatch",
+      "wrong_name-1.0.0-py3-none-any.whl",
+      /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_FILENAME/,
+    );
+    rejectWheelFilename(
+      "wheel version mismatch",
+      "alpha_py-9.9.9-py3-none-any.whl",
+      /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_FILENAME/,
+    );
+    rejectWheelFilename(
+      "wheel build tag is forbidden",
+      "alpha_py-1.0.0-1-py3-none-any.whl",
+      /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_FILENAME/,
+    );
+    rejectWheelFilename(
+      "wheel Python tag mismatch",
+      "alpha_py-1.0.0-cp311-cp311-manylinux_2_17_x86_64.whl",
+      /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_TAG/,
+    );
+    rejectWheelFilename(
+      "wheel ABI mismatch",
+      "alpha_py-1.0.0-cp310-cp39-manylinux_2_17_x86_64.whl",
+      /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_TAG/,
+    );
+    for (const [label, filename] of [
+      ["Windows wheel", "alpha_py-1.0.0-cp310-cp310-win_amd64.whl"],
+      ["macOS wheel", "alpha_py-1.0.0-cp310-cp310-macosx_12_0_x86_64.whl"],
+      ["aarch64 wheel", "alpha_py-1.0.0-cp310-cp310-manylinux_2_17_aarch64.whl"],
+    ]) rejectWheelFilename(label, filename, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_TAG/);
+    rejectDependency("lock and wheel set drift", (candidate) => {
+      candidate.manifest.packages[0].version = "1.0.1";
+      candidate.manifest.packages[0].filename = "alpha_py-1.0.1-py3-none-any.whl";
+      candidate.manifest.inventorySha256 = sha(JSON.stringify(candidate.manifest.packages));
+      writeDependencyManifest(candidate.root, candidate.manifest);
+    }, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_LOCK_HASH/);
     rejectDependency("node provenance drift", (candidate, options) => {
       const baseline = computeDependencyRoot(options);
       candidate.packageLock.packages["node_modules/node-alpha"].resolved = "https://mirror.invalid/node-alpha.tgz";
