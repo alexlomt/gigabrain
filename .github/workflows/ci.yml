@@ -100,14 +100,14 @@ jobs:
             --requirement memory_api/requirements-prod-py310-linux-x86_64.lock
           echo "GIGABRAIN_TASK11_PYTHON=$PWD/.venv-ci-prod/bin/python" >> "$GITHUB_ENV"
 
+      - name: Install compatibility dependencies
+        run: npm ci --ignore-scripts --legacy-peer-deps
+
       - name: Enforce source-first divergence
         run: >-
           node scripts/check-source-first-divergence.mjs
           --base ef624f97cc616a9e00b6df653eded455fbd30e01
           --map config/migration/source-first-port-map.json
-
-      - name: Install compatibility dependencies
-        run: npm ci --ignore-scripts --legacy-peer-deps
 
       - name: Run full private compatibility inventory
         run: node tests/run-all.js

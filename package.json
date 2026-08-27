@@ -160,6 +160,7 @@
   "devDependencies": {
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
-    "acorn": "8.18.0"
+    "acorn": "8.18.0",
+    "openclaw": "2026.7.1-2"
   }
 }

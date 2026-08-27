@@ -617,6 +617,13 @@ const testReleaseManifestStaysNarrow = () => {
   assert.match(ci, /\.venv-ci-prod\/bin\/python -m unittest/u);
   assert.match(ci, /\.venv-ci-dev\/bin\/ruff check/u);
   assert.match(ci, /\.venv-ci-dev\/bin\/pip-audit[\s\S]*requirements-prod-py310-linux-x86_64\.lock/u);
+  const compatibilityInstall = ci.indexOf('- name: Install compatibility dependencies');
+  const divergenceGate = ci.indexOf('- name: Enforce source-first divergence');
+  assert.ok(compatibilityInstall >= 0, 'compatibility CI must install its locked dependencies');
+  assert.ok(
+    divergenceGate > compatibilityInstall,
+    'source-first divergence must run after compatibility dependencies are installed',
+  );
   assert.doesNotMatch(ci, /python-version: '3\.12'|pip install[^\n]*requirements\.txt/u);
 
   const prohibitedRepositoryPatterns = [
@@ -662,6 +669,9 @@ const testReleaseManifestStaysNarrow = () => {
     packageJson.engines?.node,
     'package-lock runtime metadata must match package.json',
   );
+  assert.equal(packageJson.devDependencies?.openclaw, '2026.7.1-2');
+  assert.equal(packageLock.packages?.['']?.devDependencies?.openclaw, '2026.7.1-2');
+  assert.equal(packageLock.packages?.['node_modules/openclaw']?.version, '2026.7.1-2');
   for (const [scriptName, expectedValue] of [
     ['release:public-mirror', 'node scripts/check-public-mirror.mjs'],
     ['release:initial-public-mirror', 'node scripts/check-public-mirror.mjs --require-single-commit'],
