@@ -3231,7 +3231,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "a660a7cd1c3717719f0fd90706522d09adcd21d00794b009cd6902ad80cbe2f5",
+      "contentSha256": "b517868dd331212c9cb71ecc8df8853772b1503ad178edb14d35937d465cbf10",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "npm-pack-schema"
@@ -3242,7 +3242,7 @@
         "2B",
         "15"
       ],
-      "reason": "Private public-mirror contract adds Task 15 fresh-root coverage for total current package-script transforms without weakening partial-transform rejection.",
+      "reason": "Private public-mirror contract adds Task 15 source/public phase coverage for total package-script transforms while retaining mixed-state rejection.",
       "targetMode": "100644",
       "targetPath": "tests/unit-public-mirror-test.js"
     },

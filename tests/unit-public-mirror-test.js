@@ -110,6 +110,18 @@ const expectClasses = (callback, expectedClasses) => {
   });
 };
 
+const assertPackageTransformPhase = ({ packageJson, manifest }) => {
+  const omittedScripts = manifest.transforms.packageJson.omitScripts;
+  const presentScripts = omittedScripts.filter((scriptName) => (
+    Object.hasOwn(packageJson.scripts, scriptName)
+  ));
+  assert.ok(
+    presentScripts.length === 0 || presentScripts.length === omittedScripts.length,
+    'package transform is partially applied',
+  );
+  return presentScripts.length === 0 ? 'public' : 'source';
+};
+
 const testValidSyntheticRepositoryAndSafePack = () => {
   const marker = 'prepack-marker.txt';
   const packageJson = {
@@ -572,6 +584,33 @@ const testCoordinatorRejectsSymlinkedSourceComponent = () => {
   }
 };
 
+const testPackageTransformPhaseContract = () => {
+  const manifest = validateManifest(JSON.parse(fs.readFileSync(
+    new URL('../public-release-manifest.json', import.meta.url),
+    'utf8',
+  )));
+  const currentPackage = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  const sourcePackage = structuredClone(currentPackage);
+  for (const scriptName of manifest.transforms.packageJson.omitScripts) {
+    sourcePackage.scripts[scriptName] ||= `node private/${scriptName}.js`;
+  }
+  assert.equal(assertPackageTransformPhase({ packageJson: sourcePackage, manifest }), 'source');
+
+  const publicPackage = structuredClone(currentPackage);
+  for (const scriptName of manifest.transforms.packageJson.omitScripts) {
+    delete publicPackage.scripts[scriptName];
+  }
+  assert.equal(assertPackageTransformPhase({ packageJson: publicPackage, manifest }), 'public');
+
+  const mixedPackage = structuredClone(publicPackage);
+  const firstOmitted = manifest.transforms.packageJson.omitScripts[0];
+  mixedPackage.scripts[firstOmitted] = sourcePackage.scripts[firstOmitted];
+  assert.throws(
+    () => assertPackageTransformPhase({ packageJson: mixedPackage, manifest }),
+    /package transform is partially applied/u,
+  );
+};
+
 const testReleaseManifestStaysNarrow = () => {
   const manifest = validateManifest(JSON.parse(fs.readFileSync(
     new URL('../public-release-manifest.json', import.meta.url),
@@ -756,13 +795,7 @@ const testReleaseManifestStaysNarrow = () => {
   assert.equal(packageJson.devDependencies?.openclaw, '2026.7.1-2');
   assert.equal(packageLock.packages?.['']?.devDependencies?.openclaw, '2026.7.1-2');
   assert.equal(packageLock.packages?.['node_modules/openclaw']?.version, '2026.7.1-2');
-  for (const scriptName of manifest.transforms.packageJson.omitScripts) {
-    assert.equal(
-      Object.hasOwn(packageJson.scripts, scriptName),
-      true,
-      `package transform cannot omit a stale or already-absent source script: ${scriptName}`,
-    );
-  }
+  assertPackageTransformPhase({ packageJson, manifest });
   assert.equal(packageJson.scripts.prepack, 'node scripts/check-no-pii.mjs --quiet');
 };
 
@@ -918,6 +951,7 @@ export const run = async () => {
   testCheckerRejectsUnappliedPackageTransform();
   testCoordinatorRejectsDestinationSymlinkIntoSource();
   testCoordinatorRejectsSymlinkedSourceComponent();
+  testPackageTransformPhaseContract();
   testReleaseManifestStaysNarrow();
   testRunAllRejectsPartialOrMixedInventory();
   testNpmInventoryDrift();
