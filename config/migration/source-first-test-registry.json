@@ -451,7 +451,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/nightly-order-test.js",
-      "testSha256": "fbc93a5ebbefc1b1c3386d193b1b777dfc7005142f8871741ab2afefd61ddfe6"
+      "testSha256": "ae17ec8467fe2b54c5f2f9c7dc62365dc4ce482653d1c1aa8e2b845d5baa2ec3"
     },
     {
       "coveredPaths": [
@@ -2278,6 +2278,6 @@
     }
   ],
   "entryCount": 101,
-  "manifestSha256": "be4bb0c57c653731df8ad1a110887cb6159b69b4d70e84fbc8887c14906fe3c9",
+  "manifestSha256": "61d3254a98a81b3b9f506084c71f43a0eb563a9d4fb92cfd6b3b608937b4aacb",
   "schemaVersion": 1
 }

@@ -85,16 +85,19 @@ const makeHandlers = (calls, overrides = {}) => Object.fromEntries(EXPECTED_SEQU
   },
 ]));
 
-const spawnNightly = (args, root, extraEnv = {}) => spawnSync(process.execPath, [
-  path.resolve(import.meta.dirname, "..", "..", "scripts", "gigabrainctl.js"),
-  "nightly",
-  ...args,
-], {
-  cwd: path.resolve(import.meta.dirname, "..", ".."),
-  encoding: "utf8",
-  env: { ...process.env, ...extraEnv, HOME: path.join(root, "home") },
-  timeout: 60_000,
-});
+const spawnNightly = (args, root, extraEnv = {}) => {
+  const target = "scripts/gigabrainctl.js";
+  return spawnSync(process.execPath, [
+    path.resolve(import.meta.dirname, "..", "..", target),
+    "nightly",
+    ...args,
+  ], {
+    cwd: path.resolve(import.meta.dirname, "..", ".."),
+    encoding: "utf8",
+    env: { ...process.env, ...extraEnv, HOME: path.join(root, "home") },
+    timeout: 60_000,
+  });
+};
 
 export async function run() {
   const maintenance = await importContractModule("lib/core/maintenance-service.js", EXPECTED_SIGNATURE);
