@@ -57,3 +57,44 @@ The remaining RED is precise and not waived: after all legacy-drop writer-invent
 ## Disposition
 
 C2 is suitable for review as a narrow commit. Task 11 as a whole remains gated on the separately scoped write-mode ordering fix above.
+
+## C2 fix 2.1
+
+Date: 2026-08-27
+Base: `189f5e3794f5528fa219615330bc89ab10c54e7e`
+
+### Review findings closed
+
+- Standalone/Codex doctor now inspects only the first 20 SQLite header bytes before deciding whether any SQLite-backed health path may run. A WAL-format registry requires both pre-existing `-wal` and `-shm` paths. Missing, WAL-only, and SHM-only states bypass `runDoctor` and therefore bypass `readLocalStoreHealth` and every SQLite open; they return exit-zero observational compatibility diagnostics and a pending store-health record instead.
+- The unsafe-path tests use valid WAL-mode registries, assert the exact pre-existing file tree and every file hash remain unchanged, and prove no missing sidecar is materialized. A fully coordinated WAL fixture proves the safe path still reaches normal Codex doctor health.
+- Task 14 readiness no longer follows schema/index presence. The exact exported and reported migration identity is `gigabrain-schema-0.11-compat-v1:memory-console-metadata-backfill`.
+- The read-only ledger contract is table `memory_schema_migrations`, exact columns `migration_id`, `status`, `receipt_hash`, and `schema_hash`, exact status `completed`, and lowercase 64-hex receipt/schema hashes. Readiness additionally requires `memory_console_metadata` and `idx_memory_console_metadata_concept_pinned`.
+- Missing ledger, missing exact row, incomplete status, case-mismatched status, `schema_only`, invalid receipt hash, and invalid schema hash all remain pending with stable content-free reason codes. Doctor does not create the Task 14 ledger, schema, or receipt and does not expose either hash.
+
+### TDD evidence
+
+The expanded compatibility test was RED before production changes:
+
+- Initial RED: the ready payload lacked the migration identity, ledger/status contract, receipt presence, content-free reasons, and compatibility diagnostic.
+- Exactness RED: a ledger row with status `COMPLETED` was incorrectly accepted after normalization; the implementation now accepts only the exact value `completed`.
+
+After the minimal CLI changes, `node tests/compat/memory-api-projection-test.js` reports `memory-api-projection-test.js: ok` across the ready fixture, every pending ledger variant, three unsafe Codex sidecar states, and the coordinated safe Codex fixture.
+
+### Fix 2.1 verification
+
+| Command | Result |
+| --- | --- |
+| `node tests/compat/memory-api-projection-test.js` | PASS (`memory-api-projection-test.js: ok`) |
+| `node tests/compat/projection-writer-registry-test.js` | PASS (`projection-writer-registry-test.js: ok`) |
+| `node tests/compat/observational-diagnostics-test.js` | PASS (`observational-diagnostics-test.js: ok`) |
+| `node tests/compat/observational-core-patches-test.js` | PASS (`observational-core-patches-test.js: ok`) |
+| `node tests/unit-runtime-guard-test.js` | PASS |
+| `node tests/unit-codex-service-test.js` | PASS (`unit-codex-service-test.js: ok`) |
+| `node tests/compat/release-provenance-test.js` | PASS (`release-provenance-test.js: ok`) |
+| `node tests/integration-codex-mcp-test.js` | PASS (`integration-codex-mcp-test.js: ok`) |
+| `node tests/release-live-codex-cli-test.js` | PASS |
+| `node tests/unit-standalone-client-test.js` | PASS |
+| `node scripts/package-smoke.js` | PASS (`{"ok":true,"smoke":"installed-package-runtime"}`) |
+| `node tests/compat/write-mode-gate-test.js` | **RED, unchanged and not waived** |
+
+The unwaived write-mode RED remains the previously isolated `captureFromEvent` ordering issue (`captureFromEvent requires db` instead of `GIGABRAIN_WRITE_FORBIDDEN`). It is outside the three files owned by C2 fix 2.1 and remains a separate bounded Task 11 round.

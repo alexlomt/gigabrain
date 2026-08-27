@@ -39,6 +39,9 @@ const projectionCounts = (db) => ({
 
 const repoRoot = path.resolve(import.meta.dirname, "..", "..");
 const cliPath = path.join(repoRoot, "scripts", "gigabrainctl.js");
+const TASK14_SIDECAR_MIGRATION_ID = "gigabrain-schema-0.11-compat-v1:memory-console-metadata-backfill";
+const VALID_RECEIPT_HASH = "a".repeat(64);
+const VALID_SCHEMA_HASH = "b".repeat(64);
 const hashBytes = (value) => createHash("sha256").update(value).digest("hex");
 const snapshotTree = (root) => {
   if (!existsSync(root)) return [];
@@ -68,6 +71,72 @@ const runCli = (args) => spawnSync(process.execPath, [cliPath, ...args], {
   env: { ...process.env, LC_ALL: "C" },
   timeout: 30_000,
 });
+
+const observationalTree = (root) => snapshotTree(root).map((row) => (
+  row.path.endsWith("registry.sqlite-shm")
+    ? { mode: row.mode, path: row.path, type: row.type }
+    : row
+));
+
+const task14MigrationState = ({
+  pendingReasons = [],
+  receiptPresent = true,
+  schemaPresent = true,
+  status = "ready",
+} = {}) => ({
+  status,
+  migrationId: TASK14_SIDECAR_MIGRATION_ID,
+  ledgerTable: "memory_schema_migrations",
+  requiredStatus: "completed",
+  schemaPresent,
+  receiptRequired: true,
+  receiptPresent,
+  pendingReasons,
+});
+
+const createTask14Ledger = (db, row = null) => {
+  db.exec(`
+    CREATE TABLE memory_schema_migrations (
+      migration_id TEXT PRIMARY KEY,
+      status TEXT NOT NULL,
+      receipt_hash TEXT NOT NULL,
+      schema_hash TEXT NOT NULL
+    )
+  `);
+  if (!row) return;
+  db.prepare(`
+    INSERT INTO memory_schema_migrations (
+      migration_id, status, receipt_hash, schema_hash
+    ) VALUES (?, ?, ?, ?)
+  `).run(
+    String(row.migration_id || TASK14_SIDECAR_MIGRATION_ID),
+    String(row.status || "completed"),
+    String(row.receipt_hash ?? VALID_RECEIPT_HASH),
+    String(row.schema_hash ?? VALID_SCHEMA_HASH),
+  );
+};
+
+const writeStandaloneConfig = (configPath, workspaceRoot, registryPath) => {
+  writeFileSync(configPath, `${JSON.stringify({
+    enabled: true,
+    compat: { writeMode: "read_only" },
+    runtime: { paths: {
+      workspaceRoot,
+      memoryRoot: path.dirname(registryPath),
+      registryPath,
+      outputDir: path.join(workspaceRoot, "output"),
+      reviewQueuePath: path.join(workspaceRoot, "output", "queue.jsonl"),
+    } },
+    native: { cloudInbox: { enabled: false }, memoryMdPath: path.join(workspaceRoot, "MEMORY.md") },
+    codex: {
+      enabled: true,
+      projectRoot: workspaceRoot,
+      projectStorePath: workspaceRoot,
+      userProfilePath: "",
+    },
+    recall: { semanticRerankEnabled: false },
+  }, null, 2)}\n`, { mode: 0o600 });
+};
 
 const writeOpenClawConfig = (configPath, workspaceRoot, registryPath) => {
   writeFileSync(configPath, `${JSON.stringify({
@@ -154,13 +223,10 @@ const assertDoctorCompatibilityDiagnostics = ({ ensureProjectionStore, upsertCur
     metadata: { concept: "synthetic-doctor", pinned: true },
     operationId: "doctor-compat",
   });
+  createTask14Ledger(db, { status: "completed" });
   writeOpenClawConfig(configPath, workspace, dbPath);
   try {
-    const doctorTree = () => snapshotTree(root).map((row) => (
-      row.path.endsWith("registry.sqlite-shm")
-        ? { mode: row.mode, path: row.path, type: row.type }
-        : row
-    ));
+    const doctorTree = () => observationalTree(root);
     const before = doctorTree();
     const dbHashBefore = hashBytes(readFileSync(dbPath));
     const doctor = runCli(["doctor", "--config", configPath, "--target", "project"]);
@@ -181,11 +247,8 @@ const assertDoctorCompatibilityDiagnostics = ({ ensureProjectionStore, upsertCur
         legacyProjection: "memories",
         legacyProjectionStatus: "preserved-required",
       },
-      task14SidecarMigration: {
-        status: "ready",
-        schemaPresent: true,
-        receiptRequired: true,
-      },
+      diagnostic: "",
+      task14SidecarMigration: task14MigrationState(),
     });
     assert.deepEqual(doctorTree(), before, "doctor compatibility diagnostics must preserve the file tree");
     assert.equal(hashBytes(readFileSync(dbPath)), dbHashBefore, "doctor must not change a DB byte");
@@ -201,9 +264,207 @@ const assertDoctorCompatibilityDiagnostics = ({ ensureProjectionStore, upsertCur
     assert.equal(missingPayload.compatibility.legacyRequired, true);
     assert.equal(missingPayload.compatibility.legacyDropBlocked, true);
     assert.equal(missingPayload.compatibility.memoryApiAuthority.status, "pending");
-    assert.equal(missingPayload.compatibility.task14SidecarMigration.status, "pending");
+    assert.equal(missingPayload.compatibility.diagnostic, "registry_not_inspected");
+    assert.deepEqual(missingPayload.compatibility.task14SidecarMigration, task14MigrationState({
+      pendingReasons: ["registry_not_inspected"],
+      receiptPresent: false,
+      schemaPresent: false,
+      status: "pending",
+    }));
     assert.equal(existsSync(missingWorkspace), false);
     assert.deepEqual(snapshotTree(root), missingBefore, "missing-DB doctor must create nothing");
+  } finally {
+    db.close();
+    rmSync(root, { recursive: true, force: true });
+  }
+};
+
+const assertTask14MigrationLedgerReadiness = ({ ensureProjectionStore, upsertCurrentMemory }) => {
+  const cliSource = readFileSync(cliPath, "utf8");
+  assert.match(
+    cliSource,
+    /export const TASK14_MEMORY_CONSOLE_METADATA_MIGRATION_ID = ['"]gigabrain-schema-0\.11-compat-v1:memory-console-metadata-backfill['"];/,
+    "the exact Task 14 receipt identity must be a named CLI export",
+  );
+  const variants = [
+    {
+      name: "missing-ledger-table",
+      expected: task14MigrationState({
+        pendingReasons: ["migration_ledger_missing"],
+        receiptPresent: false,
+        status: "pending",
+      }),
+      setup: () => {},
+    },
+    {
+      name: "missing-receipt-row",
+      expected: task14MigrationState({
+        pendingReasons: ["migration_receipt_missing"],
+        receiptPresent: false,
+        status: "pending",
+      }),
+      setup: (db) => createTask14Ledger(db),
+    },
+    {
+      name: "incomplete-receipt",
+      expected: task14MigrationState({
+        pendingReasons: ["migration_incomplete"],
+        status: "pending",
+      }),
+      setup: (db) => createTask14Ledger(db, { status: "running" }),
+    },
+    {
+      name: "non-exact-completed-status",
+      expected: task14MigrationState({
+        pendingReasons: ["migration_incomplete"],
+        status: "pending",
+      }),
+      setup: (db) => createTask14Ledger(db, { status: "COMPLETED" }),
+    },
+    {
+      name: "schema-only-receipt",
+      expected: task14MigrationState({
+        pendingReasons: ["migration_schema_only"],
+        status: "pending",
+      }),
+      setup: (db) => createTask14Ledger(db, { status: "schema_only" }),
+    },
+    {
+      name: "bad-receipt-hash",
+      expected: task14MigrationState({
+        pendingReasons: ["receipt_hash_invalid"],
+        status: "pending",
+      }),
+      setup: (db) => createTask14Ledger(db, { receipt_hash: "not-a-receipt-hash" }),
+    },
+    {
+      name: "bad-schema-hash",
+      expected: task14MigrationState({
+        pendingReasons: ["schema_hash_invalid"],
+        status: "pending",
+      }),
+      setup: (db) => createTask14Ledger(db, { schema_hash: "not-a-schema-hash" }),
+    },
+  ];
+
+  for (const variant of variants) {
+    const root = mkdtempSync(path.join(tmpdir(), `gigabrain-task11-task14-${variant.name}-`));
+    const workspace = path.join(root, "workspace");
+    const memoryRoot = path.join(workspace, "memory");
+    const dbPath = path.join(memoryRoot, "registry.sqlite");
+    const configPath = path.join(root, "openclaw.json");
+    mkdirSync(memoryRoot, { recursive: true, mode: 0o700 });
+    const db = openDatabase(dbPath);
+    try {
+      ensureProjectionStore(db);
+      upsertCurrentMemory(db, memory(`task14-${variant.name}`), { operationId: `task14-${variant.name}` });
+      variant.setup(db);
+      writeOpenClawConfig(configPath, workspace, dbPath);
+      const before = observationalTree(root);
+      const dbHashBefore = hashBytes(readFileSync(dbPath));
+      const doctor = runCli(["doctor", "--config", configPath, "--target", "project"]);
+      assert.equal(doctor.status, 0, `${variant.name}: ${doctor.stderr || doctor.stdout}`);
+      const payload = JSON.parse(doctor.stdout);
+      assert.deepEqual(payload.compatibility.task14SidecarMigration, variant.expected, variant.name);
+      assert.doesNotMatch(
+        JSON.stringify(payload.compatibility.task14SidecarMigration),
+        new RegExp(`${VALID_RECEIPT_HASH}|${VALID_SCHEMA_HASH}`),
+        `${variant.name}: diagnostics must not expose receipt material`,
+      );
+      assert.deepEqual(observationalTree(root), before, `${variant.name}: doctor must preserve the file tree`);
+      assert.equal(hashBytes(readFileSync(dbPath)), dbHashBefore, `${variant.name}: doctor must preserve DB bytes`);
+      if (variant.name === "missing-ledger-table") {
+        assert.equal(
+          Boolean(db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='memory_schema_migrations'").get()),
+          false,
+          "doctor must not create the Task 14 ledger",
+        );
+      }
+    } finally {
+      db.close();
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+};
+
+const assertCodexDoctorPreOpenSafety = ({ ensureProjectionStore, upsertCurrentMemory }) => {
+  for (const sidecars of [[], ["wal"], ["shm"]]) {
+    const label = sidecars.length === 0 ? "missing" : `${sidecars[0]}-only`;
+    const root = mkdtempSync(path.join(tmpdir(), `gigabrain-task11-codex-preopen-${label}-`));
+    const workspace = path.join(root, "workspace");
+    const memoryRoot = path.join(workspace, "memory");
+    const dbPath = path.join(memoryRoot, "registry.sqlite");
+    const configPath = path.join(root, "gigabrain.json");
+    mkdirSync(memoryRoot, { recursive: true, mode: 0o700 });
+    const fixtureDb = openDatabase(dbPath);
+    try {
+      ensureProjectionStore(fixtureDb);
+      upsertCurrentMemory(fixtureDb, memory(`codex-preopen-${label}`), { operationId: `codex-preopen-${label}` });
+      fixtureDb.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+    } finally {
+      fixtureDb.close();
+    }
+    const header = readFileSync(dbPath).subarray(0, 20);
+    assert.deepEqual([header[18], header[19]], [2, 2], `${label}: fixture must retain a WAL header`);
+    assert.equal(existsSync(`${dbPath}-wal`), false, `${label}: fixture starts without WAL sidecar`);
+    assert.equal(existsSync(`${dbPath}-shm`), false, `${label}: fixture starts without SHM sidecar`);
+    for (const suffix of sidecars) writeFileSync(`${dbPath}-${suffix}`, "", { mode: 0o600 });
+    writeStandaloneConfig(configPath, workspace, dbPath);
+    try {
+      const before = snapshotTree(root);
+      const doctor = runCli(["doctor", "--config", configPath, "--mode", "standalone", "--target", "project"]);
+      assert.equal(doctor.status, 0, `${label}: ${doctor.stderr || doctor.stdout}`);
+      const payload = JSON.parse(doctor.stdout);
+      assert.equal(payload.ok, false, label);
+      assert.equal(payload.observational, true, label);
+      assert.equal(Object.hasOwn(payload, "build"), false, `${label}: unsafe pre-open state must bypass runDoctor`);
+      assert.equal(payload.compatibility.diagnostic, "wal_coordination_sidecars_unavailable", label);
+      assert.deepEqual(payload.compatibility.task14SidecarMigration, task14MigrationState({
+        pendingReasons: ["registry_not_inspected"],
+        receiptPresent: false,
+        schemaPresent: false,
+        status: "pending",
+      }));
+      assert.deepEqual(payload.stores, [{
+        target: "project",
+        ok: false,
+        status: "pending",
+        workspace_root: workspace,
+        db_path: dbPath,
+        db_exists: true,
+        memory_md_path: path.join(workspace, "MEMORY.md"),
+        memory_md_exists: false,
+        stats: { total: 0, status: {} },
+        diagnostic: "wal_coordination_sidecars_unavailable",
+      }]);
+      assert.deepEqual(snapshotTree(root), before, `${label}: unsafe doctor must not touch any path or sidecar byte`);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+
+  const root = mkdtempSync(path.join(tmpdir(), "gigabrain-task11-codex-preopen-safe-"));
+  const workspace = path.join(root, "workspace");
+  const memoryRoot = path.join(workspace, "memory");
+  const dbPath = path.join(memoryRoot, "registry.sqlite");
+  const configPath = path.join(root, "gigabrain.json");
+  mkdirSync(memoryRoot, { recursive: true, mode: 0o700 });
+  const db = openDatabase(dbPath);
+  try {
+    ensureProjectionStore(db);
+    upsertCurrentMemory(db, memory("codex-preopen-safe"), { operationId: "codex-preopen-safe" });
+    createTask14Ledger(db, { status: "completed" });
+    writeStandaloneConfig(configPath, workspace, dbPath);
+    const before = observationalTree(root);
+    const doctor = runCli(["doctor", "--config", configPath, "--mode", "standalone", "--target", "project"]);
+    assert.equal(doctor.status, 0, doctor.stderr || doctor.stdout);
+    const payload = JSON.parse(doctor.stdout);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.observational, true);
+    assert.equal(Object.hasOwn(payload, "build"), true, "safe pre-open state may call runDoctor");
+    assert.equal(payload.stores?.[0]?.status, undefined, "normal runDoctor health remains authoritative");
+    assert.deepEqual(payload.compatibility.task14SidecarMigration, task14MigrationState());
+    assert.deepEqual(observationalTree(root), before, "safe Codex doctor must remain observational");
   } finally {
     db.close();
     rmSync(root, { recursive: true, force: true });
@@ -267,6 +528,8 @@ export async function run() {
     assertLegacyAdditiveColumns(ensureProjectionStore);
     assertLegacyDropCliBlocked({ ensureProjectionStore, upsertCurrentMemory });
     assertDoctorCompatibilityDiagnostics({ ensureProjectionStore, upsertCurrentMemory });
+    assertTask14MigrationLedgerReadiness({ ensureProjectionStore, upsertCurrentMemory });
+    assertCodexDoctorPreOpenSafety({ ensureProjectionStore, upsertCurrentMemory });
     const db = openDatabase(":memory:");
     try {
       ensureProjectionStore(db);

@@ -139,26 +139,59 @@ const hasTableReadOnly = (db, tableName) => Boolean(db.prepare(`
 `).get(String(tableName || '')));
 
 const LEGACY_COMPATIBILITY_REASON = 'v0.11 rollback window requires the legacy memories projection';
-const hasWalCoordinationSidecars = (dbPath) => Boolean(
-  dbPath
-  && fs.existsSync(`${dbPath}-wal`)
-  && fs.existsSync(`${dbPath}-shm`),
-);
+export const TASK14_MEMORY_CONSOLE_METADATA_MIGRATION_ID = 'gigabrain-schema-0.11-compat-v1:memory-console-metadata-backfill';
+const TASK14_MIGRATION_LEDGER_TABLE = 'memory_schema_migrations';
+const SQLITE_HEADER_MAGIC = Buffer.from('SQLite format 3\0', 'utf8');
+const RECEIPT_HASH_RE = /^[0-9a-f]{64}$/;
 
-const inspectLegacyCompatibility = (dbPath, { db: suppliedDb = null, allowOpen = false } = {}) => {
+const inspectDoctorPreOpenSafety = (dbPath) => {
+  if (!dbPath || !fs.existsSync(dbPath)) return { diagnostic: '', permitted: true };
+  const header = Buffer.alloc(20);
+  let fd = null;
+  try {
+    fd = fs.openSync(dbPath, 'r');
+    const bytesRead = fs.readSync(fd, header, 0, header.length, 0);
+    if (bytesRead < header.length || !header.subarray(0, SQLITE_HEADER_MAGIC.length).equals(SQLITE_HEADER_MAGIC)) {
+      return { diagnostic: 'sqlite_header_unavailable', permitted: false };
+    }
+  } catch {
+    return { diagnostic: 'sqlite_header_unavailable', permitted: false };
+  } finally {
+    if (fd !== null) {
+      try { fs.closeSync(fd); } catch { /* observational close */ }
+    }
+  }
+  const walHeader = header[18] === 2 || header[19] === 2;
+  if (walHeader && (!fs.existsSync(`${dbPath}-wal`) || !fs.existsSync(`${dbPath}-shm`))) {
+    return { diagnostic: 'wal_coordination_sidecars_unavailable', permitted: false };
+  }
+  return { diagnostic: '', permitted: true };
+};
+
+const inspectLegacyCompatibility = (
+  dbPath,
+  { db: suppliedDb = null, allowOpen = false, preOpenSafety: suppliedSafety = null } = {},
+) => {
   let currentPresent = false;
   let legacyPresent = false;
   let sidecarPresent = false;
   let sidecarIndexPresent = false;
+  let ledgerPresent = false;
+  let ledgerColumnsPresent = false;
+  let migrationRow = null;
+  let inspected = false;
+  let diagnostic = '';
   let db = suppliedDb;
   let ownsDb = false;
-  if (db || (allowOpen && dbPath && fs.existsSync(dbPath) && hasWalCoordinationSidecars(dbPath))) {
+  const preOpenSafety = suppliedSafety || inspectDoctorPreOpenSafety(dbPath);
+  if (db || (allowOpen && dbPath && fs.existsSync(dbPath) && preOpenSafety.permitted)) {
     try {
       if (!db) {
         db = openDatabase(dbPath, { readOnly: true, observational: true });
         ownsDb = true;
       }
       try { db.exec('PRAGMA query_only = ON'); } catch { /* connection-local hardening */ }
+      inspected = true;
       currentPresent = hasTableReadOnly(db, 'memory_current');
       legacyPresent = hasTableReadOnly(db, 'memories');
       sidecarPresent = hasTableReadOnly(db, 'memory_console_metadata');
@@ -167,18 +200,62 @@ const inspectLegacyCompatibility = (dbPath, { db: suppliedDb = null, allowOpen =
         WHERE type='index' AND name='idx_memory_console_metadata_concept_pinned'
         LIMIT 1
       `).get());
+      ledgerPresent = hasTableReadOnly(db, TASK14_MIGRATION_LEDGER_TABLE);
+      if (ledgerPresent) {
+        const columns = new Set(
+          db.prepare(`PRAGMA table_info(${TASK14_MIGRATION_LEDGER_TABLE})`).all()
+            .map((row) => String(row?.name || '')),
+        );
+        ledgerColumnsPresent = ['migration_id', 'status', 'receipt_hash', 'schema_hash']
+          .every((column) => columns.has(column));
+        if (ledgerColumnsPresent) {
+          migrationRow = db.prepare(`
+            SELECT status, receipt_hash, schema_hash
+            FROM ${TASK14_MIGRATION_LEDGER_TABLE}
+            WHERE migration_id = ?
+            LIMIT 1
+          `).get(TASK14_MEMORY_CONSOLE_METADATA_MIGRATION_ID) || null;
+        }
+      }
     } catch {
       currentPresent = false;
       legacyPresent = false;
       sidecarPresent = false;
       sidecarIndexPresent = false;
+      ledgerPresent = false;
+      ledgerColumnsPresent = false;
+      migrationRow = null;
+      inspected = false;
+      diagnostic = 'registry_inspection_failed';
     } finally {
       if (ownsDb) {
         try { db?.close?.(); } catch { /* observational close */ }
       }
     }
   }
-  const ready = currentPresent && legacyPresent && sidecarPresent && sidecarIndexPresent;
+  if (!inspected && !diagnostic) diagnostic = preOpenSafety.diagnostic || 'registry_not_inspected';
+  const schemaPresent = sidecarPresent && sidecarIndexPresent;
+  const receiptPresent = Boolean(migrationRow);
+  const migrationStatus = String(migrationRow?.status || '');
+  const pendingReasons = [];
+  if (!inspected) {
+    pendingReasons.push('registry_not_inspected');
+  } else {
+    if (!schemaPresent) pendingReasons.push('sidecar_schema_missing');
+    if (!ledgerPresent) {
+      pendingReasons.push('migration_ledger_missing');
+    } else if (!ledgerColumnsPresent) {
+      pendingReasons.push('migration_ledger_invalid');
+    } else if (!migrationRow) {
+      pendingReasons.push('migration_receipt_missing');
+    } else {
+      if (migrationStatus === 'schema_only') pendingReasons.push('migration_schema_only');
+      else if (migrationStatus !== 'completed') pendingReasons.push('migration_incomplete');
+      if (!RECEIPT_HASH_RE.test(String(migrationRow.receipt_hash || ''))) pendingReasons.push('receipt_hash_invalid');
+      if (!RECEIPT_HASH_RE.test(String(migrationRow.schema_hash || ''))) pendingReasons.push('schema_hash_invalid');
+    }
+  }
+  const task14Ready = pendingReasons.length === 0;
   return {
     legacyRequired: true,
     legacyDropBlocked: true,
@@ -192,10 +269,16 @@ const inspectLegacyCompatibility = (dbPath, { db: suppliedDb = null, allowOpen =
       legacyProjection: 'memories',
       legacyProjectionStatus: legacyPresent ? 'preserved-required' : 'missing-required',
     },
+    diagnostic,
     task14SidecarMigration: {
-      status: ready ? 'ready' : 'pending',
-      schemaPresent: ready,
+      status: task14Ready ? 'ready' : 'pending',
+      migrationId: TASK14_MEMORY_CONSOLE_METADATA_MIGRATION_ID,
+      ledgerTable: TASK14_MIGRATION_LEDGER_TABLE,
+      requiredStatus: 'completed',
+      schemaPresent,
       receiptRequired: true,
+      receiptPresent,
+      pendingReasons,
     },
   };
 };
@@ -1578,15 +1661,49 @@ const commandInventory = async () => {
   }
 };
 
+const pendingDoctorStoreHealth = ({ config, dbPath, diagnostic, target = 'project' } = {}) => ({
+  target,
+  ok: false,
+  status: 'pending',
+  workspace_root: String(config?.runtime?.paths?.workspaceRoot || '').trim(),
+  db_path: dbPath,
+  db_exists: Boolean(dbPath && fs.existsSync(dbPath)),
+  memory_md_path: String(config?.native?.memoryMdPath || '').trim(),
+  memory_md_exists: Boolean(config?.native?.memoryMdPath && fs.existsSync(config.native.memoryMdPath)),
+  stats: {
+    total: 0,
+    status: {},
+  },
+  diagnostic,
+});
+
 const commandDoctor = async () => {
   const { configPath, source, config, dbPath } = loadConfigAndDbPath();
-  let compatibility = inspectLegacyCompatibility(dbPath);
+  const target = readFlag('--target', 'both');
+  const preOpenSafety = inspectDoctorPreOpenSafety(dbPath);
+  let compatibility = inspectLegacyCompatibility(dbPath, { preOpenSafety });
   if (source === 'standalone' && config?.codex?.enabled !== false) {
-    compatibility = inspectLegacyCompatibility(dbPath, { allowOpen: true });
+    if (!preOpenSafety.permitted) {
+      console.log(JSON.stringify({
+        ok: false,
+        observational: true,
+        source,
+        config_path: configPath,
+        stores: [pendingDoctorStoreHealth({
+          config,
+          dbPath,
+          diagnostic: preOpenSafety.diagnostic,
+          target: target === 'user' ? 'user' : 'project',
+        })],
+        compatibility,
+      }, null, 2));
+      return;
+    }
+    compatibility = inspectLegacyCompatibility(dbPath, { allowOpen: true, preOpenSafety });
     const { runDoctor } = await import('../lib/core/codex-service.js');
     const result = await runDoctor({
       configPath,
-      target: readFlag('--target', 'both'),
+      target,
       workspaceRoot: readFlag('--workspace', ''),
       mode: readFlag('--mode', source),
     });
@@ -1614,11 +1731,11 @@ const commandDoctor = async () => {
     }, null, 2));
     return;
   }
-  if (!hasWalCoordinationSidecars(dbPath)) {
+  if (!preOpenSafety.permitted) {
     checks.push({
       name: 'projection_ready',
       ok: false,
-      diagnostic: 'WAL coordination sidecars are unavailable; observational doctor did not open the registry',
+      diagnostic: preOpenSafety.diagnostic,
     });
     console.log(JSON.stringify({
       ok: false,
