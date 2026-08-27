@@ -77,7 +77,7 @@ assert.equal(
   realRetirementEvidence.structuralFingerprintManifestSha256,
   "c672074c8da1111872ea2da78f6e6eafaff15926f3d6bad6f29d85382b852b0b",
 );
-assert.equal(realAllowlist.entries.length, 134);
+assert.equal(realAllowlist.entries.length, 132);
 assert.equal(realAllowlist.adoptionContractCount, 11);
 assert.equal(
   realAllowlist.adoptionContractManifestSha256,

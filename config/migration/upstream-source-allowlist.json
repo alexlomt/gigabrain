@@ -799,12 +799,6 @@
       "type": "blob"
     },
     {
-      "blob": "d3be208789cef2b397b222109841527329f8d289",
-      "mode": "100644",
-      "path": "tests/unit-git-wiki-test.js",
-      "type": "blob"
-    },
-    {
       "blob": "35abf1c352d8e46f887f27d6a754e0b559a8e356",
       "mode": "100644",
       "path": "tests/unit-handoff-pii-redaction-test.js",
@@ -820,12 +814,6 @@
       "blob": "2ec5e45533b2966f393ea283e704070108c709d1",
       "mode": "100644",
       "path": "tests/unit-http-routes-test.js",
-      "type": "blob"
-    },
-    {
-      "blob": "18a1cd1acd6d3b148d8a2a73e4fb1056f6bfcbe8",
-      "mode": "100644",
-      "path": "tests/unit-lifecycle-hooks-test.js",
       "type": "blob"
     },
     {
@@ -889,7 +877,7 @@
       "type": "blob"
     }
   ],
-  "entryCount": 134,
-  "manifestSha256": "5cccac8ce6acf7198cdda07e147256ec0b3c106ad07ff2550a6ee6b0d1522522",
+  "entryCount": 132,
+  "manifestSha256": "62c47c5b2d8e38c8842dcdb7ac84fafa7941993f8dfae9739b9ccd2f222de05e",
   "schemaVersion": 1
 }

@@ -102,7 +102,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "f46e5461c626453d9c11ec0134d28227223a4e27acbc5bee96a2e927fd3389ed",
+      "contentSha256": "06a39719d875f23cf37518badcbf25051ade6b78cc4861bcb5ad0d737696ceee",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -119,7 +119,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with passing Task 12 backup, setup, governed nightly, and durable receipt evidence.",
+      "reason": "Source-first registry with passing Task 12 maintenance evidence and the corrected private-test allowlist policy.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -195,18 +195,19 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "8f5be8cfd7bd86bc8d052b98c9c2264a5ef23a55152657c0ccfd4afb6460b3ef",
+      "contentSha256": "d1c6f24f43eeca88a4dbe4d5983b488e4a84c71b13ff02ddda243a27319c95fb",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "upstream-adoption"
       },
       "ownerTasks": [
+        "12",
         "2A",
         "2B",
         "3",
         "5"
       ],
-      "reason": "Task 5 evidence closure keeps byte-identical upstream ownership separate from six observational reader core patches.",
+      "reason": "Task 12 removes two deliberately adapted upstream tests from the byte-identity allowlist and classifies them as private development diffs.",
       "targetMode": "100644",
       "targetPath": "config/migration/upstream-source-allowlist.json"
     },
@@ -1288,18 +1289,19 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "8344a5b8531a4ec91f36d80eb44af76acdf7973fc88e9250ac40a24146271e85",
+      "contentSha256": "46f76f991fed32334408e4311501e05779de9e4c7ae746acbd383bb2463624c1",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
       },
       "ownerTasks": [
+        "12",
         "2A",
         "3",
         "4",
         "5"
       ],
-      "reason": "Task 5 source-first lexical evidence isolation and immutable exact-HEAD execution gate.",
+      "reason": "Task 12 keeps adapted upstream tests private-dev classified instead of falsely retaining byte-identity ownership.",
       "targetMode": "100644",
       "targetPath": "scripts/check-source-first-divergence.mjs"
     },
@@ -2576,7 +2578,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "d8d98ae66858d3da1099bc33707fd5834528f274e5796f8b131525ec16c9b98a",
+      "contentSha256": "75c43407b9df3f605aa29122ab73944a580e42b8435d5ab7383be7f41ce41f0c",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2594,7 +2596,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first policy contract updated for the classified Task 12 test candidate set.",
+      "reason": "Source-first policy contract updates the Task 12 candidate and byte-identity allowlist counts.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },
