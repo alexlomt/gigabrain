@@ -103,7 +103,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "eb20ff0bed0a1389aa2f89a29f9025132feefc0d6f98894ca90cb0ef69e1c737",
+      "contentSha256": "4373d3b54f9e9e28f76c63b6471c43c5bf1131f723981038cb9b9a16f5155015",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
