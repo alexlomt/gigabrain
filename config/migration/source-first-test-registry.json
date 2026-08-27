@@ -439,6 +439,7 @@
         {
           "binding": "governedDailySequence",
           "mode": "import",
+          "resultBinding": "missingResult",
           "symbol": "executeDailySequence",
           "targetPath": "lib/core/maintenance-service.js"
         },
@@ -2277,6 +2278,6 @@
     }
   ],
   "entryCount": 101,
-  "manifestSha256": "8a35b2831ed485fc7997b121ec7180195ff25788793077618d1ee6b851295375",
+  "manifestSha256": "be4bb0c57c653731df8ad1a110887cb6159b69b4d70e84fbc8887c14906fe3c9",
   "schemaVersion": 1
 }
