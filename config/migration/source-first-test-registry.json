@@ -276,12 +276,6 @@
           "mode": "import",
           "symbol": "buildGeneratedSurface",
           "targetPath": "lib/operator/generated-surface.js"
-        },
-        {
-          "binding": "inspect",
-          "mode": "import",
-          "symbol": "inspectGeneratedSurface",
-          "targetPath": "lib/operator/generated-surface.js"
         }
       ],
       "runner": "node",
@@ -1859,6 +1853,6 @@
     }
   ],
   "entryCount": 94,
-  "manifestSha256": "e63481000505f1bf49a607f56f340ba2cf43060cf9f4f459b50811191c0dc2a8",
+  "manifestSha256": "9dd8a1eaef7b163dae8781972be718b0f79cf45a33d4e5cd689e15d037ed0df5",
   "schemaVersion": 1
 }
