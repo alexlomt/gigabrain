@@ -30,6 +30,7 @@ import { applyMemoryActions } from "../../lib/core/memory-actions.js";
 import { promoteNativeChunks } from "../../lib/core/native-promotion.js";
 import { ensureNativeStore } from "../../lib/core/native-sync.js";
 import { importOpenClawRegistry } from "../../lib/core/openclaw-import.js";
+import { normalizeContent } from "../../lib/core/policy.js";
 import { upsertCurrentMemory } from "../../lib/core/projection-store.js";
 import { openDatabase } from "../../lib/core/sqlite.js";
 import { harvestTranscripts } from "../../lib/core/transcript-harvester.js";
@@ -1299,6 +1300,63 @@ const assertOpenClawImportWriter = () => {
   } finally {
     success.db.close();
     rmSync(success.temp.root, { force: true, recursive: true });
+  }
+
+  const unicode = openClawImportFixture("unicode-canonical-dedupe");
+  try {
+    const content = "Grüße 東京 — Café １２３";
+    const source = openDatabase(unicode.registryPath);
+    try {
+      source.prepare("DELETE FROM memories WHERE id = ?").run("openclaw-b1-2");
+      source.prepare("DELETE FROM evidence").run();
+      source.prepare(`
+        UPDATE memories
+        SET id = ?, content = ?, normalized = ?, scope = ?, concept = ?,
+            source_message_id = ?, review_version = ?, review_reason = ?
+        WHERE id = ?
+      `).run(
+        "legacy-unicode-source",
+        content,
+        "grusse tokyo cafe 123",
+        "profile:main",
+        "unicode-concept",
+        "unicode-message",
+        "unicode-review-v1",
+        "unicode-review-reason",
+        "openclaw-b1-1",
+      );
+    } finally {
+      source.close();
+    }
+    upsertCurrentMemory(unicode.db, projectionMemory("unicode-canonical-target", content, {
+      scope: "profile:main",
+    }), { operationId: "unicode-canonical-seed" });
+    clearEvents(unicode.db);
+
+    const result = invokeOpenClawImport(unicode, { operationId: "unicode-canonical-import" });
+    assert.equal(result.imported_count, 0);
+    assert.equal(result.updated_count, 1);
+    assert.equal(result.duplicate_count, 1);
+    assert.equal(countRows(unicode.db, "memory_current"), 1, "legacy normalized text must not create a Unicode duplicate");
+    const current = unicode.db.prepare("SELECT memory_id, normalized FROM memory_current").get();
+    assert.deepEqual({ ...current }, {
+      memory_id: "unicode-canonical-target",
+      normalized: normalizeContent(content),
+    });
+    assert.deepEqual({ ...unicode.db.prepare(`
+      SELECT concept, source_message_id, review_version, review_reason
+      FROM memory_console_metadata WHERE memory_id = ?
+    `).get("unicode-canonical-target") }, {
+      concept: "unicode-concept",
+      source_message_id: "unicode-message",
+      review_version: "unicode-review-v1",
+      review_reason: "unicode-review-reason",
+    });
+    assert.deepEqual(rowEvents(unicode.db, "unicode-canonical-target").map((row) => row.action), ["openclaw_import_upsert"]);
+    assert.equal(unicode.db.prepare("SELECT memory_id FROM memory_source_links").get()?.memory_id, "unicode-canonical-target");
+  } finally {
+    unicode.db.close();
+    rmSync(unicode.temp.root, { force: true, recursive: true });
   }
 
   for (const stage of ["after_current", "after_legacy", "after_metadata", "after_fts", "after_event", "after_source_link", "after_evidence"]) {
