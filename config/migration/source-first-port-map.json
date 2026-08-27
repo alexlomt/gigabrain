@@ -6,7 +6,7 @@
   "candidateChanges": [
     {
       "changeType": "modified",
-      "contentSha256": "5b1c31369f00b4a5c91acf2f86a0a4009f03a97e6fcf1ec122807f679e08db74",
+      "contentSha256": "3db99cdccabc6c39e10de085a2a56d800fb6c9d57e2d5252821983ef72b3a91a",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -15,7 +15,7 @@
         "11",
         "2B"
       ],
-      "reason": "Task 11 CI installs locked dependencies before source-first enforcement, supplies the exact OpenClaw validator, and blocks high-severity production dependency findings.",
+      "reason": "Task 11 CI installs locked dependencies and the pinned Python bridge before the full inventory, supplies the exact OpenClaw validator, and audits shipped dependencies.",
       "targetMode": "100644",
       "targetPath": ".github/workflows/ci.yml"
     },
@@ -102,7 +102,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "e71b05286ad31661daedef9f7a345d119950e95c8d8a6b5750f62bee9c93ddfe",
+      "contentSha256": "4509e1b07238dedf0245a17f4f71a17f13b198e3b11fd8d2d4b1ded5f6a2b0ca",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1859,7 +1859,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "ec10324819b9ca4156c0b38a8171d2711dfec79bee5c06d3529821dbc6464d39",
+      "contentSha256": "7bbdedccb150ca140fa2d7f46f878f50e4449bf859ee07328a7995ad61bb96f7",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-qwen-embedding-smoke"
@@ -1867,7 +1867,7 @@
       "ownerTasks": [
         "7"
       ],
-      "reason": "Task 7 loopback-only Qwen embedding smoke contract.",
+      "reason": "Task 7 runs a real local Qwen smoke on the host and a deterministic loopback transport/query-instruction smoke in CI.",
       "targetMode": "100644",
       "targetPath": "tests/compat/qwen-embedding-smoke-test.js"
     },

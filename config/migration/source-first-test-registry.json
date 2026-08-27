@@ -919,7 +919,7 @@
       "ownerSourceFirstTaskId": "7",
       "runner": "node",
       "testPath": "tests/compat/qwen-embedding-smoke-test.js",
-      "testSha256": "ec10324819b9ca4156c0b38a8171d2711dfec79bee5c06d3529821dbc6464d39"
+      "testSha256": "7bbdedccb150ca140fa2d7f46f878f50e4449bf859ee07328a7995ad61bb96f7"
     },
     {
       "coveredPaths": [
@@ -2278,6 +2278,6 @@
     }
   ],
   "entryCount": 101,
-  "manifestSha256": "bfd6f6bfc24894c764e74cd17fd0b98547c898ad279850eb4050df37e8ed1e70",
+  "manifestSha256": "2c35982560dfaa5792ea8aab20ca0b408b0cccf3f9a3806cf9a316289a8c9eb1",
   "schemaVersion": 1
 }

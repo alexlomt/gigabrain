@@ -51,6 +51,19 @@ jobs:
       - name: Install
         run: npm ci --ignore-scripts --legacy-peer-deps
 
+      - name: Setup exact Memory API Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.10.12'
+
+      - name: Build Task 11 production Python bridge
+        run: |
+          python -m venv .venv-ci-prod
+          .venv-ci-prod/bin/python -m pip install --disable-pip-version-check \
+            --require-hashes \
+            --requirement memory_api/requirements-prod-py310-linux-x86_64.lock
+          echo "GIGABRAIN_TASK11_PYTHON=$PWD/.venv-ci-prod/bin/python" >> "$GITHUB_ENV"
+
       - name: Test
         run: node tests/run-all.js
 
