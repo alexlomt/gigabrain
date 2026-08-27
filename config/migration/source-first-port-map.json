@@ -6,16 +6,17 @@
   "candidateChanges": [
     {
       "changeType": "modified",
-      "contentSha256": "3db99cdccabc6c39e10de085a2a56d800fb6c9d57e2d5252821983ef72b3a91a",
+      "contentSha256": "ea096ab2f4aa4ac084fd754cfd06159d55fae52050ed566c0a3b66cf297172c0",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
       },
       "ownerTasks": [
         "11",
+        "12",
         "2B"
       ],
-      "reason": "Task 11 CI installs locked dependencies and the pinned Python bridge before the full inventory, supplies the exact OpenClaw validator, and audits shipped dependencies.",
+      "reason": "Task 12 CI installs locked dependencies and the pinned Python bridge before the full inventory, supplies the exact OpenClaw validator, audits shipped dependencies, and checks out full history for the source-first adoption gate.",
       "targetMode": "100644",
       "targetPath": ".github/workflows/ci.yml"
     },
@@ -2986,16 +2987,17 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "3c91b2e86a1059a2b93596eaf33c073018d8560ce9eb152a478f342a8bd992b6",
+      "contentSha256": "28eae433a6190743001bfa8ff25cf4d6326ee5d93e6a72ce5a7edbc6cd9e67ba",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "npm-pack-schema"
       },
       "ownerTasks": [
         "11",
+        "12",
         "2B"
       ],
-      "reason": "Private public-mirror contract binds the Task 11 validator pin, CI dependency ordering, and production-only audit gate.",
+      "reason": "Private public-mirror contract binds the Task 11 validator pin, CI dependency ordering, production-only audit gate, and Task 12 full-history checkout requirement.",
       "targetMode": "100644",
       "targetPath": "tests/unit-public-mirror-test.js"
     },
