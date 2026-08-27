@@ -214,6 +214,11 @@ export const RELEASE_LIVE_TEST_DESCRIPTORS = Object.freeze([
   descriptor("release-live-openclaw-install-test.js", "14", "module", "isolated_release_live"),
 ]);
 
+export const PYTHON_TEST_DESCRIPTORS = Object.freeze([
+  descriptor("memory_api_projection_test.py", "11", "python"),
+  descriptor("memory_api_security_test.py", "2B", "python"),
+]);
+
 export const PHYSICAL_TEST_DESCRIPTORS = Object.freeze([
   ...NORMAL_TEST_DESCRIPTORS,
   ...RELEASE_LIVE_TEST_DESCRIPTORS,
@@ -305,7 +310,7 @@ function validateRegisteredDeployedTargets() {
 
 function validateSourceFirstRegistrations() {
   const physical = new Set(PHYSICAL_TEST_DESCRIPTORS.map((row) => `tests/${row.file}`));
-  physical.add("tests/memory_api_security_test.py");
+  for (const row of PYTHON_TEST_DESCRIPTORS) physical.add(`tests/${row.file}`);
   const expectedDocument = JSON.parse(readFileSync(
     path.join(repoRoot, "tests", "compat", "expected-failures.json"),
     "utf8",

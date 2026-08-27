@@ -6,7 +6,7 @@
   "candidateChanges": [
     {
       "changeType": "modified",
-      "contentSha256": "35edadadd0a0a51c82973088d85a717052a3a603dc66c36f42805689ccd46aa9",
+      "contentSha256": "13b97046f8711d21fd82ccdda06fc32d399f77bf0e91e208fc1be5b6b1db6ff9",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -37,7 +37,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "f7a9488745eda78a94d8f8f489980ce38d63bd7a997d7b7b6117b4aa458a8652",
+      "contentSha256": "7e49bc23995188f36cbcb7c025f0d98a0b7f2ec29dd39afa3e7661f1b2ea9f2f",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-packed-entry"
@@ -100,23 +100,23 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "775a2a277cad0d7722fab2cdb37d204df797e5c484202ff059e0912681cd7ee1",
+      "contentSha256": "dd21cf6ffefcf194816e77a04a7946a5374ffe0e6f2a7552d2f2d77e14d066df",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
       },
       "ownerTasks": [
+        "10",
+        "11",
         "2A",
         "3",
         "4",
         "5",
         "6",
         "8",
-        "9",
-        "10",
-        "11"
+        "9"
       ],
-      "reason": "Source-first registry with exact Task 11 projection authority XFAIL ownership.",
+      "reason": "Source-first registry with passing Task 11 projection authority hashes and relevance evidence.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -478,7 +478,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "07557d84ff81d6f213c754c137726ff3f0aea556549bf33757eff47d66494231",
+      "contentSha256": "c760588c8ca3a27a17ec12393d07ccec529e50802fd62106ef3be71468b42f62",
       "disposition": "compat_module",
       "gate": {
         "registrationId": "compat-queue-review-service"
@@ -492,7 +492,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "8c595c56e719fe8a45f0e12634a73532e3e162d1d5930b65a6acab586ca6698f",
+      "contentSha256": "6fccc57fc930ceec21f4097e559c0db798170a687c1d052adeb5a2f3776aab60",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-shipping-core-evidence"
@@ -541,9 +541,9 @@
         "registrationId": "compat-setup-generated-surface"
       },
       "ownerTasks": [
+        "10",
         "5",
-        "6",
-        "10"
+        "6"
       ],
       "reason": "Task 5/6 write policy retained while Task 10 classifies explicit surface build as a full-mode writer.",
       "targetMode": "100644",
@@ -565,17 +565,46 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "c7115314dedaed5021cd45d15aa53080e21b5a32aba5658210c4919ae08c469d",
+      "contentSha256": "e118ed01625cb81bd0be8b99b3901dbab25b2b7c68342f2206d1fcf280aae3d5",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-projection-writer-registry"
+      },
+      "ownerTasks": [
+        "11"
+      ],
+      "reason": "Task 11 centralizes projection writers and Unicode-safe OpenClaw import behavior.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/audit-service.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "9b52b580b54dbc1fe4c10c4c69da485894d6690e47f763d8fc40217864a9e410",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-projection-writer-registry"
+      },
+      "ownerTasks": [
+        "11"
+      ],
+      "reason": "Task 11 centralizes projection writers and Unicode-safe OpenClaw import behavior.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/belief-arbitration.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "61316737ecdd3274a6e5f9d844ead12bd3d415f354c80a531b6ee17de2291a7c",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-write-mode-gate"
       },
       "ownerTasks": [
+        "11",
         "4",
         "5",
         "7"
       ],
-      "reason": "Task 5 capture behavior retained while Task 7 excludes incompatible embedding cache rows.",
+      "reason": "Task 5 capture behavior retained while Task 7 excludes incompatible embedding cache rows; Task 11 enforces fail-closed write-mode ordering.",
       "targetMode": "100644",
       "targetPath": "lib/core/capture-service.js"
     },
@@ -609,7 +638,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "a21ade60054854bc6015c9e43a68d4181cd032f0c324e7cf17cc7591a8430a22",
+      "contentSha256": "69a1167a0a44b8c276b32a4107930e748d5f4b8e9535910aed0f367e1c20f2b5",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-release-provenance"
@@ -639,7 +668,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "1e2b3e982b1af9a3f211358ab60b1ba34e61a4fafac2886398194d0618388546",
+      "contentSha256": "96db5ff4bcbd48b82c1de8e58bc7142c41037aeccca63b1a0c434f2c5809cf47",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-write-mode-gate"
@@ -668,7 +697,22 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "7df0f99b4ea63d2e287ac4efff42f15cb04be91b95fdb078764c09ec5b0b6c9d",
+      "contentSha256": "fd2d5ccf2b64069a4be875f2d129f0ef96b031f5580ec2918c66ddd346e318bf",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "restored-unit-passport-bundle"
+      },
+      "ownerTasks": [
+        "11",
+        "2B"
+      ],
+      "reason": "Task 11 centralizes projection writers and Unicode-safe OpenClaw import behavior.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/handoff-bundle.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "3cfc99bb895c4a1ebc1a430c7db8c7605b84c047a78499e9e5a22f7603231cd0",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-observational-diagnostics"
@@ -711,15 +755,15 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "4ab9a87183389f8cd84d024e076c259e2971b747395049036306a47e6d1e9876",
+      "contentSha256": "df52abf784f975074383c80e7aa02be75c483d38a416148df9ed99b7d3e4c68d",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-surface-noop"
       },
       "ownerTasks": [
+        "10",
         "4",
-        "5",
-        "10"
+        "5"
       ],
       "reason": "Task 5 maintenance retained while Task 10 defers graph generation to the one-pass mutation-gated surface refresh.",
       "targetMode": "100644",
@@ -727,7 +771,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "dcfdbb1e38c171412178b212ffef660dca97a49dc1f7d4412608d9addec36fa1",
+      "contentSha256": "7380b2aab35af42a3e01ff820cad23ffddbf273ad7a0b2017f538db5f1aba13a",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-write-mode-gate"
@@ -771,7 +815,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "4c291b4643940c2348b7f32db71ae5b17d22befc80fe84164e9b6d34dfe7c4c1",
+      "contentSha256": "57551d23274a35b08df902b270a53497c6f2bec6aade61abccf052c25076978f",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-native-metadata-promotion"
@@ -797,6 +841,21 @@
       "reason": "Task 5 compatibility behavior retained while Task 6 adds governed native-memory semantics.",
       "targetMode": "100644",
       "targetPath": "lib/core/native-sync.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "dabc3dd5c1ede3b1a1ac4bed6b792916927dbfac2124ea58346f6c2d7a02883c",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "restored-unit-openclaw-import"
+      },
+      "ownerTasks": [
+        "11",
+        "2B"
+      ],
+      "reason": "Task 11 centralizes projection writers and Unicode-safe OpenClaw import behavior.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/openclaw-import.js"
     },
     {
       "changeType": "modified",
@@ -829,15 +888,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "b2837f0accb688aa155e44d0019a3d79582b013ff52e526e9340f08403932731",
+      "contentSha256": "35eb16a19754348cd3742c0764e864061d5b89c099796ebd3ca9070eca6bf5fb",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-observational-diagnostics"
+        "registrationId": "compat-memory-api-projection"
       },
       "ownerTasks": [
+        "11",
         "5"
       ],
-      "reason": "Task 5 fix round 1 makes diagnostic projection reads observational.",
+      "reason": "Task 5 projection reads retained while Task 11 adds atomic current/legacy/metadata/event mutation authority and blocks legacy drop.",
       "targetMode": "100644",
       "targetPath": "lib/core/projection-store.js"
     },
@@ -900,7 +960,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "0b614a639fc591f4f51bd3cc7018045c770a563918427d181e666ab8a114553b",
+      "contentSha256": "6c653b7f5b38094db1b0b4577dc5416825bfde2abda7b8a7c2f2399340bd0d3f",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-observational-diagnostics"
@@ -914,7 +974,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "cb65b05b46d17b4ed68fbd9c6976d22b776f38baa61e98a7d21efd0cc5aaa6a5",
+      "contentSha256": "d5860ad1c9eec34a1fcc0ff02d9fd80b79165bca3981970bd27f4b25658c2dfc",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-write-mode-gate"
@@ -970,6 +1030,96 @@
       "targetPath": "lib/operator/surface-refresh-service.js"
     },
     {
+      "changeType": "added",
+      "contentSha256": "6d42ff13861b9e291180ad2df9439bf16fc271dbb40b3d57e125abb02438cf2d",
+      "disposition": "compat_module",
+      "gate": {
+        "registrationId": "compat-packed-entry"
+      },
+      "ownerTasks": [
+        "11",
+        "5"
+      ],
+      "reason": "Task 11 pinned Memory API production/dev packaging and authoritative projection compatibility.",
+      "targetMode": "100644",
+      "targetPath": "memory_api/.npmignore"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "482579cc3fe0cc9797ad9a5cbcdece09a9518035ece3182650da693340f32436",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "source-first-policy"
+      },
+      "ownerTasks": [
+        "11",
+        "2A"
+      ],
+      "reason": "Task 11 pinned Memory API production/dev packaging and authoritative projection compatibility.",
+      "targetMode": "100644",
+      "targetPath": "memory_api/README.md"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "173c1b3f4a9dc73018fcffd9ab45fef579a5c84eb76ba91b49f917fed563fdd4",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "source-first-policy"
+      },
+      "ownerTasks": [
+        "11",
+        "2A"
+      ],
+      "reason": "Task 11 makes the local Memory API authoritative on memory_current plus sidecar metadata, dual-projects writes and events atomically, and enforces API-wide read-only startup safety.",
+      "targetMode": "100644",
+      "targetPath": "memory_api/app.py"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "85884affe10287baad6f99dfddc18fd8a9f61561f48431aa3fe4b6b72a28dadb",
+      "disposition": "compat_module",
+      "gate": {
+        "registrationId": "compat-packed-entry"
+      },
+      "ownerTasks": [
+        "11",
+        "5"
+      ],
+      "reason": "Task 11 pinned Memory API production/dev packaging and authoritative projection compatibility.",
+      "targetMode": "100644",
+      "targetPath": "memory_api/requirements-dev.lock"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "35cbdccce52844b0c0807f16c0290f62cca25e78d035960953865fc6aa010833",
+      "disposition": "compat_module",
+      "gate": {
+        "registrationId": "compat-packed-entry"
+      },
+      "ownerTasks": [
+        "11",
+        "5"
+      ],
+      "reason": "Task 11 pinned Memory API production/dev packaging and authoritative projection compatibility.",
+      "targetMode": "100644",
+      "targetPath": "memory_api/requirements-prod-py310-linux-x86_64.lock"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "698cdfb724f020c8b8fc297b4c99afa63a3c40a49fc76e2a277982f6d73c538d",
+      "disposition": "compat_module",
+      "gate": {
+        "registrationId": "compat-packed-entry"
+      },
+      "ownerTasks": [
+        "11",
+        "5"
+      ],
+      "reason": "Task 11 pinned Memory API production/dev packaging and authoritative projection compatibility.",
+      "targetMode": "100644",
+      "targetPath": "memory_api/wheelhouse-py310-linux-x86_64.manifest.json"
+    },
+    {
       "changeType": "modified",
       "contentSha256": "4304f832b671cb7f1d1840807f452c4e7b83062235d0db16a6779dd330ae857e",
       "disposition": "core_patch",
@@ -1019,16 +1169,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "c0026563c38669bb123afcb9a404b8c6c387ba5d5b6f1b4bb26ca823b062f5b7",
+      "contentSha256": "4bba6e889b84cccfaff9883b38dedaffcd03e343eeb65da1bd2c0f4956e8dfa4",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-auto-capture-worker"
       },
       "ownerTasks": [
+        "10",
         "2B",
         "5",
-        "9",
-        "10"
+        "9"
       ],
       "reason": "Public source and npm inventories explicitly ship both Task 10 operator-surface modules and their runtime dependencies.",
       "targetMode": "100644",
@@ -1042,8 +1192,8 @@
         "registrationId": "compat-surface-noop"
       },
       "ownerTasks": [
-        "9",
-        "10"
+        "10",
+        "9"
       ],
       "reason": "Task 9 worker retained while Task 10 refreshes embeddings/surface/graph only when capture actually mutates durable state.",
       "targetMode": "100755",
@@ -1155,16 +1305,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "29e1777c75bba25452291946eae5f1e193c8a5381dd25e846faaabf02c943067",
+      "contentSha256": "6165b562bbfa06d85e96283c5111aa866f1b71eea941898c19ae8b6c915efb5c",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-setup-generated-surface"
       },
       "ownerTasks": [
+        "10",
         "5",
         "6",
-        "9",
-        "10"
+        "9"
       ],
       "reason": "Task 5/6/9 CLI retained while Task 10 adds explicit surface build/status/doctor and one final mutation-gated nightly refresh.",
       "targetMode": "100755",
@@ -1257,7 +1407,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "0c7dacb55e94d078616fee87f09b9439a9c71ddb7ed9901ca3d62f01d2445624",
+      "contentSha256": "59a5d5b9c3d012b06d7cd0c6ce55506560555a95296484cce6a7c74b90a634fa",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-policy"
@@ -1271,7 +1421,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "c6655bb41585e26e50382e65d75cc7760d27aa40363cc45f7d82263c4fb02334",
+      "contentSha256": "ae42c1cfc95c1a1e8ed7762b86c3026f09f93878e22bef2356515fcfcff98891",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-queue"
@@ -1285,7 +1435,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "15f5c6548f6dbe9df3874b161cfe83b0fe8e3d43b4b670951bdca57592d695dd",
+      "contentSha256": "46c95aa8ee650669108374f685ecadf7b0a5f445e692de0ed2762b973cfcff59",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-auto-capture-worker"
@@ -1401,12 +1551,14 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "a24fc14e8a830a418cab0deb944ef6b56fa0ab21c9058db9cb51314452178dbd",
+      "contentSha256": "ae0fae846c71bc2d0d4b18fbcff22301beda41acb0ab941cbf0afafd3b4f3fd1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
       },
       "ownerTasks": [
+        "10",
+        "11",
         "2B",
         "3",
         "4",
@@ -1414,11 +1566,9 @@
         "6",
         "7",
         "8",
-        "9",
-        "10",
-        "11"
+        "9"
       ],
-      "reason": "Expected-failure ownership for the exact Task 11 projection authority signatures.",
+      "reason": "Task 11 projection authority XFAILs removed after both Node contracts passed.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1454,7 +1604,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "d26f6ace9fa011de0eaaf146bbdbd1549309c16a63878e08b317ab412135156c",
+      "contentSha256": "1433c4aaa80dcc311b3d1c3e5791c531181133735d32e1b8904093421dd0ab7a",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-memory-api-projection"
@@ -1463,7 +1613,7 @@
         "11",
         "2B"
       ],
-      "reason": "Task 11 RED contract for atomic current/legacy/metadata/event projection writes, nested savepoints, and fault rollback.",
+      "reason": "Passing Task 11 contract for atomic current/legacy/metadata/event projection writes, nested savepoints, exact Unicode hashes, and fault rollback.",
       "targetMode": "100644",
       "targetPath": "tests/compat/memory-api-projection-test.js"
     },
@@ -1614,21 +1764,22 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "7a0bdedb23cb687330988558524fd6e138afcf53394671a2945ca50e0fe42530",
+      "contentSha256": "6542e86b39028db4689b81eac80401e2a2a54e99560d138bf359b12c442e58b8",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-packed-entry"
       },
       "ownerTasks": [
+        "11",
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 5 package contract retained with Task 11 collision-safe concurrent fixture isolation.",
       "targetMode": "100644",
       "targetPath": "tests/compat/packed-entry-smoke-test.js"
     },
     {
       "changeType": "added",
-      "contentSha256": "d33afbec471c1c2587f9091239d696f8f4463f4a5dd1151181ff712fed3f8f4a",
+      "contentSha256": "0488be02679d90a3e0fdc29ffbe3d5c3f6d2783c02d279b64f9d271524e45010",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-projection-writer-registry"
@@ -1636,7 +1787,7 @@
       "ownerTasks": [
         "11"
       ],
-      "reason": "Task 11 RED contract for centralized Node projection writers and rollback-window legacy-drop blocking.",
+      "reason": "Passing Task 11 contract for centralized Node projection writers and rollback-window legacy-drop blocking.",
       "targetMode": "100644",
       "targetPath": "tests/compat/projection-writer-registry-test.js"
     },
@@ -1670,7 +1821,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "a6a8f9cc8760ab3ed0983d7581582f93d0aad9dce6cc5dac167926f3ba88974f",
+      "contentSha256": "1006456d623d9bc9e81945d3cc06f723bae102b8724e2945cc9056879e34e4f1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-release-provenance"
@@ -1806,9 +1957,9 @@
         "registrationId": "compat-write-mode-gate"
       },
       "ownerTasks": [
+        "10",
         "5",
-        "6",
-        "10"
+        "6"
       ],
       "reason": "Task 5/6 writer registry retained while Task 10 binds surface build and its nested CLI branch to the full-mode guard.",
       "targetMode": "100644",
@@ -1874,23 +2025,23 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "69e94b02d86d0dc95bce610164dd203a18f3ee8d63c3467fa60697d97156e270",
+      "contentSha256": "4673e0e0af0c0935cb354cc2f90ad6ef8c5b06de2ff875384891fcfb741ab64d",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
       },
       "ownerTasks": [
+        "10",
+        "11",
         "2B",
         "3",
         "4",
         "5",
         "7",
         "8",
-        "9",
-        "10",
-        "11"
+        "9"
       ],
-      "reason": "Compatibility inventory including the exact Task 11 projection writer RED contract.",
+      "reason": "Compatibility inventory including the passing Task 11 projection writer contract.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory.js"
     },
@@ -2191,15 +2342,15 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "562642eee56977ab06b0297497c8fdf41155c7d6fe4216c7f58a6a1c4a8bc796",
+      "contentSha256": "4f05cb2d02443764aed1132a7803d3de1861af9af23d81bc0f3bdf1c21d5e9a8",
       "disposition": "private_dev_only",
       "gate": {
-        "registrationId": "compat-memory-api-projection"
+        "registrationId": "python-memory-api-projection"
       },
       "ownerTasks": [
         "11"
       ],
-      "reason": "Task 11 RED Python route contract for authoritative current reads, dual projection writes, metadata parity, and read-only startup.",
+      "reason": "Passing Task 11 Python route contract for authoritative reads, dual projection writes, exact Unicode parity, metadata semantics, and API-wide read-only safety.",
       "targetMode": "100644",
       "targetPath": "tests/memory_api_projection_test.py"
     },
@@ -2211,8 +2362,8 @@
         "registrationId": "python-security-floor"
       },
       "ownerTasks": [
-        "2B",
-        "11"
+        "11",
+        "2B"
       ],
       "reason": "Python security floor explicitly resets read-only mode so Task 11 isolation tests cannot contaminate writable route checks.",
       "targetMode": "100644",
@@ -2360,12 +2511,14 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "4cbc045febfc20341712a90119557703078884846645a8bf2574a9737c848f1e",
+      "contentSha256": "04b7396fddfaa1bbe3d7000e01bd5dd96e2d748c2a78eee4e5ace40bb743aa5f",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
       },
       "ownerTasks": [
+        "10",
+        "11",
         "2A",
         "2B",
         "3",
@@ -2373,11 +2526,9 @@
         "5",
         "6",
         "8",
-        "9",
-        "10",
-        "11"
+        "9"
       ],
-      "reason": "Source-first policy contract updated for the classified Task 11 test candidate set.",
+      "reason": "Source-first policy contract updated for the passing Task 11 projection implementation and tests.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },
@@ -2722,7 +2873,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "b9b006e4be7655026e6e8fa70984a05749eb14932565f9bed6ead1c8104da6c2",
+      "contentSha256": "d21da948e3b90f540147f60c918d624b074c60574910408e7155daa7a78e59a0",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "npm-pack-schema"

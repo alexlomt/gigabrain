@@ -12,6 +12,8 @@ import {
   tokenizeStructuralSource,
 } from "../scripts/retirement-structural-fingerprint.mjs";
 
+export async function run() {
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const guardPath = path.join(repoRoot, "scripts", "check-source-first-divergence.mjs");
 const mapPath = path.join(repoRoot, "config", "migration", "source-first-port-map.json");
@@ -36,13 +38,21 @@ for (const [label, requiredPath] of [
 }
 
 const realMap = JSON.parse(readFileSync(mapPath, "utf8"));
+const assertMemoryApiSealing = () => {
+  const memoryApiSource = readFileSync("memory_api/app.py", "utf8");
+  const memoryApiReadme = readFileSync("memory_api/README.md", "utf8");
+  assert.match(memoryApiSource, /memory_current/);
+  assert.match(memoryApiSource, /memory_console_metadata/);
+  assert.match(memoryApiReadme, /GB_API_READ_ONLY/);
+};
+assertMemoryApiSealing();
 const realAllowlist = JSON.parse(readFileSync(allowlistPath, "utf8"));
 const realRetirementEvidence = JSON.parse(readFileSync(retirementEvidencePath, "utf8"));
 assert.equal(realMap.deployedSource.commit, "43cd4b41518b5e35b3872722fcceaac535a1ff64");
 assert.equal(realMap.deployedCommits.length, 47);
 assert.equal(realMap.deployedFiles.length, 208);
 assert.equal(realMap.preTagTools.length, 9);
-assert.equal(realMap.candidateChanges.length, 193);
+assert.equal(realMap.candidateChanges.length, 203);
 assert.equal(realMap.retirementContractCount, 8);
 assert.equal(
   realMap.retirementContractManifestSha256,
@@ -1682,3 +1692,6 @@ expectFailure("unexpected bytes in a classified delta", "UNEXPECTED_DIFF", ({ fi
 }
 
 console.log("source-first-divergence-test: ok");
+}
+
+await run();

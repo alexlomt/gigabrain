@@ -38,7 +38,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/auto-capture-policy-test.js",
-      "testSha256": "0c7dacb55e94d078616fee87f09b9439a9c71ddb7ed9901ca3d62f01d2445624"
+      "testSha256": "59a5d5b9c3d012b06d7cd0c6ce55506560555a95296484cce6a7c74b90a634fa"
     },
     {
       "coveredPaths": [
@@ -59,7 +59,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/auto-capture-queue-test.js",
-      "testSha256": "c6655bb41585e26e50382e65d75cc7760d27aa40363cc45f7d82263c4fb02334"
+      "testSha256": "ae42c1cfc95c1a1e8ed7762b86c3026f09f93878e22bef2356515fcfcff98891"
     },
     {
       "coveredPaths": [
@@ -105,7 +105,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/auto-capture-worker-test.js",
-      "testSha256": "15f5c6548f6dbe9df3874b161cfe83b0fe8e3d43b4b670951bdca57592d695dd"
+      "testSha256": "46c95aa8ee650669108374f685ecadf7b0a5f445e692de0ed2762b973cfcff59"
     },
     {
       "coveredPaths": [
@@ -117,7 +117,8 @@
       "id": "compat-behavior-harness",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/compat/contract-behavior-harness-test.js"
+      "testPath": "tests/compat/contract-behavior-harness-test.js",
+      "testSha256": "707422b5adc04db9d4e0c5c22a7c1b953307f199045f9c3532809ec607bfeb4f"
     },
     {
       "coveredPaths": [
@@ -200,7 +201,8 @@
       "id": "compat-dedupe-scope-isolation",
       "ownerSourceFirstTaskId": "4",
       "runner": "node",
-      "testPath": "tests/compat/dedupe-scope-isolation-test.js"
+      "testPath": "tests/compat/dedupe-scope-isolation-test.js",
+      "testSha256": "21c47e47dff0675f675ff9331a7a335124db3686e33f7e53ed66584894da3ce2"
     },
     {
       "coveredPaths": [
@@ -259,7 +261,8 @@
       "id": "compat-full-registry-migration",
       "ownerSourceFirstTaskId": "14",
       "runner": "node",
-      "testPath": "tests/compat/full-registry-migration-test.js"
+      "testPath": "tests/compat/full-registry-migration-test.js",
+      "testSha256": "fb0e60de57ae8cb018e37cf2e155cb53f8e5739fd2066dcfd86f94b35efb01ca"
     },
     {
       "coveredPaths": [
@@ -284,15 +287,26 @@
     },
     {
       "coveredPaths": [
+        "lib/core/projection-store.js",
+        "memory_api/app.py",
         "tests/compat/memory-api-projection-test.js",
         "tests/memory_api_projection_test.py"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_MEMORY_API_PROJECTION missing projection sync contract",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-memory-api-projection",
       "ownerSourceFirstTaskId": "11",
+      "relevanceEvidence": [
+        {
+          "binding": "mutate",
+          "mode": "import",
+          "symbol": "mutateCurrentMemoryWithLegacyProjection",
+          "targetPath": "lib/core/projection-store.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/compat/memory-api-projection-test.js"
+      "testPath": "tests/compat/memory-api-projection-test.js",
+      "testSha256": "1433c4aaa80dcc311b3d1c3e5791c531181133735d32e1b8904093421dd0ab7a"
     },
     {
       "coveredPaths": [
@@ -541,7 +555,8 @@
       "id": "compat-openclaw-hooks-and-flush",
       "ownerSourceFirstTaskId": "5",
       "runner": "node",
-      "testPath": "tests/compat/openclaw-hooks-and-flush-test.js"
+      "testPath": "tests/compat/openclaw-hooks-and-flush-test.js",
+      "testSha256": "353e0ef84c1f577d07ccd04e56693886b1b472ce6bfbdbec9e4921f0cf23377f"
     },
     {
       "coveredPaths": [
@@ -579,7 +594,8 @@
       "id": "compat-openclaw-memory-runtime",
       "ownerSourceFirstTaskId": "5",
       "runner": "node",
-      "testPath": "tests/compat/openclaw-memory-runtime-test.js"
+      "testPath": "tests/compat/openclaw-memory-runtime-test.js",
+      "testSha256": "11a5ee7af67b4e01f7329ac222bf5d0669b9765cccc59524044c17aa12fb3034"
     },
     {
       "coveredPaths": [
@@ -592,7 +608,8 @@
       "id": "compat-operator-rules-migration",
       "ownerSourceFirstTaskId": "4",
       "runner": "node",
-      "testPath": "tests/compat/operator-rules-migration-test.js"
+      "testPath": "tests/compat/operator-rules-migration-test.js",
+      "testSha256": "3b9adbe78e5cd5b029dbf592e221d8c5599bf7b76bafe35d47b3814ba848bb81"
     },
     {
       "coveredPaths": [
@@ -601,6 +618,10 @@
         "config/migration/task5-stage-paths.txt",
         "index.js",
         "index.ts",
+        "memory_api/.npmignore",
+        "memory_api/requirements-dev.lock",
+        "memory_api/requirements-prod-py310-linux-x86_64.lock",
+        "memory_api/wheelhouse-py310-linux-x86_64.manifest.json",
         "package.json",
         "scripts/build-runtime-js.js",
         "tests/compat/packed-entry-smoke-test.js"
@@ -636,6 +657,26 @@
           "targetPath": "index.ts"
         },
         {
+          "binding": "npmIgnore",
+          "mode": "read",
+          "targetPath": "memory_api/.npmignore"
+        },
+        {
+          "binding": "npmIgnore",
+          "mode": "read",
+          "targetPath": "memory_api/requirements-dev.lock"
+        },
+        {
+          "binding": "npmIgnore",
+          "mode": "read",
+          "targetPath": "memory_api/requirements-prod-py310-linux-x86_64.lock"
+        },
+        {
+          "binding": "npmIgnore",
+          "mode": "read",
+          "targetPath": "memory_api/wheelhouse-py310-linux-x86_64.manifest.json"
+        },
+        {
           "binding": "packageJson",
           "mode": "read",
           "targetPath": "package.json"
@@ -648,18 +689,56 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/packed-entry-smoke-test.js",
-      "testSha256": "7a0bdedb23cb687330988558524fd6e138afcf53394671a2945ca50e0fe42530"
+      "testSha256": "6542e86b39028db4689b81eac80401e2a2a54e99560d138bf359b12c442e58b8"
     },
     {
       "coveredPaths": [
+        "lib/core/audit-service.js",
+        "lib/core/belief-arbitration.js",
+        "lib/core/handoff-bundle.js",
+        "lib/core/openclaw-import.js",
+        "lib/core/projection-store.js",
         "tests/compat/projection-writer-registry-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_PROJECTION_WRITER_REGISTRY missing centralized projection authority",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-projection-writer-registry",
       "ownerSourceFirstTaskId": "11",
+      "relevanceEvidence": [
+        {
+          "binding": "runAudit",
+          "mode": "import",
+          "symbol": "runAudit",
+          "targetPath": "lib/core/audit-service.js"
+        },
+        {
+          "binding": "resolveArbiterSettings",
+          "mode": "import",
+          "symbol": "resolveArbiterSettings",
+          "targetPath": "lib/core/belief-arbitration.js"
+        },
+        {
+          "binding": "importPassportBundle",
+          "mode": "import",
+          "symbol": "importPassportBundle",
+          "targetPath": "lib/core/handoff-bundle.js"
+        },
+        {
+          "binding": "importOpenClawRegistry",
+          "mode": "import",
+          "symbol": "importOpenClawRegistry",
+          "targetPath": "lib/core/openclaw-import.js"
+        },
+        {
+          "binding": "withProjectionMutationBatch",
+          "mode": "import",
+          "symbol": "withProjectionMutationBatch",
+          "targetPath": "lib/core/projection-store.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/compat/projection-writer-registry-test.js"
+      "testPath": "tests/compat/projection-writer-registry-test.js",
+      "testSha256": "0488be02679d90a3e0fdc29ffbe3d5c3f6d2783c02d279b64f9d271524e45010"
     },
     {
       "coveredPaths": [
@@ -725,7 +804,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/release-provenance-test.js",
-      "testSha256": "a6a8f9cc8760ab3ed0983d7581582f93d0aad9dce6cc5dac167926f3ba88974f"
+      "testSha256": "1006456d623d9bc9e81945d3cc06f723bae102b8724e2945cc9056879e34e4f1"
     },
     {
       "coveredPaths": [
@@ -736,7 +815,8 @@
       "id": "compat-rollback-restore",
       "ownerSourceFirstTaskId": "14",
       "runner": "node",
-      "testPath": "tests/compat/rollback-restore-test.js"
+      "testPath": "tests/compat/rollback-restore-test.js",
+      "testSha256": "400858726cf355069381e5ed672d6adf15a5da10b15d6fc67508271ed4abe0c6"
     },
     {
       "coveredPaths": [
@@ -1139,7 +1219,8 @@
       "id": "full-test-inventory",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/full-test-inventory-contract-test.js"
+      "testPath": "tests/full-test-inventory-contract-test.js",
+      "testSha256": "e7236c44aeff1840e2e99d57cbdef515e566d57099bb6d17ad206a34eb925286"
     },
     {
       "coveredPaths": [
@@ -1160,7 +1241,8 @@
       "id": "npm-pack-schema",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/npm-pack-parser-test.js"
+      "testPath": "tests/npm-pack-parser-test.js",
+      "testSha256": "42393d5beab5e97d3b322afbdbf7b369a1f84061e298bff2d125b05f8c6665c3"
     },
     {
       "coveredPaths": [
@@ -1172,18 +1254,49 @@
       "id": "private-test-restoration",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/private-test-restoration-test.js"
+      "testPath": "tests/private-test-restoration-test.js",
+      "testSha256": "ac59d99f4f90afa2b1317fc7279917b582b58c368590bc3dcff0883c7b4d90e0"
     },
     {
       "coveredPaths": [
+        "memory_api/README.md",
+        "memory_api/app.py",
+        "tests/memory_api_projection_test.py"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "python-memory-api-projection",
+      "ownerSourceFirstTaskId": "11",
+      "relevanceEvidence": [
+        {
+          "binding": "APP_PATH",
+          "mode": "read",
+          "targetPath": "memory_api/app.py"
+        }
+      ],
+      "runner": "python",
+      "testPath": "tests/memory_api_projection_test.py",
+      "testSha256": "4f05cb2d02443764aed1132a7803d3de1861af9af23d81bc0f3bdf1c21d5e9a8"
+    },
+    {
+      "coveredPaths": [
+        "memory_api/app.py",
         "tests/memory_api_security_test.py"
       ],
       "expectedOutcome": "pass",
       "expectedSignature": null,
       "id": "python-security-floor",
       "ownerSourceFirstTaskId": "2B",
+      "relevanceEvidence": [
+        {
+          "binding": "APP_PATH",
+          "mode": "read",
+          "targetPath": "memory_api/app.py"
+        }
+      ],
       "runner": "python",
-      "testPath": "tests/memory_api_security_test.py"
+      "testPath": "tests/memory_api_security_test.py",
+      "testSha256": "eb3aa6327a29a9a2aebe88633961b4ca507f028b1dac6bdc9e13060c9508f23a"
     },
     {
       "coveredPaths": [
@@ -1197,7 +1310,8 @@
       "id": "release-live-isolation",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/release-live-isolation-test.js"
+      "testPath": "tests/release-live-isolation-test.js",
+      "testSha256": "7de1a4d31fbe026bdbdd50639ad0ebfc06156fd666e1079ff98bf0894f5aee27"
     },
     {
       "coveredPaths": [
@@ -1230,7 +1344,8 @@
       "id": "restored-integration-bridge-contract-routes",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-bridge-contract-routes-test.js"
+      "testPath": "tests/integration-bridge-contract-routes-test.js",
+      "testSha256": "7e98dfc7f17c2041767bee306039c1adf8b87494ed20aaae893da1a15c6cec5b"
     },
     {
       "coveredPaths": [
@@ -1241,7 +1356,8 @@
       "id": "restored-integration-claude-desktop-bundle",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-claude-desktop-bundle-test.js"
+      "testPath": "tests/integration-claude-desktop-bundle-test.js",
+      "testSha256": "37774cd42cf431cdff7860f091f95b16271db9854dff3cf8b76c1adc79c1aff9"
     },
     {
       "coveredPaths": [
@@ -1252,7 +1368,8 @@
       "id": "restored-integration-claude-setup",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-claude-setup-test.js"
+      "testPath": "tests/integration-claude-setup-test.js",
+      "testSha256": "5bbd20828912a1bcafb3beba9d2d0c92bd8a1ca7b0c9a2a1230425d610854a97"
     },
     {
       "coveredPaths": [
@@ -1263,7 +1380,8 @@
       "id": "restored-integration-codex-mcp",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-codex-mcp-test.js"
+      "testPath": "tests/integration-codex-mcp-test.js",
+      "testSha256": "98a1fc3d19477be0c9bd0b259fededc43f7bc7ddc9b85924ec6c64d8f15bcca2"
     },
     {
       "coveredPaths": [
@@ -1274,7 +1392,8 @@
       "id": "restored-integration-codex-setup",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-codex-setup-test.js"
+      "testPath": "tests/integration-codex-setup-test.js",
+      "testSha256": "dc0fbf0821d132e9b763a20c562b57412cec0f6a5f9a55753776e0c0716de20a"
     },
     {
       "coveredPaths": [
@@ -1285,7 +1404,8 @@
       "id": "restored-integration-eval-gate",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-eval-gate-test.js"
+      "testPath": "tests/integration-eval-gate-test.js",
+      "testSha256": "73d47708e644340c0b72aa7796080864ed6d2755576cc8728f2596b695009206"
     },
     {
       "coveredPaths": [
@@ -1296,7 +1416,8 @@
       "id": "restored-integration-eval-tools",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-eval-tools-test.js"
+      "testPath": "tests/integration-eval-tools-test.js",
+      "testSha256": "0943125fc5f44b39c9efba9972c14b76e8a401526ae619bc6feb4a533fdac75e"
     },
     {
       "coveredPaths": [
@@ -1307,7 +1428,8 @@
       "id": "restored-integration-memory-api-security",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-memory-api-security-test.js"
+      "testPath": "tests/integration-memory-api-security-test.js",
+      "testSha256": "fc459501427a7bd99931982409cc97ec25b02650991fa990b7b6375028e8df3c"
     },
     {
       "coveredPaths": [
@@ -1318,7 +1440,8 @@
       "id": "restored-integration-migration-and-api",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-migration-and-api-test.js"
+      "testPath": "tests/integration-migration-and-api-test.js",
+      "testSha256": "f9167c3bbfef2b0e44375cc5cd7c21f671e5854959374422abb8a9f42720b901"
     },
     {
       "coveredPaths": [
@@ -1329,7 +1452,8 @@
       "id": "restored-integration-native-recall",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-native-recall-test.js"
+      "testPath": "tests/integration-native-recall-test.js",
+      "testSha256": "27db97eb3b2c28505934939e2cd30bfc380ebca22af96d6d1e8655faae14742d"
     },
     {
       "coveredPaths": [
@@ -1340,7 +1464,8 @@
       "id": "restored-integration-nightly-cli",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-nightly-cli-test.js"
+      "testPath": "tests/integration-nightly-cli-test.js",
+      "testSha256": "2345d88be1c64844237a306532d89da387e28f82ca829c255f120601e98c0b57"
     },
     {
       "coveredPaths": [
@@ -1351,7 +1476,8 @@
       "id": "restored-integration-openclaw-hooks",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-openclaw-hooks-test.js"
+      "testPath": "tests/integration-openclaw-hooks-test.js",
+      "testSha256": "7791948ce94bf71231ee80342c9a9ae3bdb524a0115517dc1553bea8508f3a75"
     },
     {
       "coveredPaths": [
@@ -1362,7 +1488,8 @@
       "id": "restored-integration-packaged-claude-setup",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-packaged-claude-setup-test.js"
+      "testPath": "tests/integration-packaged-claude-setup-test.js",
+      "testSha256": "2fd151e3ca6814a3c6671e0a955ca760476db7ae2385f074dde902cd6f677df4"
     },
     {
       "coveredPaths": [
@@ -1373,7 +1500,8 @@
       "id": "restored-integration-packaged-codex-setup",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-packaged-codex-setup-test.js"
+      "testPath": "tests/integration-packaged-codex-setup-test.js",
+      "testSha256": "2ffdcc29c39444a6904618939040b045fc02b7d06eda098881ab4ad00faa8113"
     },
     {
       "coveredPaths": [
@@ -1384,7 +1512,8 @@
       "id": "restored-integration-packaged-passport",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-packaged-passport-test.js"
+      "testPath": "tests/integration-packaged-passport-test.js",
+      "testSha256": "48e2adeacda59df8c93eb3896de5fb4b066578219ad60486abf22d240f229935"
     },
     {
       "coveredPaths": [
@@ -1395,7 +1524,8 @@
       "id": "restored-integration-packaged-sync-hosts",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-packaged-sync-hosts-test.js"
+      "testPath": "tests/integration-packaged-sync-hosts-test.js",
+      "testSha256": "0c91a2a087100284892d9b7d24ab77ce57929c8c05891cbbc716285f31a69656"
     },
     {
       "coveredPaths": [
@@ -1406,7 +1536,8 @@
       "id": "restored-integration-setup-first-run",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-setup-first-run-test.js"
+      "testPath": "tests/integration-setup-first-run-test.js",
+      "testSha256": "befdbe6e784f8ca525fe7de92d0a3b70429723b50f36287355a1180baccd5368"
     },
     {
       "coveredPaths": [
@@ -1417,7 +1548,8 @@
       "id": "restored-integration-standalone-path-resolution",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-standalone-path-resolution-test.js"
+      "testPath": "tests/integration-standalone-path-resolution-test.js",
+      "testSha256": "3595a0500f0802fe292f697f59f4ad734fce107cdb269f5ff219049a552c43d5"
     },
     {
       "coveredPaths": [
@@ -1428,7 +1560,8 @@
       "id": "restored-integration-vault-cli",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/integration-vault-cli-test.js"
+      "testPath": "tests/integration-vault-cli-test.js",
+      "testSha256": "83d8eb858ee4a5a30d916ed427376ea9e4c15614d07ca41aecce5268900a4f7b"
     },
     {
       "coveredPaths": [
@@ -1439,7 +1572,8 @@
       "id": "restored-performance-nightly",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/performance-nightly-test.js"
+      "testPath": "tests/performance-nightly-test.js",
+      "testSha256": "545db2545832783e546f5611ff27d154e1a27395ad12daa572b9aa58fdcfafa3"
     },
     {
       "coveredPaths": [
@@ -1450,7 +1584,8 @@
       "id": "restored-regression-memory-behavior",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/regression-memory-behavior-test.js"
+      "testPath": "tests/regression-memory-behavior-test.js",
+      "testSha256": "7cf752c89c4f69906a1e40e2d282350e224651bc818570939cbd7ba8b0549ed0"
     },
     {
       "coveredPaths": [
@@ -1461,7 +1596,8 @@
       "id": "restored-regression-native-promotion-reconcile",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/regression-native-promotion-reconcile-test.js"
+      "testPath": "tests/regression-native-promotion-reconcile-test.js",
+      "testSha256": "99c28d2ef11a7a91f60a255221334168b93b728cec1df4c25ef9bd21eb37ade8"
     },
     {
       "coveredPaths": [
@@ -1472,7 +1608,8 @@
       "id": "restored-unit-audit-hardening-regression",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-audit-hardening-regression-test.js"
+      "testPath": "tests/unit-audit-hardening-regression-test.js",
+      "testSha256": "315e323504f64c685ff19422e9f445ab36c0d06e25723efa6774345304521648"
     },
     {
       "coveredPaths": [
@@ -1483,7 +1620,8 @@
       "id": "restored-unit-auto-capture-service",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-auto-capture-service-test.js"
+      "testPath": "tests/unit-auto-capture-service-test.js",
+      "testSha256": "391e582bebfc0c5b2442e87c66bc7061211a0d17c5aab98a5f1abf87fb2100ea"
     },
     {
       "coveredPaths": [
@@ -1494,7 +1632,8 @@
       "id": "restored-unit-belief-trust",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-belief-trust-test.js"
+      "testPath": "tests/unit-belief-trust-test.js",
+      "testSha256": "14dfe3582d2b7de325bed33badb05d1ecb2ee62502d36e762c70bc0e31c60aa1"
     },
     {
       "coveredPaths": [
@@ -1505,7 +1644,8 @@
       "id": "restored-unit-codex-service",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-codex-service-test.js"
+      "testPath": "tests/unit-codex-service-test.js",
+      "testSha256": "d439644c66736cb433cba46f318646b57e35b6311570a8376847058e7b16f0dd"
     },
     {
       "coveredPaths": [
@@ -1516,7 +1656,8 @@
       "id": "restored-unit-embedding-service",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-embedding-service-test.js"
+      "testPath": "tests/unit-embedding-service-test.js",
+      "testSha256": "4bec2c5024d07bd4201344d0138f69bf0861b67293154b6c8e8318ea00f72027"
     },
     {
       "coveredPaths": [
@@ -1527,7 +1668,8 @@
       "id": "restored-unit-eval-harness",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-eval-harness-test.js"
+      "testPath": "tests/unit-eval-harness-test.js",
+      "testSha256": "1d640a56d19ddeff943ab40607b214a630adac64d4323d7dddef786555c32756"
     },
     {
       "coveredPaths": [
@@ -1559,7 +1701,8 @@
       "id": "restored-unit-hygiene-migration",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-hygiene-migration-test.js"
+      "testPath": "tests/unit-hygiene-migration-test.js",
+      "testSha256": "1e30584ab42c429bbf4e44a3dc24ba55ac1a317c5abcecbbcd45a7c519b771ab"
     },
     {
       "coveredPaths": [
@@ -1570,7 +1713,8 @@
       "id": "restored-unit-llm-router",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-llm-router-test.js"
+      "testPath": "tests/unit-llm-router-test.js",
+      "testSha256": "26c0cf72c006fdf99ca7a9a783a5b93cd6a35c572da0793a4e27a07aa41fc528"
     },
     {
       "coveredPaths": [
@@ -1603,7 +1747,8 @@
       "id": "restored-unit-memory-llm-client",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-memory-llm-client-test.js"
+      "testPath": "tests/unit-memory-llm-client-test.js",
+      "testSha256": "eb4d55b7e08b77b93e37dc8c4377c5d81eb7f30852d969e961542d8767d7ca4d"
     },
     {
       "coveredPaths": [
@@ -1614,7 +1759,8 @@
       "id": "restored-unit-memory-passport",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-memory-passport-test.js"
+      "testPath": "tests/unit-memory-passport-test.js",
+      "testSha256": "81a0918b442824c94859cb9217e083312d44598daa9c566c228e0368ed1c0b8e"
     },
     {
       "coveredPaths": [
@@ -1625,7 +1771,8 @@
       "id": "restored-unit-memory-studio",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-memory-studio-test.js"
+      "testPath": "tests/unit-memory-studio-test.js",
+      "testSha256": "0f708243a9c7539c43b2f7858dc9bc694a3f917ff2deb835e205ec5e0e40edfd"
     },
     {
       "coveredPaths": [
@@ -1636,7 +1783,8 @@
       "id": "restored-unit-native-promotion",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-native-promotion-test.js"
+      "testPath": "tests/unit-native-promotion-test.js",
+      "testSha256": "d8e89b187e45b1b1892f300fe4ba5e2f1760e6279e9ff696016a94380d34b76b"
     },
     {
       "coveredPaths": [
@@ -1647,18 +1795,30 @@
       "id": "restored-unit-native-sync-query",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-native-sync-query-test.js"
+      "testPath": "tests/unit-native-sync-query-test.js",
+      "testSha256": "a1a432cd2b95e736e4811758ee0da6151f8568f893cb15ab3aac9b3a7bcd45e9"
     },
     {
       "coveredPaths": [
+        "lib/core/openclaw-import.js",
         "tests/unit-openclaw-import-test.js"
       ],
       "expectedOutcome": "pass",
       "expectedSignature": null,
       "id": "restored-unit-openclaw-import",
       "ownerSourceFirstTaskId": "2B",
+      "relevanceEvidence": [
+        {
+          "binding": "loadLegacyRows",
+          "mode": "import",
+          "resultBinding": "rows",
+          "symbol": "loadLegacyRows",
+          "targetPath": "lib/core/openclaw-import.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/unit-openclaw-import-test.js"
+      "testPath": "tests/unit-openclaw-import-test.js",
+      "testSha256": "be149084a91166d7a54c47cc2bbfec481b8a6f5cf6b5779b579019e8c59556b1"
     },
     {
       "coveredPaths": [
@@ -1669,7 +1829,8 @@
       "id": "restored-unit-openclaw-memory-runtime",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-openclaw-memory-runtime-test.js"
+      "testPath": "tests/unit-openclaw-memory-runtime-test.js",
+      "testSha256": "a02615e5ed2061627570a8d6c1a2af4304e42a48520a7701e9203819b4cb663e"
     },
     {
       "coveredPaths": [
@@ -1680,7 +1841,8 @@
       "id": "restored-unit-orchestrator",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-orchestrator-test.js"
+      "testPath": "tests/unit-orchestrator-test.js",
+      "testSha256": "cb1df2d8e5d5eb242b7f901f91c0bcf6188d309cb2752134845373b99b4324d7"
     },
     {
       "coveredPaths": [
@@ -1691,18 +1853,30 @@
       "id": "restored-unit-package-metadata",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-package-metadata-test.js"
+      "testPath": "tests/unit-package-metadata-test.js",
+      "testSha256": "df5ae4fba17c9210ee9ecb38831de6fbc6ce741b3adf16c0494cfad60c3c6eb2"
     },
     {
       "coveredPaths": [
+        "lib/core/handoff-bundle.js",
         "tests/unit-passport-bundle-test.js"
       ],
       "expectedOutcome": "pass",
       "expectedSignature": null,
       "id": "restored-unit-passport-bundle",
       "ownerSourceFirstTaskId": "2B",
+      "relevanceEvidence": [
+        {
+          "binding": "computeContentHash",
+          "mode": "import",
+          "resultBinding": "first",
+          "symbol": "computeContentHash",
+          "targetPath": "lib/core/handoff-bundle.js"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/unit-passport-bundle-test.js"
+      "testPath": "tests/unit-passport-bundle-test.js",
+      "testSha256": "27aea13ba183d21e8d21998cb817f18b4dc911ef6884dff9853c58de19a171c9"
     },
     {
       "coveredPaths": [
@@ -1713,7 +1887,8 @@
       "id": "restored-unit-person-service",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-person-service-test.js"
+      "testPath": "tests/unit-person-service-test.js",
+      "testSha256": "f09e1e2b15aed62d6fb3edbee8216f9398d07292d8b0ffb323990b973f7bfebe"
     },
     {
       "coveredPaths": [
@@ -1724,7 +1899,8 @@
       "id": "restored-unit-queue-review-service",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-queue-review-service-test.js"
+      "testPath": "tests/unit-queue-review-service-test.js",
+      "testSha256": "5d4cb52d18b0a6b5b7dcddf1cde7ee5e93b038020f4905344b2d2e8ad47bcd44"
     },
     {
       "coveredPaths": [
@@ -1735,7 +1911,8 @@
       "id": "restored-unit-review-queue",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-review-queue-test.js"
+      "testPath": "tests/unit-review-queue-test.js",
+      "testSha256": "07851166b37f5671d98bef89f86226231e5c01b1c9416167b40fa0986a874ac3"
     },
     {
       "coveredPaths": [
@@ -1746,7 +1923,8 @@
       "id": "restored-unit-surface-refresh-service",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-surface-refresh-service-test.js"
+      "testPath": "tests/unit-surface-refresh-service-test.js",
+      "testSha256": "a2bfb1dcb14962fb12955a035e9139407a7cc64848baae85db29d3204126d03f"
     },
     {
       "coveredPaths": [
@@ -1757,7 +1935,8 @@
       "id": "restored-unit-vault-mirror",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-vault-mirror-test.js"
+      "testPath": "tests/unit-vault-mirror-test.js",
+      "testSha256": "88bbd92cf91a2dd819b547bf11aa8213d987fd49abfb18021b16661d9cc1242f"
     },
     {
       "coveredPaths": [
@@ -1768,7 +1947,8 @@
       "id": "restored-unit-world-model",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-world-model-test.js"
+      "testPath": "tests/unit-world-model-test.js",
+      "testSha256": "a6a0a1a9c8e2710edaa434f05fe63b64d4e327544ac38bfabb1c4bbe0a31cc9a"
     },
     {
       "coveredPaths": [
@@ -1779,13 +1959,16 @@
       "id": "restored-unit-world-model-custom-slots",
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
-      "testPath": "tests/unit-world-model-custom-slots-test.js"
+      "testPath": "tests/unit-world-model-custom-slots-test.js",
+      "testSha256": "ed0a035adc48d2bf1016d00936d8ef5b7216cdc5738b9d7e48b9853f8ca5bb1c"
     },
     {
       "coveredPaths": [
         "config/migration/source-first-port-map.json",
         "config/migration/source-first-test-registry.json",
         "config/migration/upstream-source-allowlist.json",
+        "memory_api/README.md",
+        "memory_api/app.py",
         "scripts/check-source-first-divergence.mjs",
         "tests/source-first-divergence-test.js"
       ],
@@ -1793,8 +1976,21 @@
       "expectedSignature": null,
       "id": "source-first-policy",
       "ownerSourceFirstTaskId": "2A",
+      "relevanceEvidence": [
+        {
+          "binding": "memoryApiReadme",
+          "mode": "read",
+          "targetPath": "memory_api/README.md"
+        },
+        {
+          "binding": "memoryApiSource",
+          "mode": "read",
+          "targetPath": "memory_api/app.py"
+        }
+      ],
       "runner": "node",
-      "testPath": "tests/source-first-divergence-test.js"
+      "testPath": "tests/source-first-divergence-test.js",
+      "testSha256": "04b7396fddfaa1bbe3d7000e01bd5dd96e2d748c2a78eee4e5ace40bb743aa5f"
     },
     {
       "coveredPaths": [
@@ -1806,7 +2002,8 @@
       "id": "task1-provenance",
       "ownerSourceFirstTaskId": "1",
       "runner": "node",
-      "testPath": "tests/source-first-divergence-test.js"
+      "testPath": "tests/source-first-divergence-test.js",
+      "testSha256": "04b7396fddfaa1bbe3d7000e01bd5dd96e2d748c2a78eee4e5ace40bb743aa5f"
     },
     {
       "coveredPaths": [
@@ -1861,10 +2058,11 @@
       "id": "upstream-adoption",
       "ownerSourceFirstTaskId": "3",
       "runner": "node",
-      "testPath": "tests/compat/upstream-adoption-test.js"
+      "testPath": "tests/compat/upstream-adoption-test.js",
+      "testSha256": "773c444acef107909d55c03c4bda7b7ef7109f1ab3e26f14c84864c03165001d"
     }
   ],
-  "entryCount": 95,
-  "manifestSha256": "9d8f71b27042f4a2d40316b673d6f2099cd85c7962bf7a93cb06525324e81a74",
+  "entryCount": 96,
+  "manifestSha256": "777c2a3c616af09977f9eb1ca60078c3d09b3a4c293966dbf4f07ebfbce55b25",
   "schemaVersion": 1
 }
