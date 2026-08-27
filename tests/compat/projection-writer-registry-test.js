@@ -13,10 +13,18 @@ import { reviewQueuedCandidates } from "../../lib/compat/queue-review-service.js
 import { runAudit, runAuditRestore } from "../../lib/core/audit-service.js";
 import { captureFromEvent } from "../../lib/core/capture-service.js";
 import { normalizeConfig } from "../../lib/core/config.js";
+import {
+  BUNDLE_KIND,
+  SCHEMA_VERSION,
+  computeContentHash,
+  importPassportBundle,
+} from "../../lib/core/handoff-bundle.js";
+import { scanCloudInbox, syncHostMemories } from "../../lib/core/host-memory-sync.js";
 import { runMaintenance } from "../../lib/core/maintenance-service.js";
 import { applyMemoryActions } from "../../lib/core/memory-actions.js";
 import { promoteNativeChunks } from "../../lib/core/native-promotion.js";
 import { ensureNativeStore } from "../../lib/core/native-sync.js";
+import { importOpenClawRegistry } from "../../lib/core/openclaw-import.js";
 import { openDatabase } from "../../lib/core/sqlite.js";
 import { makeConfigObject, makeTempWorkspace, openDb, seedMemoryCurrent } from "../helpers.js";
 import { importContractModule, requireCallable, runBehaviorContract, runDirect } from "./contract-test-helpers.js";
@@ -1061,6 +1069,458 @@ const assertQueueReviewWriter = async () => {
   }
 };
 
+const countRows = (db, table) => {
+  const exists = db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table);
+  return exists ? Number(db.prepare(`SELECT COUNT(*) AS c FROM ${table}`).get()?.c || 0) : 0;
+};
+
+const assertBulkStoreEmpty = (db, label, { includeEvidence = false, includeHostState = false } = {}) => {
+  const tables = ["memory_current", "memories", "memory_console_metadata", "memory_events", "memory_source_links"];
+  if (includeEvidence) tables.push("memory_import_evidence");
+  if (includeHostState) tables.push("memory_host_sync_cursor", "memory_host_sync_runs");
+  for (const table of tables) assert.equal(countRows(db, table), 0, `${label}: ${table} must roll back`);
+};
+
+const openClawImportFixture = (label) => {
+  const temp = makeTempWorkspace(`task11-openclaw-${label}-`);
+  const registryPath = path.join(temp.root, "legacy-openclaw.sqlite");
+  const source = openDatabase(registryPath);
+  try {
+    source.exec(`
+      CREATE TABLE memories (
+        id TEXT PRIMARY KEY,
+        type TEXT,
+        content TEXT,
+        normalized TEXT,
+        source TEXT,
+        source_agent TEXT,
+        source_session TEXT,
+        source_message_id TEXT,
+        confidence REAL,
+        status TEXT,
+        scope TEXT,
+        tags TEXT,
+        created_at TEXT,
+        updated_at TEXT,
+        last_injected_at TEXT,
+        last_confirmed_at TEXT,
+        ttl_days INTEGER,
+        pinned INTEGER,
+        superseded_by TEXT,
+        concept TEXT,
+        value_score REAL,
+        value_label TEXT,
+        review_version TEXT,
+        review_reason TEXT,
+        archived_at TEXT,
+        last_reviewed_at TEXT
+      );
+      CREATE TABLE evidence (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        memory_id TEXT NOT NULL,
+        text_snippet TEXT NOT NULL,
+        created_at TEXT
+      );
+    `);
+    const insert = source.prepare(`
+      INSERT INTO memories (
+        id, type, content, normalized, source, source_agent, source_session,
+        source_message_id, confidence, status, scope, tags, created_at, updated_at,
+        last_injected_at, last_confirmed_at, ttl_days, pinned, superseded_by,
+        concept, value_score, value_label, review_version, review_reason,
+        archived_at, last_reviewed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const index of [1, 2]) {
+      const memoryId = `openclaw-b1-${index}`;
+      insert.run(
+        memoryId,
+        index === 1 ? "USER_FACT" : "DECISION",
+        `OpenClaw B1 imported memory ${index} keeps every legacy-only field.`,
+        "",
+        "openclaw",
+        "main",
+        `session-${index}`,
+        `message-${index}`,
+        0.8 + (index / 100),
+        "active",
+        "profile:main",
+        JSON.stringify([`legacy-${index}`]),
+        `2026-08-2${index}T10:00:00.000Z`,
+        `2026-08-2${index}T11:00:00.000Z`,
+        `2026-08-2${index}T12:00:00.000Z`,
+        `2026-08-2${index}T13:00:00.000Z`,
+        30 + index,
+        index % 2,
+        null,
+        `concept-${index}`,
+        0.9,
+        "keep",
+        `review-v${index}`,
+        `review-reason-${index}`,
+        null,
+        `2026-08-2${index}T14:00:00.000Z`,
+      );
+      source.prepare("INSERT INTO evidence (memory_id, text_snippet, created_at) VALUES (?, ?, ?)").run(
+        memoryId,
+        `Evidence ${index}`,
+        `2026-08-2${index}T15:00:00.000Z`,
+      );
+    }
+  } finally {
+    source.close();
+  }
+  return { db: openDb(temp.dbPath), registryPath, temp };
+};
+
+const invokeOpenClawImport = (fixture, options = {}) => importOpenClawRegistry({
+  db: fixture.db,
+  operationId: "task11-openclaw-stable-operation",
+  registryPath: fixture.registryPath,
+  sourceHost: "openclaw",
+  sourceLabel: "task11-b1",
+  ...options,
+});
+
+const assertOpenClawImportWriter = () => {
+  const success = openClawImportFixture("success");
+  try {
+    const result = invokeOpenClawImport(success);
+    assert.equal(result.imported_count, 2);
+    assert.equal(result.evidence_imported_count, 2);
+    for (const index of [1, 2]) {
+      const memoryId = `openclaw-b1-${index}`;
+      const events = rowEvents(success.db, memoryId);
+      assert.deepEqual(events.map((row) => row.action), ["openclaw_import_upsert"]);
+      assert.equal(events[0].payload.operation_id, "task11-openclaw-stable-operation");
+      const metadata = success.db.prepare(`
+        SELECT concept, source_message_id, last_injected_at, last_confirmed_at,
+               ttl_days, pinned, review_version, review_reason
+        FROM memory_console_metadata WHERE memory_id = ?
+      `).get(memoryId);
+      assert.deepEqual({ ...metadata }, {
+        concept: `concept-${index}`,
+        source_message_id: `message-${index}`,
+        last_injected_at: `2026-08-2${index}T12:00:00.000Z`,
+        last_confirmed_at: `2026-08-2${index}T13:00:00.000Z`,
+        ttl_days: 30 + index,
+        pinned: index % 2,
+        review_version: `review-v${index}`,
+        review_reason: `review-reason-${index}`,
+      });
+      const legacy = success.db.prepare(`
+        SELECT concept, source_message_id, last_injected_at, last_confirmed_at,
+               ttl_days, pinned, review_version, review_reason
+        FROM memories WHERE id = ?
+      `).get(memoryId);
+      assert.deepEqual({ ...legacy }, { ...metadata }, "legacy and sidecar metadata must match exactly");
+    }
+    assert.equal(countRows(success.db, "memory_source_links"), 2);
+    assert.equal(countRows(success.db, "memory_import_evidence"), 2);
+    assert.equal(countRows(success.db, "memory_host_sync_runs"), 1);
+    invokeOpenClawImport(success);
+    assert.equal(countRows(success.db, "memory_host_sync_runs"), 1, "same import operation must reuse its receipt");
+    assert.equal(countEvents(success.db), 2, "idempotent re-import must not append generic or duplicate row events");
+  } finally {
+    success.db.close();
+    rmSync(success.temp.root, { force: true, recursive: true });
+  }
+
+  for (const stage of ["after_current", "after_legacy", "after_metadata", "after_fts", "after_event", "after_source_link", "after_evidence"]) {
+    const failed = openClawImportFixture(`failure-${stage}`);
+    try {
+      let observedCount = 0;
+      assert.throws(() => invokeOpenClawImport(failed, {
+        faultInjector: (observed) => {
+          if (observed === stage && ++observedCount === 2) throw new Error(`openclaw synthetic ${stage}`);
+        },
+      }), new RegExp(`openclaw synthetic ${stage}`));
+      assertBulkStoreEmpty(failed.db, `OpenClaw ${stage}`, { includeEvidence: true, includeHostState: true });
+    } finally {
+      failed.db.close();
+      rmSync(failed.temp.root, { force: true, recursive: true });
+    }
+  }
+
+  const nested = openClawImportFixture("caller-owned");
+  try {
+    nested.db.exec("BEGIN IMMEDIATE");
+    const result = invokeOpenClawImport(nested);
+    assert.equal(result.imported_count, 2);
+    assert.equal(nested.db.isTransaction, true, "OpenClaw import must release only its caller savepoint");
+    nested.db.exec("ROLLBACK");
+    assertBulkStoreEmpty(nested.db, "OpenClaw caller rollback", { includeEvidence: true, includeHostState: true });
+  } finally {
+    if (nested.db.isTransaction) nested.db.exec("ROLLBACK");
+    nested.db.close();
+    rmSync(nested.temp.root, { force: true, recursive: true });
+  }
+};
+
+const passportBundleFixture = (label) => {
+  const temp = makeTempWorkspace(`task11-handoff-${label}-`);
+  const memories = [1, 2].map((index) => projectionMemory(
+    `handoff-b1-${index}`,
+    `Handoff B1 imported memory ${index} remains projection-atomic.`,
+    {
+      source: "handoff_source",
+      source_agent: "codex",
+      source_host: "codex",
+      source_kind: "native_memory",
+      source_layer: "host_memory",
+      source_path: `/synthetic/handoff-${index}.md`,
+      source_line: index,
+      sync_policy: "read_only",
+    },
+  ));
+  const bundle = {
+    kind: BUNDLE_KIND,
+    schema_version: SCHEMA_VERSION,
+    generated_at: "2026-08-26T16:00:00.000Z",
+    manifest: {
+      content_hash: computeContentHash(memories),
+      memory_count: memories.length,
+    },
+    memories,
+    source_links: memories.map((memory) => ({
+      content_hash: memory.memory_id,
+      memory_id: memory.memory_id,
+      source_host: "codex",
+      source_kind: "native_memory",
+      source_line: memory.source_line,
+      source_path: memory.source_path,
+      sync_policy: "read_only",
+    })),
+    events: null,
+  };
+  return { bundle, db: openDb(temp.dbPath), temp };
+};
+
+const invokeHandoffImport = (fixture, options = {}) => importPassportBundle({
+  bundle: fixture.bundle,
+  db: fixture.db,
+  runId: "task11-handoff-stable-operation",
+  ...options,
+});
+
+const assertHandoffImportWriter = () => {
+  const success = passportBundleFixture("success");
+  try {
+    const result = invokeHandoffImport(success);
+    assert.equal(result.imported_memories, 2);
+    assert.equal(result.imported_source_links, 2);
+    assert.equal(result.imported_events, 2);
+    for (const index of [1, 2]) {
+      const memoryId = `handoff-b1-${index}`;
+      const current = success.db.prepare("SELECT content, status, source_host, source_path FROM memory_current WHERE memory_id=?").get(memoryId);
+      const legacy = success.db.prepare("SELECT content, status, source_host, source_path FROM memories WHERE id=?").get(memoryId);
+      assert.deepEqual({ ...legacy }, { ...current });
+      const events = rowEvents(success.db, memoryId);
+      assert.deepEqual(events.map((row) => row.action), ["handoff_import"]);
+      assert.equal(events[0].payload.operation_id, "task11-handoff-stable-operation");
+    }
+  } finally {
+    success.db.close();
+    rmSync(success.temp.root, { force: true, recursive: true });
+  }
+
+  for (const stage of ["after_current", "after_legacy", "after_fts", "after_event", "after_source_link"]) {
+    const failed = passportBundleFixture(`failure-${stage}`);
+    try {
+      let observedCount = 0;
+      assert.throws(() => invokeHandoffImport(failed, {
+        faultInjector: (observed) => {
+          if (observed === stage && ++observedCount === 2) throw new Error(`handoff synthetic ${stage}`);
+        },
+      }), new RegExp(`handoff synthetic ${stage}`));
+      assertBulkStoreEmpty(failed.db, `Handoff ${stage}`);
+    } finally {
+      failed.db.close();
+      rmSync(failed.temp.root, { force: true, recursive: true });
+    }
+  }
+
+  const nested = passportBundleFixture("caller-owned");
+  try {
+    nested.db.exec("BEGIN IMMEDIATE");
+    const result = invokeHandoffImport(nested);
+    assert.equal(result.imported_memories, 2);
+    assert.equal(nested.db.isTransaction, true, "handoff import must release only its caller savepoint");
+    nested.db.exec("ROLLBACK");
+    assertBulkStoreEmpty(nested.db, "Handoff caller rollback");
+  } finally {
+    if (nested.db.isTransaction) nested.db.exec("ROLLBACK");
+    nested.db.close();
+    rmSync(nested.temp.root, { force: true, recursive: true });
+  }
+};
+
+const hostSyncFixture = (label) => {
+  const temp = makeTempWorkspace(`task11-host-${label}-`);
+  const codexHome = path.join(temp.root, "codex-home");
+  const memoryPath = path.join(codexHome, "memories", "facts.md");
+  mkdirSync(path.dirname(memoryPath), { recursive: true });
+  writeFileSync(memoryPath, [
+    "- Host B1 first source row is transactionally projected.",
+    "- Host B1 second source row is transactionally projected.",
+    "",
+  ].join("\n"), "utf8");
+  const config = {
+    codex: { projectRoot: temp.workspace },
+    hostSync: { autoNightly: true, autoOnSetup: true },
+    runtime: { paths: { workspaceRoot: temp.workspace } },
+  };
+  return { codexHome, config, db: openDb(temp.dbPath), temp };
+};
+
+const invokeHostSync = (fixture, options = {}) => syncHostMemories({
+  arbitrate: false,
+  codexHome: fixture.codexHome,
+  config: fixture.config,
+  db: fixture.db,
+  hosts: ["codex"],
+  incremental: true,
+  scope: "profile:main",
+  ...options,
+});
+
+const assertHostSyncWriter = () => {
+  const success = hostSyncFixture("success");
+  try {
+    const result = invokeHostSync(success);
+    assert.equal(result.ok, true);
+    assert.equal(result.inserted_count, 2);
+    assert.equal(countRows(success.db, "memory_source_links"), 2);
+    assert.equal(countRows(success.db, "memory_host_sync_cursor"), 1);
+    assert.equal(countRows(success.db, "memory_host_sync_runs"), 1);
+    const ids = success.db.prepare("SELECT memory_id FROM memory_current ORDER BY memory_id").all().map((row) => row.memory_id);
+    assert.equal(ids.length, 2);
+    for (const memoryId of ids) {
+      const events = rowEvents(success.db, memoryId);
+      assert.deepEqual(events.map((row) => row.action), ["host_sync_inserted"]);
+      const current = success.db.prepare("SELECT content, status, source_host, source_path FROM memory_current WHERE memory_id=?").get(memoryId);
+      const legacy = success.db.prepare("SELECT content, status, source_host, source_path FROM memories WHERE id=?").get(memoryId);
+      assert.deepEqual({ ...legacy }, { ...current });
+    }
+    const retry = invokeHostSync(success);
+    assert.equal(retry.unchanged_sources, 1);
+    assert.equal(countEvents(success.db), 2);
+    assert.equal(countRows(success.db, "memory_host_sync_runs"), 1);
+  } finally {
+    success.db.close();
+    rmSync(success.temp.root, { force: true, recursive: true });
+  }
+
+  for (const stage of ["after_current", "after_legacy", "after_fts", "after_event", "after_source_link", "after_cursor", "after_sync_run"]) {
+    const failed = hostSyncFixture(`failure-${stage}`);
+    try {
+      let observedCount = 0;
+      const nth = stage === "after_cursor" || stage === "after_sync_run" ? 1 : 2;
+      const result = invokeHostSync(failed, {
+        faultInjector: (observed) => {
+          if (observed === stage && ++observedCount === nth) throw new Error(`host synthetic ${stage}`);
+        },
+      });
+      assert.equal(result.ok, false, `host ${stage} must fail its source boundary`);
+      assert.equal(result.inserted_count, 0, `host ${stage} must not report rolled-back inserts`);
+      assert.equal(result.indexed_count, 0, `host ${stage} must not report rolled-back completion`);
+      assert.equal(result.touched_memory_ids.length, 0, `host ${stage} must not arbitrate rolled-back rows`);
+      assert.equal(result.sources[0].status, "error");
+      assertBulkStoreEmpty(failed.db, `Host ${stage}`, { includeHostState: true });
+      const failedOperationId = result.runs[0].run_id;
+
+      const retried = invokeHostSync(failed);
+      assert.equal(retried.ok, true);
+      assert.equal(retried.inserted_count, 2);
+      assert.equal(retried.runs[0].run_id, failedOperationId, "source retry must reuse its stable operation id");
+      assert.equal(countEvents(failed.db), 2);
+      assert.equal(countRows(failed.db, "memory_host_sync_runs"), 1);
+    } finally {
+      failed.db.close();
+      rmSync(failed.temp.root, { force: true, recursive: true });
+    }
+  }
+
+  for (const mode of ["automatic", "cloud"]) {
+    const db = openDatabase(":memory:");
+    try {
+      if (mode === "automatic") {
+        const result = syncHostMemories({
+          automaticTrigger: "nightly",
+          config: { hostSync: { autoNightly: false } },
+          db,
+        });
+        assert.equal(result.automatic_disabled, true);
+      } else {
+        const result = scanCloudInbox({ db, config: { native: { cloudInbox: { enabled: false } } } });
+        assert.equal(result.enabled, false);
+      }
+      assert.equal(
+        Number(db.prepare("SELECT COUNT(*) AS c FROM sqlite_master WHERE type='table'").get().c),
+        0,
+        `${mode} disabled mode must not initialize a store`,
+      );
+    } finally {
+      db.close();
+    }
+  }
+};
+
+const assertCloudInboxWriter = () => {
+  const temp = makeTempWorkspace("task11-cloud-b1-");
+  const db = openDb(temp.dbPath);
+  const inbox = path.join(temp.root, "cloud-inbox", "chatgpt");
+  mkdirSync(inbox, { recursive: true });
+  const firstPath = path.join(inbox, "a.json");
+  const secondPath = path.join(inbox, "b.json");
+  writeFileSync(firstPath, JSON.stringify({ conversations: [{ messages: [{ role: "user", content: "Cloud B1 first source remains isolated on failure." }] }] }), "utf8");
+  writeFileSync(secondPath, JSON.stringify({ conversations: [{ messages: [{ role: "user", content: "Cloud B1 second source commits independently." }] }] }), "utf8");
+  const config = { native: { cloudInbox: { dir: path.dirname(inbox), enabled: true } } };
+  try {
+    const first = scanCloudInbox({
+      config,
+      db,
+      faultInjector: (stage, context = {}) => {
+        if (stage === "after_event" && context.source_path === firstPath) throw new Error("cloud first source failure");
+      },
+      incremental: true,
+      scope: "profile:main",
+    });
+    assert.equal(first.ok, false);
+    const failedSource = first.sources.find((row) => row.source_path === firstPath);
+    const committedSource = first.sources.find((row) => row.source_path === secondPath);
+    assert.equal(failedSource.status, "error");
+    assert.equal(committedSource.status, "scanned");
+    assert.equal(countRows(db, "memory_current"), 1, "cloud source failure must not roll back a different source");
+    assert.equal(countRows(db, "memory_source_links"), 1);
+    assert.equal(countRows(db, "memory_host_sync_cursor"), 1);
+    assert.equal(countRows(db, "memory_cloud_inbox_state"), 1);
+    assert.equal(countEvents(db), 1);
+    assert.equal(db.prepare("SELECT content FROM memory_current").get().content.includes("second source"), true);
+
+    const retry = scanCloudInbox({ config, db, incremental: true, scope: "profile:main" });
+    const retriedSource = retry.sources.find((row) => row.source_path === firstPath);
+    assert.equal(retriedSource.operation_id, failedSource.operation_id, "cloud retry must reuse its stable operation id");
+    assert.equal(countRows(db, "memory_current"), 2);
+    assert.equal(countRows(db, "memory_source_links"), 2);
+    assert.equal(countRows(db, "memory_host_sync_cursor"), 2);
+    assert.equal(countRows(db, "memory_cloud_inbox_state"), 2);
+    assert.equal(countEvents(db), 2);
+    const actions = db.prepare("SELECT action FROM memory_events ORDER BY rowid").all().map((row) => row.action);
+    assert.deepEqual(actions, ["cloud_inbox_inserted", "cloud_inbox_inserted"]);
+  } finally {
+    db.close();
+    rmSync(temp.root, { force: true, recursive: true });
+  }
+};
+
+export const runTask11WriterB1 = () => {
+  assertOpenClawImportWriter();
+  assertHandoffImportWriter();
+  assertHostSyncWriter();
+  assertCloudInboxWriter();
+};
+
 const countEvents = (db) => Number(db.prepare("SELECT COUNT(*) AS c FROM memory_events").get()?.c || 0);
 
 export async function run() {
@@ -1087,6 +1547,7 @@ export async function run() {
     assertMaintenanceAutoResolveCompletionRetry();
     assertNativePromotionWriter({ withProjectionMutationBatch });
     await assertQueueReviewWriter();
+    runTask11WriterB1();
     const paths = [
       ...readdirSync(path.join(repoRoot, "lib", "core"), { withFileTypes: true })
         .filter((entry) => entry.isFile() && entry.name.endsWith(".js"))
