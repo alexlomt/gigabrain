@@ -222,7 +222,7 @@ const assertVerdictProjectionAuthority = ({ ensureProjectionStore, recordVerdict
   }
 };
 
-const assertCaptureWriter = ({ withProjectionMutationBatch }) => {
+const assertCaptureWriter = ({ upsertCurrentMemory, withProjectionMutationBatch }) => {
   const temp = makeTempWorkspace("task11-writer-capture-");
   const config = writerConfig(temp.workspace);
   config.dedupe.semanticEnabled = false;
@@ -284,6 +284,106 @@ const assertCaptureWriter = ({ withProjectionMutationBatch }) => {
         }
       }
     }
+
+    upsertCurrentMemory(db, projectionMemory("capture-operation-target", "The capture operation target remains active on rollback."));
+    clearEvents(db);
+    for (const stage of ["after_current", "after_fts", "after_event"]) {
+      const before = {
+        current: db.prepare("SELECT COUNT(*) AS c FROM memory_current").get().c,
+        events: countEvents(db),
+        legacy: db.prepare("SELECT COUNT(*) AS c FROM memories").get().c,
+      };
+      let writes = 0;
+      assert.throws(() => captureFromEvent({
+        config,
+        db,
+        event: {
+          agentId: "main",
+          output: [
+            '<memory_action action="forget" target_memory_id="capture-operation-target"></memory_action>',
+            '<memory_note type="DECISION" confidence="0.95">First note in the atomic multi-note capture operation.</memory_note>',
+            '<memory_note type="DECISION" confidence="0.95">Second distinct note in the atomic multi-note capture operation.</memory_note>',
+          ].join("\n"),
+          scope: "shared",
+          sessionKey: `task11-capture-operation:${stage}`,
+        },
+        faultInjector: (observed) => {
+          if (observed === stage && ++writes === 3) throw new Error(`capture operation ${stage}`);
+        },
+        logger: { info() {}, warn() {} },
+        refreshDerived: false,
+        runId: `task11-capture-operation-${stage}`,
+      }), new RegExp(`capture operation ${stage}`));
+      assert.deepEqual({
+        current: db.prepare("SELECT COUNT(*) AS c FROM memory_current").get().c,
+        events: countEvents(db),
+        legacy: db.prepare("SELECT COUNT(*) AS c FROM memories").get().c,
+      }, before, `later ${stage} failure must roll back the whole capture operation`);
+      assertCurrentLegacyStatus(db, "capture-operation-target", { status: "active", superseded_by: null });
+    }
+
+    upsertCurrentMemory(db, projectionMemory(
+      "capture-arbitration-old",
+      "Jordan lives in Vienna near the first district.",
+      {
+        confidence: 0.74,
+        source_agent: "codex",
+        source_host: "codex",
+        source_layer: "host_memory",
+      },
+    ));
+    clearEvents(db);
+    db.exec(`
+      CREATE TRIGGER fail_post_capture_arbitration
+      BEFORE INSERT ON memory_events
+      WHEN NEW.action='arbiter:verdict'
+      BEGIN SELECT RAISE(ABORT, 'post-capture arbitration event failure'); END
+    `);
+    const beforeArbitration = db.prepare("SELECT COUNT(*) AS c FROM memory_current").get().c;
+    assert.throws(() => captureFromEvent({
+      config,
+      db,
+      event: {
+        __captureLlm: { decide: () => ({ confidence: 0.95, op: "ADD" }) },
+        agentId: "main",
+        output: '<memory_note type="USER_FACT" confidence="0.95">Jordan moved from Vienna and now lives in Graz near the river.</memory_note>',
+        scope: "shared",
+        sessionKey: "task11-post-capture-arbitration",
+      },
+      logger: { info() {}, warn() {} },
+      projectBeliefRows: ({ db: arbitrationDb }) => {
+        const fresh = arbitrationDb.prepare("SELECT memory_id, content FROM memory_current WHERE content LIKE '%now lives in Graz%' LIMIT 1").get();
+        return [
+          {
+            belief_id: "belief-old",
+            confidence: 0.2,
+            content: "Jordan lives in Vienna near the first district.",
+            entity_id: "person:jordan",
+            payload: { claim_slot: "person.location", claim_value: "Vienna", scope: "shared" },
+            source_agent: "transcript",
+            source_host: "transcript",
+            source_memory_id: "capture-arbitration-old",
+            type: "USER_FACT",
+          },
+          {
+            belief_id: "belief-new",
+            confidence: 0.95,
+            content: fresh?.content || "Jordan moved from Vienna and now lives in Graz near the river.",
+            entity_id: "person:jordan",
+            payload: { claim_slot: "person.location", claim_value: "Graz", scope: "shared" },
+            source_agent: "human_wiki",
+            source_host: "human_wiki",
+            source_memory_id: fresh?.memory_id || "missing-fresh-memory",
+            type: "USER_FACT",
+          },
+        ];
+      },
+      refreshDerived: true,
+      runId: "task11-post-capture-arbitration",
+    }), /post-capture arbitration event failure/);
+    assert.equal(db.prepare("SELECT COUNT(*) AS c FROM memory_current").get().c, beforeArbitration);
+    assertCurrentLegacyStatus(db, "capture-arbitration-old", { status: "active", superseded_by: null });
+    assert.equal(countEvents(db), 0, "arbitration failure must roll back capture and arbitration events");
   } finally {
     db.close();
     rmSync(temp.root, { force: true, recursive: true });
@@ -378,6 +478,68 @@ const assertAuditWriter = async () => {
   }
 };
 
+const assertAuditCompletionRetry = async () => {
+  const temp = makeTempWorkspace("task11-writer-audit-completion-");
+  const config = writerConfig(temp.workspace);
+  const memoryId = "audit-completion-row";
+  const db = openDb(temp.dbPath);
+  seedMemoryCurrent(db, [projectionMemory(memoryId, "The user prefers durable completion receipts for audit output.", {
+    type: "PREFERENCE",
+  })]);
+  clearEvents(db);
+  db.close();
+  const paths = {
+    out: path.join(temp.outputRoot, "completion.jsonl"),
+    samples: path.join(temp.outputRoot, "completion.md"),
+    summary: path.join(temp.outputRoot, "completion.json"),
+  };
+  const args = {
+    config,
+    dbPath: temp.dbPath,
+    mode: "apply",
+    operationId: "audit:task11-completion",
+    reviewVersion: "rv-task11-audit-completion",
+    runId: "task11-audit-completion",
+    ...paths,
+  };
+  try {
+    let failCompletion = true;
+    await assert.rejects(() => runAudit({
+      ...args,
+      completionFaultInjector: (stage) => {
+        if (stage === "before_audit_output" && failCompletion) {
+          failCompletion = false;
+          throw new Error("audit external completion failure");
+        }
+      },
+    }), /audit external completion failure/);
+    const committed = openDb(temp.dbPath);
+    let rowBefore;
+    try {
+      rowBefore = committed.prepare("SELECT status, value_score, value_label, updated_at, last_reviewed_at FROM memory_current WHERE memory_id=?").get(memoryId);
+      assert.equal(rowEvents(committed, memoryId).length, 1);
+      assert.equal(existsSync(paths.out), false);
+    } finally {
+      committed.close();
+    }
+
+    await runAudit(args);
+    const retried = openDb(temp.dbPath);
+    try {
+      assert.deepEqual(
+        { ...retried.prepare("SELECT status, value_score, value_label, updated_at, last_reviewed_at FROM memory_current WHERE memory_id=?").get(memoryId) },
+        { ...rowBefore },
+      );
+      assert.equal(rowEvents(retried, memoryId).length, 1);
+      assert.equal(existsSync(paths.out), true, "audit retry must resume external output completion");
+    } finally {
+      retried.close();
+    }
+  } finally {
+    rmSync(temp.root, { force: true, recursive: true });
+  }
+};
+
 const maintenanceFixture = (label, fail = false) => {
   const temp = makeTempWorkspace(`task11-writer-maintenance-${label}-`);
   const config = writerConfig(temp.workspace);
@@ -459,6 +621,138 @@ const assertMaintenanceWriter = () => {
     }
   } finally {
     rmSync(failed.temp.root, { force: true, recursive: true });
+  }
+
+  const completion = maintenanceFixture("completion");
+  try {
+    let failCompletion = true;
+    const args = {
+      completionFaultInjector: (stage) => {
+        if (stage === "before_maintenance_row_jsonl" && failCompletion) {
+          failCompletion = false;
+          throw new Error("maintenance external completion failure");
+        }
+      },
+      config: completion.config,
+      dbPath: completion.temp.dbPath,
+      dryRun: false,
+      operationId: "maintenance:task11-completion",
+      reviewVersion: "rv-task11-maintenance-completion",
+      runId: "task11-maintenance-completion",
+    };
+    assert.throws(() => runMaintenance(args), /maintenance external completion failure/);
+    const committed = openDb(completion.temp.dbPath);
+    let archivedBefore;
+    try {
+      archivedBefore = committed.prepare(`
+        SELECT memory_id, status, updated_at, last_reviewed_at FROM memory_current
+        WHERE memory_id IN (?, ?) AND status='archived'
+      `).get(...completion.ids);
+      assert.equal(Boolean(archivedBefore?.memory_id), true);
+      assert.equal(rowEvents(committed, archivedBefore.memory_id).length, 1);
+    } finally {
+      committed.close();
+    }
+
+    runMaintenance({ ...args, completionFaultInjector: null });
+    const retried = openDb(completion.temp.dbPath);
+    try {
+      assert.deepEqual(
+        { ...retried.prepare("SELECT memory_id, status, updated_at, last_reviewed_at FROM memory_current WHERE memory_id=?").get(archivedBefore.memory_id) },
+        { ...archivedBefore },
+      );
+      assert.equal(rowEvents(retried, archivedBefore.memory_id).length, 1);
+      const eventsText = readFileSync(completion.config.maintenance.eventsPath, "utf8");
+      assert.equal((eventsText.match(/dedupe_exact_archive/g) || []).length, 1, "maintenance retry must resume one missing row JSONL completion");
+    } finally {
+      retried.close();
+    }
+  } finally {
+    rmSync(completion.temp.root, { force: true, recursive: true });
+  }
+};
+
+const assertMaintenanceAutoResolveCompletionRetry = () => {
+  const temp = makeTempWorkspace("task11-writer-maintenance-auto-completion-");
+  const config = writerConfig(temp.workspace);
+  config.dedupe.autoResolveArchive = true;
+  config.dedupe.autoResolvePendingDays = 1;
+  config.dedupe.autoThreshold = 0.99;
+  config.dedupe.reviewThreshold = 0.1;
+  const winnerId = "maintenance-auto-winner";
+  const loserId = "maintenance-auto-loser";
+  const db = openDb(temp.dbPath);
+  seedMemoryCurrent(db, [
+    projectionMemory(winnerId, "The user prefers concise reviewed answers for board updates.", {
+      confidence: 0.99, type: "PREFERENCE", value_label: "core", value_score: 0.99,
+    }),
+    projectionMemory(loserId, "The user prefers concise reviewed answers for board update summaries.", {
+      confidence: 0.9, type: "PREFERENCE", value_label: "core", value_score: 0.8,
+    }),
+  ]);
+  clearEvents(db);
+  db.close();
+  const queuePath = config.runtime.paths.reviewQueuePath;
+  mkdirSync(path.dirname(queuePath), { recursive: true });
+  writeFileSync(queuePath, `${JSON.stringify({
+    id: "maintenance-auto-queue-row",
+    loser_memory_id: loserId,
+    matched_memory_id: winnerId,
+    memory_id: loserId,
+    queued_at: "2000-01-01T00:00:00.000Z",
+    reason_code: "duplicate_semantic",
+    status: "pending",
+    winner_memory_id: winnerId,
+  })}\n`, { mode: 0o600 });
+  const args = {
+    config,
+    dbPath: temp.dbPath,
+    dryRun: false,
+    operationId: "maintenance:auto-resolve-completion",
+    reviewVersion: "rv-task11-maintenance-auto",
+    runId: "task11-maintenance-auto",
+  };
+  try {
+    let failCompletion = true;
+    assert.throws(() => runMaintenance({
+      ...args,
+      completionFaultInjector: (stage) => {
+        if (stage === "before_auto_resolve_queue_completion" && failCompletion) {
+          failCompletion = false;
+          throw new Error("auto-resolve external completion failure");
+        }
+      },
+    }), /auto-resolve external completion failure/);
+    const committed = openDb(temp.dbPath);
+    let rowBefore;
+    try {
+      rowBefore = committed.prepare("SELECT status, updated_at, last_reviewed_at FROM memory_current WHERE memory_id=?").get(loserId);
+      assert.equal(rowBefore.status, "archived");
+      assert.deepEqual(rowEvents(committed, loserId).map((row) => row.action), ["auto_resolve_dedupe"]);
+      assert.equal(JSON.parse(readFileSync(queuePath, "utf8")).status, "pending");
+    } finally {
+      committed.close();
+    }
+
+    runMaintenance(args);
+    const retried = openDb(temp.dbPath);
+    try {
+      assert.deepEqual(
+        { ...retried.prepare("SELECT status, updated_at, last_reviewed_at FROM memory_current WHERE memory_id=?").get(loserId) },
+        { ...rowBefore },
+      );
+      assert.equal(rowEvents(retried, loserId).length, 1);
+      const completedQueue = readFileSync(queuePath, "utf8").trim();
+      assert.equal(
+        completedQueue === "" || JSON.parse(completedQueue).status === "resolved_auto",
+        true,
+        "auto-resolve retry must complete or retention-prune the resolved queue row",
+      );
+    } finally {
+      retried.close();
+    }
+  } finally {
+    rmSync(temp.root, { force: true, recursive: true });
   }
 };
 
@@ -647,6 +941,50 @@ const assertQueueReviewWriter = async () => {
     rmSync(failed.temp.root, { force: true, recursive: true });
   }
 
+  const completion = queueReviewFixture("completion");
+  try {
+    const operationId = "queue-review:task11-completion";
+    let failCompletion = true;
+    await assert.rejects(() => reviewQueuedCandidates({
+      clock: () => Date.parse("2026-08-26T12:00:00.000Z"),
+      completionFaultInjector: (stage) => {
+        if (stage === "before_queue_completion" && failCompletion) {
+          failCompletion = false;
+          throw new Error("queue external completion failure");
+        }
+      },
+      config: completion.config,
+      db: completion.db,
+      operationId,
+      reviewer,
+      runId: "task11-queue-completion",
+    }), /queue external completion failure/);
+    const committed = completion.db.prepare("SELECT status, superseded_by, updated_at, last_reviewed_at FROM memory_current WHERE memory_id=?").get(completion.loserId);
+    assert.equal(committed.status, "archived");
+    assert.equal(rowEvents(completion.db, completion.loserId).length, 1);
+    assert.equal(JSON.parse(readFileSync(completion.queuePath, "utf8")).status, "pending");
+
+    const retried = await reviewQueuedCandidates({
+      clock: () => Date.parse("2026-08-26T12:00:00.000Z"),
+      config: completion.config,
+      db: completion.db,
+      operationId,
+      reviewer,
+      runId: "task11-queue-completion",
+    });
+    assert.equal(retried.mutatedRows, 1);
+    assert.deepEqual(
+      { ...completion.db.prepare("SELECT status, superseded_by, updated_at, last_reviewed_at FROM memory_current WHERE memory_id=?").get(completion.loserId) },
+      { ...committed },
+      "queue completion retry must not reapply the DB mutation",
+    );
+    assert.equal(rowEvents(completion.db, completion.loserId).length, 1);
+    assert.equal(JSON.parse(readFileSync(completion.queuePath, "utf8")).status, "resolved_auto");
+  } finally {
+    completion.db.close();
+    rmSync(completion.temp.root, { force: true, recursive: true });
+  }
+
   const disabled = queueReviewFixture("disabled", false);
   try {
     const queueBefore = readFileSync(disabled.queuePath, "utf8");
@@ -679,9 +1017,11 @@ export async function run() {
     assert.throws(() => projection.dropLegacyMemoriesTable(null), /LEGACY_DROP_BLOCKED_COMPAT/);
     assertMemoryActionDomainEvents({ ensureProjectionStore, upsertCurrentMemory });
     assertVerdictProjectionAuthority({ ensureProjectionStore, recordVerdict, upsertCurrentMemory });
-    assertCaptureWriter({ withProjectionMutationBatch });
+    assertCaptureWriter({ upsertCurrentMemory, withProjectionMutationBatch });
     await assertAuditWriter();
+    await assertAuditCompletionRetry();
     assertMaintenanceWriter();
+    assertMaintenanceAutoResolveCompletionRetry();
     assertNativePromotionWriter({ withProjectionMutationBatch });
     await assertQueueReviewWriter();
     const paths = [

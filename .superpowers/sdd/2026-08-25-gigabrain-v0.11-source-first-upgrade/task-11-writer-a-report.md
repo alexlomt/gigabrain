@@ -171,3 +171,121 @@ exit 0: unit-memory-actions-test.js: ok
 
 This report is committed atomically with the implementation and tests. The
 immutable SHA is recorded in the parent handoff response.
+
+---
+
+## Fix round A1 — capture operation atomicity and resumable completion
+
+### RED evidence
+
+New real fault-and-retry cases were added before production changes. The
+executable writer contract failed:
+
+```text
+timeout 300 node tests/compat/projection-writer-registry-test.js
+exit 1: COMPAT_EXPECTED_PROJECTION_WRITER_REGISTRY missing centralized projection authority
+```
+
+The RED cases demonstrated:
+
+- a later third current/FTS/event fault left the earlier memory action and first
+  note committed in a two-note capture;
+- an injected `arbiter:verdict` failure was caught as a warning while the new
+  capture row remained committed;
+- completion-fault injectors after audit, maintenance, auto-resolve, and queue
+  DB commits were not honored, so there was no retry path proving one DB event
+  and unchanged timestamps.
+
+### Implementation
+
+#### Whole capture operation
+
+- Public `captureFromEvent` now creates one default projection batch and reuses
+  a supplied caller transaction.
+- Memory actions and every note mutation share that batch. A later
+  current/legacy/FTS/event failure rolls back all earlier note/action DB changes
+  and row events.
+- Projection-writing `runBeliefArbitration` runs inside the capture batch.
+  Arbitration write/event/FTS failures propagate and roll back the capture.
+- Derived entity/world refresh runs only after an owned capture batch commits;
+  its mutating failures propagate rather than being mislabeled as observational
+  warnings. Caller-owned transactions defer that post-commit refresh to their
+  caller/maintenance path.
+
+#### Small completion-resume protocol
+
+No filesystem/SQLite transaction abstraction was added. Existing content-free
+row events (`payload.operation_id`, `projection_event_kind=row`) are the durable
+DB receipt:
+
+- Queue review normalizes a stable `queue-review:*` operation ID. If its row
+  event already exists, retry skips DB application and resumes the queue rewrite.
+- Audit retry reconstructs the already-applied review rows from
+  `memory_quality_reviews`, `memory_current`, and the operation event, then
+  resumes output generation without touching memory timestamps/events.
+- Maintenance mutation phases scan their stable phase operation events and
+  append only missing row JSONL evidence by `event_id`.
+- Auto-resolve detects its existing row event and completes/prunes the still-
+  pending queue row as `resolved_auto` without repeating the archive mutation.
+
+Completion fault seams run after DB commit and immediately before the external
+write. Tests retry the same operation ID and require unchanged current/legacy
+state and timestamps, exactly one domain row event, and successful external
+completion.
+
+### GREEN evidence
+
+Fresh final verification:
+
+```text
+node --check <owned writer files and executable registry>
+exit 0
+
+git diff --check -- <owned writer files and executable registry>
+exit 0
+
+timeout 120 node tests/compat/memory-api-projection-test.js
+exit 0: memory-api-projection-test.js: ok
+
+timeout 360 node tests/compat/projection-writer-registry-test.js
+exit 0: projection-writer-registry-test.js: ok
+
+timeout 180 node tests/unit-capture-service-test.js
+exit 0
+
+timeout 180 node tests/integration-audit-maintenance-test.js
+exit 0: integration-audit-maintenance-test.js: ok
+
+timeout 120 node tests/unit-native-promotion-test.js
+exit 0: unit-native-promotion-test.js: ok
+
+timeout 180 node tests/unit-queue-review-service-test.js
+exit 0: unit-queue-review-service-test.js: ok
+
+timeout 180 node tests/compat/queue-review-service-test.js
+exit 0: queue-review-service-test.js: ok
+
+timeout 180 node tests/compat/nightly-review-integration-test.js
+exit 0: nightly-review-integration-test.js: ok
+
+timeout 180 node tests/regression-native-promotion-reconcile-test.js
+exit 0: regression-native-promotion-reconcile-test.js: ok
+
+timeout 180 node tests/unit-memory-actions-test.js
+exit 0: unit-memory-actions-test.js: ok
+```
+
+### Self-review
+
+- This protocol resumes external completion; it does not claim atomicity across
+  SQLite and files.
+- Capture native markdown remains content/scope-idempotent and retryable. The
+  authoritative DB operation now rolls back atomically, while native repair is
+  still a separate filesystem concern.
+- Operation receipts are content-free: IDs, action/type, timestamps, hashes,
+  status metadata, and bounded numeric evidence only.
+- No Task 12 sequencing, other writer family, projection core, or production
+  service was changed.
+
+Round A1 is committed separately; its immutable SHA is recorded in the parent
+handoff response.
