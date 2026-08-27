@@ -54,17 +54,6 @@ jobs:
       - name: Test
         run: node tests/run-all.js
 
-      - name: Setup Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: '3.12'
-
-      - name: Install Memory API dependencies
-        run: python -m pip install --disable-pip-version-check -r memory_api/requirements.txt
-
-      - name: Test Memory API security
-        run: python -m unittest tests/memory_api_security_test.py
-
   private-compatibility-node:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -122,13 +111,45 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup documented Python floor
+      - name: Setup exact Memory API Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
-          python-version: '3.10'
+          python-version: '3.10.12'
 
-      - name: Install Memory API dependencies
-        run: python -m pip install --disable-pip-version-check -r memory_api/requirements.txt
+      - name: Verify exact Python
+        run: test "$(python --version)" = "Python 3.10.12"
 
-      - name: Test Memory API security on Python 3.10
-        run: python -m unittest -v tests.memory_api_security_test
+      - name: Build hash-locked production environment
+        run: |
+          python -m venv .venv-ci-prod
+          .venv-ci-prod/bin/python -m pip install --disable-pip-version-check \
+            --require-hashes \
+            --requirement memory_api/requirements-prod-py310-linux-x86_64.lock
+
+      - name: Test Memory API security and projection on Python 3.10
+        run: >-
+          .venv-ci-prod/bin/python -m unittest -v
+          tests.memory_api_security_test
+          tests.memory_api_projection_test
+
+      - name: Build separate hash-locked development environment
+        run: |
+          python -m venv .venv-ci-dev
+          .venv-ci-dev/bin/python -m pip install --disable-pip-version-check \
+            --require-hashes \
+            --requirement memory_api/requirements-dev.lock
+
+      - name: Ruff Memory API and tests
+        run: >-
+          .venv-ci-dev/bin/ruff check
+          memory_api/app.py
+          tests/memory_api_security_test.py
+          tests/memory_api_projection_test.py
+
+      - name: Audit production lock
+        run: >-
+          .venv-ci-dev/bin/pip-audit
+          --requirement memory_api/requirements-prod-py310-linux-x86_64.lock
+          --require-hashes
+          --disable-pip
+          --progress-spinner off

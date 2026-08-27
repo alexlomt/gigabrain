@@ -7,7 +7,8 @@ scripts/eval-runner.js
 **/.env
 **/.env.*
 !**/.env.example
-**/.venv/
-**/venv/
+**/.venv*/
+**/venv*/
+memory_api/requirements-dev.lock
 runtime/
 secrets/

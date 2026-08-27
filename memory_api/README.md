@@ -27,11 +27,29 @@ cp .env.example .env
 # Edit .env with your paths
 ```
 
-2. Install dependencies:
+2. For development only, install dependencies from the human-readable input:
 
 ```bash
 pip install -r requirements.txt
 ```
+
+Release and canary environments must be built offline from the reviewed
+Python 3.10 lock and protected wheelhouse:
+
+```bash
+python3.10 -m venv --without-pip .venv-v0.11-prod
+/path/to/bootstrap/pip --python .venv-v0.11-prod/bin/python install \
+  --no-index --find-links /path/to/wheelhouse-py310-linux-x86_64 \
+  --require-hashes --no-deps \
+  --requirement requirements-prod-py310-linux-x86_64.lock
+```
+
+Ruff and pip-audit use the separate `requirements-dev.lock` and development
+wheelhouse; they are not installed in the production environment.
+
+CI runs on exact Python 3.10 with both hash locks and may download only artifacts
+whose hashes are already pinned. Task 15 release/canary builds instead consume
+the reviewed production lock from the protected offline wheelhouse.
 
 3. Start the server:
 
@@ -54,6 +72,7 @@ The UI is served at `http://127.0.0.1:7077/`.
 | `GB_UI_SCOPE_TOKENS` | No | JSON object mapping one memory scope to one scoped token |
 | `GB_API_RATE_LIMIT_PER_MIN` | No | Per-principal/path request limit (default: 120) |
 | `GB_API_MAX_RATE_BUCKETS` | No | Maximum in-memory rate-limit buckets (default: 10000) |
+| `GB_API_READ_ONLY` | No | Set to `1` for rollback-safe read-only startup. No schema/path/background writes occur and every mutating route returns HTTP 503. |
 | `GB_ENABLE_API_DOCS` | No | Enable `/_docs`, `/_redoc`, and `/openapi.json` (off by default) |
 | `GB_ENABLE_URL_IMPORT` | No | Enable URL import (off by default) |
 | `GB_URL_IMPORT_ALLOWLIST` | No | Exact comma-separated URL host allowlist; required when URL import is enabled |

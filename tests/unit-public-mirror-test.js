@@ -514,7 +514,7 @@ const testReleaseManifestStaysNarrow = () => {
       packageFiles: manifest.npm.packageFiles.length,
       repositoryFiles: manifest.repository.files.length,
     },
-    { npmFiles: 113, packageFiles: 53, repositoryFiles: 166 },
+    { npmFiles: 128, packageFiles: 56, repositoryFiles: 179 },
     'reviewed public inventories must remain exact and deliberately narrow',
   );
   for (const required of [
@@ -528,6 +528,10 @@ const testReleaseManifestStaysNarrow = () => {
     'scripts/check-public-mirror.mjs',
     'scripts/package-smoke.js',
     'tests/run-all.js',
+    'memory_api/requirements-prod-py310-linux-x86_64.lock',
+    'memory_api/requirements-dev.lock',
+    'memory_api/wheelhouse-py310-linux-x86_64.manifest.json',
+    'tests/memory_api_projection_test.py',
   ]) {
     assert.ok(manifest.repository.requiredFiles.includes(required), `missing required public file: ${required}`);
   }
@@ -550,6 +554,18 @@ const testReleaseManifestStaysNarrow = () => {
     false,
     'source-private identifier hashes and fixture approvals must not enter the public repository',
   );
+  for (const required of [
+    'memory_api/.env.example',
+    'memory_api/README.md',
+    'memory_api/app.py',
+    'memory_api/requirements.txt',
+    'memory_api/requirements-prod-py310-linux-x86_64.lock',
+    'memory_api/static/index.html',
+    'memory_api/wheelhouse-py310-linux-x86_64.manifest.json',
+  ]) assert.ok(manifest.npm.files.includes(required), `missing npm runtime file: ${required}`);
+  assert.equal(manifest.npm.files.includes('memory_api/requirements-dev.lock'), false);
+  assert.equal(manifest.repository.files.includes('memory_api/requirements-dev.lock'), true);
+  assert.equal(manifest.repository.files.includes('tests/memory_api_projection_test.py'), true);
   const publicPrivacyPolicy = fs.readFileSync(new URL('../scripts/privacy-policy.mjs', import.meta.url), 'utf8');
   assert.equal(BANNED_IDENTIFIER_HASHES.size, 0, 'public identifier-hash set must stay empty');
   assert.equal(BANNED_TOKEN_HASHES.size, 0, 'public token-hash set must stay empty');
@@ -592,6 +608,16 @@ const testReleaseManifestStaysNarrow = () => {
     manifest.transforms.packageJson.setScripts.test,
     'node scripts/package-smoke.js',
   );
+  const ci = fs.readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  assert.match(ci, /python-version: '3\.10\.12'/u);
+  assert.match(ci, /requirements-prod-py310-linux-x86_64\.lock/u);
+  assert.match(ci, /requirements-dev\.lock/u);
+  assert.match(ci, /tests\.memory_api_security_test/u);
+  assert.match(ci, /tests\.memory_api_projection_test/u);
+  assert.match(ci, /\.venv-ci-prod\/bin\/python -m unittest/u);
+  assert.match(ci, /\.venv-ci-dev\/bin\/ruff check/u);
+  assert.match(ci, /\.venv-ci-dev\/bin\/pip-audit[\s\S]*requirements-prod-py310-linux-x86_64\.lock/u);
+  assert.doesNotMatch(ci, /python-version: '3\.12'|pip install[^\n]*requirements\.txt/u);
 
   const prohibitedRepositoryPatterns = [
     /^bench\/.*\/results\//u,

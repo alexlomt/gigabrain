@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -75,6 +75,51 @@ export async function run() {
     }
     assert.equal([...files].some((item) => /^tests\/?/.test(item)), false);
     assert.equal([...files].some((item) => /(?:^|\/)(?:\.venv|venv|runtime|output|secrets?)(?:\/|$)/i.test(item)), false);
+
+    const fixtureVenv = path.resolve("memory_api", ".venv-c1-package-fixture");
+    const fixtureCache = path.resolve("memory_api", "__pycache__", "c1-package-fixture.pyc");
+    const npmCache = mkdtempSync(path.join(tmpdir(), "gigabrain-c1-npm-cache-"));
+    try {
+      mkdirSync(fixtureVenv, { recursive: true });
+      writeFileSync(path.join(fixtureVenv, "must-not-pack.txt"), "excluded\n");
+      mkdirSync(path.dirname(fixtureCache), { recursive: true });
+      writeFileSync(fixtureCache, "excluded\n");
+      const packed = spawnSync("npm", [
+        "pack", "--dry-run", "--json", "--ignore-scripts", "--cache", npmCache,
+      ], {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        maxBuffer: 32 * 1024 * 1024,
+        shell: false,
+        timeout: 60_000,
+      });
+      assert.equal(packed.error, undefined, `npm pack must finish within 60s: ${packed.error?.message || ""}`);
+      assert.equal(packed.status, 0, packed.stderr || packed.stdout);
+      const document = JSON.parse(packed.stdout);
+      const record = Array.isArray(document) ? document[0] : Object.values(document)[0];
+      const packedFiles = record.files.map((row) => String(row.path)).sort();
+      const releaseManifest = JSON.parse(readFileSync("public-release-manifest.json", "utf8"));
+      assert.deepEqual(packedFiles, [...releaseManifest.npm.files].sort(), "reviewed npm inventory must equal actual npm pack");
+      for (const required of [
+        "memory_api/.env.example",
+        "memory_api/README.md",
+        "memory_api/app.py",
+        "memory_api/requirements.txt",
+        "memory_api/requirements-prod-py310-linux-x86_64.lock",
+        "memory_api/static/index.html",
+        "memory_api/wheelhouse-py310-linux-x86_64.manifest.json",
+      ]) assert.equal(packedFiles.includes(required), true, `npm runtime missing ${required}`);
+      assert.equal(packedFiles.includes("memory_api/requirements-dev.lock"), false, "dev lock must not ship in npm runtime");
+      assert.equal(
+        packedFiles.some((file) => /(?:^|\/)(?:\.venv[^/]*|venv[^/]*|__pycache__)(?:\/|$)|\.pyc$/i.test(file)),
+        false,
+        "npm runtime must contain no venv/cache bytecode",
+      );
+    } finally {
+      rmSync(fixtureVenv, { recursive: true, force: true });
+      rmSync(fixtureCache, { force: true });
+      rmSync(npmCache, { recursive: true, force: true });
+    }
   });
 }
 

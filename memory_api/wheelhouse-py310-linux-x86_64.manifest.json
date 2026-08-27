@@ -1,0 +1,200 @@
+{
+  "index": "https://pypi.org/simple",
+  "inventorySha256": "259dd19416266abac4969caaeb504292d39ad8838240382a7ad2592e6fa66a60",
+  "lockFile": "requirements-prod-py310-linux-x86_64.lock",
+  "lockSha256": "35cbdccce52844b0c0807f16c0290f62cca25e78d035960953865fc6aa010833",
+  "packages": [
+    {
+      "filename": "annotated_doc-0.0.5-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "annotated-doc",
+      "sha256": "117bac03a25ede5df5440e855b32d556049ca169ead221505badf432fed4b101",
+      "version": "0.0.5"
+    },
+    {
+      "filename": "annotated_types-0.8.0-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "annotated-types",
+      "sha256": "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0",
+      "version": "0.8.0"
+    },
+    {
+      "filename": "anyio-4.14.2-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "anyio",
+      "sha256": "9f505dda5ac9f0c8309b5e8bd445a8c2bf7246f3ce950121e45ea15bc41d1494",
+      "version": "4.14.2"
+    },
+    {
+      "filename": "beautifulsoup4-4.12.3-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "beautifulsoup4",
+      "sha256": "b80878c9f40111313e55da8ba20bdba06d8fa3969fc68304167741bbf9e082ed",
+      "version": "4.12.3"
+    },
+    {
+      "filename": "certifi-2026.7.22-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "certifi",
+      "sha256": "62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775",
+      "version": "2026.7.22"
+    },
+    {
+      "filename": "chardet-7.6.0-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "index": "https://pypi.org/simple",
+      "name": "chardet",
+      "sha256": "4b81d3f7d7914442d5f7d515b8c6d79cee6b794bc208971fb6902f176671166a",
+      "version": "7.6.0"
+    },
+    {
+      "filename": "click-8.5.0-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "click",
+      "sha256": "255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360",
+      "version": "8.5.0"
+    },
+    {
+      "filename": "cssselect-1.5.0-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "cssselect",
+      "sha256": "1d1aded98e82bdde447ded990a191fd6916177c4f0c914fb62eccd58e2ffcdcc",
+      "version": "1.5.0"
+    },
+    {
+      "filename": "exceptiongroup-1.3.1-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "exceptiongroup",
+      "sha256": "a7a39a3bd276781e98394987d3a5701d0c4edffb633bb7a5144577f82c773598",
+      "version": "1.3.1"
+    },
+    {
+      "filename": "fastapi-0.133.1-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "fastapi",
+      "sha256": "658f34ba334605b1617a65adf2ea6461901bdb9af3a3080d63ff791ecf7dc2e2",
+      "version": "0.133.1"
+    },
+    {
+      "filename": "h11-0.16.0-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "h11",
+      "sha256": "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86",
+      "version": "0.16.0"
+    },
+    {
+      "filename": "httpcore-1.0.9-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "httpcore",
+      "sha256": "2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55",
+      "version": "1.0.9"
+    },
+    {
+      "filename": "httpx-0.27.2-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "httpx",
+      "sha256": "7bb2708e112d8fdd7829cd4243970f0c223274051cb35ee80c03301ee29a3df0",
+      "version": "0.27.2"
+    },
+    {
+      "filename": "idna-3.19-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "idna",
+      "sha256": "815e7be7a7806d54abb586dc943addc79e8b2ee16915059658cbeff4b1b43bf4",
+      "version": "3.19"
+    },
+    {
+      "filename": "lxml-6.1.1-cp310-cp310-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl",
+      "index": "https://pypi.org/simple",
+      "name": "lxml",
+      "sha256": "98fc784c2c1440667aeedf8465bdfe10208acf0ead656a2c68627299f546b315",
+      "version": "6.1.1"
+    },
+    {
+      "filename": "lxml_html_clean-0.4.5-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "lxml-html-clean",
+      "sha256": "c76fcadd1e5bfb9b8bafc2200d51e4e78eb0dad67f56881c21dfb6484c7e7746",
+      "version": "0.4.5"
+    },
+    {
+      "filename": "pydantic-2.13.4-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "pydantic",
+      "sha256": "45a282cde31d808236fd7ea9d919b128653c8b38b393d1c4ab335c62924d9aba",
+      "version": "2.13.4"
+    },
+    {
+      "filename": "pydantic_core-2.46.4-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "index": "https://pypi.org/simple",
+      "name": "pydantic-core",
+      "sha256": "395aebd9183f9d112f569aeb5b2214d1a10a33bec8456447f7fbdfa51d38d4cd",
+      "version": "2.46.4"
+    },
+    {
+      "filename": "pypdf-6.15.0-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "pypdf",
+      "sha256": "14e001d6504822cb1ca9c7ed9a69bccb320f59b320730f55af804361abe4d5ee",
+      "version": "6.15.0"
+    },
+    {
+      "filename": "python_multipart-0.0.32-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "python-multipart",
+      "sha256": "ff6d3f776f16878c894e52e107296ffc890e913c611b1a4ec6c44e2821fe2e23",
+      "version": "0.0.32"
+    },
+    {
+      "filename": "readability_lxml-0.8.1-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "readability-lxml",
+      "sha256": "e0d366a21b1bd6cca17de71a4e6ea16fcfaa8b0a5b4004e39e2c7eff884e6305",
+      "version": "0.8.1"
+    },
+    {
+      "filename": "sniffio-1.3.1-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "sniffio",
+      "sha256": "2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2",
+      "version": "1.3.1"
+    },
+    {
+      "filename": "soupsieve-2.9.2-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "soupsieve",
+      "sha256": "8089a26fd974ca7a1f30276d3d8492ab266ab15af581642dfe8aa162e0c1c823",
+      "version": "2.9.2"
+    },
+    {
+      "filename": "starlette-1.6.0-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "starlette",
+      "sha256": "a86dd39d14bb45f85a3d18525215a9ef0cfd1f192ac793220e72598c90335f0c",
+      "version": "1.6.0"
+    },
+    {
+      "filename": "typing_extensions-4.16.0-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "typing-extensions",
+      "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+      "version": "4.16.0"
+    },
+    {
+      "filename": "typing_inspection-0.4.4-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "typing-inspection",
+      "sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147",
+      "version": "0.4.4"
+    },
+    {
+      "filename": "uvicorn-0.30.6-py3-none-any.whl",
+      "index": "https://pypi.org/simple",
+      "name": "uvicorn",
+      "sha256": "65fd46fe3fda5bdc1b03b94eb634923ff18cd35b2f084813ea79d1f103f711b5",
+      "version": "0.30.6"
+    }
+  ],
+  "platform": "linux-x86_64",
+  "python": "3.10",
+  "schema": "gigabrain.memory-api-wheelhouse/1"
+}

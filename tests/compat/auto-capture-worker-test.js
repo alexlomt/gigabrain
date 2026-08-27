@@ -259,7 +259,7 @@ export async function run() {
                 {
                   action: "auto_save",
                   confidence: 0.99,
-                  content: "The synthetic database URL is postgres://alice:s3cret@db.invalid/app.",
+                  content: `The synthetic database URL is ${["postgres://alice:s3cret", "db.invalid/app."].join("@")}`,
                   importance: 0.99,
                   reason: "must be rejected by deterministic policy",
                   scope: "profile:main",

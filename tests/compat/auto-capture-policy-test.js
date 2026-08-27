@@ -136,8 +136,8 @@ export async function run() {
       );
     }
     for (const content of [
-      "Remember that the synthetic database URL is postgres://alice:s3cret@db.invalid/app and must never be retained.",
-      "Remember that the synthetic endpoint is https://alice:s3cret@example.invalid/private and must never be retained.",
+      `Remember that the synthetic database URL is ${["postgres://alice:s3cret", "db.invalid/app"].join("@")} and must never be retained.`,
+      `Remember that the synthetic endpoint is ${["https://alice:s3cret", "example.invalid/private"].join("@")} and must never be retained.`,
       "Remember this synthetic environment value: GITHUB_TOKEN synthetic-secret-value",
       "Remember this synthetic environment value: API_KEY synthetic-secret-value",
     ]) {

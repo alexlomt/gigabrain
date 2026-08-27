@@ -64,12 +64,170 @@ const makeRelease = () => {
   return { manifest, root, release };
 };
 
+const writeDependencyManifest = (root, manifest) => {
+  writeFileSync(
+    path.join(root, "memory_api", "wheelhouse-py310-linux-x86_64.manifest.json"),
+    canonicalJson(manifest),
+  );
+};
+
+const makeDependencyFixture = () => {
+  const root = mkdtempSync(path.join(tmpdir(), "gigabrain-task11-dependencies-"));
+  mkdirSync(path.join(root, "memory_api"), { recursive: true });
+  const packageLock = {
+    name: "synthetic-release",
+    version: "1.0.0",
+    lockfileVersion: 3,
+    requires: true,
+    packages: {
+      "": { name: "synthetic-release", version: "1.0.0", dependencies: { "node-alpha": "1.2.3" } },
+      "node_modules/node-alpha": {
+        version: "1.2.3",
+        resolved: "https://registry.npmjs.org/node-alpha/-/node-alpha-1.2.3.tgz",
+        integrity: `sha512-${Buffer.alloc(64, 7).toString("base64")}`,
+      },
+    },
+  };
+  writeFileSync(path.join(root, "package-lock.json"), canonicalJson(packageLock));
+  const lockText = [
+    "alpha_py==1.0.0 \\",
+    `    --hash=sha256:${"a".repeat(64)}`,
+    "beta.pkg==2.0.0 \\",
+    `    --hash=sha256:${"b".repeat(64)}`,
+    "",
+  ].join("\n");
+  const lockPath = path.join(root, "memory_api", "requirements-prod-py310-linux-x86_64.lock");
+  writeFileSync(lockPath, lockText);
+  const packages = [
+    {
+      filename: "alpha_py-1.0.0-py3-none-any.whl",
+      index: "https://pypi.org/simple",
+      name: "alpha-py",
+      sha256: "a".repeat(64),
+      version: "1.0.0",
+    },
+    {
+      filename: "beta_pkg-2.0.0-py3-none-any.whl",
+      index: "https://pypi.org/simple",
+      name: "beta-pkg",
+      sha256: "b".repeat(64),
+      version: "2.0.0",
+    },
+  ];
+  const manifest = {
+    index: "https://pypi.org/simple",
+    inventorySha256: sha(JSON.stringify(packages)),
+    lockFile: "requirements-prod-py310-linux-x86_64.lock",
+    lockSha256: sha(lockText),
+    packages,
+    platform: "linux-x86_64",
+    python: "3.10",
+    schema: "gigabrain.memory-api-wheelhouse/1",
+  };
+  writeDependencyManifest(root, manifest);
+  return {
+    installedDistributions: [
+      { name: "Beta_Pkg", version: "2.0.0" },
+      { name: "alpha.py", version: "1.0.0" },
+    ],
+    manifest,
+    packageLock,
+    root,
+  };
+};
+
 export async function run() {
   const provenance = await importContractModule("lib/compat/release-provenance.js", EXPECTED_SIGNATURE);
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
     const load = requireCallable(provenance, "loadReleaseProvenance");
     const serialize = requireCallable(provenance, "serializeReleaseProvenance");
     const attach = requireCallable(provenance, "attachReleaseProvenance");
+    const computeDependencyRoot = requireCallable(provenance, "computeDependencyRoot");
+
+    const dependencyFixture = makeDependencyFixture();
+    try {
+      const first = computeDependencyRoot({
+        releaseRoot: dependencyFixture.root,
+        installedDistributions: dependencyFixture.installedDistributions,
+      });
+      const second = computeDependencyRoot({
+        releaseRoot: dependencyFixture.root,
+        installedDistributions: [...dependencyFixture.installedDistributions].reverse(),
+        expectedDependencyRoot: first.dependencyRoot,
+      });
+      assert.deepEqual(second, first, "dependency root must ignore installed-inventory ordering");
+      assert.deepEqual(Object.keys(first), [
+        "dependencyRoot",
+        "nodeRoot",
+        "pythonRoot",
+        "packageLockSha256",
+        "pythonLockSha256",
+        "wheelInventorySha256",
+        "installedInventorySha256",
+        "nodePackages",
+        "pythonDistributions",
+      ]);
+      for (const field of [
+        "dependencyRoot", "nodeRoot", "pythonRoot", "packageLockSha256",
+        "pythonLockSha256", "wheelInventorySha256", "installedInventorySha256",
+      ]) assert.match(first[field], /^[0-9a-f]{64}$/);
+      assert.equal(first.nodePackages, 1);
+      assert.equal(first.pythonDistributions, 2);
+      assert.equal(first.pythonLockSha256, dependencyFixture.manifest.lockSha256);
+      assert.equal(first.wheelInventorySha256, dependencyFixture.manifest.inventorySha256);
+    } finally {
+      rmSync(dependencyFixture.root, { recursive: true, force: true });
+    }
+
+    const rejectDependency = (label, mutate, expected = /GIGABRAIN_RELEASE_DEPENDENCY/) => {
+      const candidate = makeDependencyFixture();
+      try {
+        const options = {
+          releaseRoot: candidate.root,
+          installedDistributions: candidate.installedDistributions,
+        };
+        mutate(candidate, options);
+        assert.throws(() => computeDependencyRoot(options), expected, label);
+      } finally {
+        rmSync(candidate.root, { recursive: true, force: true });
+      }
+    };
+    rejectDependency("inventory is mandatory", (_candidate, options) => {
+      delete options.installedDistributions;
+    }, /GIGABRAIN_RELEASE_DEPENDENCY_INVENTORY_REQUIRED/);
+    rejectDependency("missing installed distribution", (candidate, options) => {
+      options.installedDistributions = candidate.installedDistributions.slice(0, 1);
+    }, /GIGABRAIN_RELEASE_DEPENDENCY_INSTALLED_MISMATCH/);
+    rejectDependency("extra installed distribution", (candidate, options) => {
+      options.installedDistributions = [...candidate.installedDistributions, { name: "extra", version: "9.9.9" }];
+    }, /GIGABRAIN_RELEASE_DEPENDENCY_INSTALLED_MISMATCH/);
+    rejectDependency("installed version drift", (_candidate, options) => {
+      options.installedDistributions = [{ name: "alpha-py", version: "1.0.1" }, { name: "beta-pkg", version: "2.0.0" }];
+    }, /GIGABRAIN_RELEASE_DEPENDENCY_INSTALLED_MISMATCH/);
+    rejectDependency("manifest lock hash drift", (candidate) => {
+      candidate.manifest.lockSha256 = "0".repeat(64);
+      writeDependencyManifest(candidate.root, candidate.manifest);
+    }, /GIGABRAIN_RELEASE_DEPENDENCY_LOCK_HASH/);
+    rejectDependency("wheel inventory hash drift", (candidate) => {
+      candidate.manifest.packages[0].sha256 = "c".repeat(64);
+      writeDependencyManifest(candidate.root, candidate.manifest);
+    }, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_HASH/);
+    rejectDependency("wheel provenance drift", (candidate) => {
+      candidate.manifest.packages[0].index = "https://mirror.invalid/simple";
+      writeDependencyManifest(candidate.root, candidate.manifest);
+    }, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_PROVENANCE/);
+    rejectDependency("lock and wheel set drift", (candidate) => {
+      candidate.manifest.packages[0].version = "1.0.1";
+      candidate.manifest.inventorySha256 = sha(JSON.stringify(candidate.manifest.packages));
+      writeDependencyManifest(candidate.root, candidate.manifest);
+    }, /GIGABRAIN_RELEASE_DEPENDENCY_LOCK_INVENTORY/);
+    rejectDependency("node provenance drift", (candidate, options) => {
+      const baseline = computeDependencyRoot(options);
+      candidate.packageLock.packages["node_modules/node-alpha"].resolved = "https://mirror.invalid/node-alpha.tgz";
+      writeFileSync(path.join(candidate.root, "package-lock.json"), canonicalJson(candidate.packageLock));
+      options.expectedDependencyRoot = baseline.dependencyRoot;
+    }, /GIGABRAIN_RELEASE_DEPENDENCY_ROOT_MISMATCH/);
+
     const fixture = makeRelease();
     try {
       const loaded = load(fixture.root);
