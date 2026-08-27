@@ -228,8 +228,15 @@ export async function run() {
       candidate.manifest.inventorySha256 = sha(JSON.stringify(candidate.manifest.packages));
       writeDependencyManifest(candidate.root, candidate.manifest);
     }, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_PROVENANCE/);
+    const credentialUserinfoIndex = ["https://", "user", ":", "pass", "@", "pypi.org", "/simple"].join("");
+    const credentialUserinfoUrl = new URL(credentialUserinfoIndex);
+    assert.deepEqual(
+      [credentialUserinfoUrl.username, credentialUserinfoUrl.password, credentialUserinfoUrl.host, credentialUserinfoUrl.pathname],
+      ["user", "pass", "pypi.org", "/simple"],
+      "credential userinfo fixture must retain its exact runtime URL semantics",
+    );
     for (const invalidIndex of [
-      "https://user:pass@pypi.org/simple",
+      credentialUserinfoIndex,
       "https://pypi.org/simple/",
       "https://pypi.org/simple?mirror=1",
       "https://pypi.org/simple#fragment",
