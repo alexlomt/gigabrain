@@ -1021,7 +1021,7 @@
       "contentSha256": "c0026563c38669bb123afcb9a404b8c6c387ba5d5b6f1b4bb26ca823b062f5b7",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-setup-generated-surface"
+        "registrationId": "compat-auto-capture-worker"
       },
       "ownerTasks": [
         "2B",
