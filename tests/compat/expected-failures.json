@@ -1,14 +1,29 @@
 {
   "entries": [
     {
+      "ownerTask": "12",
+      "signature": "COMPAT_EXPECTED_BACKUP_RESTORE missing verified VACUUM INTO snapshot contract",
+      "test": "compat/backup-restore-test.js"
+    },
+    {
       "ownerTask": "14",
       "signature": "COMPAT_EXPECTED_FULL_MIGRATION missing source-first registry migration receipt",
       "test": "compat/full-registry-migration-test.js"
     },
     {
+      "ownerTask": "12",
+      "signature": "COMPAT_EXPECTED_NIGHTLY_ORDER missing fail-closed 24-stage nightly sequence",
+      "test": "compat/nightly-order-test.js"
+    },
+    {
       "ownerTask": "14",
       "signature": "COMPAT_EXPECTED_ROLLBACK_RESTORE missing verified rollback restoration",
       "test": "compat/rollback-restore-test.js"
+    },
+    {
+      "ownerTask": "12",
+      "signature": "COMPAT_EXPECTED_SETUP_DRY_RUN missing apply-only first-run setup",
+      "test": "compat/setup-dry-run-test.js"
     }
   ],
   "schemaVersion": 1

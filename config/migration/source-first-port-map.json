@@ -86,6 +86,7 @@
         "registrationId": "source-first-policy"
       },
       "ownerTasks": [
+        "12",
         "2A",
         "2B",
         "3",
@@ -95,13 +96,13 @@
         "8",
         "9"
       ],
-      "reason": "Source-first evidence plus passing Task 9B fix-round 3 ownership and exact content hashes.",
+      "reason": "Source-first evidence plus exact Task 12 backup, setup, and nightly RED ownership.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-port-map.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "4884f7e59920631ea56b4f23b09cadc3542b6b52c7e3a378f9c4fd579a64f045",
+      "contentSha256": "362b96f983fe578b94f77b16a9ef917be39b47835c95724b699fb3aab3cc7a83",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -109,6 +110,7 @@
       "ownerTasks": [
         "10",
         "11",
+        "12",
         "2A",
         "3",
         "4",
@@ -117,7 +119,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with passing Task 11 projection authority hashes and relevance evidence.",
+      "reason": "Source-first registry with exact Task 12 backup, setup, and nightly XFAIL hashes and relevance evidence.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -1461,6 +1463,20 @@
     },
     {
       "changeType": "added",
+      "contentSha256": "a19375d0d1532ba1d666e22709a360e8e0191a583212015d8f70d85dbc11c4c3",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-backup-restore"
+      },
+      "ownerTasks": [
+        "12"
+      ],
+      "reason": "Task 12 RED contract for WAL-complete VACUUM INTO snapshots, free-space preflight, immutable validation, and restore.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/backup-restore-test.js"
+    },
+    {
+      "changeType": "added",
       "contentSha256": "c618e10426f34d834a71ac44eba6a14db723b98a93f802759ee559b926698e48",
       "disposition": "private_dev_only",
       "gate": {
@@ -1562,7 +1578,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "ae0fae846c71bc2d0d4b18fbcff22301beda41acb0ab941cbf0afafd3b4f3fd1",
+      "contentSha256": "bdad55698b45c7fc26ec6f05a0c6a5dc5fa1f0b7276e0660f4026eb4e97d5e73",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1570,6 +1586,7 @@
       "ownerTasks": [
         "10",
         "11",
+        "12",
         "2B",
         "3",
         "4",
@@ -1579,7 +1596,7 @@
         "8",
         "9"
       ],
-      "reason": "Task 11 projection authority XFAILs removed after both Node contracts passed.",
+      "reason": "Expected-failure ownership for the exact Task 12 backup, setup, and nightly RED signatures.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1671,6 +1688,20 @@
       "reason": "Substantive Task 6 typed-native-metadata red compatibility contract; no runtime behavior.",
       "targetMode": "100644",
       "targetPath": "tests/compat/native-metadata-promotion-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "0290a4f277d394987c430917a0f44d1d23e4eb24f8cc59f5d474f9f16a80fab7",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-nightly-order"
+      },
+      "ownerTasks": [
+        "12"
+      ],
+      "reason": "Task 12 RED contract for the exact 24-stage fail-closed normal, shadow, and dry-run sequence.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/nightly-order-test.js"
     },
     {
       "changeType": "added",
@@ -1890,6 +1921,20 @@
     },
     {
       "changeType": "added",
+      "contentSha256": "89828228f5a7eed21075f13c90210acf5ec498204aa9219b0b3be825814ecf1a",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-setup-dry-run"
+      },
+      "ownerTasks": [
+        "12"
+      ],
+      "reason": "Task 12 RED contract for observational default and dry-run setup with explicit apply-only mutation.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/setup-dry-run-test.js"
+    },
+    {
+      "changeType": "added",
       "contentSha256": "fb5e11a65ba6adcf84a6257c280ad4d85a238945eb99f2707855afa13fdc88fd",
       "disposition": "private_dev_only",
       "gate": {
@@ -2036,7 +2081,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "4673e0e0af0c0935cb354cc2f90ad6ef8c5b06de2ff875384891fcfb741ab64d",
+      "contentSha256": "7107f7b039c7a1eb9dc2b42168608d73173e6cce828cbabc3be17b4ed06259e2",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -2044,6 +2089,7 @@
       "ownerTasks": [
         "10",
         "11",
+        "12",
         "2B",
         "3",
         "4",
@@ -2052,7 +2098,7 @@
         "8",
         "9"
       ],
-      "reason": "Compatibility inventory including the passing Task 11 projection writer contract.",
+      "reason": "Compatibility inventory including all three exact Task 12 fail-closed RED contracts.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory.js"
     },
@@ -2522,7 +2568,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "31fe02facf4303001827fdc447d4b6a451cad24856c8be4bb484760ac9167410",
+      "contentSha256": "3a3cd761942c1980d97c0e4d98f41c6bfe8d13e902b1a0f68761a7e7b7989586",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2530,6 +2576,7 @@
       "ownerTasks": [
         "10",
         "11",
+        "12",
         "2A",
         "2B",
         "3",
@@ -2539,7 +2586,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first policy contract updated for the passing Task 11 projection implementation and tests.",
+      "reason": "Source-first policy contract updated for the classified Task 12 test candidate set.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },

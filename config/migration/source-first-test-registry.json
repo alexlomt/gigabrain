@@ -109,6 +109,27 @@
     },
     {
       "coveredPaths": [
+        "lib/core/maintenance-service.js",
+        "tests/compat/backup-restore-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_BACKUP_RESTORE missing verified VACUUM INTO snapshot contract",
+      "id": "compat-backup-restore",
+      "ownerSourceFirstTaskId": "12",
+      "relevanceEvidence": [
+        {
+          "binding": "snapshotDatabase",
+          "mode": "import",
+          "symbol": "snapshotDatabase",
+          "targetPath": "lib/core/maintenance-service.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/compat/backup-restore-test.js",
+      "testSha256": "a19375d0d1532ba1d666e22709a360e8e0191a583212015d8f70d85dbc11c4c3"
+    },
+    {
+      "coveredPaths": [
         "tests/compat/contract-behavior-harness-test.js",
         "tests/compat/contract-test-helpers.js"
       ],
@@ -403,6 +424,33 @@
       "runner": "node",
       "testPath": "tests/compat/native-metadata-promotion-test.js",
       "testSha256": "e2e0dbaae27de9b9ae247d00101936c14c478c5674c8cd01a0fb35c5bacf2796"
+    },
+    {
+      "coveredPaths": [
+        "lib/core/maintenance-service.js",
+        "scripts/gigabrainctl.js",
+        "tests/compat/nightly-order-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_NIGHTLY_ORDER missing fail-closed 24-stage nightly sequence",
+      "id": "compat-nightly-order",
+      "ownerSourceFirstTaskId": "12",
+      "relevanceEvidence": [
+        {
+          "binding": "executeDailySequence",
+          "mode": "import",
+          "symbol": "executeDailySequence",
+          "targetPath": "lib/core/maintenance-service.js"
+        },
+        {
+          "binding": "spawnNightly",
+          "mode": "spawn",
+          "targetPath": "scripts/gigabrainctl.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/compat/nightly-order-test.js",
+      "testSha256": "0290a4f277d394987c430917a0f44d1d23e4eb24f8cc59f5d474f9f16a80fab7"
     },
     {
       "coveredPaths": [
@@ -958,6 +1006,26 @@
       "runner": "node",
       "testPath": "tests/compat/session-brief-scope-test.js",
       "testSha256": "55e4b748689e86c3b23472ad79b12ea56d9e822dac4771b3117c572291856139"
+    },
+    {
+      "coveredPaths": [
+        "scripts/setup-first-run.js",
+        "tests/compat/setup-dry-run-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_SETUP_DRY_RUN missing apply-only first-run setup",
+      "id": "compat-setup-dry-run",
+      "ownerSourceFirstTaskId": "12",
+      "relevanceEvidence": [
+        {
+          "binding": "runSetup",
+          "mode": "spawn",
+          "targetPath": "scripts/setup-first-run.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/compat/setup-dry-run-test.js",
+      "testSha256": "89828228f5a7eed21075f13c90210acf5ec498204aa9219b0b3be825814ecf1a"
     },
     {
       "coveredPaths": [
@@ -2082,7 +2150,7 @@
       ],
       "runner": "node",
       "testPath": "tests/source-first-divergence-test.js",
-      "testSha256": "31fe02facf4303001827fdc447d4b6a451cad24856c8be4bb484760ac9167410"
+      "testSha256": "3a3cd761942c1980d97c0e4d98f41c6bfe8d13e902b1a0f68761a7e7b7989586"
     },
     {
       "coveredPaths": [
@@ -2154,7 +2222,7 @@
       "testSha256": "773c444acef107909d55c03c4bda7b7ef7109f1ab3e26f14c84864c03165001d"
     }
   ],
-  "entryCount": 96,
-  "manifestSha256": "1a75cc1dacd76ef4684136a4afac566483729cf3cc87039574864ecb0a00b022",
+  "entryCount": 99,
+  "manifestSha256": "69cac0e6718da635dd16a48ff2d75dc75c2e554bc418b155af3f398a07f5ca66",
   "schemaVersion": 1
 }
