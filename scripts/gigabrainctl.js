@@ -4,12 +4,18 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { openDatabase } from '../lib/core/sqlite.js';
 import { ensureSupportedNodeRuntime } from '../lib/core/runtime-guard.js';
 
 import { loadResolvedConfig } from '../lib/core/config.js';
-import { runMaintenance } from '../lib/core/maintenance-service.js';
+import {
+  authorizeShadowMaintenanceCohort,
+  DAILY_SEQUENCE,
+  executeDailySequence,
+  runDailyMaintenanceSequence,
+  snapshotDatabase,
+} from '../lib/core/maintenance-service.js';
 import { runAudit, runAuditRestore, runAuditReport, watchRun, bumpLocalCounters, exportLocalCounters, purgeNoopReviews } from '../lib/core/audit-service.js';
 import { applyQueueRetention, listQueueEntries } from '../lib/core/review-queue.js';
 import { dropLegacyMemoriesTable, ensureProjectionStore, listAdjudications, listBeliefsAsOf, materializeProjectionFromMemories } from '../lib/core/projection-store.js';
@@ -58,6 +64,7 @@ Usage:
 Commands:
   init         Auto-detect installed coding agents and wire them in one command
   nightly      Run one full nightly cycle (maintain + optional harmonize + audit apply)
+  snapshot     Create and verify one engine-consistent SQLite snapshot
   maintain     Run maintenance sequence only
   audit        Run audit service (--mode shadow|apply|restore)
   watch        Re-run the audit against the last watch snapshot; report only NEW findings (never mutates memories)
@@ -83,6 +90,7 @@ Examples:
   node scripts/gigabrainctl.js init
   node scripts/gigabrainctl.js init --project-root /path/to/repo
   node scripts/gigabrainctl.js nightly --config ~/.openclaw/openclaw.json
+  node scripts/gigabrainctl.js snapshot --config ~/.openclaw/openclaw.json --db ./registry.sqlite --target ./registry.snapshot.sqlite
   node scripts/gigabrainctl.js nightly --harmonize
   node scripts/gigabrainctl.js nightly --skip-harmonize
   node scripts/gigabrainctl.js audit --mode shadow --db ~/.openclaw/gigabrain/memory/registry.sqlite
@@ -552,6 +560,7 @@ const resolveCliWriteOperation = () => {
     maintain: 'cli.maintain',
     migrate: 'cli.migrate',
     nightly: 'cli.nightly',
+    snapshot: 'cli.snapshot',
     'sync-hosts': subcommand === 'status' ? '' : 'cli.sync_hosts',
     surface: subcommand === 'build' ? 'cli.surface_build' : '',
     synthesis: subcommand === 'build' ? 'cli.synthesis_build' : '',
@@ -830,127 +839,9 @@ const releaseNightlyLock = (lockState) => {
   removeDirIfExists(lockState?.lockDir || '');
 };
 
-const verifyNightlyOutputs = ({ maintain, dryRun = false } = {}) => {
-  const artifactPath = String(maintain?.artifacts?.executionArtifactPath || '');
-  if (!artifactPath || !fs.existsSync(artifactPath)) {
-    throw new Error(`Nightly execution artifact missing: ${artifactPath || '(empty path)'}`);
-  }
-  const artifact = readJsonIfExists(artifactPath);
-  if (!artifact || typeof artifact !== 'object') {
-    throw new Error(`Nightly execution artifact is not valid JSON: ${artifactPath}`);
-  }
-  if (String(artifact.run_id || '') !== String(maintain?.runId || '')) {
-    throw new Error(`Nightly execution artifact run_id mismatch: expected ${maintain?.runId || '(empty)'}, got ${String(artifact.run_id || '(empty)')}`);
-  }
-  if (Boolean(artifact.dry_run) !== Boolean(dryRun)) {
-    throw new Error(`Nightly execution artifact dry_run mismatch for ${artifactPath}`);
-  }
-  const usageLogPath = String(maintain?.artifacts?.usageLogPath || '');
-  if (!usageLogPath || !fs.existsSync(usageLogPath)) {
-    throw new Error(`Nightly usage log missing: ${usageLogPath || '(empty path)'}`);
-  }
-  const usageLog = fs.readFileSync(usageLogPath, 'utf8');
-  if (!usageLog.includes(`- run_id: \`${String(maintain?.runId || '')}\``)) {
-    throw new Error(`Nightly usage log is missing run_id ${String(maintain?.runId || '')}`);
-  }
-  return {
-    ok: true,
-    artifactPath,
-    usageLogPath,
-    artifactVerified: true,
-    usageLogVerified: true,
-  };
-};
-const runNightlyHarmonize = ({
-  configPath,
-  dbPath,
-  config,
-  dryRun,
-} = {}) => {
-  const harmonizeConfig = config?.maintenance?.harmonize || {};
-  const defaultEnabled = harmonizeConfig?.enabled === true;
-  const enabled = flags.includes('--skip-harmonize')
-    ? false
-    : readBool('--harmonize', defaultEnabled);
-  if (!enabled) {
-    return {
-      enabled: false,
-      ran: false,
-      reason: 'disabled',
-    };
-  }
-  if (dryRun) {
-    return {
-      enabled: true,
-      ran: false,
-      reason: 'dry_run',
-    };
-  }
-
-  const scriptPath = path.join(THIS_DIR, 'harmonize-memory.js');
-  const argsForNode = [scriptPath];
-  if (configPath) {
-    argsForNode.push('--config', String(configPath));
-  }
-  argsForNode.push('--db', String(dbPath));
-
-  const statuses = Array.isArray(harmonizeConfig?.statuses)
-    ? harmonizeConfig.statuses.map((item) => String(item || '').trim().toLowerCase()).filter(Boolean)
-    : [];
-  if (statuses.length > 0) argsForNode.push('--statuses', statuses.join(','));
-
-  if (harmonizeConfig?.outPath) argsForNode.push('--out', String(harmonizeConfig.outPath));
-  if (Number.isFinite(Number(harmonizeConfig?.maxRows))) argsForNode.push('--max-rows', String(harmonizeConfig.maxRows));
-  if (Number.isFinite(Number(harmonizeConfig?.perTypeLimit))) argsForNode.push('--per-type-limit', String(harmonizeConfig.perTypeLimit));
-  if (Number.isFinite(Number(harmonizeConfig?.minConfidence))) argsForNode.push('--min-confidence', String(harmonizeConfig.minConfidence));
-
-  argsForNode.push(`--sync-native=${String(harmonizeConfig?.syncNative !== false)}`);
-  argsForNode.push(`--include-in-native=${String(harmonizeConfig?.includeInNative !== false)}`);
-  argsForNode.push(`--backup=${String(harmonizeConfig?.backup !== false)}`);
-
-  const run = spawnSync(process.execPath, argsForNode, {
-    cwd: THIS_DIR,
-    encoding: 'utf8',
-    timeout: 180000,
-  });
-  const stdout = String(run.stdout || '').trim();
-  const stderr = String(run.stderr || '').trim();
-  let parsed = null;
-  if (stdout) {
-    try {
-      parsed = JSON.parse(stdout);
-    } catch {
-      parsed = null;
-    }
-  }
-  const ok = Number(run.status || 0) === 0 && (!parsed || parsed.ok !== false);
-  return {
-    enabled: true,
-    ran: true,
-    ok,
-    exitCode: Number(run.status ?? 1),
-    signal: run.signal || null,
-    result: parsed,
-    stdout: parsed ? '' : stdout,
-    stderr,
-    command: [process.execPath, ...argsForNode].join(' '),
-  };
-};
-
 const commandMaintain = async () => {
-  const { configPath, config, dbPath } = loadConfigAndDbPath();
-  const dryRun = readBool('--dry-run', false);
-  const reviewVersion = readFlag('--review-version', '');
-  const runId = readFlag('--run-id', '');
-  const result = runMaintenance({
-    dbPath,
-    config,
-    configPath,
-    dryRun,
-    reviewVersion,
-    runId,
-  });
-  console.log(JSON.stringify(result, null, 2));
+  console.error('[gigabrain] `maintain` is a compatibility alias of the governed 24-stage `nightly` pipeline.');
+  await commandNightly();
 };
 
 const commandAudit = async () => {
@@ -1692,11 +1583,450 @@ const commandControl = async () => {
   }
 };
 
+const loadNightlyConfigObservational = () => {
+  const explicit = readFlag('--config', '');
+  if (explicit && !fs.existsSync(path.resolve(explicit))) {
+    throw new Error(`Gigabrain could not find a config at ${path.resolve(explicit)}.`);
+  }
+  const workspaceOverride = readFlag('--workspace', '');
+  const loaded = loadResolvedConfig({
+    configPath: explicit,
+    workspaceRoot: workspaceOverride || undefined,
+  });
+  return {
+    config: loaded.config,
+    configPath: loaded.configPath,
+    dbPath: path.resolve(readFlag('--db', loaded.config.runtime.paths.registryPath)),
+  };
+};
+
+const validateStandaloneDatabase = (dbPath, { immutable = false } = {}) => {
+  const openPath = immutable
+    ? `${pathToFileURL(dbPath).href}?mode=ro&immutable=1`
+    : dbPath;
+  const db = openDatabase(openPath, { readOnly: true, observational: true });
+  try {
+    db.exec('PRAGMA query_only = ON');
+    const quick = db.prepare('PRAGMA quick_check').all()
+      .map((row) => String(row.quick_check || Object.values(row)[0] || ''));
+    if (quick.length !== 1 || quick[0] !== 'ok') {
+      throw new Error(`NIGHTLY_SHADOW_QUICK_CHECK_FAILED: ${quick.join('; ') || 'empty result'}`);
+    }
+    const foreignKeys = db.prepare('PRAGMA foreign_key_check').all();
+    if (foreignKeys.length > 0) {
+      throw new Error(`NIGHTLY_SHADOW_FOREIGN_KEY_CHECK_FAILED: ${foreignKeys.length}`);
+    }
+  } finally {
+    db.close();
+  }
+};
+
+const sha256FileSync = (filePath) => createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+
+const sha256DirectoryTree = (root) => {
+  const hash = createHash('sha256');
+  const walk = (directory, prefix = '') => {
+    const entries = fs.readdirSync(directory, { withFileTypes: true })
+      .sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0);
+    for (const entry of entries) {
+      const absolute = path.join(directory, entry.name);
+      const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+      const stat = fs.lstatSync(absolute);
+      if (stat.isSymbolicLink() || (!stat.isDirectory() && !stat.isFile())) {
+        throw new Error(`NIGHTLY_SHADOW_INPUT_UNSAFE: ${relative}`);
+      }
+      hash.update(`${entry.isDirectory() ? 'd' : 'f'}\u0000${relative}\u0000${stat.mode & 0o777}\n`, 'utf8');
+      if (entry.isDirectory()) walk(absolute, relative);
+      else hash.update(fs.readFileSync(absolute));
+    }
+  };
+  walk(root);
+  return hash.digest('hex');
+};
+
+const pathIdentity = (filePath) => {
+  const stat = fs.statSync(filePath);
+  return `${String(stat.dev)}:${String(stat.ino)}`;
+};
+
+const canonicalFuturePath = (filePath) => {
+  let current = path.resolve(filePath);
+  const suffix = [];
+  while (!fs.existsSync(current)) {
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    suffix.unshift(path.basename(current));
+    current = parent;
+  }
+  const base = fs.existsSync(current) ? fs.realpathSync(current) : current;
+  return path.resolve(base, ...suffix);
+};
+
+const pathsOverlap = (left, right) => (
+  left === right || left.startsWith(`${right}${path.sep}`) || right.startsWith(`${left}${path.sep}`)
+);
+
+const resolveRuntimePath = (config, value) => {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (path.isAbsolute(raw)) return path.resolve(raw);
+  return path.resolve(String(config?.runtime?.paths?.workspaceRoot || process.cwd()), raw);
+};
+
+const liveConfigPaths = ({ config, configPath, dbPath }) => {
+  const paths = new Set([path.resolve(configPath), path.resolve(dbPath)]);
+  for (const value of Object.values(config?.runtime?.paths || {})) {
+    if (typeof value !== 'string' || !value.trim()) continue;
+    paths.add(resolveRuntimePath(config, value));
+  }
+  for (const value of [config?.vault?.path, config?.graph?.path, config?.surface?.outputDir]) {
+    if (typeof value !== 'string' || !value.trim()) continue;
+    paths.add(resolveRuntimePath(config, value));
+  }
+  return [...paths].filter(Boolean);
+};
+
+const validateSealedDirectory = (directory, label) => {
+  const stat = fs.lstatSync(directory);
+  if (!stat.isDirectory() || stat.isSymbolicLink() || (stat.mode & 0o222) !== 0) {
+    throw new Error(`${label}: expected a read-only non-symlink directory`);
+  }
+  return fs.realpathSync(directory);
+};
+
+const cloneNightlyConfigForCohort = ({ config, dbPath, outputDir, sourceMemoryRoot, sourceWorkspace }) => {
+  const cohort = structuredClone(config);
+  const liveWorkspace = path.resolve(String(config?.runtime?.paths?.workspaceRoot || process.cwd()));
+  const liveMemoryRoot = resolveRuntimePath(config, config?.runtime?.paths?.memoryRoot || 'memory');
+  const remapInputPath = (inputPath, label) => {
+    const absolute = path.resolve(String(inputPath || ''));
+    if (absolute === liveMemoryRoot || absolute.startsWith(`${liveMemoryRoot}${path.sep}`)) {
+      return path.resolve(sourceMemoryRoot, path.relative(liveMemoryRoot, absolute));
+    }
+    if (absolute === liveWorkspace || absolute.startsWith(`${liveWorkspace}${path.sep}`)) {
+      return path.resolve(sourceWorkspace, path.relative(liveWorkspace, absolute));
+    }
+    throw new Error(`NIGHTLY_SHADOW_UNMAPPED_INPUT: ${label}`);
+  };
+  cohort.runtimeDescriptorPath = '';
+  cohort.lockPath = path.join(outputDir, 'state', 'native-memory.lockdir');
+  cohort.runtime = cohort.runtime || {};
+  cohort.runtime.paths = cohort.runtime.paths || {};
+  cohort.runtime.paths.workspaceRoot = sourceWorkspace;
+  cohort.runtime.paths.registryPath = dbPath;
+  cohort.runtime.paths.memoryRoot = sourceMemoryRoot;
+  cohort.runtime.paths.outputDir = path.join(outputDir, 'output');
+  cohort.runtime.paths.reviewQueuePath = path.join(outputDir, 'state', 'memory-review-queue.jsonl');
+  cohort.runtime.paths.nativeLockDir = cohort.lockPath;
+  cohort.maintenance = cohort.maintenance || {};
+  cohort.maintenance.snapshotDir = path.join(outputDir, 'backups');
+  cohort.maintenance.eventsPath = path.join(outputDir, 'output', 'memory-events.jsonl');
+  cohort.maintenance.usageLogPath = path.join(outputDir, 'memory', 'usage-log.md');
+  cohort.vault = cohort.vault || {};
+  cohort.vault.path = path.join(outputDir, 'vault');
+  cohort.graph = cohort.graph || {};
+  cohort.graph.path = path.join(outputDir, 'working', 'graph.db');
+  cohort.native = cohort.native || {};
+  cohort.native.memoryMdPath = remapInputPath(config?.native?.memoryMdPath, 'native.memoryMdPath');
+  cohort.native.includeFiles = (config?.native?.includeFiles || [])
+    .map((inputPath, index) => remapInputPath(inputPath, `native.includeFiles[${index}]`));
+  cohort.native.vaults = (config?.native?.vaults || []).map((entry, index) => ({
+    ...entry,
+    path: remapInputPath(entry.path, `native.vaults[${index}].path`),
+  }));
+  cohort.native.cloudInbox = { ...cohort.native.cloudInbox, enabled: false, dir: path.join(outputDir, 'cloud-inbox-disabled') };
+  cohort.native.wiki = cohort.native.wiki || {};
+  cohort.native.wiki.dir = path.join(outputDir, 'wiki');
+  cohort.telemetry = cohort.telemetry || {};
+  cohort.telemetry.countersEnabled = false;
+  return cohort;
+};
+
+const runTask12DryRun = async ({ config, configPath, dbPath, runId }) => {
+  if (!fs.existsSync(dbPath)) throw new Error(`NIGHTLY_DRY_RUN_DB_MISSING: ${dbPath}`);
+  if (fs.existsSync(`${dbPath}-wal`) || fs.existsSync(`${dbPath}-shm`)) {
+    throw new Error('NIGHTLY_DRY_RUN_REQUIRES_STANDALONE_DB');
+  }
+  validateStandaloneDatabase(dbPath, { immutable: true });
+  const handlers = Object.fromEntries(DAILY_SEQUENCE.map((stage) => [stage, async () => (
+    stage === DAILY_SEQUENCE[0]
+      ? { mutationCount: 0, ok: true }
+      : stage === DAILY_SEQUENCE.at(-1)
+        ? { status: 'skipped_gate', reason: 'dry_run_no_receipt' }
+      : { status: 'skipped_gate', reason: 'dry_run' }
+  )]));
+  const sequence = await executeDailySequence({ handlers, mode: 'dry_run' });
+  console.log(JSON.stringify({
+    ...sequence,
+    command: 'nightly',
+    configPath,
+    dbPath,
+    dryRun: true,
+    runId,
+  }, null, 2));
+};
+
+const nightlyReviewStage = async ({ config, db, runId }) => {
+  const summary = await reviewQueuedCandidates({
+    config,
+    db,
+    dryRun: false,
+    limit: config?.llm?.queueReview?.limit,
+    runId,
+  });
+  return { mutationCount: Number(summary?.mutatedRows || 0), ok: summary?.ok !== false };
+};
+
+const nightlyQualityStage = async ({ config, dbPath, runId }) => runAudit({
+  dbPath,
+  config,
+  mode: 'apply',
+  runId,
+  llm: {
+    enabled: config?.llm?.review?.enabled === true,
+    provider: config?.llm?.provider,
+    baseUrl: config?.llm?.baseUrl,
+    model: config?.llm?.model,
+    apiKey: config?.llm?.apiKey,
+    timeoutMs: config?.llm?.timeoutMs,
+    limit: config?.llm?.review?.limit,
+    minScore: config?.llm?.review?.minScore,
+    maxScore: config?.llm?.review?.maxScore,
+    minConfidence: config?.llm?.review?.minConfidence,
+  },
+});
+
+const nightlySurfaceStage = async ({ config, configPath, dbPath, mutationCount, runId }) => {
+  const outputDir = path.join(String(config?.runtime?.paths?.outputDir || ''), 'generated-surface');
+  const summary = await refreshGeneratedSurfaceAfterMutation({
+    config,
+    configPath,
+    dbPath,
+    mutationCount,
+    outputDir,
+    runId: `${runId}-surface`,
+  });
+  return { mutationCount: 0, ok: summary?.ok !== false };
+};
+
+const commandTask12ShadowNightly = async ({ config, configPath, dbPath, runId }) => {
+  assertWriteAllowed({ mode: resolveWriteMode(config), operation: 'cli.nightly' });
+  const sourceDbFlag = readFlag('--source-db', '');
+  const outputDirFlag = readFlag('--output-dir', '');
+  if (!sourceDbFlag) throw new Error('NIGHTLY_SHADOW_SOURCE_REQUIRED: --source-db is required');
+  if (!outputDirFlag) throw new Error('NIGHTLY_SHADOW_OUTPUT_REQUIRED: --output-dir is required');
+  const sourceDb = path.resolve(sourceDbFlag);
+  const outputDir = path.resolve(outputDirFlag);
+  if (!fs.existsSync(sourceDb)) throw new Error(`NIGHTLY_SHADOW_SOURCE_MISSING: ${sourceDb}`);
+  const sourceStat = fs.lstatSync(sourceDb);
+  if (!sourceStat.isFile() || sourceStat.isSymbolicLink() || sourceStat.nlink !== 1) {
+    throw new Error('NIGHTLY_SHADOW_SOURCE_UNSAFE: source must be one regular non-linked file');
+  }
+  if ((sourceStat.mode & 0o222) !== 0) {
+    throw new Error('NIGHTLY_SHADOW_SOURCE_NOT_SEALED: source must be read-only');
+  }
+  if (fs.existsSync(`${sourceDb}-wal`) || fs.existsSync(`${sourceDb}-shm`)) {
+    throw new Error('NIGHTLY_SHADOW_SOURCE_NOT_STANDALONE: WAL/SHM sidecars are forbidden');
+  }
+  if (fs.existsSync(outputDir)) throw new Error(`NIGHTLY_SHADOW_OUTPUT_EXISTS: ${outputDir}`);
+
+  const sourceCanonical = fs.realpathSync(sourceDb);
+  const sourceIdentity = pathIdentity(sourceDb);
+  const outputCanonical = canonicalFuturePath(outputDir);
+  const livePaths = liveConfigPaths({ config, configPath, dbPath });
+  for (const livePath of livePaths) {
+    const liveCanonical = canonicalFuturePath(livePath);
+    if (pathsOverlap(outputCanonical, liveCanonical)) {
+      throw new Error(`NIGHTLY_SHADOW_OUTPUT_ALIASES_LIVE_PATH: ${livePath}`);
+    }
+    if (fs.existsSync(livePath) && pathIdentity(livePath) === sourceIdentity) {
+      throw new Error(`NIGHTLY_SHADOW_LIVE_SOURCE_FORBIDDEN: ${livePath}`);
+    }
+  }
+  if (pathsOverlap(outputCanonical, sourceCanonical)) {
+    throw new Error('NIGHTLY_SHADOW_OUTPUT_ALIASES_SOURCE');
+  }
+
+  const sourceWorkspaceFlag = readFlag('--source-workspace', '');
+  const sourceMemoryRootFlag = readFlag('--source-memory-root', '');
+  if (sourceMemoryRootFlag) {
+    throw new Error('NIGHTLY_SHADOW_EXTERNAL_MEMORY_ROOT_UNSUPPORTED: preserve memoryRoot inside --source-workspace');
+  }
+  if (config?.native?.enabled !== false && !sourceWorkspaceFlag) {
+    throw new Error('NIGHTLY_SHADOW_NATIVE_INPUT_REQUIRED: --source-workspace must preserve the sealed live workspace layout');
+  }
+  if (config?.hostSync?.autoNightly === true) {
+    throw new Error('NIGHTLY_SHADOW_HOST_INPUT_REQUIRED: automatic host sync needs an explicit sealed host cohort');
+  }
+  if (config?.native?.transcripts?.enabled === true) {
+    throw new Error('NIGHTLY_SHADOW_TRANSCRIPT_INPUT_REQUIRED: transcript harvest needs an explicit sealed transcript cohort');
+  }
+  let sourceWorkspace = '';
+  let sourceMemoryRoot = '';
+  let sourceWorkspaceHash = '';
+  let sourceMemoryRootHash = '';
+  if (sourceWorkspaceFlag) {
+    sourceWorkspace = validateSealedDirectory(path.resolve(sourceWorkspaceFlag), 'NIGHTLY_SHADOW_WORKSPACE_NOT_SEALED');
+    const liveWorkspace = path.resolve(String(config?.runtime?.paths?.workspaceRoot || process.cwd()));
+    if (config?.native?.enabled !== false && sourceWorkspace !== liveWorkspace) {
+      throw new Error('NIGHTLY_SHADOW_NATIVE_WORKSPACE_REQUIRES_LOGICAL_MOUNT');
+    }
+    const liveMemoryRoot = resolveRuntimePath(config, config?.runtime?.paths?.memoryRoot || 'memory');
+    if (liveMemoryRoot !== liveWorkspace && !liveMemoryRoot.startsWith(`${liveWorkspace}${path.sep}`)) {
+      throw new Error('NIGHTLY_SHADOW_MEMORY_ROOT_OUTSIDE_WORKSPACE');
+    }
+    sourceMemoryRoot = path.resolve(sourceWorkspace, path.relative(liveWorkspace, liveMemoryRoot));
+    if (config?.native?.enabled !== false) {
+      sourceMemoryRoot = validateSealedDirectory(sourceMemoryRoot, 'NIGHTLY_SHADOW_MEMORY_ROOT_NOT_SEALED');
+    }
+    if (pathsOverlap(outputCanonical, sourceWorkspace) || pathsOverlap(outputCanonical, sourceMemoryRoot)) {
+      throw new Error('NIGHTLY_SHADOW_OUTPUT_ALIASES_INPUT_WORKSPACE');
+    }
+    sourceWorkspaceHash = sha256DirectoryTree(sourceWorkspace);
+    sourceMemoryRootHash = sourceMemoryRoot === sourceWorkspace
+      ? sourceWorkspaceHash
+      : sha256DirectoryTree(sourceMemoryRoot);
+  }
+
+  validateStandaloneDatabase(sourceDb, { immutable: true });
+  const sourceHashBefore = sha256FileSync(sourceDb);
+
+  fs.mkdirSync(outputDir, { mode: 0o700, recursive: false });
+  if (!sourceWorkspace) {
+    sourceWorkspace = path.join(outputDir, 'sealed-empty-workspace');
+    sourceMemoryRoot = path.join(sourceWorkspace, 'memory');
+    fs.mkdirSync(sourceWorkspace, { mode: 0o700 });
+    fs.mkdirSync(sourceMemoryRoot, { mode: 0o500 });
+    fs.chmodSync(sourceMemoryRoot, 0o500);
+    fs.chmodSync(sourceWorkspace, 0o500);
+    sourceWorkspaceHash = sha256DirectoryTree(sourceWorkspace);
+    sourceMemoryRootHash = sha256DirectoryTree(sourceMemoryRoot);
+  }
+  const workingDir = path.join(outputDir, 'working');
+  fs.mkdirSync(workingDir, { mode: 0o700 });
+  const workingDbPath = path.join(workingDir, 'registry.sqlite');
+  fs.copyFileSync(sourceDb, workingDbPath, fs.constants.COPYFILE_EXCL);
+  fs.chmodSync(workingDbPath, 0o600);
+  const sourceHashAfterCopy = sha256FileSync(sourceDb);
+  const workingHash = sha256FileSync(workingDbPath);
+  if (sourceHashAfterCopy !== sourceHashBefore || workingHash !== sourceHashBefore) {
+    throw new Error('NIGHTLY_SHADOW_SOURCE_CHANGED_DURING_COPY');
+  }
+  validateStandaloneDatabase(workingDbPath);
+  const cohortConfig = cloneNightlyConfigForCohort({
+    config,
+    dbPath: workingDbPath,
+    outputDir,
+    sourceMemoryRoot,
+    sourceWorkspace,
+  });
+  const cohortStateDir = path.join(outputDir, 'state');
+  fs.mkdirSync(cohortStateDir, { mode: 0o700, recursive: true });
+  fs.chmodSync(cohortStateDir, 0o700);
+  const cohortConfigPath = path.join(cohortStateDir, 'openclaw.shadow.json');
+  const cohortConfigBody = `${JSON.stringify({
+    plugins: { entries: { gigabrain: { enabled: true, config: cohortConfig } } },
+  }, null, 2)}\n`;
+  atomicWriteFileSync(cohortConfigPath, cohortConfigBody, { mode: 0o600 });
+  const cohortConfigSha256 = createHash('sha256').update(cohortConfigBody, 'utf8').digest('hex');
+  const shadowCapability = authorizeShadowMaintenanceCohort({
+    config: cohortConfig,
+    dbPath: workingDbPath,
+    outputDir: cohortConfig.runtime.paths.outputDir,
+    sourceDbPath: sourceDb,
+  });
+  const sequence = await runDailyMaintenanceSequence({
+    cohortIdentity: {
+      sourceDbSha256: sourceHashBefore,
+      cohortConfigSha256,
+      sourceMemoryRootSha256: sourceMemoryRootHash,
+      sourceWorkspaceSha256: sourceWorkspaceHash,
+      workingDbPath,
+    },
+    config: cohortConfig,
+    configPath: cohortConfigPath,
+    dbPath: workingDbPath,
+    mode: 'shadow',
+    outputDir: cohortConfig.runtime.paths.outputDir,
+    qualityReviewStage: nightlyQualityStage,
+    reviewQueueStage: nightlyReviewStage,
+    runId,
+    shadowCapability,
+    surfaceRefreshStage: nightlySurfaceStage,
+  });
+  if (sha256FileSync(sourceDb) !== sourceHashBefore || pathIdentity(sourceDb) !== sourceIdentity) {
+    throw new Error('NIGHTLY_SHADOW_SOURCE_CHANGED_DURING_RUN');
+  }
+  if (sourceWorkspaceFlag) {
+    if (sha256DirectoryTree(sourceWorkspace) !== sourceWorkspaceHash) {
+      throw new Error('NIGHTLY_SHADOW_WORKSPACE_CHANGED_DURING_RUN');
+    }
+    if (sourceMemoryRoot !== sourceWorkspace && sha256DirectoryTree(sourceMemoryRoot) !== sourceMemoryRootHash) {
+      throw new Error('NIGHTLY_SHADOW_MEMORY_ROOT_CHANGED_DURING_RUN');
+    }
+  } else {
+    fs.chmodSync(sourceMemoryRoot, 0o700);
+    fs.chmodSync(sourceWorkspace, 0o700);
+  }
+  if (!sequence.ok) throw new Error(`NIGHTLY_SHADOW_FAILED: ${sequence.failure?.stage || 'unknown'} ${sequence.failure?.error || ''}`);
+  console.log(JSON.stringify({
+    ...sequence,
+    cohortLockPath: cohortConfig.lockPath,
+    command: 'nightly',
+    cohortConfigPath,
+    cohortConfigSha256,
+    configPath,
+    dryRun: false,
+    sourceDb,
+    sourceSha256: sourceHashBefore,
+    sourceWorkspace,
+    sourceWorkspaceSha256: sourceWorkspaceHash || sha256DirectoryTree(sourceWorkspace),
+    workingDbPath,
+  }, null, 2));
+};
+
+const commandSnapshot = async () => {
+  const configPath = readFlag('--config', '');
+  const loaded = loadResolvedConfig({ configPath });
+  assertWriteAllowed({ mode: resolveWriteMode(loaded.config), operation: 'cli.snapshot' });
+  const sourcePath = path.resolve(readFlag('--db', loaded.config.runtime.paths.registryPath));
+  const targetFlag = readFlag('--target', '');
+  if (!targetFlag) throw new Error('SNAPSHOT_TARGET_REQUIRED: --target is required');
+  const targetPath = path.resolve(targetFlag);
+  if (!fs.existsSync(sourcePath)) throw new Error(`SNAPSHOT_SOURCE_MISSING: ${sourcePath}`);
+  const sourceStat = fs.lstatSync(sourcePath);
+  if (!sourceStat.isFile() || sourceStat.isSymbolicLink() || sourceStat.nlink !== 1) {
+    throw new Error('SNAPSHOT_SOURCE_UNSAFE: source must be one regular non-linked file');
+  }
+  if (sourcePath === targetPath) throw new Error('SNAPSHOT_TARGET_ALIASES_SOURCE');
+  const db = openDatabase(sourcePath, { readOnly: true, observational: true });
+  try {
+    const receipt = snapshotDatabase(db, targetPath);
+    console.log(JSON.stringify({
+      ...receipt,
+      command: 'snapshot',
+      configPath: loaded.configPath,
+      sourcePath,
+    }, null, 2));
+  } finally {
+    db.close();
+  }
+};
+
 const commandNightly = async () => {
-  const { configPath, config, dbPath } = loadConfigAndDbPath();
   const dryRun = readBool('--dry-run', false);
+  const shadow = readBool('--shadow', false);
+  if (dryRun && shadow) throw new Error('NIGHTLY_MODE_CONFLICT: --dry-run and --shadow are mutually exclusive');
+  if (dryRun || shadow) {
+    const { config, configPath, dbPath } = loadNightlyConfigObservational();
+    const runId = String(readFlag('--run-id', '') || `nightly-${new Date().toISOString().replace(/[:.]/g, '-')}`);
+    if (dryRun) await runTask12DryRun({ config, configPath, dbPath, runId });
+    else await commandTask12ShadowNightly({ config, configPath, dbPath, runId });
+    return;
+  }
+  const { configPath, config, dbPath } = loadNightlyConfigObservational();
+  assertWriteAllowed({ mode: resolveWriteMode(config), operation: 'cli.nightly' });
   const runId = readFlag('--run-id', '');
-  const reviewVersion = readFlag('--review-version', '');
   const lock = acquireNightlyLock({
     config,
     configPath,
@@ -1713,120 +2043,26 @@ const commandNightly = async () => {
     return;
   }
   try {
-    const maintain = runMaintenance({
+    const sequence = await runDailyMaintenanceSequence({
+      cohortIdentity: { dbPath, mode: 'normal' },
       dbPath,
       config,
       configPath,
-      dryRun,
-      reviewVersion,
+      mode: 'normal',
+      outputDir: config.runtime.paths.outputDir,
+      qualityReviewStage: nightlyQualityStage,
+      reviewQueueStage: nightlyReviewStage,
       runId,
-    });
-    const queueReviewDb = openDatabase(dbPath, dryRun ? { readOnly: true, observational: true } : {});
-    let queueReview;
-    try {
-      queueReview = await reviewQueuedCandidates({
-        config,
-        db: queueReviewDb,
-        dryRun,
-        limit: config?.llm?.queueReview?.limit,
-        runId: maintain.runId,
-      });
-    } finally {
-      queueReviewDb.close();
-    }
-    const queueRetention = dryRun
-      ? { applied: false, reason: 'dry_run' }
-      : applyQueueRetention(
-        config.runtime.paths.reviewQueuePath,
-        config.runtime.reviewQueueRetention,
-      );
-    const harmonize = runNightlyHarmonize({
-      configPath,
-      dbPath,
-      config,
-      dryRun,
-    });
-    if (harmonize.enabled && harmonize.ran && harmonize.ok !== true) {
-      const msg = [
-        'Nightly harmonize step failed.',
-        harmonize.stderr ? `stderr: ${harmonize.stderr}` : '',
-        harmonize.stdout ? `stdout: ${harmonize.stdout}` : '',
-      ].filter(Boolean).join(' ');
-      throw new Error(msg);
-    }
-    const audit = await runAudit({
-      dbPath,
-      config,
-      mode: dryRun ? 'shadow' : 'apply',
-      reviewVersion,
-      runId,
-      out: readFlag('--audit-out', ''),
-      summary: readFlag('--audit-summary', ''),
-      samples: readFlag('--audit-samples', ''),
-      llm: {
-        enabled: readBool('--llm-review', config.llm.review.enabled === true),
-        provider: readFlag('--llm-provider', config.llm.provider),
-        baseUrl: readFlag('--llm-base-url', config.llm.baseUrl),
-        model: readFlag('--llm-model', config.llm.model),
-        apiKey: readFlag('--llm-api-key', config.llm.apiKey),
-        timeoutMs: Number(readFlag('--llm-timeout-ms', String(config.llm.timeoutMs)) || config.llm.timeoutMs),
-        limit: Number(readFlag('--llm-review-limit', String(config.llm.review.limit)) || config.llm.review.limit),
-        minScore: Number(readFlag('--llm-review-min-score', String(config.llm.review.minScore)) || config.llm.review.minScore),
-        maxScore: Number(readFlag('--llm-review-max-score', String(config.llm.review.maxScore)) || config.llm.review.maxScore),
-        minConfidence: Number(readFlag('--llm-review-min-confidence', String(config.llm.review.minConfidence)) || config.llm.review.minConfidence),
-      },
-    });
-    // The nightly audit writes roughly one review row per active memory per
-    // night. Keep the newest no-op per memory to bound growth;
-    // memory_events stays append-only by design (the provenance ledger).
-    let reviewPurge = null;
-    if (!dryRun) {
-      try {
-        reviewPurge = purgeNoopReviews({ dbPath });
-      } catch (error) {
-        reviewPurge = { ok: false, error: String(error?.message || error) };
-      }
-    }
-    const surfaceMutationCount = [
-      'quality_archived',
-      'quality_rejected',
-      'dedupe_exact_archived',
-      'dedupe_semantic_archived',
-      'dedupe_auto_resolved',
-      'native_sync_inserted_chunks',
-      'native_promoted_inserted',
-      'native_promoted_linked_existing',
-      'host_sync_inserted',
-      'transcript_sync_inserted',
-      'wiki_reconcile_ingested',
-      'open_loops_auto_resolved',
-    ].reduce((total, key) => total + Number(maintain?.eventCounts?.[key] || 0), 0)
-      + Number(queueReview?.mutatedRows || 0);
-    const surfaceRefresh = await refreshGeneratedSurfaceAfterMutation({
-      config,
-      configPath,
-      dbPath,
-      mutationCount: surfaceMutationCount,
-      runId: `${maintain.runId}-surface`,
-    });
-    const verification = verifyNightlyOutputs({
-      maintain,
-      dryRun,
+      surfaceRefreshStage: nightlySurfaceStage,
     });
     console.log(JSON.stringify({
-      ok: true,
+      ...sequence,
       command: 'nightly',
-      runId: maintain.runId,
       lock,
-      maintain,
-      queueReview,
-      queueRetention,
-      harmonize,
-      audit,
-      review_purge: reviewPurge,
-      surfaceRefresh,
-      verification,
     }, null, 2));
+    if (!sequence.ok) {
+      throw new Error(`NIGHTLY_FAILED: ${sequence.failure?.stage || 'unknown'} ${sequence.failure?.error || ''}`);
+    }
   } finally {
     releaseNightlyLock(lock);
   }
@@ -2906,6 +3142,10 @@ const main = async () => {
   }
   if (command === 'nightly') {
     await commandNightly();
+    return;
+  }
+  if (command === 'snapshot') {
+    await commandSnapshot();
     return;
   }
   if (command === 'inventory') {

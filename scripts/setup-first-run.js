@@ -3,18 +3,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { pathToFileURL } from 'node:url';
 import { openDatabase } from '../lib/core/sqlite.js';
-import { ensureProjectionStore, materializeProjectionFromMemories } from '../lib/core/projection-store.js';
+import { ensureProjectionStore } from '../lib/core/projection-store.js';
 import { ensureEventStore } from '../lib/core/event-store.js';
-import { ensureNativeStore, syncNativeMemory } from '../lib/core/native-sync.js';
-import { ensurePersonStore, rebuildEntityMentions } from '../lib/core/person-service.js';
-import {
-  discoverHostSources,
-  ensureHostMemoryStore,
-  shouldRunAutomaticHostSync,
-  syncHostMemories,
-} from '../lib/core/host-memory-sync.js';
-import { projectArbitrationBeliefRows } from '../lib/core/world-model.js';
+import { ensureNativeStore } from '../lib/core/native-sync.js';
+import { ensurePersonStore } from '../lib/core/person-service.js';
+import { ensureHostMemoryStore } from '../lib/core/host-memory-sync.js';
 import { loadResolvedConfig } from '../lib/core/config.js';
 import { assertWriteAllowed, resolveWriteMode } from '../lib/compat/write-policy.js';
 import { installSessionHook, resolveSessionSettingsPath } from '../lib/core/lifecycle-hooks.js';
@@ -38,6 +34,8 @@ Flags:
                         (disabled by default; explicit checkpoints are safer)
   --no-session-hook     Explicitly keep the lifecycle hook disabled
   --session-settings <path>  Explicit settings.json target for the session hook
+  --apply               Apply the printed setup plan
+  --dry-run             Print the exact redacted setup plan without writes
   --help                Print this help
 `;
 
@@ -150,7 +148,10 @@ const upsertAgentsBlock = (agentsPath) => {
     block: MEMORY_BLOCK,
   });
   const changed = next !== existing;
-  if (changed) atomicWriteFileSync(agentsPath, next, { mode: 0o644 });
+  const mode = fs.existsSync(agentsPath) && fs.lstatSync(agentsPath).isFile()
+    ? fs.lstatSync(agentsPath).mode & 0o777
+    : 0o644;
+  if (changed) atomicWriteFileSync(agentsPath, next, { mode });
   return { changed, path: agentsPath };
 };
 
@@ -158,6 +159,25 @@ const writeJsonPretty = (filePath, obj) => {
   ensureDir(path.dirname(filePath));
   atomicWriteFileSync(filePath, `${JSON.stringify(obj, null, 2)}\n`, { mode: 0o600 });
 };
+
+const sha256Text = (value) => createHash('sha256').update(String(value || ''), 'utf8').digest('hex');
+
+const fileState = (filePath, content = null) => {
+  if (!fs.existsSync(filePath)) return 'absent';
+  const stat = fs.lstatSync(filePath);
+  if (!stat.isFile()) return `special:${stat.mode & 0o777}`;
+  const body = content === null ? fs.readFileSync(filePath, 'utf8') : String(content);
+  return `sha256:${sha256Text(body)}:mode:${(stat.mode & 0o777).toString(8).padStart(4, '0')}`;
+};
+
+const setupDelta = ({ after, before, domain, operation, path: targetPath }) => Object.freeze({
+  after,
+  before,
+  domain,
+  operation,
+  path: targetPath,
+  sortKey: `${domain}:${targetPath}:${operation}`,
+});
 
 const run = (cmd, cmdArgs, options = {}) => {
   const child = spawnSync(cmd, cmdArgs, {
@@ -178,59 +198,52 @@ const bootstrapDatabase = ({ configPath, workspaceRoot }) => {
   ensureDir(path.dirname(dbPath));
 
   const db = openDatabase(dbPath);
-  let projectionImport = 0;
-  let nativeChangedFiles = 0;
-  let nativeInsertedChunks = 0;
-  let hostSync = { sources_detected: 0, inserted: 0, verdicts: 0, ran: false };
+  const hostSync = { ran: false, reason: 'setup_schema_only' };
   try {
     ensureProjectionStore(db);
     ensureEventStore(db);
     ensureNativeStore(db);
     ensurePersonStore(db);
     ensureHostMemoryStore(db);
-    const imported = materializeProjectionFromMemories(db);
-    projectionImport = Number(imported?.imported || 0);
-    const nativeResult = syncNativeMemory({
-      db,
-      config,
-      dryRun: false,
-    });
-    nativeChangedFiles = Number(nativeResult?.changed_files || 0);
-    nativeInsertedChunks = Number(nativeResult?.inserted_chunks || 0);
-    rebuildEntityMentions(db);
-
-    // Compatibility policy keeps discovery/import disabled on setup unless an
-    // operator explicitly enables the separate hostSync.autoOnSetup gate.
-    if (shouldRunAutomaticHostSync(config, 'setup')) {
-      try {
-        let detected = [];
-        try { detected = discoverHostSources({ config }) || []; } catch { detected = []; }
-        hostSync.sources_detected = detected.length;
-        const result = syncHostMemories({
-          db,
-          config,
-          automaticTrigger: 'setup',
-          incremental: true,
-          arbitrate: true,
-          projectBeliefRows: projectArbitrationBeliefRows,
-        });
-        hostSync.inserted = Number(result?.inserted_count || 0);
-        hostSync.verdicts = Number(result?.arbitration_verdicts || 0);
-        hostSync.ran = true;
-      } catch (hostErr) {
-        hostSync.error = String(hostErr?.message || hostErr).slice(0, 200);
-      }
-    }
   } finally {
     db.close();
   }
   return {
     dbPath,
-    projectionImport,
-    nativeChangedFiles,
-    nativeInsertedChunks,
+    projectionImport: 0,
+    nativeChangedFiles: 0,
+    nativeInsertedChunks: 0,
     hostSync,
   };
+};
+
+const validateExistingDatabase = (dbPath) => {
+  if (fs.existsSync(`${dbPath}-wal`) || fs.existsSync(`${dbPath}-shm`)) {
+    throw new Error('SETUP_EXISTING_DB_NOT_STANDALONE: run the snapshot/doctor workflow instead');
+  }
+  const db = openDatabase(`${pathToFileURL(dbPath).href}?mode=ro&immutable=1`, { readOnly: true, observational: true });
+  try {
+    db.exec('PRAGMA query_only = ON');
+    const quick = db.prepare('PRAGMA quick_check').all()
+      .map((row) => String(row.quick_check || Object.values(row)[0] || ''));
+    if (quick.length !== 1 || quick[0] !== 'ok') {
+      throw new Error(`SETUP_EXISTING_DB_QUICK_CHECK_FAILED: ${quick.join('; ') || 'empty result'}`);
+    }
+    const foreignKeys = db.prepare('PRAGMA foreign_key_check').all();
+    if (foreignKeys.length > 0) {
+      throw new Error(`SETUP_EXISTING_DB_FOREIGN_KEY_CHECK_FAILED: ${foreignKeys.length}`);
+    }
+    return {
+      dbPath,
+      existing: true,
+      hostSync: { ran: false, reason: 'existing_database_observational_only' },
+      quickCheck: 'ok',
+      foreignKeyErrors: 0,
+      validated: true,
+    };
+  } finally {
+    db.close();
+  }
 };
 
 const main = () => {
@@ -238,6 +251,11 @@ const main = () => {
     console.log(HELP.trim());
     return;
   }
+
+  const apply = hasFlag('--apply');
+  const dryRun = hasFlag('--dry-run');
+  if (apply && dryRun) throw new Error('SETUP_MODE_CONFLICT: --apply and --dry-run are mutually exclusive');
+  const mode = apply ? 'apply' : dryRun ? 'dry_run' : 'plan';
 
   const configPath = resolveAbsolute(readFlag('--config', defaultOpenclawConfigPath()));
   const requestedWorkspace = readFlag('--workspace', '');
@@ -256,7 +274,6 @@ const main = () => {
   const entries = ensureObject(plugins, 'entries');
   const gigabrain = ensureObject(entries, 'gigabrain');
   const gigabrainConfig = ensureObject(gigabrain, 'config');
-  assertWriteAllowed({ mode: resolveWriteMode(gigabrainConfig), operation: 'setup.first_run' });
   const runtime = ensureObject(gigabrainConfig, 'runtime');
   const runtimePaths = ensureObject(runtime, 'paths');
   const capture = ensureObject(gigabrainConfig, 'capture');
@@ -355,16 +372,117 @@ const main = () => {
   if (obsidian.exportDiagnostics === undefined) obsidian.exportDiagnostics = false;
   if (!String(obsidian.exportEntityPages || '').trim()) obsidian.exportEntityPages = 'stable_only';
 
+  const desiredConfig = `${JSON.stringify(openclawConfig, null, 2)}\n`;
+  const agentsPath = resolveAbsolute(readFlag('--agents-path', path.join(workspaceRoot, 'AGENTS.md')));
+  const existingAgents = skipAgents ? '' : readFileIfExistsSync(agentsPath, 'utf8').data;
+  const desiredAgents = skipAgents ? '' : upsertMarkedBlock({
+    existing: existingAgents,
+    startMarker: START_MARKER,
+    endMarker: END_MARKER,
+    block: MEMORY_BLOCK,
+  });
+  const desiredAgentsMode = fs.existsSync(agentsPath) && fs.lstatSync(agentsPath).isFile()
+    ? fs.lstatSync(agentsPath).mode & 0o777
+    : 0o644;
+  const deltas = [];
+  const registryExists = fs.existsSync(registryPath);
+  const existingConfig = fs.existsSync(configPath) ? fs.readFileSync(configPath, 'utf8') : '';
+  if (existingConfig !== desiredConfig) {
+    deltas.push(setupDelta({
+      after: `sha256:${sha256Text(desiredConfig)}:mode:0600`,
+      before: fileState(configPath, existingConfig),
+      domain: 'config',
+      operation: fs.existsSync(configPath) ? 'update' : 'create',
+      path: configPath,
+    }));
+  }
+  const plannedDirectories = [...new Set([
+    path.dirname(configPath),
+    workspaceRoot,
+    memoryRootPath,
+    outputDirPath,
+    path.dirname(registryPath),
+  ])].filter((directory) => !fs.existsSync(directory))
+    .sort((left, right) => left.split(path.sep).length - right.split(path.sep).length || left.localeCompare(right, 'en'));
+  for (const directory of plannedDirectories) {
+    deltas.push(setupDelta({
+      after: 'directory:0700',
+      before: 'absent',
+      domain: 'filesystem',
+      operation: 'create_directory',
+      path: directory,
+    }));
+  }
+  if (!registryExists) {
+    deltas.push(setupDelta({
+      after: 'sqlite:initialized:mode:0600',
+      before: 'absent',
+      domain: 'database',
+      operation: 'initialize',
+      path: registryPath,
+    }));
+  }
+  if (!skipAgents && existingAgents !== desiredAgents) {
+    deltas.push(setupDelta({
+      after: `sha256:${sha256Text(desiredAgents)}:mode:${desiredAgentsMode.toString(8).padStart(4, '0')}`,
+      before: fileState(agentsPath, existingAgents),
+      domain: 'agents',
+      operation: fs.existsSync(agentsPath) ? 'update_protocol' : 'create_protocol',
+      path: agentsPath,
+    }));
+  }
+  if (installSessionHookFlag) {
+    deltas.push(setupDelta({
+      after: 'checkpoint_hook:installed',
+      before: 'checkpoint_hook:unchanged',
+      domain: 'session_hook',
+      operation: 'install',
+      path: resolveAbsolute(readFlag('--session-settings', resolveSessionSettingsPath({ explicit: '' }))),
+    }));
+  }
+  if (!skipRestart) {
+    deltas.push(setupDelta({
+      after: 'gateway:restarted',
+      before: 'gateway:unchanged',
+      domain: 'gateway',
+      operation: 'restart',
+      path: 'openclaw-gateway',
+    }));
+  }
+  deltas.sort((left, right) => left.sortKey.localeCompare(right.sortKey, 'en'));
+  const planHash = sha256Text(JSON.stringify(deltas));
+
+  if (!apply) {
+    console.log(JSON.stringify({
+      ok: true,
+      applied: false,
+      mode,
+      applyRequired: true,
+      configPath,
+      workspaceRoot,
+      registryPath,
+      planHash,
+      deltas,
+      gatewayRestart: 'not_applied',
+      sessionHook: installSessionHookFlag ? 'planned' : 'disabled',
+    }, null, 2));
+    return;
+  }
+
+  assertWriteAllowed({ mode: resolveWriteMode(gigabrainConfig), operation: 'setup.first_run' });
+  const existingBootstrap = registryExists ? validateExistingDatabase(registryPath) : null;
+
+  for (const directory of plannedDirectories) {
+    fs.mkdirSync(directory, { mode: 0o700, recursive: true });
+    fs.chmodSync(directory, 0o700);
+  }
   ensureDir(workspaceRoot);
   ensureDir(memoryRootPath);
   ensureDir(outputDirPath);
   ensureDir(path.dirname(registryPath));
 
-  writeJsonPretty(configPath, openclawConfig);
-  const bootstrap = bootstrapDatabase({
-    configPath,
-    workspaceRoot,
-  });
+  if (existingConfig !== desiredConfig) writeJsonPretty(configPath, openclawConfig);
+  const bootstrap = existingBootstrap || bootstrapDatabase({ configPath, workspaceRoot });
   loadResolvedConfig({
     configPath,
     workspaceRoot,
@@ -385,15 +503,13 @@ const main = () => {
         explicit: readFlag('--session-settings', ''),
       });
       const hookResult = installSessionHook({ settingsPath, configPath });
-      if (hookResult.ok) {
-        sessionHook = `installed:${hookResult.settingsPath}`;
-      } else if (hookResult.refused) {
-        sessionHook = `refused:${hookResult.reason}`;
-      } else {
-        sessionHook = 'error';
+      if (hookResult.ok !== true) {
+        throw new Error(`SETUP_SESSION_HOOK_FAILED: ${String(hookResult.reason || 'unknown failure')}`);
       }
+      sessionHook = `installed:${hookResult.settingsPath}`;
     } catch (hookErr) {
-      sessionHook = `error:${String(hookErr?.message || hookErr).slice(0, 160)}`;
+      if (String(hookErr?.message || '').startsWith('SETUP_SESSION_HOOK_FAILED:')) throw hookErr;
+      throw new Error(`SETUP_SESSION_HOOK_FAILED: ${String(hookErr?.message || hookErr).slice(0, 160)}`, { cause: hookErr });
     }
   }
 
@@ -411,6 +527,11 @@ const main = () => {
 
   const summary = {
     ok: restartOk || skipRestart,
+    applied: true,
+    mode,
+    applyRequired: false,
+    planHash,
+    deltas,
     configPath,
     workspaceRoot,
     registryPath: bootstrap.dbPath,

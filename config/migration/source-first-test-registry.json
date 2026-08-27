@@ -112,8 +112,8 @@
         "lib/core/maintenance-service.js",
         "tests/compat/backup-restore-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_BACKUP_RESTORE missing verified VACUUM INTO snapshot contract",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-backup-restore",
       "ownerSourceFirstTaskId": "12",
       "relevanceEvidence": [
@@ -126,7 +126,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/backup-restore-test.js",
-      "testSha256": "a19375d0d1532ba1d666e22709a360e8e0191a583212015d8f70d85dbc11c4c3"
+      "testSha256": "baf8890d4fb8db07bb16330a6810baf798f12986c40b34c44dc5e970c6c26e3b"
     },
     {
       "coveredPaths": [
@@ -210,7 +210,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/config-schema-parity-test.js",
-      "testSha256": "d50eb09d5984e280e0b263fcc322842eb5ea5432cc66dcc80c809d3fc888602c"
+      "testSha256": "b398fe4c5ba513233c506e64f8f702c25956a19f215242d34ed67fd05da91b6e"
     },
     {
       "coveredPaths": [
@@ -431,8 +431,8 @@
         "scripts/gigabrainctl.js",
         "tests/compat/nightly-order-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_NIGHTLY_ORDER missing fail-closed 24-stage nightly sequence",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-nightly-order",
       "ownerSourceFirstTaskId": "12",
       "relevanceEvidence": [
@@ -450,12 +450,13 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/nightly-order-test.js",
-      "testSha256": "0290a4f277d394987c430917a0f44d1d23e4eb24f8cc59f5d474f9f16a80fab7"
+      "testSha256": "2ce0c92673154a941ce729b6e822b5f0fb36e0f398d4fffe3d8b6b3d709226b4"
     },
     {
       "coveredPaths": [
         "lib/compat/queue-review-service.js",
         "lib/core/config.js",
+        "lib/core/maintenance-service.js",
         "openclaw.plugin.json",
         "public-release-manifest.json",
         "scripts/gigabrainctl.js",
@@ -479,6 +480,12 @@
           "targetPath": "lib/core/config.js"
         },
         {
+          "binding": "runDailyMaintenanceSequence",
+          "mode": "import",
+          "symbol": "runDailyMaintenanceSequence",
+          "targetPath": "lib/core/maintenance-service.js"
+        },
+        {
           "binding": "release",
           "mode": "read",
           "targetPath": "public-release-manifest.json"
@@ -491,7 +498,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/nightly-review-integration-test.js",
-      "testSha256": "17591a3be8b3db40dbb03243aaef7a62e393e85c60c210745d622d3b29b43148"
+      "testSha256": "d9a3ff29c9ea434dcdf4695f7393908221b9c06da4ca957b821612722d35dbb0"
     },
     {
       "coveredPaths": [
@@ -1012,8 +1019,8 @@
         "scripts/setup-first-run.js",
         "tests/compat/setup-dry-run-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_SETUP_DRY_RUN missing apply-only first-run setup",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-setup-dry-run",
       "ownerSourceFirstTaskId": "12",
       "relevanceEvidence": [
@@ -1025,7 +1032,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/setup-dry-run-test.js",
-      "testSha256": "89828228f5a7eed21075f13c90210acf5ec498204aa9219b0b3be825814ecf1a"
+      "testSha256": "8b0ac26ea49285b57cfe9f18785477168e0fb3bcda54f86c4dc6ee9f61ef7a64"
     },
     {
       "coveredPaths": [
@@ -1356,7 +1363,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/write-mode-gate-test.js",
-      "testSha256": "ac4fc20ea94b589bc214447e9b7425198519226da7c9cd1b7372ddeaf2addbcf"
+      "testSha256": "e4821caa95e7a4f1c4cf72cf7fe94157f6a23e81433c7d990a1ffa5f12d3f745"
     },
     {
       "coveredPaths": [
@@ -1493,7 +1500,7 @@
       ],
       "runner": "node",
       "testPath": "tests/integration-audit-maintenance-test.js",
-      "testSha256": "d17de2be99bd72553673c1d7ab259918c85eb2f801a178ed3f58af3023e83442"
+      "testSha256": "8d4e353a43147818075651b43347202897839bf5078b1c3cac66fda9c08b2ab5"
     },
     {
       "coveredPaths": [
@@ -1833,6 +1840,27 @@
     },
     {
       "coveredPaths": [
+        "lib/core/maintenance-service.js",
+        "tests/unit-git-wiki-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-git-wiki",
+      "ownerSourceFirstTaskId": "12",
+      "relevanceEvidence": [
+        {
+          "binding": "DAILY_SEQUENCE",
+          "mode": "import",
+          "symbol": "DAILY_SEQUENCE",
+          "targetPath": "lib/core/maintenance-service.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/unit-git-wiki-test.js",
+      "testSha256": "1fadc2007c000f54683e7ab92170898a2dc5686f4124b3414056d9b35cd7d86e"
+    },
+    {
+      "coveredPaths": [
         "lib/core/host-trust.js",
         "tests/unit-host-trust-test.js"
       ],
@@ -1863,6 +1891,26 @@
       "runner": "node",
       "testPath": "tests/unit-hygiene-migration-test.js",
       "testSha256": "1e30584ab42c429bbf4e44a3dc24ba55ac1a317c5abcecbbcd45a7c519b771ab"
+    },
+    {
+      "coveredPaths": [
+        "scripts/setup-first-run.js",
+        "tests/unit-lifecycle-hooks-test.js"
+      ],
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
+      "id": "restored-unit-lifecycle-hooks",
+      "ownerSourceFirstTaskId": "12",
+      "relevanceEvidence": [
+        {
+          "binding": "setupFirstRun",
+          "mode": "spawn",
+          "targetPath": "scripts/setup-first-run.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/unit-lifecycle-hooks-test.js",
+      "testSha256": "0ed3541c7edcecb0d7268a458b50071efcd38d7fdf0b46ee4d4abfbdcaf9fcb6"
     },
     {
       "coveredPaths": [
@@ -2222,7 +2270,7 @@
       "testSha256": "773c444acef107909d55c03c4bda7b7ef7109f1ab3e26f14c84864c03165001d"
     }
   ],
-  "entryCount": 99,
-  "manifestSha256": "69cac0e6718da635dd16a48ff2d75dc75c2e554bc418b155af3f398a07f5ca66",
+  "entryCount": 101,
+  "manifestSha256": "fb777867df9312698cb353338a94b9e0c8bbaa992bb9936f55c560a1d66807d7",
   "schemaVersion": 1
 }

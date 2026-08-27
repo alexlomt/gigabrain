@@ -96,13 +96,13 @@
         "8",
         "9"
       ],
-      "reason": "Source-first evidence plus exact Task 12 backup, setup, and nightly RED ownership.",
+      "reason": "Source-first evidence plus promoted Task 12 snapshot, setup, real daily executor, isolation, and durable receipt ownership.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-port-map.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "362b96f983fe578b94f77b16a9ef917be39b47835c95724b699fb3aab3cc7a83",
+      "contentSha256": "f46e5461c626453d9c11ec0134d28227223a4e27acbc5bee96a2e927fd3389ed",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -119,7 +119,7 @@
         "8",
         "9"
       ],
-      "reason": "Source-first registry with exact Task 12 backup, setup, and nightly XFAIL hashes and relevance evidence.",
+      "reason": "Source-first registry with passing Task 12 backup, setup, governed nightly, and durable receipt evidence.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -539,17 +539,18 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "32cf7bf0a792c891643cd8b7a32133f8560264843605ff7b1bcf41581b7d578b",
+      "contentSha256": "41370e24fe2f4d45513d3d15e038d6ecaeada6d84a5de710f867dcb722f56223",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-setup-generated-surface"
+        "registrationId": "compat-write-mode-gate"
       },
       "ownerTasks": [
         "10",
         "5",
-        "6"
+        "6",
+        "12"
       ],
-      "reason": "Task 5/6 write policy retained while Task 10 classifies explicit surface build as a full-mode writer.",
+      "reason": "Task 12 classifies the fail-closed snapshot command while preserving the complete full-mode writer registry.",
       "targetMode": "100644",
       "targetPath": "lib/compat/write-policy.js"
     },
@@ -762,18 +763,19 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "df52abf784f975074383c80e7aa02be75c483d38a416148df9ed99b7d3e4c68d",
+      "contentSha256": "ff9d3464a77e27127bec5c211b4935d51e92bcd763993de3d1a85850def16ffa",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-projection-writer-registry"
+        "registrationId": "compat-nightly-order"
       },
       "ownerTasks": [
         "10",
         "11",
         "4",
-        "5"
+        "5",
+        "12"
       ],
-      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
+      "reason": "Task 12 verified snapshots and the real fail-closed 24-stage normal/shadow pipeline with durable transition receipts.",
       "targetMode": "100644",
       "targetPath": "lib/core/maintenance-service.js"
     },
@@ -1317,19 +1319,20 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "6165b562bbfa06d85e96283c5111aa866f1b71eea941898c19ae8b6c915efb5c",
+      "contentSha256": "b31d2b74af4eb7325c3c8e2418fa7d268bbdd710c36b5433c3052e995bb8ed2a",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-projection-writer-registry"
+        "registrationId": "compat-nightly-order"
       },
       "ownerTasks": [
         "10",
         "11",
         "5",
         "6",
-        "9"
+        "9",
+        "12"
       ],
-      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
+      "reason": "Task 12 routes snapshot, nightly, maintain, dry-run, and isolated shadow execution through governed fail-closed entrypoints.",
       "targetMode": "100755",
       "targetPath": "scripts/gigabrainctl.js"
     },
@@ -1405,16 +1408,17 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "1bd472bda3a0368ec2af4446086ea229bed884ba259526488c7e2245cb82f521",
+      "contentSha256": "057cb8a36a5cf284c619008453701be9b300375466a0243bb36cef57e4f4c860",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-write-mode-gate"
+        "registrationId": "compat-setup-dry-run"
       },
       "ownerTasks": [
         "4",
-        "5"
+        "5",
+        "12"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 12 makes setup plan/dry-run observational, apply explicit, fresh bootstrap schema-only, and existing databases immutable-read-only.",
       "targetMode": "100644",
       "targetPath": "scripts/setup-first-run.js"
     },
@@ -1463,7 +1467,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "a19375d0d1532ba1d666e22709a360e8e0191a583212015d8f70d85dbc11c4c3",
+      "contentSha256": "baf8890d4fb8db07bb16330a6810baf798f12986c40b34c44dc5e970c6c26e3b",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-backup-restore"
@@ -1471,7 +1475,7 @@
       "ownerTasks": [
         "12"
       ],
-      "reason": "Task 12 RED contract for WAL-complete VACUUM INTO snapshots, free-space preflight, immutable validation, and restore.",
+      "reason": "Passing Task 12 contract for concurrent-write-safe VACUUM INTO snapshots, immutable validation, sqlite_sequence fidelity, and restore.",
       "targetMode": "100644",
       "targetPath": "tests/compat/backup-restore-test.js"
     },
@@ -1492,16 +1496,17 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "d50eb09d5984e280e0b263fcc322842eb5ea5432cc66dcc80c809d3fc888602c",
+      "contentSha256": "b398fe4c5ba513233c506e64f8f702c25956a19f215242d34ed67fd05da91b6e",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-config-schema-parity"
       },
       "ownerTasks": [
         "4",
-        "9"
+        "9",
+        "12"
       ],
-      "reason": "Passing Task 4 schema parity contract adapted to the Task 9C loopback-only memory-LLM surface.",
+      "reason": "Passing schema parity contract updated so setup mutation is explicit through --apply.",
       "targetMode": "100644",
       "targetPath": "tests/compat/config-schema-parity-test.js"
     },
@@ -1578,7 +1583,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "bdad55698b45c7fc26ec6f05a0c6a5dc5fa1f0b7276e0660f4026eb4e97d5e73",
+      "contentSha256": "ae0fae846c71bc2d0d4b18fbcff22301beda41acb0ab941cbf0afafd3b4f3fd1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1596,7 +1601,7 @@
         "8",
         "9"
       ],
-      "reason": "Expected-failure ownership for the exact Task 12 backup, setup, and nightly RED signatures.",
+      "reason": "Expected-failure ownership now retains only the two planned Task 14 migration contracts after Task 12 promotion.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1691,7 +1696,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "0290a4f277d394987c430917a0f44d1d23e4eb24f8cc59f5d474f9f16a80fab7",
+      "contentSha256": "2ce0c92673154a941ce729b6e822b5f0fb36e0f398d4fffe3d8b6b3d709226b4",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-nightly-order"
@@ -1699,21 +1704,22 @@
       "ownerTasks": [
         "12"
       ],
-      "reason": "Task 12 RED contract for the exact 24-stage fail-closed normal, shadow, and dry-run sequence.",
+      "reason": "Passing Task 12 contract for real 24-stage execution, backup-before-mutation, isolated shadow, durable transitions, and cutover gates.",
       "targetMode": "100644",
       "targetPath": "tests/compat/nightly-order-test.js"
     },
     {
       "changeType": "added",
-      "contentSha256": "17591a3be8b3db40dbb03243aaef7a62e393e85c60c210745d622d3b29b43148",
+      "contentSha256": "d9a3ff29c9ea434dcdf4695f7393908221b9c06da4ca957b821612722d35dbb0",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-nightly-review-integration"
       },
       "ownerTasks": [
-        "9"
+        "9",
+        "12"
       ],
-      "reason": "Passing Task 9D contract for bounded nightly queue-review ordering, dry-run retention safety, config limits, and release inclusion.",
+      "reason": "Passing Task 9/12 behavioral contract for bounded queue review before durable retention inside the governed daily executor.",
       "targetMode": "100644",
       "targetPath": "tests/compat/nightly-review-integration-test.js"
     },
@@ -1921,7 +1927,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "89828228f5a7eed21075f13c90210acf5ec498204aa9219b0b3be825814ecf1a",
+      "contentSha256": "8b0ac26ea49285b57cfe9f18785477168e0fb3bcda54f86c4dc6ee9f61ef7a64",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-setup-dry-run"
@@ -1929,7 +1935,7 @@
       "ownerTasks": [
         "12"
       ],
-      "reason": "Task 12 RED contract for observational default and dry-run setup with explicit apply-only mutation.",
+      "reason": "Passing Task 12 contract for exact redacted planning, explicit apply, private modes, and observational existing-DB setup.",
       "targetMode": "100644",
       "targetPath": "tests/compat/setup-dry-run-test.js"
     },
@@ -2007,7 +2013,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "ac4fc20ea94b589bc214447e9b7425198519226da7c9cd1b7372ddeaf2addbcf",
+      "contentSha256": "e4821caa95e7a4f1c4cf72cf7fe94157f6a23e81433c7d990a1ffa5f12d3f745",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-write-mode-gate"
@@ -2015,9 +2021,10 @@
       "ownerTasks": [
         "10",
         "5",
-        "6"
+        "6",
+        "12"
       ],
-      "reason": "Task 5/6 writer registry retained while Task 10 binds surface build and its nested CLI branch to the full-mode guard.",
+      "reason": "Passing writer-registry contract includes the governed Task 12 snapshot entrypoint and maintain/nightly routing.",
       "targetMode": "100644",
       "targetPath": "tests/compat/write-mode-gate-test.js"
     },
@@ -2104,16 +2111,17 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "d17de2be99bd72553673c1d7ab259918c85eb2f801a178ed3f58af3023e83442",
+      "contentSha256": "8d4e353a43147818075651b43347202897839bf5078b1c3cac66fda9c08b2ab5",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "restored-integration-audit-maintenance"
       },
       "ownerTasks": [
         "2B",
-        "4"
+        "4",
+        "12"
       ],
-      "reason": "Scanner-clean restored compatibility assertion or its private test infrastructure.",
+      "reason": "Restored maintenance integration updated for the exact Task 12 stage names and ordering.",
       "targetMode": "100644",
       "targetPath": "tests/integration-audit-maintenance-test.js"
     },
@@ -2568,7 +2576,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "3a3cd761942c1980d97c0e4d98f41c6bfe8d13e902b1a0f68761a7e7b7989586",
+      "contentSha256": "d8d98ae66858d3da1099bc33707fd5834528f274e5796f8b131525ec16c9b98a",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2703,6 +2711,20 @@
       "targetPath": "tests/unit-event-store-test.js"
     },
     {
+      "changeType": "modified",
+      "contentSha256": "1fadc2007c000f54683e7ab92170898a2dc5686f4124b3414056d9b35cd7d86e",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "restored-unit-git-wiki"
+      },
+      "ownerTasks": [
+        "12"
+      ],
+      "reason": "Task 12 updates the existing wiki-order assertion to the exact governed daily stage identifiers.",
+      "targetMode": "100644",
+      "targetPath": "tests/unit-git-wiki-test.js"
+    },
+    {
       "changeType": "added",
       "contentSha256": "3e8ce662c7e17c24ab996eecf67b745e649f24672d4347c467419d616869458b",
       "disposition": "private_dev_only",
@@ -2730,6 +2752,20 @@
       "reason": "Scanner-clean restored compatibility assertion or its private test infrastructure.",
       "targetMode": "100644",
       "targetPath": "tests/unit-hygiene-migration-test.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "0ed3541c7edcecb0d7268a458b50071efcd38d7fdf0b46ee4d4abfbdcaf9fcb6",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "restored-unit-lifecycle-hooks"
+      },
+      "ownerTasks": [
+        "12"
+      ],
+      "reason": "Task 12 proves explicit setup hook application is apply-only and refusal is failure-blocking.",
+      "targetMode": "100644",
+      "targetPath": "tests/unit-lifecycle-hooks-test.js"
     },
     {
       "changeType": "added",

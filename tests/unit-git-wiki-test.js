@@ -92,8 +92,8 @@ const assertHumanTierAboveAgents = () => {
 // (wiring) DAILY_SEQUENCE carries wiki_reconcile BEFORE wiki_project.
 // ----------------------------------------------------------------------------
 const assertNightlyOrdering = () => {
-  const reconcileIdx = DAILY_SEQUENCE.indexOf('wiki_reconcile');
-  const projectIdx = DAILY_SEQUENCE.indexOf('wiki_project');
+  const reconcileIdx = DAILY_SEQUENCE.indexOf('10 wiki_reconcile_optional');
+  const projectIdx = DAILY_SEQUENCE.indexOf('22 wiki_projection_optional');
   assert.equal(reconcileIdx >= 0, true, 'DAILY_SEQUENCE must include wiki_reconcile');
   assert.equal(projectIdx >= 0, true, 'DAILY_SEQUENCE must include wiki_project');
   assert.equal(reconcileIdx < projectIdx, true, 'wiki_reconcile must run BEFORE wiki_project');

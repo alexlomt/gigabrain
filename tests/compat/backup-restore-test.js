@@ -32,7 +32,10 @@ const makeWalFixture = (root, name = "registry.sqlite") => {
       parent_id INTEGER NOT NULL REFERENCES parents(id),
       note TEXT NOT NULL
     );
+    CREATE TABLE sequence_probe (id INTEGER PRIMARY KEY AUTOINCREMENT, note TEXT NOT NULL);
     INSERT INTO parents (id, name) VALUES (1, 'sealed parent');
+    INSERT INTO sequence_probe (note) VALUES ('kept'), ('deleted gap');
+    DELETE FROM sequence_probe WHERE id = 2;
   `);
   db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
   db.exec("INSERT INTO children (id, parent_id, note) VALUES (7, 1, 'uncheckpointed WAL row')");
@@ -85,6 +88,45 @@ export async function run() {
         assert.equal(restored.prepare("SELECT COUNT(*) AS c FROM children").get().c, 2);
       } finally {
         restored.close();
+      }
+      const restoredSequence = new DatabaseSync(restorePath);
+      const sourceSequence = new DatabaseSync(fixture.dbPath);
+      try {
+        const restoredId = Number(restoredSequence.prepare("INSERT INTO sequence_probe (note) VALUES ('restored next id')").run().lastInsertRowid);
+        const sourceId = Number(sourceSequence.prepare("INSERT INTO sequence_probe (note) VALUES ('source next id')").run().lastInsertRowid);
+        assert.equal(restoredId, 3, "restored AUTOINCREMENT must preserve the deleted ID gap");
+        assert.equal(sourceId, restoredId, "source and restored next IDs must advance identically");
+      } finally {
+        restoredSequence.close();
+        sourceSequence.close();
+      }
+
+      const concurrent = makeWalFixture(root, "concurrent.sqlite");
+      const concurrentWriter = new DatabaseSync(concurrent.dbPath);
+      const concurrentTarget = path.join(root, "backups", "concurrent-retry.sqlite");
+      let injected = false;
+      try {
+        const concurrentReceipt = snapshotDatabase(concurrent.db, concurrentTarget, {
+          afterVacuum: ({ attempt }) => {
+            if (attempt !== 1 || injected) return;
+            concurrentWriter.exec("INSERT INTO children (id, parent_id, note) VALUES (9, 1, 'concurrent committed row')");
+            injected = true;
+          },
+        });
+        assert.equal(concurrentReceipt.attempts, 2, "a concurrent commit must discard and retry the first cohort");
+        assert.equal(concurrentReceipt.sourceLogicalHash, concurrentReceipt.targetLogicalHash);
+        const concurrentSnapshot = new DatabaseSync(concurrentTarget, { readOnly: true });
+        try {
+          assert.equal(
+            concurrentSnapshot.prepare("SELECT note FROM children WHERE id=9").get().note,
+            "concurrent committed row",
+          );
+        } finally {
+          concurrentSnapshot.close();
+        }
+      } finally {
+        concurrentWriter.close();
+        concurrent.db.close();
       }
 
       const lowSpace = makeWalFixture(root, "low-space.sqlite");

@@ -178,6 +178,7 @@ const run = async () => {
       '--agents-path', path.join(ws2.workspace, 'AGENTS.md'),
       '--session-settings', optInSettingsPath,
       '--session-hook',
+      '--apply',
       '--skip-restart',
       '--skip-agents',
     ], { cwd: repoRoot, encoding: 'utf8', env: process.env });
@@ -214,6 +215,32 @@ const run = async () => {
     });
     assert.equal(missingSession.status, 1, 'hook input without a stable session id must fail closed');
     assert.match(String(missingSession.stderr || ''), /requires session_id or conversation_id/);
+
+    const ws3 = makeTempWorkspace('gb-lifecycle-setup-refusal-');
+    fs.writeFileSync(ws3.configPath, '{}\n', 'utf8');
+    const refusedSettingsPath = path.join(ws3.workspace, 'synthetic.claude', 'settings.json');
+    fs.mkdirSync(path.dirname(refusedSettingsPath), { recursive: true });
+    const foreignSettings = {
+      hooks: {
+        SessionEnd: [{ hooks: [{ command: 'node foreign-gigabrain-codex-checkpoint.js', type: 'command' }] }],
+      },
+    };
+    fs.writeFileSync(refusedSettingsPath, `${JSON.stringify(foreignSettings, null, 2)}\n`, 'utf8');
+    const refusedBefore = fs.readFileSync(refusedSettingsPath, 'utf8');
+    const refused = spawnSync(process.execPath, [
+      'scripts/setup-first-run.js',
+      '--config', ws3.configPath,
+      '--workspace', ws3.workspace,
+      '--session-settings', refusedSettingsPath,
+      '--session-hook',
+      '--apply',
+      '--skip-restart',
+      '--skip-agents',
+    ], { cwd: repoRoot, encoding: 'utf8', env: process.env });
+    assert.notEqual(refused.status, 0, 'an explicitly requested refused hook must fail setup');
+    assert.match(String(refused.stderr || ''), /SETUP_SESSION_HOOK_FAILED/);
+    assert.equal(fs.readFileSync(refusedSettingsPath, 'utf8'), refusedBefore, 'refusal must preserve foreign hook settings');
+    assert.doesNotMatch(String(refused.stdout || ''), /"ok"\s*:\s*true/, 'refused setup must not claim success');
   }
 };
 

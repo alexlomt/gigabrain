@@ -302,6 +302,7 @@ export async function run() {
       path.join(repoRoot, "scripts/setup-first-run.js"),
       "--config", setupConfig,
       "--workspace", setupWorkspace,
+      "--apply",
       "--skip-agents",
       "--skip-restart",
     ], {

@@ -80,10 +80,10 @@ export async function run() {
     const registry = policy.WRITER_REGISTRY;
     const discovered = discoverWriterEntrypoints({ repoRoot });
     assert.equal(assertWriterRegistryComplete(discovered), true);
-    assert.equal(discovered.length, 182, "all shipped entrypoints remain in the discovery inventory");
+    assert.equal(discovered.length, 183, "all shipped entrypoints remain in the discovery inventory");
     assert.equal(
       new Set(discovered.filter((entry) => entry.access === "write").map((entry) => entry.canonicalOperation || entry.operation)).size,
-      74,
+      75,
       "nested aliases must not inflate the canonical shipped-writer count",
     );
     assert.equal(
@@ -127,7 +127,7 @@ export async function run() {
       "all current fall-through/default writers must be enumerated",
     );
     const discoveredIds = new Set(discovered.map((entry) => entry.operation));
-    for (const required of ["package.migrate-v3", "package.harmonize", "cli.inventory", "cli.vault.inbox"]) {
+    for (const required of ["package.migrate-v3", "package.harmonize", "cli.inventory", "cli.snapshot", "cli.vault.inbox"]) {
       assert.equal(discoveredIds.has(required), true, `discovery must include ${required}`);
       assert.ok(registry[required], `registry must classify ${required}`);
     }

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -22,12 +22,12 @@ const snapshotTree = (root) => {
       const relative = prefix ? `${prefix}/${name}` : name;
       const stat = lstatSync(absolute);
       if (stat.isDirectory()) {
-        out.push({ mode: stat.mode & 0o777, path: relative, type: "directory" });
+        out.push({ mode: stat.mode & 0o777, mtimeMs: stat.mtimeMs, path: relative, type: "directory" });
         walk(absolute, relative);
       } else if (stat.isFile()) {
-        out.push({ hash: sha256(readFileSync(absolute)), mode: stat.mode & 0o777, path: relative, type: "file" });
+        out.push({ hash: sha256(readFileSync(absolute)), mode: stat.mode & 0o777, mtimeMs: stat.mtimeMs, path: relative, type: "file" });
       } else {
-        out.push({ mode: stat.mode & 0o777, path: relative, type: "special" });
+        out.push({ mode: stat.mode & 0o777, mtimeMs: stat.mtimeMs, path: relative, type: "special" });
       }
     }
   };
@@ -63,6 +63,7 @@ export async function run() {
       mkdirSync(home, { recursive: true });
       mkdirSync(workspace, { recursive: true });
       writeFileSync(agentsPath, "# Synthetic operator rules\n", { mode: 0o640 });
+      chmodSync(agentsPath, 0o640);
       writeFileSync(configPath, `${JSON.stringify({
         syntheticSecret: "do-not-print-this-secret",
         plugins: {
@@ -112,6 +113,8 @@ export async function run() {
       for (const delta of plannedDryRun.deltas) {
         assert.deepEqual(Object.keys(delta).sort(), ["after", "before", "domain", "operation", "path", "sortKey"]);
       }
+      const agentsDelta = plannedDryRun.deltas.find((row) => row.domain === "agents");
+      assert.match(agentsDelta.after, /mode:0640$/, "the plan must preserve the existing AGENTS mode");
 
       const applied = parseOutput(runSetup([...common, "--apply"], home));
       assert.equal(applied.ok, true);
@@ -122,9 +125,22 @@ export async function run() {
       assert.equal(existsSync(path.join(workspace, "memory", "registry.sqlite")), true);
       assert.equal(statSync(configPath).mode & 0o777, 0o600);
       assert.equal(statSync(path.join(workspace, "memory", "registry.sqlite")).mode & 0o777, 0o600);
+      assert.equal(statSync(path.join(workspace, "memory")).mode & 0o777, 0o700);
+      assert.equal(statSync(path.join(workspace, "output")).mode & 0o777, 0o700);
+      assert.equal(statSync(agentsPath).mode & 0o777, 0o640, "setup must preserve the existing AGENTS mode");
       assert.match(readFileSync(agentsPath, "utf8"), /GIGABRAIN_MEMORY_PROTOCOL_START/);
       assert.equal(applied.bootstrap.hostSync.ran, false);
       assert.equal(applied.gatewayRestart, "skipped");
+
+      const registryPath = path.join(workspace, "memory", "registry.sqlite");
+      const existingHashBefore = sha256(readFileSync(registryPath));
+      const existingTreeBefore = snapshotTree(root);
+      const existingApply = parseOutput(runSetup([...common, "--apply"], home));
+      assert.equal(existingApply.bootstrap.existing, true);
+      assert.equal(existingApply.bootstrap.validated, true);
+      assert.equal(existingApply.bootstrap.hostSync.ran, false);
+      assert.equal(sha256(readFileSync(registryPath)), existingHashBefore, "existing DB setup must stay observational");
+      assert.deepEqual(snapshotTree(root), existingTreeBefore, "existing DB setup must preserve DB/WAL/SHM bytes, modes, and tree shape");
 
       const beforeConflict = snapshotTree(root);
       const conflict = runSetup([...common, "--apply", "--dry-run"], home);

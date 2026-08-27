@@ -9,9 +9,9 @@ import { runDirect } from "./restored-private-test-helpers.js";
 
 export async function run() {
   assert.equal(new Set(DAILY_SEQUENCE).size, DAILY_SEQUENCE.length);
-  assert.ok(DAILY_SEQUENCE.indexOf("wiki_reconcile") < DAILY_SEQUENCE.indexOf("belief_refresh"));
-  assert.ok(DAILY_SEQUENCE.indexOf("belief_refresh") < DAILY_SEQUENCE.indexOf("wiki_project"));
-  assert.equal(DAILY_SEQUENCE.at(-1), "graph_build");
+  assert.ok(DAILY_SEQUENCE.indexOf("10 wiki_reconcile_optional") < DAILY_SEQUENCE.indexOf("13 belief_arbitration"));
+  assert.ok(DAILY_SEQUENCE.indexOf("13 belief_arbitration") < DAILY_SEQUENCE.indexOf("22 wiki_projection_optional"));
+  assert.equal(DAILY_SEQUENCE.at(-1), "24 final_integrity_and_run_receipt");
 
   const temp = makeTempWorkspace("gb-maintenance-host-gate-");
   const codexHome = path.join(temp.root, "codex-home");
