@@ -444,14 +444,14 @@
           "targetPath": "lib/core/maintenance-service.js"
         },
         {
-          "binding": "spawnNightly",
+          "binding": "dryRun",
           "mode": "spawn",
           "targetPath": "scripts/gigabrainctl.js"
         }
       ],
       "runner": "node",
       "testPath": "tests/compat/nightly-order-test.js",
-      "testSha256": "ae17ec8467fe2b54c5f2f9c7dc62365dc4ce482653d1c1aa8e2b845d5baa2ec3"
+      "testSha256": "e99a023899e0d80228c8824429935b7cc5969d21d94620be70c7c3e51b1c73f8"
     },
     {
       "coveredPaths": [
@@ -2278,6 +2278,6 @@
     }
   ],
   "entryCount": 101,
-  "manifestSha256": "61d3254a98a81b3b9f506084c71f43a0eb563a9d4fb92cfd6b3b608937b4aacb",
+  "manifestSha256": "e9903eb488a031185b55d7105b08b6d29438e3d96b1373a8830b66a452261ba4",
   "schemaVersion": 1
 }

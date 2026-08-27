@@ -563,12 +563,19 @@ export async function run() {
       }, null, 2)}\n`, { mode: 0o600 });
 
       const beforeDryRun = snapshotTree(root);
-      const dryRun = spawnNightly([
+      const dryRun = spawnSync(process.execPath, [
+        path.resolve(import.meta.dirname, "..", "..", "scripts/gigabrainctl.js"),
+        "nightly",
         "--config", configPath,
         "--db", sourceDb,
         "--dry-run",
         "--output-dir", dryRunOutput,
-      ], root);
+      ], {
+        cwd: path.resolve(import.meta.dirname, "..", ".."),
+        encoding: "utf8",
+        env: { ...process.env, HOME: path.join(root, "home") },
+        timeout: 60_000,
+      });
       assert.equal(dryRun.status, 0, dryRun.stderr || dryRun.stdout);
       const dryRunReceipt = JSON.parse(dryRun.stdout);
       assert.equal(dryRunReceipt.ok, true);
