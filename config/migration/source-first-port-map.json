@@ -2191,7 +2191,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "fe2805d3657b72f014da4e453e53f04551802103ee081bcbb6c8f2f0d3d46692",
+      "contentSha256": "562642eee56977ab06b0297497c8fdf41155c7d6fe4216c7f58a6a1c4a8bc796",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-memory-api-projection"
@@ -2205,15 +2205,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "54984f38980192cceb7187641745fd63218beb217a257fb101cf6c33d8d26422",
+      "contentSha256": "eb3aa6327a29a9a2aebe88633961b4ca507f028b1dac6bdc9e13060c9508f23a",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "python-security-floor"
       },
       "ownerTasks": [
-        "2B"
+        "2B",
+        "11"
       ],
-      "reason": "Private compatibility inventory, restoration, toolchain, or security regression infrastructure.",
+      "reason": "Python security floor explicitly resets read-only mode so Task 11 isolation tests cannot contaminate writable route checks.",
       "targetMode": "100644",
       "targetPath": "tests/memory_api_security_test.py"
     },

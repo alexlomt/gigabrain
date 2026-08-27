@@ -40,6 +40,7 @@ class MemoryApiSecurityTest(unittest.TestCase):
             "GB_URL_IMPORT_ALLOWLIST": "example.com",
             "GB_MAX_JSON_BODY_BYTES": "65536",
             "GB_MAX_MULTIPART_BODY_BYTES": "65536",
+            "GB_API_READ_ONLY": "0",
         })
         spec = importlib.util.spec_from_file_location("gigabrain_memory_api_test", APP_PATH)
         cls.module = importlib.util.module_from_spec(spec)

@@ -9,19 +9,26 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 APP_PATH = REPO_ROOT / "memory_api" / "app.py"
 
 def load_app(name, root, read_only=False):
+    previous = os.environ.copy()
     os.environ.update({
         "GB_REGISTRY_PATH": str(root / "state" / "registry.sqlite"),
         "GB_DOCS_PATH": str(root / "docs"),
+        "GB_DOC_INDEX_LOCK": str(root / "state" / "doc-index.lock"),
         "GB_OUTPUT_DIR": str(root / "output"),
+        "GB_SURFACE_SUMMARY_PATH": str(root / "output" / "surface.json"),
         "GB_UI_TOKEN": "synthetic-projection-token",
         "GB_UI_SCOPE_TOKENS": "{}",
         "GB_API_READ_ONLY": "1" if read_only else "0",
     })
-    spec = importlib.util.spec_from_file_location(name, APP_PATH)
-    module = importlib.util.module_from_spec(spec)
-    assert spec and spec.loader
-    spec.loader.exec_module(module)
-    return module
+    try:
+        spec = importlib.util.spec_from_file_location(name, APP_PATH)
+        module = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        os.environ.clear()
+        os.environ.update(previous)
 
 class MemoryApiProjectionTest(unittest.TestCase):
     def setUp(self):
@@ -91,7 +98,7 @@ class MemoryApiProjectionTest(unittest.TestCase):
 
         keep = self.client.post("/memories", headers=self.headers, json={"content": "Synthetic merge survivor", "scope": "profile:main"}).json()["id"]
         loser = self.client.post("/memories", headers=self.headers, json={"content": "Synthetic merge duplicate", "scope": "profile:main"}).json()["id"]
-        merged = self.client.post("/memories/merge", headers=self.headers, json={"keep_id": keep, "merge_ids": [loser]})
+        merged = self.client.post("/memories/merge", headers=self.headers, json={"ids": [keep, loser]})
         self.assertEqual(merged.status_code, 200, merged.text)
         for table, key in (("memory_current", "memory_id"), ("memories", "id")):
             self.assertEqual(self.rows(f"SELECT status, superseded_by FROM {table} WHERE {key}=?", (loser,))[0], {
