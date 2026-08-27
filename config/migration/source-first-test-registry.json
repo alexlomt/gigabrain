@@ -2076,7 +2076,7 @@
       ],
       "runner": "node",
       "testPath": "tests/source-first-divergence-test.js",
-      "testSha256": "a9a35e96c74c62174996f8d0623fa3b6aafc1f435d4347acd0097ef1e2f93127"
+      "testSha256": "be3879aef2adb69fb2729658812412d3cc4685fc9e8799423c3024661322077c"
     },
     {
       "coveredPaths": [
@@ -2089,7 +2089,7 @@
       "ownerSourceFirstTaskId": "1",
       "runner": "node",
       "testPath": "tests/source-first-divergence-test.js",
-      "testSha256": "a9a35e96c74c62174996f8d0623fa3b6aafc1f435d4347acd0097ef1e2f93127"
+      "testSha256": "be3879aef2adb69fb2729658812412d3cc4685fc9e8799423c3024661322077c"
     },
     {
       "coveredPaths": [
@@ -2149,6 +2149,6 @@
     }
   ],
   "entryCount": 96,
-  "manifestSha256": "e400bfe0c860fbeac947525d0c515a5b0c3161d3487d250f35aff178f327a590",
+  "manifestSha256": "59990a330d0cf14112ad0f85e735064792097b4856967b2aaf7a4cd76361e5fa",
   "schemaVersion": 1
 }

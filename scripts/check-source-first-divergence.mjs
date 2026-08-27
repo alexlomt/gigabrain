@@ -1574,13 +1574,14 @@ function validateActiveGates(map, registry, headByPath, head) {
     } else if (expected) {
       fail("GATE_SIGNATURE_MISMATCH", registration.testPath);
     }
-    if (row.disposition === "core_patch") {
+    const evidence = registration.relevanceEvidence?.find((item) => item.targetPath === row.targetPath);
+    const requiresExecutableEvidence = row.disposition === "core_patch" || evidence?.mode === "writer_exercised";
+    if (requiresExecutableEvidence) {
       if (registration.expectedOutcome !== "pass") fail("GATE_EXECUTION_FAILED", registration.testPath);
       if (!registration.testSha256) fail("GATE_EVIDENCE_MISSING", registration.testPath);
       if (sha256(blobAt(head, registration.testPath)) !== registration.testSha256) {
         fail("GATE_TEST_HASH", registration.testPath);
       }
-      const evidence = registration.relevanceEvidence?.find((item) => item.targetPath === row.targetPath);
       if (!evidence) fail("GATE_EVIDENCE_MISSING", row.targetPath);
       if (evidence.mode === "self") fail("GATE_BEHAVIORAL_RELEVANCE", row.targetPath);
       const testSource = blobAt(head, registration.testPath).toString("utf8");
@@ -1631,7 +1632,7 @@ function validateActiveGates(map, registry, headByPath, head) {
       ) {
         fail("GATE_DYNAMIC_EVIDENCE", row.targetPath);
       }
-      verifiedCorePatchPaths.add(row.targetPath);
+      if (row.disposition === "core_patch") verifiedCorePatchPaths.add(row.targetPath);
     }
   }
   for (const registration of registry.entries) {

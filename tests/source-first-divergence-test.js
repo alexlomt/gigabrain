@@ -492,6 +492,60 @@ function configureAdoptedCorePatch(fixture, {
   fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
 }
 
+function configureCompatModuleWriterEvidence(fixture) {
+  const targetPath = "lib/compat-writer.js";
+  const testTargetPath = "tests/compat-writer-test.js";
+  const target = path.join(fixture.fixtureRepo, targetPath);
+  const test = path.join(fixture.fixtureRepo, testTargetPath);
+  writeFileSync(target, [
+    "export const actualWriter = () => true;",
+    "export const pureProbe = () => false;",
+    "",
+  ].join("\n"));
+  writeFileSync(test, [
+    'import assert from "node:assert/strict";',
+    'import { pureProbe } from "../lib/compat-writer.js";',
+    'export async function run() {',
+    '  if (false) { const observed = pureProbe(); assert.equal(observed, false); }',
+    '  assert.equal(true, true);',
+    '}',
+    '',
+  ].join("\n"));
+  commitAll(fixture.fixtureRepo, "compat writer evidence fixture");
+  fixture.map.candidateChanges.push({
+    changeType: "added",
+    contentSha256: blobIdentity(target),
+    disposition: "compat_module",
+    gate: { registrationId: "fixture-gate" },
+    ownerTasks: ["2A"],
+    reason: "Synthetic compat writer evidence fixture.",
+    targetMode: "100644",
+    targetPath,
+  }, {
+    changeType: "added",
+    contentSha256: blobIdentity(test),
+    disposition: "private_dev_only",
+    gate: { registrationId: "fixture-gate" },
+    ownerTasks: ["2A"],
+    reason: "Synthetic compat writer test fixture.",
+    targetMode: "100644",
+    targetPath: testTargetPath,
+  });
+  fixture.map.candidateChanges.sort((left, right) => left.targetPath.localeCompare(right.targetPath, "en"));
+  registerFixtureCoverage(fixture.registry, targetPath);
+  registerFixtureCoverage(fixture.registry, testTargetPath);
+  const registration = fixture.registry.entries[0];
+  registration.testPath = testTargetPath;
+  registration.testSha256 = blobIdentity(test);
+  registration.relevanceEvidence = [{
+    binding: "pureProbe",
+    mode: "writer_exercised",
+    symbol: "pureProbe",
+    targetPath,
+  }];
+  fixture.registry.manifestSha256 = sha256(canonicalJson(fixture.registry.entries));
+}
+
 function configureRetirementReplacementCorePatch(fixture, {
   evidence = "relevant",
   expectedOutcome = "pass",
@@ -815,6 +869,10 @@ function configureImmutableGateExecutionFixture(fixture) {
 }
 
 expectPass("exact classified delta", () => {});
+
+expectFailure("compat writer evidence must execute the declared target symbol", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
+  configureCompatModuleWriterEvidence(fixture);
+});
 
 expectPass("registered tests execute from an immutable exact-HEAD cohort", (fixture) => {
   configureImmutableGateExecutionFixture(fixture);
