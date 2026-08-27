@@ -26,6 +26,7 @@ import { ensureProjectionStore, upsertCurrentMemory } from "../../lib/core/proje
 import { harvestTranscripts } from "../../lib/core/transcript-harvester.js";
 import { projectWiki, reconcileWiki } from "../../lib/core/wiki-project.js";
 import { ensureWorldModelReady } from "../../lib/core/world-model.js";
+import { assertWriterRegistryComplete as governedWriterRegistryGate } from "../../lib/compat/write-policy.js";
 
 import {
   importContractModule,
@@ -74,7 +75,7 @@ export async function run() {
   const runtime = await importContractModule("lib/compat/openclaw-memory-runtime.js", EXPECTED_SIGNATURE);
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
     const assertWriteAllowed = requireCallable(policy, "assertWriteAllowed");
-    const assertWriterRegistryComplete = requireCallable(policy, "assertWriterRegistryComplete");
+    const assertWriterRegistryComplete = governedWriterRegistryGate;
     const discoverWriterEntrypoints = requireCallable(policy, "discoverWriterEntrypoints");
     const captureNative = requireCallable(runtime, "captureNativeExplicitRemember");
     const registry = policy.WRITER_REGISTRY;

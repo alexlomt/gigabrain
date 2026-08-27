@@ -1264,6 +1264,12 @@
       "ownerSourceFirstTaskId": "5",
       "relevanceEvidence": [
         {
+          "binding": "governedWriterRegistryGate",
+          "mode": "import",
+          "symbol": "assertWriterRegistryComplete",
+          "targetPath": "lib/compat/write-policy.js"
+        },
+        {
           "binding": "captureFromEvent",
           "mode": "import",
           "symbol": "captureFromEvent",
@@ -1363,7 +1369,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/write-mode-gate-test.js",
-      "testSha256": "e4821caa95e7a4f1c4cf72cf7fe94157f6a23e81433c7d990a1ffa5f12d3f745"
+      "testSha256": "dc5ffb626ce699846e5f73a33f09d9d2f535d3dc2085f3decbb8f33c61a791e7"
     },
     {
       "coveredPaths": [
@@ -2271,6 +2277,6 @@
     }
   ],
   "entryCount": 101,
-  "manifestSha256": "63c940da8b648ac1a5787dea373a88a122d7ded0ca9938f0f8540f4136edf735",
+  "manifestSha256": "c6e0c1a8fa5aaf4ff18d36fdf17be4b3629016df7060ea9a9a05c31ab7c59a34",
   "schemaVersion": 1
 }
