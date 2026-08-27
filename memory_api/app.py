@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Request, Depends, UploadFile, File, 
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from collections import deque
+from contextlib import asynccontextmanager, contextmanager
 import http.client
 import base64
 import hashlib
@@ -63,6 +64,18 @@ RATE_LIMIT_PER_MIN = max(1, int(os.getenv("GB_API_RATE_LIMIT_PER_MIN", "120")))
 RATE_LIMIT_WINDOW_SECONDS = 60
 MAX_RATE_LIMIT_BUCKETS = max(1000, int(os.getenv("GB_API_MAX_RATE_BUCKETS", "10000")))
 MAX_AUDIT_SCAN_ROWS = 5000
+API_READ_ONLY = os.getenv("GB_API_READ_ONLY", "").lower() in ("1", "true", "yes", "on")
+
+_READ_ONLY_MUTATIONS = (
+    ("POST", re.compile(r"^/memories(?:/[^/]+/(?:confirm|reject))?$|^/memories/merge$")),
+    ("PATCH", re.compile(r"^/memories/[^/]+$")),
+    ("POST", re.compile(r"^/docs(?:/url|/file)?$")),
+    ("PATCH", re.compile(r"^/docs/[^/]+$")),
+    ("DELETE", re.compile(r"^/docs/[^/]+$")),
+)
+
+def _read_only_mutation(method: str, path_value: str) -> bool:
+    return API_READ_ONLY and any(method == expected and pattern.match(path_value) for expected, pattern in _READ_ONLY_MUTATIONS)
 
 _doc_index_timer = None
 _doc_index_lock = threading.Lock()
@@ -135,6 +148,10 @@ class RequestBodyLimitMiddleware:
     async def __call__(self, scope, receive, send):
         if scope.get("type") != "http":
             await self.app(scope, receive, send)
+            return
+        if _read_only_mutation(str(scope.get("method") or "").upper(), str(scope.get("path") or "")):
+            response = JSONResponse(status_code=503, content={"detail": "Memory API is read-only"})
+            await response(scope, receive, send)
             return
 
         raw_headers = [(key.lower(), value) for key, value in scope.get("headers", [])]
@@ -338,9 +355,44 @@ def require_token(request: Request) -> dict:
     raise HTTPException(status_code=401, detail="Unauthorized")
 
 
+def _sqlite_journal_format(db_path: str) -> str:
+    try:
+        with open(db_path, "rb") as database_file:
+            header = database_file.read(20)
+    except OSError as exc:
+        raise HTTPException(status_code=503, detail="Memory API database unavailable") from exc
+    if len(header) != 20 or header[:16] != b"SQLite format 3\x00":
+        raise HTTPException(status_code=503, detail="Memory API database header invalid")
+    versions = (header[18], header[19])
+    if versions == (2, 2):
+        return "wal"
+    if versions == (1, 1):
+        return "rollback"
+    raise HTTPException(status_code=503, detail="Memory API database header unsupported")
+
+
 def get_db():
-    conn = sqlite3.connect(DB_PATH, timeout=max(1.0, SQLITE_BUSY_TIMEOUT_MS / 1000.0))
+    if API_READ_ONLY:
+        if not os.path.exists(DB_PATH):
+            raise HTTPException(status_code=503, detail="Memory API database unavailable")
+        absolute_path = os.path.abspath(DB_PATH)
+        wal_path = f"{absolute_path}-wal"
+        shm_path = f"{absolute_path}-shm"
+        wal_exists = os.path.exists(wal_path)
+        shm_exists = os.path.exists(shm_path)
+        journal_format = _sqlite_journal_format(absolute_path)
+        if journal_format == "wal" and not (wal_exists and shm_exists):
+            raise HTTPException(status_code=503, detail="Memory API WAL sidecars unavailable")
+        if journal_format == "rollback" and (wal_exists or shm_exists):
+            raise HTTPException(status_code=503, detail="Memory API database sidecars inconsistent")
+        uri = f"file:{absolute_path}?mode=ro"
+        conn = sqlite3.connect(uri, uri=True, timeout=max(1.0, SQLITE_BUSY_TIMEOUT_MS / 1000.0))
+    else:
+        conn = sqlite3.connect(DB_PATH, timeout=max(1.0, SQLITE_BUSY_TIMEOUT_MS / 1000.0))
     conn.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_MS}")
+    conn.execute("PRAGMA foreign_keys = ON")
+    if API_READ_ONLY:
+        conn.execute("PRAGMA query_only = ON")
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -351,6 +403,143 @@ def db_connection():
         yield conn
     finally:
         conn.close()
+
+MEMORY_ROWSET = """
+(
+  SELECT
+    mc.memory_id AS id, mc.type, mc.content, mc.normalized, md.concept,
+    mc.source, mc.source_agent, mc.source_session, md.source_message_id,
+    mc.confidence, mc.status, mc.scope, mc.tags, mc.created_at, mc.updated_at,
+    md.last_injected_at, md.last_confirmed_at, md.ttl_days,
+    mc.content_time, mc.valid_until, COALESCE(md.pinned, 0) AS pinned,
+    mc.superseded_by, mc.value_score, mc.value_label,
+    md.review_version, md.review_reason, mc.archived_at, mc.last_reviewed_at,
+    mc.source_layer, mc.source_path, mc.source_line,
+    mc.source_host, mc.source_kind, mc.sync_policy
+  FROM memory_current mc
+  LEFT JOIN memory_console_metadata md ON md.memory_id = mc.memory_id
+)
+"""
+
+_projection_savepoint_counter = 0
+
+@contextmanager
+def projection_batch(conn: sqlite3.Connection, operation_id: str):
+    global _projection_savepoint_counter
+    operation = re.sub(r"[^A-Za-z0-9._-]", "-", str(operation_id or "memory-api"))[:128]
+    outer = not conn.in_transaction
+    _projection_savepoint_counter += 1
+    savepoint = f"gb_api_projection_{_projection_savepoint_counter}"
+    conn.execute("BEGIN IMMEDIATE" if outer else f"SAVEPOINT {savepoint}")
+    try:
+        yield {"operation_id": operation, "now": _iso_utc()}
+        conn.execute("COMMIT" if outer else f"RELEASE {savepoint}")
+    except Exception:
+        if outer:
+            conn.execute("ROLLBACK")
+        else:
+            conn.execute(f"ROLLBACK TO {savepoint}")
+            conn.execute(f"RELEASE {savepoint}")
+        raise
+
+def _memory_api_row(conn: sqlite3.Connection, memory_id: str):
+    return conn.execute(f"SELECT * FROM {MEMORY_ROWSET} WHERE id = ?", (memory_id,)).fetchone()
+
+def _append_projection_event(conn, memory_id, action, operation_id, reason_codes, timestamp=None):
+    conn.execute("""
+        INSERT INTO memory_events (
+          event_id,timestamp,component,action,reason_codes,memory_id,cleanup_version,
+          run_id,review_version,similarity,matched_memory_id,agent_id,payload
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+    """, (
+        str(uuid.uuid4()), timestamp or _iso_utc(), "memory_api", action,
+        json.dumps(reason_codes), memory_id, "v0.11-compat", operation_id, "",
+        None, None, "memory_api", json.dumps({"operation_id": operation_id, "projection_mutation": action.split(":")[-1]}),
+    ))
+
+def _sync_legacy_from_authority(conn, memory_id):
+    row = _memory_api_row(conn, memory_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Not found")
+    values = dict(row)
+    conn.execute("""
+      INSERT INTO memories (
+        id,type,content,normalized,concept,source,source_agent,source_session,source_message_id,
+        confidence,status,scope,tags,created_at,updated_at,last_injected_at,last_confirmed_at,
+        ttl_days,content_time,valid_until,pinned,superseded_by,value_score,value_label,
+        review_version,review_reason,archived_at,last_reviewed_at,
+        source_layer,source_path,source_line,source_host,source_kind,sync_policy
+      ) VALUES (
+        :id,:type,:content,:normalized,:concept,:source,:source_agent,:source_session,:source_message_id,
+        :confidence,:status,:scope,:tags,:created_at,:updated_at,:last_injected_at,:last_confirmed_at,
+        :ttl_days,:content_time,:valid_until,:pinned,:superseded_by,:value_score,:value_label,
+        :review_version,:review_reason,:archived_at,:last_reviewed_at,
+        :source_layer,:source_path,:source_line,:source_host,:source_kind,:sync_policy
+      ) ON CONFLICT(id) DO UPDATE SET
+        type=excluded.type,content=excluded.content,normalized=excluded.normalized,concept=excluded.concept,
+        source=excluded.source,source_agent=excluded.source_agent,source_session=excluded.source_session,
+        source_message_id=excluded.source_message_id,confidence=excluded.confidence,status=excluded.status,
+        scope=excluded.scope,tags=excluded.tags,created_at=excluded.created_at,updated_at=excluded.updated_at,
+        last_injected_at=excluded.last_injected_at,last_confirmed_at=excluded.last_confirmed_at,
+        ttl_days=excluded.ttl_days,content_time=excluded.content_time,valid_until=excluded.valid_until,
+        pinned=excluded.pinned,superseded_by=excluded.superseded_by,value_score=excluded.value_score,
+        value_label=excluded.value_label,review_version=excluded.review_version,review_reason=excluded.review_reason,
+        archived_at=excluded.archived_at,last_reviewed_at=excluded.last_reviewed_at,
+        source_layer=excluded.source_layer,source_path=excluded.source_path,source_line=excluded.source_line,
+        source_host=excluded.source_host,source_kind=excluded.source_kind,sync_policy=excluded.sync_policy
+    """, values)
+    return row
+
+def _projection_upsert(conn, row, metadata, operation_id, event_action="projection:upsert"):
+    conn.execute("""
+      INSERT INTO memory_current (
+        memory_id,type,content,normalized,normalized_hash,source,source_agent,source_session,
+        source_layer,source_path,source_line,source_host,source_kind,sync_policy,confidence,
+        scope,status,value_score,value_label,created_at,updated_at,archived_at,last_reviewed_at,
+        tags,superseded_by,content_time,valid_until,valid_from
+      ) VALUES (
+        :memory_id,:type,:content,:normalized,:normalized_hash,:source,:source_agent,:source_session,
+        :source_layer,:source_path,:source_line,:source_host,:source_kind,:sync_policy,:confidence,
+        :scope,:status,:value_score,:value_label,:created_at,:updated_at,:archived_at,:last_reviewed_at,
+        :tags,:superseded_by,:content_time,:valid_until,:valid_from
+      ) ON CONFLICT(memory_id) DO UPDATE SET
+        type=excluded.type,content=excluded.content,normalized=excluded.normalized,
+        normalized_hash=excluded.normalized_hash,source=excluded.source,source_agent=excluded.source_agent,
+        source_session=excluded.source_session,source_layer=excluded.source_layer,source_path=excluded.source_path,
+        source_line=excluded.source_line,source_host=excluded.source_host,source_kind=excluded.source_kind,
+        sync_policy=excluded.sync_policy,confidence=excluded.confidence,scope=excluded.scope,status=excluded.status,
+        value_score=excluded.value_score,value_label=excluded.value_label,updated_at=excluded.updated_at,
+        archived_at=excluded.archived_at,last_reviewed_at=excluded.last_reviewed_at,tags=excluded.tags,
+        superseded_by=excluded.superseded_by,content_time=excluded.content_time,
+        valid_until=excluded.valid_until,valid_from=COALESCE(memory_current.valid_from,excluded.valid_from)
+    """, row)
+    conn.execute("INSERT OR IGNORE INTO memory_console_metadata (memory_id,pinned) VALUES (?,0)", (row["memory_id"],))
+    if metadata:
+        allowed = ("concept","source_message_id","last_injected_at","last_confirmed_at","ttl_days","pinned","review_version","review_reason")
+        keys = [key for key in allowed if key in metadata]
+        if keys:
+            conn.execute(f"UPDATE memory_console_metadata SET {','.join(f'{key}=?' for key in keys)} WHERE memory_id=?",
+                         [1 if key == "pinned" and metadata[key] else metadata[key] for key in keys] + [row["memory_id"]])
+    _sync_legacy_from_authority(conn, row["memory_id"])
+    _append_projection_event(conn, row["memory_id"], event_action, operation_id, ["upsert"], row["updated_at"])
+    return _memory_api_row(conn, row["memory_id"])
+
+def _projection_status(conn, memory_id, status, operation_id, *, superseded_by=None, clear_superseded=False,
+                       metadata=None, timestamp=None, event_action="projection:status"):
+    now = timestamp or _iso_utc()
+    conn.execute("""UPDATE memory_current SET status=?,updated_at=?,
+      superseded_by=CASE WHEN ? THEN NULL ELSE ? END,
+      archived_at=CASE WHEN ?='archived' THEN ? ELSE NULL END
+      WHERE memory_id=?""",
+      (status, now, 1 if clear_superseded else 0, superseded_by, status, now, memory_id))
+    if metadata:
+        conn.execute("INSERT OR IGNORE INTO memory_console_metadata (memory_id,pinned) VALUES (?,0)", (memory_id,))
+        keys = [key for key in ("last_confirmed_at", "review_version", "review_reason") if key in metadata]
+        if keys:
+            conn.execute(f"UPDATE memory_console_metadata SET {','.join(f'{key}=?' for key in keys)} WHERE memory_id=?",
+                         [metadata[key] for key in keys] + [memory_id])
+    _sync_legacy_from_authority(conn, memory_id)
+    _append_projection_event(conn, memory_id, event_action, operation_id, [status], now)
 
 
 def _is_admin(auth: dict) -> bool:
@@ -431,7 +620,7 @@ def _ensure_doc_access(auth: dict) -> None:
 
 
 def _memory_scope_or_404(conn: sqlite3.Connection, memory_id: str, auth: dict) -> str:
-    row = conn.execute("SELECT scope FROM memories WHERE id = ?", (memory_id,)).fetchone()
+    row = conn.execute("SELECT scope FROM memory_current WHERE memory_id = ?", (memory_id,)).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Not found")
     scope = str(row["scope"] or "shared")
@@ -442,7 +631,7 @@ def _memory_scope_or_404(conn: sqlite3.Connection, memory_id: str, auth: dict) -
 
 
 def _memory_scope(conn: sqlite3.Connection, memory_id: str) -> Optional[str]:
-    row = conn.execute("SELECT scope FROM memories WHERE id = ?", (memory_id,)).fetchone()
+    row = conn.execute("SELECT scope FROM memory_current WHERE memory_id = ?", (memory_id,)).fetchone()
     if not row:
         return None
     return str(row["scope"] or "shared")
@@ -576,6 +765,7 @@ class MemoryCreatePayload(StrictModel):
     source_agent: Optional[str] = Field(default="ui", max_length=256)
     source_session: Optional[str] = Field(default="ui", max_length=256)
     source_message_id: Optional[str] = Field(default=None, max_length=256)
+    concept: Optional[str] = Field(default=None, max_length=512)
     confidence: float = Field(default=0.7, ge=0.0, le=1.0)
     status: str = Field(default="active", min_length=1, max_length=64)
     scope: str = Field(default="shared", min_length=1, max_length=255)
@@ -585,6 +775,8 @@ class MemoryCreatePayload(StrictModel):
     content_time: Optional[str] = None
     valid_until: Optional[str] = None
     pinned: bool = False
+    review_version: Optional[str] = Field(default=None, max_length=256)
+    review_reason: Optional[str] = Field(default=None, max_length=512)
     superseded_by: Optional[str] = Field(default=None, max_length=128)
 
 
@@ -599,6 +791,12 @@ class MemoryUpdatePayload(StrictModel):
     superseded_by: Optional[str] = Field(default=None, max_length=128)
     confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0)
     tags: Optional[list[BoundedTag]] = Field(default=None, max_length=100)
+    concept: Optional[str] = Field(default=None, max_length=512)
+    source_message_id: Optional[str] = Field(default=None, max_length=256)
+    last_injected_at: Optional[str] = None
+    last_confirmed_at: Optional[str] = None
+    review_version: Optional[str] = Field(default=None, max_length=256)
+    review_reason: Optional[str] = Field(default=None, max_length=512)
 
 
 class DocCreatePayload(StrictModel):
@@ -637,19 +835,21 @@ class RecallExplainPayload(StrictModel):
 def normalize_content(content: str) -> str:
     if not content:
         return ""
-    import re
     normalized = content.lower()
-    normalized = re.sub(r"\[m:[0-9a-f-]+\]", "", normalized)
-    normalized = re.sub(r"[^a-z0-9\s]", " ", normalized)
+    normalized = re.sub(r"\[m:[0-9a-f-]{8,}\]", "", normalized)
+    normalized = "".join(char if (char.isalnum() or char.isspace()) else " " for char in normalized)
     normalized = re.sub(r"\s+", " ", normalized).strip()
     return normalized
+
+def normalized_hash(content: str) -> str:
+    return hashlib.sha256(normalize_content(content).encode("utf-8")).hexdigest()
 
 
 def _iso_utc(value: Optional[datetime] = None) -> str:
     current = value or datetime.now(timezone.utc)
     if current.tzinfo is None:
         current = current.replace(tzinfo=timezone.utc)
-    return current.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    return current.astimezone(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 def _parse_iso(value: str) -> Optional[datetime]:
@@ -669,6 +869,13 @@ def _parse_iso(value: str) -> Optional[datetime]:
         return parsed.astimezone(timezone.utc)
     except Exception:
         return None
+
+
+def _canonical_iso_text(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    parsed = _parse_iso(str(value))
+    return _iso_utc(parsed) if parsed is not None else str(value)
 
 
 def _is_expired(row: dict, now: datetime) -> bool:
@@ -692,11 +899,15 @@ def _is_expired(row: dict, now: datetime) -> bool:
 
 
 def ensure_docs_dir():
+    if API_READ_ONLY:
+        return
     os.makedirs(DOCS_DIR, exist_ok=True)
     os.makedirs(os.path.join(DOCS_DIR, "raw"), exist_ok=True)
 
 
 def ensure_storage_dirs():
+    if API_READ_ONLY:
+        return
     if DB_PATH != ":memory:":
         db_parent = os.path.dirname(os.path.abspath(DB_PATH))
         if db_parent:
@@ -1041,6 +1252,8 @@ def _doc_index_lock_recent(max_age_seconds: int = 1800) -> bool:
 
 
 def run_doc_index():
+    if API_READ_ONLY:
+        return
     if _doc_index_lock_recent():
         return
     try:
@@ -1064,6 +1277,8 @@ def run_doc_index():
 
 
 def schedule_doc_index():
+    if API_READ_ONLY:
+        return
     global _doc_index_timer
     with _doc_index_lock:
         if _doc_index_timer:
@@ -1074,11 +1289,29 @@ def schedule_doc_index():
 
 
 def init_db():
+    if API_READ_ONLY:
+        return
     ensure_storage_dirs()
     conn = get_db()
     conn.executescript(
         """
         PRAGMA journal_mode = WAL;
+        PRAGMA foreign_keys = ON;
+        CREATE TABLE IF NOT EXISTS memory_current (
+            memory_id TEXT PRIMARY KEY,
+            type TEXT NOT NULL DEFAULT 'CONTEXT', content TEXT NOT NULL,
+            normalized TEXT NOT NULL DEFAULT '', normalized_hash TEXT NOT NULL DEFAULT '',
+            source TEXT NOT NULL DEFAULT 'capture', source_agent TEXT, source_session TEXT,
+            source_layer TEXT NOT NULL DEFAULT 'registry', source_path TEXT, source_line INTEGER,
+            source_host TEXT NOT NULL DEFAULT 'gigabrain', source_kind TEXT NOT NULL DEFAULT 'registry',
+            sync_policy TEXT NOT NULL DEFAULT 'read_only', confidence REAL DEFAULT 0.6,
+            scope TEXT NOT NULL DEFAULT 'shared', status TEXT NOT NULL DEFAULT 'active',
+            value_score REAL, value_label TEXT, created_at TEXT, updated_at TEXT,
+            archived_at TEXT, last_reviewed_at TEXT, tags TEXT, superseded_by TEXT,
+            content_time TEXT, valid_until TEXT, valid_from TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_memory_current_status_scope ON memory_current(status, scope);
+        CREATE INDEX IF NOT EXISTS idx_memory_current_norm_scope ON memory_current(normalized_hash, scope, status);
         CREATE TABLE IF NOT EXISTS memories (
             id TEXT PRIMARY KEY,
             type TEXT NOT NULL,
@@ -1101,12 +1334,34 @@ def init_db():
             content_time TEXT,
             valid_until TEXT,
             pinned INTEGER DEFAULT 0,
-            superseded_by TEXT
+            superseded_by TEXT,
+            value_score REAL, value_label TEXT, review_version TEXT, review_reason TEXT,
+            archived_at TEXT, last_reviewed_at TEXT,
+            source_layer TEXT NOT NULL DEFAULT 'registry', source_path TEXT, source_line INTEGER,
+            source_host TEXT NOT NULL DEFAULT 'gigabrain', source_kind TEXT NOT NULL DEFAULT 'registry',
+            sync_policy TEXT NOT NULL DEFAULT 'read_only'
         );
         CREATE INDEX IF NOT EXISTS idx_memories_normalized ON memories(normalized, type);
         CREATE INDEX IF NOT EXISTS idx_memories_scope_normalized ON memories(scope, normalized);
         CREATE INDEX IF NOT EXISTS idx_memories_status ON memories(status);
         CREATE INDEX IF NOT EXISTS idx_memories_scope_created ON memories(scope, created_at);
+        CREATE TABLE IF NOT EXISTS memory_console_metadata (
+            memory_id TEXT PRIMARY KEY,
+            concept TEXT, source_message_id TEXT, last_injected_at TEXT, last_confirmed_at TEXT,
+            ttl_days INTEGER CHECK (ttl_days IS NULL OR ttl_days >= 0),
+            pinned INTEGER NOT NULL DEFAULT 0 CHECK (pinned IN (0, 1)),
+            review_version TEXT, review_reason TEXT,
+            FOREIGN KEY (memory_id) REFERENCES memory_current(memory_id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_memory_console_metadata_concept_pinned
+            ON memory_console_metadata(concept, pinned, memory_id);
+        CREATE TABLE IF NOT EXISTS memory_events (
+            event_id TEXT PRIMARY KEY, timestamp TEXT NOT NULL, component TEXT NOT NULL,
+            action TEXT NOT NULL, reason_codes TEXT NOT NULL DEFAULT '[]', memory_id TEXT NOT NULL,
+            cleanup_version TEXT NOT NULL, run_id TEXT NOT NULL, review_version TEXT NOT NULL,
+            similarity REAL, matched_memory_id TEXT, agent_id TEXT, payload TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_memory_events_memory_ts ON memory_events(memory_id, timestamp);
         CREATE TABLE IF NOT EXISTS memory_relations (
             id TEXT PRIMARY KEY,
             from_memory_id TEXT NOT NULL,
@@ -1142,53 +1397,42 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_documents_path ON documents(path);
         """
     )
-    # Back-compat: add concept column/index if registry predates Phase 6.
-    try:
-        conn.execute("ALTER TABLE memories ADD COLUMN concept TEXT")
-    except Exception:
-        pass
-    try:
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_memories_scope_concept ON memories(scope, concept)")
-    except Exception:
-        pass
+    # Existing deployed registries retain the original table and values. SQLite's
+    # CREATE TABLE IF NOT EXISTS does not add later compatibility columns, so add
+    # only the missing columns before the first current->legacy projection write.
+    legacy_columns = {str(row["name"]) for row in conn.execute("PRAGMA table_info(memories)")}
+    legacy_additions = (
+        ("concept", "TEXT"),
+        ("content_time", "TEXT"),
+        ("valid_until", "TEXT"),
+        ("value_score", "REAL"),
+        ("value_label", "TEXT"),
+        ("review_version", "TEXT"),
+        ("review_reason", "TEXT"),
+        ("archived_at", "TEXT"),
+        ("last_reviewed_at", "TEXT"),
+        ("source_layer", "TEXT NOT NULL DEFAULT 'registry'"),
+        ("source_path", "TEXT"),
+        ("source_line", "INTEGER"),
+        ("source_host", "TEXT NOT NULL DEFAULT 'gigabrain'"),
+        ("source_kind", "TEXT NOT NULL DEFAULT 'registry'"),
+        ("sync_policy", "TEXT NOT NULL DEFAULT 'read_only'"),
+    )
+    for column_name, definition in legacy_additions:
+        if column_name not in legacy_columns:
+            conn.execute(f"ALTER TABLE memories ADD COLUMN {column_name} {definition}")
+            legacy_columns.add(column_name)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_memories_scope_concept ON memories(scope, concept)")
 
-    # Phase 6: temporal fields (idempotent).
-    try:
-        conn.execute("ALTER TABLE memories ADD COLUMN content_time TEXT")
-    except Exception:
-        pass
-    try:
-        conn.execute("ALTER TABLE memories ADD COLUMN valid_until TEXT")
-    except Exception:
-        pass
-
-    # Backfill valid_until from legacy ttl_days when present.
-    try:
-        rows = conn.execute(
-            "SELECT id, created_at, ttl_days FROM memories WHERE valid_until IS NULL AND ttl_days IS NOT NULL"
-        ).fetchall()
-        for r in rows or []:
-            created_at = _parse_iso(r["created_at"] or "")
-            try:
-                ttl_days = int(r["ttl_days"]) if r["ttl_days"] is not None else None
-            except Exception:
-                ttl_days = None
-            if not created_at or not ttl_days or ttl_days <= 0:
-                continue
-            until = created_at + timedelta(days=ttl_days)
-            conn.execute("UPDATE memories SET valid_until = ? WHERE id = ?", (_iso_utc(until), r["id"]))
-    except Exception:
-        pass
     conn.commit()
     conn.close()
 
 
-from contextlib import asynccontextmanager
-
 @asynccontextmanager
 async def lifespan(app):
-    ensure_storage_dirs()
-    init_db()
+    if not API_READ_ONLY:
+        ensure_storage_dirs()
+        init_db()
     yield
 
 app.router.lifespan_context = lifespan
@@ -1251,8 +1495,8 @@ def list_memories(
         order_by = "updated_at ASC"
     else:
         order_by = "updated_at DESC"
-    sql = f"SELECT * FROM memories {where} ORDER BY {order_by} LIMIT ? OFFSET ?"
-    count_sql = f"SELECT COUNT(*) as c FROM memories {where}"
+    sql = f"SELECT * FROM {MEMORY_ROWSET} {where} ORDER BY {order_by} LIMIT ? OFFSET ?"
+    count_sql = f"SELECT COUNT(*) as c FROM {MEMORY_ROWSET} {where}"
     conn = get_db()
     try:
         total = conn.execute(count_sql, params).fetchone()[0]
@@ -1291,7 +1535,7 @@ def list_concepts(
     _apply_scope_filter(clauses, params, scope, auth)
 
     where = "WHERE " + " AND ".join(clauses) if clauses else ""
-    total_sql = f"SELECT COUNT(*) as c FROM (SELECT COALESCE(concept, normalized) AS concept_key FROM memories {where} GROUP BY concept_key)"
+    total_sql = f"SELECT COUNT(*) as c FROM (SELECT COALESCE(concept, normalized) AS concept_key FROM {MEMORY_ROWSET} {where} GROUP BY concept_key)"
     status_rank = """
         CASE status
             WHEN 'active' THEN 0
@@ -1304,7 +1548,7 @@ def list_concepts(
 
     sql = f"""
         WITH filtered AS (
-            SELECT *, COALESCE(concept, normalized) AS concept_key FROM memories {where}
+            SELECT *, COALESCE(concept, normalized) AS concept_key FROM {MEMORY_ROWSET} {where}
         ),
         groups AS (
             SELECT
@@ -1375,7 +1619,7 @@ def audit_memories(
     conn = get_db()
     try:
         rows = conn.execute(
-            f"SELECT * FROM memories {where} ORDER BY updated_at DESC LIMIT ?",
+            f"SELECT * FROM {MEMORY_ROWSET} {where} ORDER BY updated_at DESC LIMIT ?",
             params + [MAX_AUDIT_SCAN_ROWS + 1],
         ).fetchall()
     finally:
@@ -1424,7 +1668,7 @@ def audit_memories(
 def get_memory(memory_id: str, auth: dict = Depends(require_token)):
     conn = get_db()
     try:
-        row = conn.execute("SELECT * FROM memories WHERE id = ?", (memory_id,)).fetchone()
+        row = conn.execute(f"SELECT * FROM {MEMORY_ROWSET} WHERE id = ?", (memory_id,)).fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Not found")
         scope = str(row["scope"] or "shared")
@@ -1447,7 +1691,7 @@ def _is_duplicate_memory_id_error(exc: sqlite3.IntegrityError) -> bool:
         getattr(sqlite3, "SQLITE_CONSTRAINT_PRIMARYKEY", 1555),
         getattr(sqlite3, "SQLITE_CONSTRAINT_UNIQUE", 2067),
     }
-    return error_code in duplicate_codes or "memories.id" in str(exc)
+    return error_code in duplicate_codes or "memory_current.memory_id" in str(exc) or "memories.id" in str(exc)
 
 
 @app.post("/memories")
@@ -1457,50 +1701,38 @@ def create_memory(payload: MemoryCreatePayload, auth: dict = Depends(require_tok
     mem_type = payload.type or "CONTEXT"
     scope_value = (payload.scope or "shared").strip() or "shared"
     _ensure_scope_allowed(scope_value, auth)
-    normalized = normalize_content(content)
     now = _iso_utc()
-    tags = json.dumps(payload.tags or [])
-
     conn = get_db()
     try:
         try:
-            conn.execute(
-                """
-                INSERT INTO memories (
-                    id, type, content, normalized, source, source_agent, source_session, source_message_id,
-                    confidence, status, scope, tags, created_at, updated_at, last_injected_at, last_confirmed_at,
-                    ttl_days, content_time, valid_until, pinned, superseded_by
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    mem_id,
-                    mem_type,
-                    content,
-                    normalized,
-                    payload.source or "user",
-                    payload.source_agent or "ui",
-                    payload.source_session or "ui",
-                    payload.source_message_id,
-                    payload.confidence,
-                    payload.status or "active",
-                    scope_value,
-                    tags,
-                    now,
-                    now,
-                    None,
-                    payload.last_confirmed_at,
-                    payload.ttl_days,
-                    payload.content_time,
-                    payload.valid_until,
-                    1 if payload.pinned else 0,
-                    payload.superseded_by,
-                ),
-            )
+            with projection_batch(conn, f"api-create-{mem_id}") as batch:
+                if conn.execute("SELECT 1 FROM memory_current WHERE memory_id=?", (mem_id,)).fetchone():
+                    raise HTTPException(status_code=409, detail="Memory id already exists")
+                _projection_upsert(conn, {
+                    "memory_id": mem_id, "type": mem_type, "content": content,
+                    "normalized": normalize_content(content), "normalized_hash": normalized_hash(content),
+                    "source": payload.source or "user", "source_agent": payload.source_agent or "ui",
+                    "source_session": payload.source_session or "ui", "source_layer": "registry",
+                    "source_path": None, "source_line": None, "source_host": "gigabrain",
+                    "source_kind": "api", "sync_policy": "read_only", "confidence": payload.confidence,
+                    "scope": scope_value, "status": payload.status or "active", "value_score": None,
+                    "value_label": None, "created_at": now, "updated_at": now, "archived_at": None,
+                    "last_reviewed_at": None, "tags": json.dumps(payload.tags or []),
+                    "superseded_by": payload.superseded_by,
+                    "content_time": _canonical_iso_text(payload.content_time),
+                    "valid_until": _canonical_iso_text(payload.valid_until),
+                    "valid_from": _canonical_iso_text(payload.content_time) or now,
+                }, {
+                    "concept": payload.concept, "source_message_id": payload.source_message_id,
+                    "last_confirmed_at": _canonical_iso_text(payload.last_confirmed_at),
+                    "ttl_days": payload.ttl_days,
+                    "pinned": payload.pinned, "review_version": payload.review_version,
+                    "review_reason": payload.review_reason,
+                }, batch["operation_id"])
         except sqlite3.IntegrityError as exc:
             if _is_duplicate_memory_id_error(exc):
                 raise HTTPException(status_code=409, detail="Memory id already exists") from exc
             raise
-        conn.commit()
     finally:
         conn.close()
     return {"id": mem_id}
@@ -1508,34 +1740,35 @@ def create_memory(payload: MemoryCreatePayload, auth: dict = Depends(require_tok
 
 @app.patch("/memories/{memory_id}")
 def update_memory(memory_id: str, payload: MemoryUpdatePayload, auth: dict = Depends(require_token)):
-    fields = []
-    params = []
     payload_data = payload.model_dump(exclude_unset=True)
-    for key in ["content", "type", "status", "ttl_days", "content_time", "valid_until", "pinned", "superseded_by", "confidence", "tags"]:
-        if key in payload_data:
-            fields.append(f"{key} = ?")
-            if key == "tags":
-                params.append(json.dumps(payload_data.get("tags") or []))
-            elif key == "pinned":
-                params.append(1 if payload_data.get("pinned") else 0)
-            else:
-                params.append(payload_data.get(key))
-    if "content" in payload_data:
-        fields.append("normalized = ?")
-        params.append(normalize_content(payload_data.get("content")))
-
     conn = get_db()
     try:
         _memory_scope_or_404(conn, memory_id, auth)
-        if not fields:
+        if not payload_data:
             return {"ok": True}
-
-        fields.append("updated_at = ?")
-        params.append(_iso_utc())
-        params.append(memory_id)
-
-        conn.execute(f"UPDATE memories SET {', '.join(fields)} WHERE id = ?", params)
-        conn.commit()
+        with projection_batch(conn, f"api-update-{memory_id}") as batch:
+            core = dict(conn.execute("SELECT * FROM memory_current WHERE memory_id=?", (memory_id,)).fetchone())
+            content_value = payload_data.get("content", core["content"])
+            for key in ("type", "status", "superseded_by", "confidence"):
+                if key in payload_data:
+                    core[key] = payload_data[key]
+            for key in ("content_time", "valid_until"):
+                if key in payload_data:
+                    core[key] = _canonical_iso_text(payload_data[key])
+            if "tags" in payload_data:
+                core["tags"] = json.dumps(payload_data.get("tags") or [])
+            core["content"] = content_value
+            core["normalized"] = normalize_content(content_value)
+            core["normalized_hash"] = normalized_hash(content_value)
+            core["updated_at"] = _iso_utc()
+            metadata = {key: payload_data[key] for key in (
+                "concept", "source_message_id", "last_injected_at", "last_confirmed_at",
+                "ttl_days", "pinned", "review_version", "review_reason",
+            ) if key in payload_data}
+            for key in ("last_injected_at", "last_confirmed_at"):
+                if key in metadata:
+                    metadata[key] = _canonical_iso_text(metadata[key])
+            _projection_upsert(conn, core, metadata, batch["operation_id"])
     finally:
         conn.close()
     return {"ok": True}
@@ -1863,8 +2096,8 @@ def profile(
 
     if mode_norm in ("profile", "full"):
         static_rows = conn.execute(
-            """
-            SELECT * FROM memories
+            f"""
+            SELECT * FROM {MEMORY_ROWSET}
             WHERE scope = ? AND status = 'active'
               AND (pinned = 1 OR confidence >= ?)
               AND type IN ('USER_FACT','PREFERENCE','ENTITY','DECISION')
@@ -1880,8 +2113,8 @@ def profile(
             profile_static.append(row)
 
         dynamic_rows = conn.execute(
-            """
-            SELECT * FROM memories
+            f"""
+            SELECT * FROM {MEMORY_ROWSET}
             WHERE scope = ? AND status = 'active'
               AND type IN ('CONTEXT','EPISODE')
               AND updated_at >= ?
@@ -1899,8 +2132,8 @@ def profile(
         # Recent updates (updates-only relations) are useful "dynamic" context.
         try:
             update_rows = conn.execute(
-                """
-                SELECT m.* FROM memories m
+                f"""
+                SELECT m.* FROM {MEMORY_ROWSET} m
                 JOIN memory_relations r ON r.to_memory_id = m.id
                 WHERE m.scope = ? AND m.status = 'active'
                   AND r.relation_type = 'updates'
@@ -1931,8 +2164,8 @@ def profile(
         if tokens:
             like = _contains_like(" ".join(tokens[:4]))
             rows = conn.execute(
-                """
-                SELECT * FROM memories
+                f"""
+                SELECT * FROM {MEMORY_ROWSET}
                 WHERE scope = ? AND status = 'active'
                   AND (content LIKE ? ESCAPE '\\' OR normalized LIKE ? ESCAPE '\\' OR concept LIKE ? ESCAPE '\\')
                 ORDER BY confidence DESC, updated_at DESC
@@ -2025,24 +2258,21 @@ def list_relations(
 def confirm_memory(memory_id: str, auth: dict = Depends(require_token)):
     conn = get_db()
     try:
-        _memory_scope_or_404(conn, memory_id, auth)
-        row = conn.execute(
-            "SELECT concept, normalized, scope FROM memories WHERE id = ?",
-            (memory_id,),
-        ).fetchone()
-        concept = row["concept"] or row["normalized"]
-        scope = row["scope"]
-        now = _iso_utc()
-        # Confirming a memory should make the concept canonical and supersede duplicates.
-        conn.execute(
-            "UPDATE memories SET status = 'active', last_confirmed_at = ?, updated_at = ? WHERE id = ?",
-            (now, now, memory_id),
-        )
-        conn.execute(
-            "UPDATE memories SET status = 'superseded', superseded_by = ?, updated_at = ? WHERE id != ? AND scope = ? AND (concept = ? OR (concept IS NULL AND normalized = ?))",
-            (memory_id, now, memory_id, scope, concept, row["normalized"]),
-        )
-        conn.commit()
+        with projection_batch(conn, f"api-confirm-{memory_id}") as batch:
+            _memory_scope_or_404(conn, memory_id, auth)
+            row = _memory_api_row(conn, memory_id)
+            concept = row["concept"] or row["normalized"]
+            cohort = conn.execute(f"""SELECT id FROM {MEMORY_ROWSET}
+              WHERE scope=? AND (concept=? OR (concept IS NULL AND normalized=?))""",
+              (row["scope"], concept, row["normalized"])).fetchall()
+            now = batch["now"]
+            for item in cohort:
+                target = item["id"]
+                _projection_status(conn, target, "active" if target == memory_id else "superseded",
+                    batch["operation_id"], superseded_by=None if target == memory_id else memory_id,
+                    clear_superseded=target == memory_id,
+                    metadata={"last_confirmed_at": now} if target == memory_id else None,
+                    timestamp=now)
     finally:
         conn.close()
     return {"ok": True}
@@ -2052,20 +2282,16 @@ def confirm_memory(memory_id: str, auth: dict = Depends(require_token)):
 def reject_memory(memory_id: str, auth: dict = Depends(require_token)):
     conn = get_db()
     try:
-        _memory_scope_or_404(conn, memory_id, auth)
-        row = conn.execute(
-            "SELECT concept, normalized, scope FROM memories WHERE id = ?",
-            (memory_id,),
-        ).fetchone()
-        concept = row["concept"] or row["normalized"]
-        scope = row["scope"]
-        now = _iso_utc()
-        # Rejecting should stick concept-wide so it doesn't return with another type.
-        conn.execute(
-            "UPDATE memories SET status = 'rejected', superseded_by = NULL, updated_at = ? WHERE scope = ? AND (concept = ? OR (concept IS NULL AND normalized = ?))",
-            (now, scope, concept, row["normalized"]),
-        )
-        conn.commit()
+        with projection_batch(conn, f"api-reject-{memory_id}") as batch:
+            _memory_scope_or_404(conn, memory_id, auth)
+            row = _memory_api_row(conn, memory_id)
+            concept = row["concept"] or row["normalized"]
+            cohort = conn.execute(f"""SELECT id FROM {MEMORY_ROWSET}
+              WHERE scope=? AND (concept=? OR (concept IS NULL AND normalized=?))""",
+              (row["scope"], concept, row["normalized"])).fetchall()
+            for item in cohort:
+                _projection_status(conn, item["id"], "rejected", batch["operation_id"],
+                    clear_superseded=True, timestamp=batch["now"])
     finally:
         conn.close()
     return {"ok": True}
@@ -2079,29 +2305,23 @@ def merge_memories(payload: MergeMemoriesPayload, auth: dict = Depends(require_t
     primary = ids[0]
     conn = get_db()
     try:
-        primary_scope = _memory_scope_or_404(conn, primary, auth)
-        for mid in ids[1:]:
-            scope = _memory_scope_or_404(conn, mid, auth)
-            if scope != primary_scope:
-                raise HTTPException(status_code=400, detail="all memories must share scope")
-        now = _iso_utc()
-        for mid in ids[1:]:
-            conn.execute(
-                "UPDATE memories SET status = 'superseded', superseded_by = ?, updated_at = ? WHERE id = ?",
-                (primary, now, mid),
-            )
-            try:
+        with projection_batch(conn, f"api-merge-{primary}") as batch:
+            primary_scope = _memory_scope_or_404(conn, primary, auth)
+            for mid in ids[1:]:
+                scope = _memory_scope_or_404(conn, mid, auth)
+                if scope != primary_scope:
+                    raise HTTPException(status_code=400, detail="all memories must share scope")
+            _projection_status(conn, primary, "active", batch["operation_id"], clear_superseded=True, timestamp=batch["now"])
+            for mid in ids[1:]:
+                _projection_status(conn, mid, "superseded", batch["operation_id"], superseded_by=primary, timestamp=batch["now"])
                 conn.execute(
                     """
                     INSERT INTO memory_relations (
                         id, from_memory_id, to_memory_id, relation_type, created_at, source, confidence
                     ) VALUES (?, ?, ?, 'updates', ?, 'ui', 0.9)
                     """,
-                    (str(uuid.uuid4()), mid, primary, now),
+                    (str(uuid.uuid4()), mid, primary, batch["now"]),
                 )
-            except Exception:
-                pass
-        conn.commit()
     finally:
         conn.close()
     return {"ok": True, "primary": primary}
@@ -2140,7 +2360,7 @@ def recall_explain(payload: RecallExplainPayload, auth: dict = Depends(require_t
         _apply_scope_filter(clauses, params, payload.scope, auth)
         where = " WHERE " + " AND ".join(clauses)
         rows = conn.execute(
-            f"SELECT * FROM memories {where} ORDER BY confidence DESC LIMIT 10",
+            f"SELECT * FROM {MEMORY_ROWSET} {where} ORDER BY confidence DESC LIMIT 10",
             params,
         ).fetchall()
     finally:
@@ -2510,23 +2730,23 @@ def metrics(
 ):
     allowed = sorted(_allowed_scopes(auth))
     if _is_admin(auth):
-        total = conn.execute("SELECT COUNT(*) as c FROM memories").fetchone()[0]
-        active = conn.execute("SELECT COUNT(*) as c FROM memories WHERE status = 'active'").fetchone()[0]
-        pending = conn.execute("SELECT COUNT(*) as c FROM memories WHERE status = 'pending'").fetchone()[0]
-        rejected = conn.execute("SELECT COUNT(*) as c FROM memories WHERE status = 'rejected'").fetchone()[0]
+        total = conn.execute("SELECT COUNT(*) as c FROM memory_current").fetchone()[0]
+        active = conn.execute("SELECT COUNT(*) as c FROM memory_current WHERE status = 'active'").fetchone()[0]
+        pending = conn.execute("SELECT COUNT(*) as c FROM memory_current WHERE status = 'pending'").fetchone()[0]
+        rejected = conn.execute("SELECT COUNT(*) as c FROM memory_current WHERE status = 'rejected'").fetchone()[0]
     elif allowed:
         placeholders = ",".join("?" for _ in allowed)
-        total = conn.execute(f"SELECT COUNT(*) as c FROM memories WHERE scope IN ({placeholders})", allowed).fetchone()[0]
+        total = conn.execute(f"SELECT COUNT(*) as c FROM memory_current WHERE scope IN ({placeholders})", allowed).fetchone()[0]
         active = conn.execute(
-            f"SELECT COUNT(*) as c FROM memories WHERE status = 'active' AND scope IN ({placeholders})",
+            f"SELECT COUNT(*) as c FROM memory_current WHERE status = 'active' AND scope IN ({placeholders})",
             allowed,
         ).fetchone()[0]
         pending = conn.execute(
-            f"SELECT COUNT(*) as c FROM memories WHERE status = 'pending' AND scope IN ({placeholders})",
+            f"SELECT COUNT(*) as c FROM memory_current WHERE status = 'pending' AND scope IN ({placeholders})",
             allowed,
         ).fetchone()[0]
         rejected = conn.execute(
-            f"SELECT COUNT(*) as c FROM memories WHERE status = 'rejected' AND scope IN ({placeholders})",
+            f"SELECT COUNT(*) as c FROM memory_current WHERE status = 'rejected' AND scope IN ({placeholders})",
             allowed,
         ).fetchone()[0]
     else:
