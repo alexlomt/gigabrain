@@ -1,4 +1,9 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 
 import { openDatabase } from "../../lib/core/sqlite.js";
 import { importContractModule, requireCallable, runBehaviorContract, runDirect } from "./contract-test-helpers.js";
@@ -31,6 +36,179 @@ const projectionCounts = (db) => ({
   legacy: count(db, "memories"),
   metadata: count(db, "memory_console_metadata"),
 });
+
+const repoRoot = path.resolve(import.meta.dirname, "..", "..");
+const cliPath = path.join(repoRoot, "scripts", "gigabrainctl.js");
+const hashBytes = (value) => createHash("sha256").update(value).digest("hex");
+const snapshotTree = (root) => {
+  if (!existsSync(root)) return [];
+  const rows = [];
+  const walk = (directory, prefix = "") => {
+    for (const name of readdirSync(directory).sort()) {
+      const absolute = path.join(directory, name);
+      const relative = prefix ? `${prefix}/${name}` : name;
+      const stat = lstatSync(absolute);
+      if (stat.isDirectory()) {
+        rows.push({ mode: stat.mode & 0o777, path: `${relative}/`, type: "directory" });
+        walk(absolute, relative);
+      } else if (stat.isSymbolicLink()) {
+        rows.push({ path: relative, target: readlinkSync(absolute), type: "symlink" });
+      } else {
+        rows.push({ mode: stat.mode & 0o777, path: relative, sha256: hashBytes(readFileSync(absolute)), type: "file" });
+      }
+    }
+  };
+  walk(root);
+  return rows;
+};
+
+const runCli = (args) => spawnSync(process.execPath, [cliPath, ...args], {
+  cwd: repoRoot,
+  encoding: "utf8",
+  env: { ...process.env, LC_ALL: "C" },
+  timeout: 30_000,
+});
+
+const writeOpenClawConfig = (configPath, workspaceRoot, registryPath) => {
+  writeFileSync(configPath, `${JSON.stringify({
+    plugins: { entries: { gigabrain: { enabled: true, config: {
+      enabled: true,
+      compat: { writeMode: "read_only" },
+      runtime: { paths: {
+        workspaceRoot,
+        memoryRoot: path.dirname(registryPath),
+        registryPath,
+        outputDir: path.join(workspaceRoot, "output"),
+        reviewQueuePath: path.join(workspaceRoot, "output", "queue.jsonl"),
+      } },
+      native: { cloudInbox: { enabled: false }, memoryMdPath: path.join(workspaceRoot, "MEMORY.md") },
+      codex: { enabled: false, projectRoot: workspaceRoot },
+      recall: { semanticRerankEnabled: false },
+    } } } },
+  }, null, 2)}\n`, { mode: 0o600 });
+};
+
+const assertLegacyDropCliBlocked = ({ ensureProjectionStore, upsertCurrentMemory }) => {
+  const root = mkdtempSync(path.join(tmpdir(), "gigabrain-task11-legacy-drop-"));
+  const workspace = path.join(root, "workspace");
+  const memoryRoot = path.join(workspace, "memory");
+  const dbPath = path.join(memoryRoot, "registry.sqlite");
+  const snapshotPath = path.join(root, "must-not-exist.sqlite");
+  mkdirSync(memoryRoot, { recursive: true, mode: 0o700 });
+  const db = openDatabase(dbPath);
+  try {
+    ensureProjectionStore(db);
+    upsertCurrentMemory(db, memory("legacy-drop-fixture"), { operationId: "legacy-drop-fixture" });
+    try { db.exec("PRAGMA wal_checkpoint(TRUNCATE)"); } catch { /* non-WAL fixture */ }
+  } finally {
+    db.close();
+  }
+  try {
+    const before = snapshotTree(root);
+    for (const args of [
+      ["migrate", "legacy-drop", "--db", dbPath],
+      ["migrate", "legacy-drop", "--dry-run", "--db", dbPath],
+      ["migrate", "legacy-drop", "--snapshot", snapshotPath, "--db", dbPath],
+      ["migrate", "legacy-drop", "--dry-run", "--snapshot", snapshotPath, "--db", dbPath],
+    ]) {
+      const result = runCli(args);
+      assert.notEqual(result.status, 0, args.join(" "));
+      assert.match(`${result.stdout}\n${result.stderr}`, /LEGACY_DROP_BLOCKED_COMPAT/);
+      assert.deepEqual(snapshotTree(root), before, `${args.join(" ")} must touch no path or DB byte`);
+      assert.equal(existsSync(snapshotPath), false);
+    }
+
+    const missingRoot = path.join(root, "missing");
+    const missingDb = path.join(missingRoot, "registry.sqlite");
+    const missingConfig = path.join(missingRoot, "missing.json");
+    const missing = runCli([
+      "migrate", "legacy-drop", "--dry-run", "--config", missingConfig, "--db", missingDb,
+    ]);
+    assert.notEqual(missing.status, 0);
+    assert.match(`${missing.stdout}\n${missing.stderr}`, /LEGACY_DROP_BLOCKED_COMPAT/);
+    assert.equal(existsSync(missingRoot), false, "blocked command must fail before config/parent creation");
+
+    const help = runCli(["--help"]);
+    assert.equal(help.status, 0);
+    assert.match(help.stdout, /legacy-drop[^\n]*BLOCKED/i);
+    assert.doesNotMatch(help.stdout, /migrate legacy-drop --(?:dry-run|snapshot)/);
+    const migrateHelp = runCli(["migrate"]);
+    assert.equal(migrateHelp.status, 0);
+    assert.match(migrateHelp.stdout, /legacy-drop[^\n]*BLOCKED/i);
+    assert.doesNotMatch(migrateHelp.stdout, /migrate legacy-drop \[--dry-run\]/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+};
+
+const assertDoctorCompatibilityDiagnostics = ({ ensureProjectionStore, upsertCurrentMemory }) => {
+  const root = mkdtempSync(path.join(tmpdir(), "gigabrain-task11-doctor-compat-"));
+  const workspace = path.join(root, "workspace");
+  const memoryRoot = path.join(workspace, "memory");
+  const dbPath = path.join(memoryRoot, "registry.sqlite");
+  const configPath = path.join(root, "openclaw.json");
+  mkdirSync(memoryRoot, { recursive: true, mode: 0o700 });
+  const db = openDatabase(dbPath);
+  ensureProjectionStore(db);
+  upsertCurrentMemory(db, memory("doctor-compat"), {
+    metadata: { concept: "synthetic-doctor", pinned: true },
+    operationId: "doctor-compat",
+  });
+  writeOpenClawConfig(configPath, workspace, dbPath);
+  try {
+    const doctorTree = () => snapshotTree(root).map((row) => (
+      row.path.endsWith("registry.sqlite-shm")
+        ? { mode: row.mode, path: row.path, type: row.type }
+        : row
+    ));
+    const before = doctorTree();
+    const dbHashBefore = hashBytes(readFileSync(dbPath));
+    const doctor = runCli(["doctor", "--config", configPath, "--target", "project"]);
+    assert.equal(doctor.status, 0, doctor.stderr || doctor.stdout);
+    const payload = JSON.parse(doctor.stdout);
+    assert.equal(payload.ok, true, "preserved legacy projection is required, not corruption");
+    assert.equal(payload.observational, true);
+    assert.deepEqual(payload.compatibility, {
+      legacyRequired: true,
+      legacyDropBlocked: true,
+      reason: "v0.11 rollback window requires the legacy memories projection",
+      memoryApiAuthority: {
+        status: "ready",
+        currentTable: "memory_current",
+        currentAuthoritative: true,
+        metadataSidecar: "memory_console_metadata",
+        sidecarRole: "legacy-only metadata",
+        legacyProjection: "memories",
+        legacyProjectionStatus: "preserved-required",
+      },
+      task14SidecarMigration: {
+        status: "ready",
+        schemaPresent: true,
+        receiptRequired: true,
+      },
+    });
+    assert.deepEqual(doctorTree(), before, "doctor compatibility diagnostics must preserve the file tree");
+    assert.equal(hashBytes(readFileSync(dbPath)), dbHashBefore, "doctor must not change a DB byte");
+
+    const missingWorkspace = path.join(root, "missing-workspace");
+    const missingDb = path.join(missingWorkspace, "memory", "registry.sqlite");
+    const missingConfig = path.join(root, "missing-openclaw.json");
+    writeOpenClawConfig(missingConfig, missingWorkspace, missingDb);
+    const missingBefore = snapshotTree(root);
+    const missingDoctor = runCli(["doctor", "--config", missingConfig, "--target", "project"]);
+    assert.equal(missingDoctor.status, 0, missingDoctor.stderr || missingDoctor.stdout);
+    const missingPayload = JSON.parse(missingDoctor.stdout);
+    assert.equal(missingPayload.compatibility.legacyRequired, true);
+    assert.equal(missingPayload.compatibility.legacyDropBlocked, true);
+    assert.equal(missingPayload.compatibility.memoryApiAuthority.status, "pending");
+    assert.equal(missingPayload.compatibility.task14SidecarMigration.status, "pending");
+    assert.equal(existsSync(missingWorkspace), false);
+    assert.deepEqual(snapshotTree(root), missingBefore, "missing-DB doctor must create nothing");
+  } finally {
+    db.close();
+    rmSync(root, { recursive: true, force: true });
+  }
+};
 
 const assertLegacyAdditiveColumns = (ensureProjectionStore) => {
   const db = openDatabase(":memory:");
@@ -87,6 +265,8 @@ export async function run() {
     const upsertCurrentMemory = requireCallable(projection, "upsertCurrentMemory");
     const withBatch = requireCallable(projection, "withProjectionMutationBatch");
     assertLegacyAdditiveColumns(ensureProjectionStore);
+    assertLegacyDropCliBlocked({ ensureProjectionStore, upsertCurrentMemory });
+    assertDoctorCompatibilityDiagnostics({ ensureProjectionStore, upsertCurrentMemory });
     const db = openDatabase(":memory:");
     try {
       ensureProjectionStore(db);

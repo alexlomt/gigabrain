@@ -11,7 +11,7 @@ import { loadResolvedConfig } from '../lib/core/config.js';
 import { runMaintenance } from '../lib/core/maintenance-service.js';
 import { runAudit, runAuditRestore, runAuditReport, watchRun, bumpLocalCounters, exportLocalCounters, purgeNoopReviews } from '../lib/core/audit-service.js';
 import { applyQueueRetention, listQueueEntries } from '../lib/core/review-queue.js';
-import { checkLegacyContainment, dropLegacyMemoriesTable, ensureProjectionStore, listAdjudications, listBeliefsAsOf, materializeProjectionFromMemories } from '../lib/core/projection-store.js';
+import { dropLegacyMemoriesTable, ensureProjectionStore, listAdjudications, listBeliefsAsOf, materializeProjectionFromMemories } from '../lib/core/projection-store.js';
 import { cloudInboxStaleness, exportMemoryBrief, getSyncStatus, listMemorySources, resolveHostRoots, syncHostMemories } from '../lib/core/host-memory-sync.js';
 import { importOpenClawRegistry } from '../lib/core/openclaw-import.js';
 import { ensureVaultStore, syncVaultMemory } from '../lib/core/vault-sync.js';
@@ -69,7 +69,7 @@ Commands:
   briefing     Print the latest generated briefing artifacts
   review       Inspect contradictions, open loops, adjudications, the review queue, beliefs as of a timestamp, or adaptive host trust (trust)
   surface      Build or inspect the private generated operator surface (build|status|doctor)
-  migrate      Run a migration (legacy-checkpoints: typed immutable backfill; legacy-drop: deprecated table removal)
+  migrate      Run a migration (legacy-checkpoints/classify-native-origins; legacy-drop: BLOCKED in this release)
   vault        Sync or report on READ-ONLY Obsidian vault reference corpora (sync|status; never becomes a belief)
   wiki         Git-versioned LLM-wiki projection of the ledger (project|reconcile|status; human edits round-trip + win arbitration)
   sync-hosts   Sync local host memories into the cross-agent memory bus
@@ -89,8 +89,6 @@ Examples:
   node scripts/gigabrainctl.js watch --config ~/.gigabrain/config.json
   node scripts/gigabrainctl.js watch --install-hook
   node scripts/gigabrainctl.js review queue --status pending --reason-code capture_contradiction_durable_tie
-  node scripts/gigabrainctl.js migrate legacy-drop --dry-run --db ~/.openclaw/gigabrain/memory/registry.sqlite
-  node scripts/gigabrainctl.js migrate legacy-drop --snapshot ./memories-pre-drop.sqlite --db ~/.openclaw/gigabrain/memory/registry.sqlite
   node scripts/gigabrainctl.js migrate legacy-checkpoints --dry-run --config ~/.gigabrain/config.json
   node scripts/gigabrainctl.js migrate legacy-checkpoints --config ~/.gigabrain/config.json
   node scripts/gigabrainctl.js vault status --config ~/.gigabrain/config.json
@@ -139,6 +137,68 @@ const wantsHelp = flags.includes('--help') || flags.includes('-h');
 const hasTableReadOnly = (db, tableName) => Boolean(db.prepare(`
   SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1
 `).get(String(tableName || '')));
+
+const LEGACY_COMPATIBILITY_REASON = 'v0.11 rollback window requires the legacy memories projection';
+const hasWalCoordinationSidecars = (dbPath) => Boolean(
+  dbPath
+  && fs.existsSync(`${dbPath}-wal`)
+  && fs.existsSync(`${dbPath}-shm`),
+);
+
+const inspectLegacyCompatibility = (dbPath, { db: suppliedDb = null, allowOpen = false } = {}) => {
+  let currentPresent = false;
+  let legacyPresent = false;
+  let sidecarPresent = false;
+  let sidecarIndexPresent = false;
+  let db = suppliedDb;
+  let ownsDb = false;
+  if (db || (allowOpen && dbPath && fs.existsSync(dbPath) && hasWalCoordinationSidecars(dbPath))) {
+    try {
+      if (!db) {
+        db = openDatabase(dbPath, { readOnly: true, observational: true });
+        ownsDb = true;
+      }
+      try { db.exec('PRAGMA query_only = ON'); } catch { /* connection-local hardening */ }
+      currentPresent = hasTableReadOnly(db, 'memory_current');
+      legacyPresent = hasTableReadOnly(db, 'memories');
+      sidecarPresent = hasTableReadOnly(db, 'memory_console_metadata');
+      sidecarIndexPresent = Boolean(db.prepare(`
+        SELECT 1 FROM sqlite_master
+        WHERE type='index' AND name='idx_memory_console_metadata_concept_pinned'
+        LIMIT 1
+      `).get());
+    } catch {
+      currentPresent = false;
+      legacyPresent = false;
+      sidecarPresent = false;
+      sidecarIndexPresent = false;
+    } finally {
+      if (ownsDb) {
+        try { db?.close?.(); } catch { /* observational close */ }
+      }
+    }
+  }
+  const ready = currentPresent && legacyPresent && sidecarPresent && sidecarIndexPresent;
+  return {
+    legacyRequired: true,
+    legacyDropBlocked: true,
+    reason: LEGACY_COMPATIBILITY_REASON,
+    memoryApiAuthority: {
+      status: currentPresent && sidecarPresent ? 'ready' : 'pending',
+      currentTable: 'memory_current',
+      currentAuthoritative: true,
+      metadataSidecar: 'memory_console_metadata',
+      sidecarRole: 'legacy-only metadata',
+      legacyProjection: 'memories',
+      legacyProjectionStatus: legacyPresent ? 'preserved-required' : 'missing-required',
+    },
+    task14SidecarMigration: {
+      status: ready ? 'ready' : 'pending',
+      schemaPresent: ready,
+      receiptRequired: true,
+    },
+  };
+};
 
 const duplicateGroups = (db) => {
   if (!hasTableReadOnly(db, 'memory_current')) return 0;
@@ -900,13 +960,18 @@ const renderMemoryActionTag = ({
 
 const commandMigrate = async () => {
   const subcommand = String(flags[0] || '').trim().toLowerCase();
+  if (subcommand === 'legacy-drop') {
+    // The retained low-level compatibility guard throws unconditionally before
+    // config resolution, database access, or snapshot path materialization.
+    dropLegacyMemoriesTable();
+  }
   if (!subcommand || subcommand === '--help' || subcommand === '-h') {
     console.log(JSON.stringify({
       ok: true,
       usage: [
         'node scripts/gigabrainctl.js migrate legacy-checkpoints [--dry-run] [--memory-root <path>] [--scope <scope>] [--include-today] [--db <path>] [--config <path>]',
-        'node scripts/gigabrainctl.js migrate legacy-drop [--dry-run] [--snapshot <path>] [--db <path>] [--config <path>]',
         'node scripts/gigabrainctl.js migrate classify-native-origins [--dry-run] [--db <path>] [--config <path>]',
+        'legacy-drop: BLOCKED (LEGACY_DROP_BLOCKED_COMPAT; legacy projection is required through this release)',
       ],
     }, null, 2));
     return;
@@ -916,8 +981,6 @@ const commandMigrate = async () => {
   }
   const migrateFlags = flags.slice(1);
   const dryRun = readBool('--dry-run', false, migrateFlags);
-  const snapshot = String(readFlag('--snapshot', '', migrateFlags)).trim();
-  const snapshotPath = snapshot ? path.resolve(snapshot) : null;
 
   const { config, dbPath } = loadConfigAndDbPath();
   const db = openDatabase(dbPath);
@@ -950,33 +1013,9 @@ const commandMigrate = async () => {
       }, null, 2));
       return;
     }
-    // Dry-run: containment report only — never drops, never snapshots.
-    if (dryRun) {
-      const containment = checkLegacyContainment(db);
-      console.log(JSON.stringify({
-        ok: true,
-        command: 'migrate',
-        subcommand: 'legacy-drop',
-        dryRun: true,
-        dropped: false,
-        containment,
-      }, null, 2));
-      return;
-    }
-    // Real run: containment-gated drop. dropLegacyMemoriesTable throws if any
-    // orphan legacy rows exist (drop refused).
-    const result = dropLegacyMemoriesTable(db, { snapshot: snapshotPath });
-    console.log(JSON.stringify({
-      ok: true,
-      command: 'migrate',
-      subcommand: 'legacy-drop',
-      dryRun: false,
-      dropped: result.dropped,
-      reason: result.reason,
-      snapshotPath: result.snapshotPath,
-      containment: result.containment,
-      event: result.event ? { event_id: result.event.event_id, action: result.event.action } : null,
-    }, null, 2));
+    // No accepted migration may reach residual behavior. Keep that residual
+    // fail-closed as a second compatibility boundary; the helper cannot drop.
+    dropLegacyMemoriesTable();
   } finally {
     db.close();
   }
@@ -1541,7 +1580,9 @@ const commandInventory = async () => {
 
 const commandDoctor = async () => {
   const { configPath, source, config, dbPath } = loadConfigAndDbPath();
+  let compatibility = inspectLegacyCompatibility(dbPath);
   if (source === 'standalone' && config?.codex?.enabled !== false) {
+    compatibility = inspectLegacyCompatibility(dbPath, { allowOpen: true });
     const { runDoctor } = await import('../lib/core/codex-service.js');
     const result = await runDoctor({
       configPath,
@@ -1549,7 +1590,7 @@ const commandDoctor = async () => {
       workspaceRoot: readFlag('--workspace', ''),
       mode: readFlag('--mode', source),
     });
-    console.log(JSON.stringify(result, null, 2));
+    console.log(JSON.stringify({ ...result, observational: true, compatibility }, null, 2));
     return;
   }
   const checks = [];
@@ -1569,12 +1610,33 @@ const commandDoctor = async () => {
       checks,
       metrics,
       cloud_inbox: cloudInboxNudges,
+      compatibility,
+    }, null, 2));
+    return;
+  }
+  if (!hasWalCoordinationSidecars(dbPath)) {
+    checks.push({
+      name: 'projection_ready',
+      ok: false,
+      diagnostic: 'WAL coordination sidecars are unavailable; observational doctor did not open the registry',
+    });
+    console.log(JSON.stringify({
+      ok: false,
+      observational: true,
+      configKind: source,
+      configPath,
+      dbPath,
+      checks,
+      metrics,
+      cloud_inbox: cloudInboxNudges,
+      compatibility,
     }, null, 2));
     return;
   }
   const db = openDatabase(dbPath, { readOnly: true, observational: true });
   try {
     try { db.exec('PRAGMA query_only = ON'); } catch { /* connection-local hardening */ }
+    compatibility = inspectLegacyCompatibility(dbPath, { db });
     if (!hasTableReadOnly(db, 'memory_current')) {
       checks.push({ name: 'projection_ready', ok: false, diagnostic: 'memory_current schema is unavailable' });
     } else {
@@ -1610,6 +1672,7 @@ const commandDoctor = async () => {
     checks,
     metrics,
     cloud_inbox: cloudInboxNudges,
+    compatibility,
   }, null, 2));
 };
 
