@@ -1026,14 +1026,14 @@
       "ownerSourceFirstTaskId": "12",
       "relevanceEvidence": [
         {
-          "binding": "runSetup",
+          "binding": "plannedDefault",
           "mode": "spawn",
           "targetPath": "scripts/setup-first-run.js"
         }
       ],
       "runner": "node",
       "testPath": "tests/compat/setup-dry-run-test.js",
-      "testSha256": "8b0ac26ea49285b57cfe9f18785477168e0fb3bcda54f86c4dc6ee9f61ef7a64"
+      "testSha256": "6a0827669d496e685557e69aa06d9508afdc949e9ef7ee73d98e16a80dd900ed"
     },
     {
       "coveredPaths": [
@@ -2278,6 +2278,6 @@
     }
   ],
   "entryCount": 101,
-  "manifestSha256": "e9903eb488a031185b55d7105b08b6d29438e3d96b1373a8830b66a452261ba4",
+  "manifestSha256": "bea3b3e552d955d2f11a3fc0d90c81debe1abb9ea69e2737ae2ce6d87891b6ee",
   "schemaVersion": 1
 }

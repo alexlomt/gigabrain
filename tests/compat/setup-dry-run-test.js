@@ -88,7 +88,20 @@ export async function run() {
       ];
       const before = snapshotTree(root);
 
-      const plannedDefault = parseOutput(runSetup(common, home));
+      const plannedDefault = parseOutput(spawnSync(process.execPath, [
+        path.resolve(repoRoot, "scripts/setup-first-run.js"),
+        ...common,
+      ], {
+        cwd: repoRoot,
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          HOME: home,
+          OPENCLAW_CONFIG: "",
+          OPENCLAW_WORKSPACE_ROOT: "",
+        },
+        timeout: 30_000,
+      }));
       assert.deepEqual(snapshotTree(root), before, "setup without --apply must be observational");
       assert.equal(plannedDefault.ok, true);
       assert.equal(plannedDefault.applied, false);
