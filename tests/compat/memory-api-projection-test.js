@@ -913,7 +913,33 @@ const assertLegacyAdditiveColumns = (ensureProjectionStore) => {
   }
 };
 
+const assertTask11PythonBridge = () => {
+  const appPath = path.join(repoRoot, "memory_api", "app.py");
+  const memoryApiAppSource = readFileSync("memory_api/app.py", "utf8");
+  assert.equal(existsSync(appPath), true);
+  assert.match(memoryApiAppSource, /memory_current/);
+  const candidates = [
+    process.env.GIGABRAIN_TASK11_PYTHON,
+    path.join(repoRoot, "memory_api", ".venv-v0.11-prod", "bin", "python"),
+    "python3.10",
+  ].filter(Boolean);
+  const python = candidates.find((candidate) => spawnSync(candidate, ["--version"], {
+    cwd: repoRoot, encoding: "utf8", shell: false, timeout: 10_000,
+  }).status === 0);
+  assert.ok(python, "Task 11 Python 3.10 projection interpreter is required");
+  const pythonProjection = spawnSync(python, ["tests/memory_api_projection_test.py"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    env: { ...process.env, LC_ALL: "C" },
+    maxBuffer: 16 * 1024 * 1024,
+    shell: false,
+    timeout: 180_000,
+  });
+  assert.equal(pythonProjection.status, 0, pythonProjection.stderr || pythonProjection.stdout);
+};
+
 export async function run() {
+  assertTask11PythonBridge();
   const projection = await importContractModule("lib/core/projection-store.js", EXPECTED_SIGNATURE);
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
     const ensureProjectionStore = requireCallable(projection, "ensureProjectionStore");

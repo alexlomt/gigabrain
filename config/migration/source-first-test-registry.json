@@ -302,11 +302,21 @@
           "mode": "import",
           "symbol": "mutateCurrentMemoryWithLegacyProjection",
           "targetPath": "lib/core/projection-store.js"
+        },
+        {
+          "binding": "memoryApiAppSource",
+          "mode": "read",
+          "targetPath": "memory_api/app.py"
+        },
+        {
+          "binding": "pythonProjection",
+          "mode": "spawn",
+          "targetPath": "tests/memory_api_projection_test.py"
         }
       ],
       "runner": "node",
       "testPath": "tests/compat/memory-api-projection-test.js",
-      "testSha256": "1433c4aaa80dcc311b3d1c3e5791c531181133735d32e1b8904093421dd0ab7a"
+      "testSha256": "4628059e290522334f941fc7218e686d5a63f685335ad5497204fbf3e80a9fc3"
     },
     {
       "coveredPaths": [
@@ -693,11 +703,22 @@
     },
     {
       "coveredPaths": [
+        "lib/compat/queue-review-service.js",
         "lib/core/audit-service.js",
         "lib/core/belief-arbitration.js",
+        "lib/core/capture-service.js",
+        "lib/core/codex-service.js",
+        "lib/core/control-plane.js",
         "lib/core/handoff-bundle.js",
+        "lib/core/host-memory-sync.js",
+        "lib/core/maintenance-service.js",
+        "lib/core/memory-actions.js",
+        "lib/core/native-promotion.js",
         "lib/core/openclaw-import.js",
         "lib/core/projection-store.js",
+        "lib/core/transcript-harvester.js",
+        "lib/core/wiki-project.js",
+        "scripts/gigabrainctl.js",
         "tests/compat/projection-writer-registry-test.js"
       ],
       "expectedOutcome": "pass",
@@ -706,34 +727,99 @@
       "ownerSourceFirstTaskId": "11",
       "relevanceEvidence": [
         {
+          "binding": "reviewQueuedCandidates",
+          "mode": "writer_exercised",
+          "symbol": "reviewQueuedCandidates",
+          "targetPath": "lib/compat/queue-review-service.js"
+        },
+        {
           "binding": "runAudit",
-          "mode": "import",
+          "mode": "writer_exercised",
           "symbol": "runAudit",
           "targetPath": "lib/core/audit-service.js"
         },
         {
           "binding": "resolveArbiterSettings",
-          "mode": "import",
+          "mode": "writer_exercised",
           "symbol": "resolveArbiterSettings",
           "targetPath": "lib/core/belief-arbitration.js"
         },
         {
+          "binding": "captureFromEvent",
+          "mode": "writer_exercised",
+          "symbol": "captureFromEvent",
+          "targetPath": "lib/core/capture-service.js"
+        },
+        {
+          "binding": "runClaimDecide",
+          "mode": "writer_exercised",
+          "symbol": "runClaimDecide",
+          "targetPath": "lib/core/codex-service.js"
+        },
+        {
+          "binding": "appendClaimDecision",
+          "mode": "writer_exercised",
+          "symbol": "appendClaimDecision",
+          "targetPath": "lib/core/control-plane.js"
+        },
+        {
           "binding": "importPassportBundle",
-          "mode": "import",
+          "mode": "writer_exercised",
           "symbol": "importPassportBundle",
           "targetPath": "lib/core/handoff-bundle.js"
         },
         {
+          "binding": "syncHostMemories",
+          "mode": "writer_exercised",
+          "symbol": "syncHostMemories",
+          "targetPath": "lib/core/host-memory-sync.js"
+        },
+        {
+          "binding": "runMaintenance",
+          "mode": "writer_exercised",
+          "symbol": "runMaintenance",
+          "targetPath": "lib/core/maintenance-service.js"
+        },
+        {
+          "binding": "applyMemoryActions",
+          "mode": "writer_exercised",
+          "symbol": "applyMemoryActions",
+          "targetPath": "lib/core/memory-actions.js"
+        },
+        {
+          "binding": "promoteNativeChunks",
+          "mode": "writer_exercised",
+          "symbol": "promoteNativeChunks",
+          "targetPath": "lib/core/native-promotion.js"
+        },
+        {
           "binding": "importOpenClawRegistry",
-          "mode": "import",
+          "mode": "writer_exercised",
           "symbol": "importOpenClawRegistry",
           "targetPath": "lib/core/openclaw-import.js"
         },
         {
-          "binding": "withProjectionMutationBatch",
-          "mode": "import",
-          "symbol": "withProjectionMutationBatch",
+          "binding": "upsertCurrentMemory",
+          "mode": "writer_exercised",
+          "symbol": "upsertCurrentMemory",
           "targetPath": "lib/core/projection-store.js"
+        },
+        {
+          "binding": "harvestTranscripts",
+          "mode": "writer_exercised",
+          "symbol": "harvestTranscripts",
+          "targetPath": "lib/core/transcript-harvester.js"
+        },
+        {
+          "binding": "projectWiki",
+          "mode": "writer_exercised",
+          "symbol": "projectWiki",
+          "targetPath": "lib/core/wiki-project.js"
+        },
+        {
+          "binding": "paths",
+          "mode": "inventory_scan",
+          "targetPath": "scripts/gigabrainctl.js"
         }
       ],
       "runner": "node",
@@ -1276,7 +1362,7 @@
       ],
       "runner": "python",
       "testPath": "tests/memory_api_projection_test.py",
-      "testSha256": "4f05cb2d02443764aed1132a7803d3de1861af9af23d81bc0f3bdf1c21d5e9a8"
+      "testSha256": "f24a2c29b7d50007ac97b5fbc4b8b3bd3a6fd1946b1b5fd3285bc24534f0ce91"
     },
     {
       "coveredPaths": [
@@ -2063,6 +2149,6 @@
     }
   ],
   "entryCount": 96,
-  "manifestSha256": "777c2a3c616af09977f9eb1ca60078c3d09b3a4c293966dbf4f07ebfbce55b25",
+  "manifestSha256": "1e62e164c9622f678a878c670b898c5efd28aaf58042199c6b9286f11bcba666",
   "schemaVersion": 1
 }

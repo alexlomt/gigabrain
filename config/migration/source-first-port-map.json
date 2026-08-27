@@ -6,15 +6,16 @@
   "candidateChanges": [
     {
       "changeType": "modified",
-      "contentSha256": "13b97046f8711d21fd82ccdda06fc32d399f77bf0e91e208fc1be5b6b1db6ff9",
+      "contentSha256": "5bacdaac6c2a1f3a91c9e23c19f58a1e814db38989079445ed680aa2f89ea3fe",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
       },
       "ownerTasks": [
+        "11",
         "2B"
       ],
-      "reason": "Exact private-fork Node/npm and Python-floor compatibility matrix.",
+      "reason": "Exact private compatibility matrix with Task 11 Python 3.10 production bridge on Node 22 and Node 26.",
       "targetMode": "100644",
       "targetPath": ".github/workflows/ci.yml"
     },
@@ -100,7 +101,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "dd21cf6ffefcf194816e77a04a7946a5374ffe0e6f2a7552d2f2d77e14d066df",
+      "contentSha256": "2cc25bd2c9e244b6fda82094b8a4b728a16f0aa34218d65c694d084d77376f65",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -481,12 +482,13 @@
       "contentSha256": "c760588c8ca3a27a17ec12393d07ccec529e50802fd62106ef3be71468b42f62",
       "disposition": "compat_module",
       "gate": {
-        "registrationId": "compat-queue-review-service"
+        "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
+        "11",
         "9"
       ],
-      "reason": "Task 9D implements local-only bounded review with durable safe transitions, terminal scrubbing, failure isolation, and concurrent-append preservation.",
+      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
       "targetMode": "100644",
       "targetPath": "lib/compat/queue-review-service.js"
     },
@@ -573,7 +575,7 @@
       "ownerTasks": [
         "11"
       ],
-      "reason": "Task 11 centralizes projection writers and Unicode-safe OpenClaw import behavior.",
+      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/audit-service.js"
     },
@@ -587,7 +589,7 @@
       "ownerTasks": [
         "11"
       ],
-      "reason": "Task 11 centralizes projection writers and Unicode-safe OpenClaw import behavior.",
+      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/belief-arbitration.js"
     },
@@ -596,7 +598,7 @@
       "contentSha256": "61316737ecdd3274a6e5f9d844ead12bd3d415f354c80a531b6ee17de2291a7c",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-write-mode-gate"
+        "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
         "11",
@@ -604,7 +606,7 @@
         "5",
         "7"
       ],
-      "reason": "Task 5 capture behavior retained while Task 7 excludes incompatible embedding cache rows; Task 11 enforces fail-closed write-mode ordering.",
+      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/capture-service.js"
     },
@@ -641,12 +643,13 @@
       "contentSha256": "69a1167a0a44b8c276b32a4107930e748d5f4b8e9535910aed0f367e1c20f2b5",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-release-provenance"
+        "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
+        "11",
         "5"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/codex-service.js"
     },
@@ -671,13 +674,14 @@
       "contentSha256": "96db5ff4bcbd48b82c1de8e58bc7142c41037aeccca63b1a0c434f2c5809cf47",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-write-mode-gate"
+        "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
+        "11",
         "5",
         "6"
       ],
-      "reason": "Task 5 compatibility behavior retained while Task 6 adds governed native-memory semantics.",
+      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/control-plane.js"
     },
@@ -700,13 +704,13 @@
       "contentSha256": "fd2d5ccf2b64069a4be875f2d129f0ef96b031f5580ec2918c66ddd346e318bf",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "restored-unit-passport-bundle"
+        "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
         "11",
         "2B"
       ],
-      "reason": "Task 11 centralizes projection writers and Unicode-safe OpenClaw import behavior.",
+      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/handoff-bundle.js"
     },
@@ -715,13 +719,14 @@
       "contentSha256": "3cfc99bb895c4a1ebc1a430c7db8c7605b84c047a78499e9e5a22f7603231cd0",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-observational-diagnostics"
+        "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
+        "11",
         "4",
         "5"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/host-memory-sync.js"
     },
@@ -758,14 +763,15 @@
       "contentSha256": "df52abf784f975074383c80e7aa02be75c483d38a416148df9ed99b7d3e4c68d",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-surface-noop"
+        "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
         "10",
+        "11",
         "4",
         "5"
       ],
-      "reason": "Task 5 maintenance retained while Task 10 defers graph generation to the one-pass mutation-gated surface refresh.",
+      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/maintenance-service.js"
     },
@@ -774,13 +780,14 @@
       "contentSha256": "7380b2aab35af42a3e01ff820cad23ffddbf273ad7a0b2017f538db5f1aba13a",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-write-mode-gate"
+        "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
+        "11",
         "4",
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/memory-actions.js"
     },
@@ -818,12 +825,13 @@
       "contentSha256": "57551d23274a35b08df902b270a53497c6f2bec6aade61abccf052c25076978f",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-native-metadata-promotion"
+        "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
+        "11",
         "6"
       ],
-      "reason": "Task 6 restores metadata-gated native promotion and reconciliation.",
+      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/native-promotion.js"
     },
@@ -847,13 +855,13 @@
       "contentSha256": "dabc3dd5c1ede3b1a1ac4bed6b792916927dbfac2124ea58346f6c2d7a02883c",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "restored-unit-openclaw-import"
+        "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
         "11",
         "2B"
       ],
-      "reason": "Task 11 centralizes projection writers and Unicode-safe OpenClaw import behavior.",
+      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/openclaw-import.js"
     },
@@ -891,13 +899,13 @@
       "contentSha256": "35eb16a19754348cd3742c0764e864061d5b89c099796ebd3ca9070eca6bf5fb",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-memory-api-projection"
+        "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
         "11",
         "5"
       ],
-      "reason": "Task 5 projection reads retained while Task 11 adds atomic current/legacy/metadata/event mutation authority and blocks legacy drop.",
+      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/projection-store.js"
     },
@@ -963,12 +971,13 @@
       "contentSha256": "6c653b7f5b38094db1b0b4577dc5416825bfde2abda7b8a7c2f2399340bd0d3f",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-observational-diagnostics"
+        "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
+        "11",
         "5"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/transcript-harvester.js"
     },
@@ -977,12 +986,13 @@
       "contentSha256": "d5860ad1c9eec34a1fcc0ff02d9fd80b79165bca3981970bd27f4b25658c2dfc",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-write-mode-gate"
+        "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
+        "11",
         "5"
       ],
-      "reason": "Task 5 observational OpenClaw memory adapter, authorization, write policy, provenance or packaging contract.",
+      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
       "targetMode": "100644",
       "targetPath": "lib/core/wiki-project.js"
     },
@@ -1061,16 +1071,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "173c1b3f4a9dc73018fcffd9ab45fef579a5c84eb76ba91b49f917fed563fdd4",
+      "contentSha256": "7b37d72f68e952a8298c90fa98f6257814ef21b4caa063bc7b0c21e270f019fa",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "source-first-policy"
+        "registrationId": "compat-memory-api-projection"
       },
       "ownerTasks": [
         "11",
         "2A"
       ],
-      "reason": "Task 11 makes the local Memory API authoritative on memory_current plus sidecar metadata, dual-projects writes and events atomically, and enforces API-wide read-only startup safety.",
+      "reason": "Task 11 executable Node-to-Python bridge verifies authoritative Memory API projection and read-only behavior.",
       "targetMode": "100644",
       "targetPath": "memory_api/app.py"
     },
@@ -1274,7 +1284,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "2f2405994a4ee401fbd4d5915d054b65de0f83b626ce10dc34bc48b0dc49d603",
+      "contentSha256": "80c73b1eee7ef69eb6546053998ff3142fce6b5497861935cdf974c33f7341c7",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1308,15 +1318,16 @@
       "contentSha256": "6165b562bbfa06d85e96283c5111aa866f1b71eea941898c19ae8b6c915efb5c",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-setup-generated-surface"
+        "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
         "10",
+        "11",
         "5",
         "6",
         "9"
       ],
-      "reason": "Task 5/6/9 CLI retained while Task 10 adds explicit surface build/status/doctor and one final mutation-gated nightly refresh.",
+      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
       "targetMode": "100755",
       "targetPath": "scripts/gigabrainctl.js"
     },
@@ -1604,7 +1615,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "1433c4aaa80dcc311b3d1c3e5791c531181133735d32e1b8904093421dd0ab7a",
+      "contentSha256": "4628059e290522334f941fc7218e686d5a63f685335ad5497204fbf3e80a9fc3",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-memory-api-projection"
@@ -2342,7 +2353,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "4f05cb2d02443764aed1132a7803d3de1861af9af23d81bc0f3bdf1c21d5e9a8",
+      "contentSha256": "f24a2c29b7d50007ac97b5fbc4b8b3bd3a6fd1946b1b5fd3285bc24534f0ce91",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "python-memory-api-projection"

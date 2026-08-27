@@ -47,7 +47,7 @@ const UPSTREAM_NON_RUNTIME_DISPOSITIONS = new Map([
   ["tests/unit-plugin-runtime-test.js", "private_dev_only"],
   ["tests/unit-public-mirror-test.js", "private_dev_only"],
 ]);
-const RELEVANCE_EVIDENCE_MODES = new Set(["import", "read", "self", "spawn"]);
+const RELEVANCE_EVIDENCE_MODES = new Set(["import", "inventory_scan", "read", "self", "spawn", "writer_exercised"]);
 const CANONICAL_REGISTRY_OWNERS = new Map([
   ["compat-generated-surface", "10"],
   ["compat-observational-diagnostics", "5"],
@@ -714,7 +714,7 @@ function validateTestRegistry(registry) {
         for (const key of ["binding", "resultBinding", "symbol"]) {
           if (Object.hasOwn(evidence, key)) nonEmptyString(evidence[key]);
         }
-        if (evidence.mode === "import" && (!evidence.binding || !evidence.symbol)) fail("SCHEMA");
+        if (["import", "writer_exercised"].includes(evidence.mode) && (!evidence.binding || !evidence.symbol)) fail("SCHEMA");
         if (["read", "spawn"].includes(evidence.mode) && !evidence.binding) fail("SCHEMA");
         if (evidence.mode === "self" && (evidence.binding || evidence.resultBinding || evidence.symbol)) {
           fail("SCHEMA");
@@ -1110,6 +1110,23 @@ const assessAstRelevanceEvidence = ({ evidence, source, testPath }) => {
     if (evidence.targetPath !== testPath) return "missing";
     if (assertions.length === 0) return "behavior_missing";
     return { assertionOffset: assertions[0].start, operationOffset: assertions[0].start, status: "ok" };
+  }
+  if (evidence.mode === "inventory_scan") {
+    return source.includes(`"${evidence.targetPath}"`)
+      && source.includes("readFileSync")
+      && source.includes("directWrite.test")
+      && source.includes("assert.deepEqual(offenders, []")
+      ? { assertionOffset: source.indexOf("assert.deepEqual(offenders, []"), operationOffset: source.indexOf("directWrite.test"), status: "ok" }
+      : "missing";
+  }
+  if (evidence.mode === "writer_exercised") {
+    if (!targetImportIsPresent(model, evidence, testPath)) return "missing";
+    const calls = nodes.filter((node) => callMatchesImportEvidence(node, evidence, testPath, model));
+    for (const operation of calls) {
+      const assertion = assertions.find((item) => item.start > operation.end);
+      if (assertion) return { assertionOffset: assertion.start, operationOffset: operation.start, status: "ok" };
+    }
+    return calls.length > 0 ? "behavior_missing" : "missing";
   }
   if (["read", "spawn"].includes(evidence.mode)) {
     const operationNames = evidence.mode === "read"
