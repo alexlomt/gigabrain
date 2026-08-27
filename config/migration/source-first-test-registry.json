@@ -437,7 +437,7 @@
       "ownerSourceFirstTaskId": "12",
       "relevanceEvidence": [
         {
-          "binding": "executeDailySequence",
+          "binding": "governedDailySequence",
           "mode": "import",
           "symbol": "executeDailySequence",
           "targetPath": "lib/core/maintenance-service.js"
@@ -450,7 +450,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/nightly-order-test.js",
-      "testSha256": "2ce0c92673154a941ce729b6e822b5f0fb36e0f398d4fffe3d8b6b3d709226b4"
+      "testSha256": "fbc93a5ebbefc1b1c3386d193b1b777dfc7005142f8871741ab2afefd61ddfe6"
     },
     {
       "coveredPaths": [
@@ -2277,6 +2277,6 @@
     }
   ],
   "entryCount": 101,
-  "manifestSha256": "aa61f5ad02c3584d70d03e1a7432b6b7e1a5f1e773d77553fbf717cd50d6c13e",
+  "manifestSha256": "8a35b2831ed485fc7997b121ec7180195ff25788793077618d1ee6b851295375",
   "schemaVersion": 1
 }

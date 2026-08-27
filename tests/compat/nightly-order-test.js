@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
 
 import { normalizeConfig } from "../../lib/core/config.js";
+import { executeDailySequence as governedDailySequence } from "../../lib/core/maintenance-service.js";
 import { ensureProjectionStore } from "../../lib/core/projection-store.js";
 import { ensureWorldModelStore } from "../../lib/core/world-model.js";
 import { makeConfigObject, seedMemoryCurrent } from "../helpers.js";
@@ -98,7 +99,6 @@ const spawnNightly = (args, root, extraEnv = {}) => spawnSync(process.execPath, 
 export async function run() {
   const maintenance = await importContractModule("lib/core/maintenance-service.js", EXPECTED_SIGNATURE);
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
-    const executeDailySequence = requireCallable(maintenance, "executeDailySequence");
     const runDailyMaintenanceSequence = requireCallable(maintenance, "runDailyMaintenanceSequence");
     assert.deepEqual([...maintenance.DAILY_SEQUENCE], [...EXPECTED_SEQUENCE]);
     assert.equal(Object.isFrozen(maintenance.DAILY_SEQUENCE), true);
@@ -113,7 +113,7 @@ export async function run() {
           return { mutationCount: 1, ok: true };
         },
       });
-      const result = await executeDailySequence({
+      const result = await governedDailySequence({
         disabledStages: OPTIONAL,
         gatedStages: new Map([
           [EXPECTED_SEQUENCE[15], "world_rebuild_disabled"],
@@ -132,7 +132,7 @@ export async function run() {
 
     const missingHandlers = makeHandlers([]);
     delete missingHandlers[EXPECTED_SEQUENCE[5]];
-    const missingResult = await executeDailySequence({ handlers: missingHandlers, mode: "normal" });
+    const missingResult = await governedDailySequence({ handlers: missingHandlers, mode: "normal" });
     assert.equal(missingResult.ok, false);
     assert.deepEqual(missingResult.failure, {
       stage: EXPECTED_SEQUENCE[5],
@@ -145,7 +145,7 @@ export async function run() {
       const handlers = makeHandlers(calls, {
         [failingStage]: () => { throw new Error(`synthetic failure at ${failingStage}`); },
       });
-      const result = await executeDailySequence({ handlers, mode: "normal" });
+      const result = await governedDailySequence({ handlers, mode: "normal" });
       const failedAt = EXPECTED_SEQUENCE.indexOf(failingStage);
       assert.equal(result.ok, false);
       assert.deepEqual(result.receipts.map((row) => row.stage), [...EXPECTED_SEQUENCE]);
