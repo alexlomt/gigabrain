@@ -54,6 +54,9 @@ jobs:
       - name: Test
         run: node tests/run-all.js
 
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
   private-compatibility-node:
     runs-on: ubuntu-latest
     timeout-minutes: 20

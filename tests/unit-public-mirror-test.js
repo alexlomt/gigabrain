@@ -617,6 +617,7 @@ const testReleaseManifestStaysNarrow = () => {
   assert.match(ci, /\.venv-ci-prod\/bin\/python -m unittest/u);
   assert.match(ci, /\.venv-ci-dev\/bin\/ruff check/u);
   assert.match(ci, /\.venv-ci-dev\/bin\/pip-audit[\s\S]*requirements-prod-py310-linux-x86_64\.lock/u);
+  assert.match(ci, /npm audit --omit=dev --audit-level=high/u);
   const compatibilityInstall = ci.indexOf('- name: Install compatibility dependencies');
   const divergenceGate = ci.indexOf('- name: Enforce source-first divergence');
   assert.ok(compatibilityInstall >= 0, 'compatibility CI must install its locked dependencies');
