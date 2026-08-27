@@ -781,12 +781,6 @@
       "type": "blob"
     },
     {
-      "blob": "fe74a468ac285b5887590841ee3bd651766094c5",
-      "mode": "100644",
-      "path": "tests/unit-control-plane-test.js",
-      "type": "blob"
-    },
-    {
       "blob": "58115d1845f59c8ae25a8533f512fc92de067da2",
       "mode": "100644",
       "path": "tests/unit-cross-store-merge-test.js",
@@ -877,7 +871,7 @@
       "type": "blob"
     }
   ],
-  "entryCount": 132,
-  "manifestSha256": "62c47c5b2d8e38c8842dcdb7ac84fafa7941993f8dfae9739b9ccd2f222de05e",
+  "entryCount": 131,
+  "manifestSha256": "624052b3ac7739a339668c12854a3907abb7a8725963a3795955d42760d0b0ce",
   "schemaVersion": 1
 }

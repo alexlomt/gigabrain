@@ -118,11 +118,11 @@ export async function run() {
   }
   for (const file of ["compat/checkpoint-concurrency-test.js", "compat/handoff-fidelity-test.js"]) {
     assert.equal(inventory.NORMAL_TEST_DESCRIPTORS.find((row) => row.file === file)?.ownerTask, "13");
-    assert.equal(expectedFailures.entries.find((row) => row.test === file)?.ownerTask, "13");
-    assert.equal(
-      sourceRegistry.entries.find((row) => row.testPath === `tests/${file}`)?.ownerSourceFirstTaskId,
-      "13",
-    );
+    assert.equal(expectedFailures.entries.find((row) => row.test === file), undefined);
+    const registration = sourceRegistry.entries.find((row) => row.testPath === `tests/${file}`);
+    assert.equal(registration?.ownerSourceFirstTaskId, "13");
+    assert.equal(registration?.expectedOutcome, "pass");
+    assert.equal(registration?.expectedSignature, null);
     const candidate = portMap.candidateChanges.find((row) => row.targetPath === `tests/${file}`);
     assert.equal(candidate?.ownerTasks.includes("13"), true);
   }

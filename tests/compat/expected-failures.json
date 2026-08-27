@@ -1,19 +1,9 @@
 {
   "entries": [
     {
-      "ownerTask": "13",
-      "signature": "COMPAT_EXPECTED_CHECKPOINT_CONCURRENCY missing atomic scope-session checkpoint governance",
-      "test": "compat/checkpoint-concurrency-test.js"
-    },
-    {
       "ownerTask": "14",
       "signature": "COMPAT_EXPECTED_FULL_MIGRATION missing source-first registry migration receipt",
       "test": "compat/full-registry-migration-test.js"
-    },
-    {
-      "ownerTask": "13",
-      "signature": "COMPAT_EXPECTED_HANDOFF_V2_FIDELITY missing canonical zero-write Handoff v2 contract",
-      "test": "compat/handoff-fidelity-test.js"
     },
     {
       "ownerTask": "14",

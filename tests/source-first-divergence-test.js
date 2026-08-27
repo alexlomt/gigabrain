@@ -61,7 +61,7 @@ assert.equal(realMap.deployedSource.commit, "43cd4b41518b5e35b3872722fcceaac535a
 assert.equal(realMap.deployedCommits.length, 47);
 assert.equal(realMap.deployedFiles.length, 208);
 assert.equal(realMap.preTagTools.length, 9);
-assert.equal(realMap.candidateChanges.length, 211);
+assert.equal(realMap.candidateChanges.length, 217);
 assert.equal(realMap.retirementContractCount, 8);
 assert.equal(
   realMap.retirementContractManifestSha256,
@@ -77,7 +77,7 @@ assert.equal(
   realRetirementEvidence.structuralFingerprintManifestSha256,
   "c672074c8da1111872ea2da78f6e6eafaff15926f3d6bad6f29d85382b852b0b",
 );
-assert.equal(realAllowlist.entries.length, 132);
+assert.equal(realAllowlist.entries.length, 131);
 assert.equal(realAllowlist.adoptionContractCount, 11);
 assert.equal(
   realAllowlist.adoptionContractManifestSha256,
@@ -145,6 +145,10 @@ function makeFixture(mutate = () => {}) {
   writeFileSync(
     path.join(fixtureRepo, "tests", "registered-test.js"),
     "export async function run() { return true; }\n",
+  );
+  writeFileSync(
+    path.join(fixtureRepo, "tests", "unit-control-plane-test.js"),
+    "export async function run() { return 'upstream'; }\n",
   );
   writeFileSync(
     path.join(fixtureRepo, "tests", "contract-test-helpers.js"),
@@ -869,6 +873,30 @@ function configureImmutableGateExecutionFixture(fixture) {
 }
 
 expectPass("exact classified delta", () => {});
+
+expectPass("reviewed upstream control-plane unit adaptation stays private development", (fixture) => {
+  const targetPath = "tests/unit-control-plane-test.js";
+  writeFileSync(
+    path.join(fixture.fixtureRepo, targetPath),
+    "export async function run() { return 'adapted'; }\n",
+  );
+  commitAll(fixture.fixtureRepo, "adapt reviewed upstream unit fixture");
+  fixture.allowlist.entries = fixture.allowlist.entries.filter((entry) => entry.path !== targetPath);
+  fixture.allowlist.entryCount = fixture.allowlist.entries.length;
+  fixture.allowlist.manifestSha256 = sha256(canonicalJson(fixture.allowlist.entries));
+  fixture.map.candidateChanges.push({
+    changeType: "modified",
+    contentSha256: blobIdentity(path.join(fixture.fixtureRepo, targetPath)),
+    disposition: "private_dev_only",
+    gate: { registrationId: "fixture-gate" },
+    ownerTasks: ["2A"],
+    reason: "Reviewed non-runtime upstream unit fixture adaptation.",
+    targetMode: "100644",
+    targetPath,
+  });
+  fixture.map.candidateChanges.sort((left, right) => left.targetPath < right.targetPath ? -1 : left.targetPath > right.targetPath ? 1 : 0);
+  registerFixtureCoverage(fixture.registry, targetPath);
+});
 
 expectFailure("compat writer evidence must execute the declared target symbol", "GATE_DYNAMIC_EVIDENCE", (fixture) => {
   configureCompatModuleWriterEvidence(fixture);

@@ -67,6 +67,19 @@ OpenClaw mode keeps config under `plugins.entries.gigabrain.config` in `openclaw
 - Codex App checkpoints write native-only session summaries, decisions, open loops, touched files, and durable candidates into the daily log of the shared standalone store by default
 - Codex App checkpoints are not background capture; they are intentional task-end summaries that later feed native sync and optional promotion
 - If the user clearly asked to remember something but the model forgets the internal tag, Gigabrain now queues a review row instead of silently losing the request
+- Native-plus-registry writers use one lock order: native-memory lock first, then SQLite mutation. Capture, accepted claims, queue review, memory replacements, and checkpoints fail closed if handed an already-active database transaction without that matching outer lock.
+
+## Handoff transfer
+
+Handoff v2 (`gigabrain.handoff-bundle/2.0`) exports current memory rows and
+source links. Optional source events are integrity-checked evidence and are not replayed
+during import; the importer writes new destination-side import events
+only. Embeddings, world-model entities and beliefs, control-plane checkpoints and
+claim proposals and receipts, the review queue, native/host sync cursors,
+transcripts, and wiki projections stay outside the bundle.
+The root binds every manifest field, including exact top-level counts, scope,
+complete/truncated flags, and the per-memory event limit. Source links use the
+destination primary-key identity and preserve empty-path/`null`-line values.
 
 ## Recall
 

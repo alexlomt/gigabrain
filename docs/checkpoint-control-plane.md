@@ -21,10 +21,13 @@ The published schemas are [`checkpoint.1`](schemas/checkpoint.1.schema.json),
 
 - Checkpoint, checkpoint-item, proposal, proposal-event, and receipt rows are
   append-only at the SQLite boundary. Update and delete triggers fail closed.
-- A stable `session_id` is bounded to one checkpoint. A repeated teardown or retry returns the existing checkpoint plus a `deduplicated` receipt and does not rewrite the native note.
+- The database enforces one checkpoint per (scope, session_id). A repeated teardown or retry returns the existing checkpoint plus a `deduplicated` receipt and does not rewrite the native note.
 - One checkpoint write groups its summary and typed items into one contiguous native block.
 - A checkpoint write may create `agent_inference` proposals, but never a
   durable memory.
+- Lifecycle checkpoint hooks are disabled by default and remain explicit opt-in setup.
+- Public checkpoint writes retain at most 16 MiB of the existing daily note for exact byte-and-mode compensation. An oversized note fails closed before native or database mutation.
+- Every path that may touch both native files and SQLite follows one global lock order: acquire the shared native-memory lock first, then begin the database mutation. Checkpoint, capture, claim acceptance, queue review, and replacement actions retain that lock through commit or rollback. A caller-owned active database transaction without the matching native lock fails closed.
 - Legacy Markdown migration creates `legacy_untyped` episodes and zero
   proposals.
 - Exactly one terminal event may exist for a proposal.

@@ -6,9 +6,8 @@ Gigabrain's launch product surface is the **Handoff Record** (the verb is
 remember, where those memories came from, what needs review, and what can be safely
 handed to another host.
 
-The Handoff Record is a **report + safe handoff pack**, not a portable
-re-importable bundle and not another hidden RAG store. It is the audit/trust layer
-above native memories:
+The Handoff Record is a **report + safe handoff pack**, not another hidden RAG
+store. It is the audit/trust layer above native memories:
 
 - source inventory by host
 - exact duplicate groups with retained provenance
@@ -75,6 +74,39 @@ Useful flags:
 | `--stale-days <n>` | Mark memories stale after this many days without update |
 | `--host <list>` | Optional source discovery filter |
 | `--skip-handoffs` | Write only the Memory Audit report files |
+
+## Handoff v2 transfer bundles
+
+A `gigabrain.handoff-bundle/2.0` bundle is a transfer artifact, not a backup.
+It carries canonically ordered current memories (including `valid_from`), source
+links, and optional source-event evidence. Each section has an independent count
+and SHA-256 hash. The root binds the complete manifest, including scope,
+top-level counts, completeness/truncation flags, and the per-memory event cap.
+Reordering, tampering, missing or extra keys/sections, unknown versions, and
+incomplete or capped exports fail before destination writes.
+
+```bash
+npx gigabrainctl handoff export --config ~/.gigabrain/config.json \
+  --scope profile:main --include-events --out ./handoff-v2.json
+npx gigabrainctl handoff inspect --in ./handoff-v2.json
+npx gigabrainctl handoff import --config ~/.gigabrain/config.json \
+  --in ./handoff-v2.json
+```
+
+The bundle intentionally excludes embeddings; world-model entities and beliefs;
+checkpoints, claim proposals, and receipts; the review queue; native-sync and
+host-sync cursors; native Markdown; transcripts; and wiki projections. Rebuild
+derived state at the destination and retain a physical database backup for
+recovery. Carried source events are evidence only and are not replayed.
+
+Source-link identity exactly matches the destination key `(memory_id,
+source_host, source_path, source_line)`. Unknown paths use the empty string and
+unknown line numbers use JSON `null`; import preserves those representations and
+rejects key collisions or unsupported host/kind/policy values before creating
+destination schema.
+
+Legacy v1 `gigabrain.memory-passport-bundle` files may be inspected with
+`handoff inspect --legacy-v1`, but they cannot be imported.
 
 ## Report Sections
 

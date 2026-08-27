@@ -66,7 +66,7 @@ const run = async () => {
 
     const second = appendCheckpointEpisode(db, {
       timestamp: '2026-08-16T11:00:00.000Z',
-      sessionId: 'ses_fixture',
+      sessionId: 'ses_fixture_followup',
       parentCheckpointId: first.checkpoint.checkpoint_id,
       scope: 'project:alpha',
       sourceAgent: 'claude_code',

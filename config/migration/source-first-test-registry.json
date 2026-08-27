@@ -143,15 +143,63 @@
     },
     {
       "coveredPaths": [
-        "tests/compat/checkpoint-concurrency-test.js"
+        "docs/checkpoint-control-plane.md",
+        "lib/core/capture-service.js",
+        "lib/core/checkpoint-migration.js",
+        "lib/core/codex-service.js",
+        "lib/core/control-plane.js",
+        "lib/core/lifecycle-hooks.js",
+        "tests/compat/checkpoint-concurrency-test.js",
+        "tests/unit-control-plane-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_CHECKPOINT_CONCURRENCY missing atomic scope-session checkpoint governance",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-checkpoint-concurrency",
       "ownerSourceFirstTaskId": "13",
+      "relevanceEvidence": [
+        {
+          "binding": "checkpointDocs",
+          "mode": "read",
+          "targetPath": "docs/checkpoint-control-plane.md"
+        },
+        {
+          "binding": "captureFromEvent",
+          "mode": "import",
+          "symbol": "captureFromEvent",
+          "targetPath": "lib/core/capture-service.js"
+        },
+        {
+          "binding": "migrateLegacyCheckpoints",
+          "mode": "import",
+          "resultBinding": "dryResult",
+          "symbol": "migrateLegacyCheckpoints",
+          "targetPath": "lib/core/checkpoint-migration.js"
+        },
+        {
+          "binding": "runCheckpoint",
+          "mode": "import",
+          "resultBinding": "mainThreadCheckpoint",
+          "symbol": "runCheckpoint",
+          "targetPath": "lib/core/codex-service.js"
+        },
+        {
+          "binding": "appendCheckpointEpisode",
+          "mode": "import",
+          "resultBinding": "otherScope",
+          "symbol": "appendCheckpointEpisode",
+          "targetPath": "lib/core/control-plane.js"
+        },
+        {
+          "binding": "buildSessionHookCommand",
+          "mode": "import",
+          "resultBinding": "hook",
+          "symbol": "buildSessionHookCommand",
+          "targetPath": "lib/core/lifecycle-hooks.js"
+        }
+      ],
       "runner": "node",
       "testPath": "tests/compat/checkpoint-concurrency-test.js",
-      "testSha256": "a5a04e3d28ffc2f75237c8ca95193ab820bed56eea8de77cff6dc1424d8c0f01"
+      "testSha256": "ccda69167f5b6032e15c2249681b7d38a9efbfe2bcf1e07456e38556ce7f5a93"
     },
     {
       "coveredPaths": [
@@ -320,15 +368,62 @@
     },
     {
       "coveredPaths": [
+        "SECURITY.md",
+        "docs/configuration.md",
+        "docs/handoff-record.md",
+        "docs/upgrading.md",
+        "lib/core/handoff-bundle.js",
+        "lib/core/host-memory-sync.js",
+        "scripts/gigabrainctl.js",
         "tests/compat/handoff-fidelity-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_HANDOFF_V2_FIDELITY missing canonical zero-write Handoff v2 contract",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-handoff-fidelity",
       "ownerSourceFirstTaskId": "13",
+      "relevanceEvidence": [
+        {
+          "binding": "securitySource",
+          "mode": "read",
+          "targetPath": "SECURITY.md"
+        },
+        {
+          "binding": "configurationDocs",
+          "mode": "read",
+          "targetPath": "docs/configuration.md"
+        },
+        {
+          "binding": "handoffDocs",
+          "mode": "read",
+          "targetPath": "docs/handoff-record.md"
+        },
+        {
+          "binding": "upgradingDocs",
+          "mode": "read",
+          "targetPath": "docs/upgrading.md"
+        },
+        {
+          "binding": "exportHandoffBundle",
+          "mode": "import",
+          "resultBinding": "bundle",
+          "symbol": "exportHandoffBundle",
+          "targetPath": "lib/core/handoff-bundle.js"
+        },
+        {
+          "binding": "linkMemorySource",
+          "mode": "writer_exercised",
+          "symbol": "linkMemorySource",
+          "targetPath": "lib/core/host-memory-sync.js"
+        },
+        {
+          "binding": "inspect",
+          "mode": "spawn",
+          "targetPath": "scripts/gigabrainctl.js"
+        }
+      ],
       "runner": "node",
       "testPath": "tests/compat/handoff-fidelity-test.js",
-      "testSha256": "60fe041a171fb55580bda86b612d65993ed3709a06287f4fe6dc47ac2199c638"
+      "testSha256": "6d76490df427ea943bd3ad2718d53b685ec22603784264145e725bf9d0d66ef4"
     },
     {
       "coveredPaths": [
@@ -910,7 +1005,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/projection-writer-registry-test.js",
-      "testSha256": "fdfc2f6dd04f2e34b757621bdbd62bea06056172e0c1c70ca5284459fe3fb32e"
+      "testSha256": "2734cc2cda327309204c97f8689fdeafc1d1b6dcb1497ed0655970b61b180faa"
     },
     {
       "coveredPaths": [
@@ -1394,7 +1489,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/write-mode-gate-test.js",
-      "testSha256": "55dbdc131bf1467962f1fb044c5680e5c0a9cee40ac789a37054fe6f4b944648"
+      "testSha256": "205b8c0c7698a899e2c389fe7720bd971d97a0f9d67aba37170a315945e47dd1"
     },
     {
       "coveredPaths": [
@@ -1418,7 +1513,7 @@
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
       "testPath": "tests/full-test-inventory-contract-test.js",
-      "testSha256": "7dddec5c98caec39721f76944df5b7d73f6f2cef782dcc144250daa817418c53"
+      "testSha256": "5e73b2bc6a359b807dc0a93b3e4ce3c2280e4a4801f99d0a1a64bfd38683ad34"
     },
     {
       "coveredPaths": [
@@ -2115,7 +2210,7 @@
       ],
       "runner": "node",
       "testPath": "tests/unit-passport-bundle-test.js",
-      "testSha256": "27aea13ba183d21e8d21998cb817f18b4dc911ef6884dff9853c58de19a171c9"
+      "testSha256": "6c0cb2436b2e9a2e70c133e6c3018f8f42a90c7e2ba1f24912657010345810b4"
     },
     {
       "coveredPaths": [
@@ -2229,7 +2324,7 @@
       ],
       "runner": "node",
       "testPath": "tests/source-first-divergence-test.js",
-      "testSha256": "fc167da8955b5b456601560dc750285eb60d2ec0680aa470b0e4e7428dd5011b"
+      "testSha256": "df6d2071ee17ae09fc3b1c13482c321ec5378b839eabcb86c16eac1433e3c6df"
     },
     {
       "coveredPaths": [
@@ -2302,6 +2397,6 @@
     }
   ],
   "entryCount": 103,
-  "manifestSha256": "09a06da560b82b129a78342667048cfefc1daca28063d7232e4985beae975df6",
+  "manifestSha256": "87a3a6f545321cecac32392fd912cff8ef6e47f8bafe1efb0f7a4b4cdcbb681d",
   "schemaVersion": 1
 }

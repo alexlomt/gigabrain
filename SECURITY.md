@@ -33,6 +33,7 @@ The default standalone configuration uses local SQLite and no LLM provider. Opti
 - a configured cloud review provider never receives raw transcripts through capture; audit review skips credential-risk rows, masks supported PII shapes locally, and omits the original scope
 - the remote bridge sends recall requests to the endpoint you configure
 - manual exports and Handoff Records leave the store when you copy them
+- `gigabrain.handoff-bundle/2.0` imports verify exact manifest/section keys, canonical source-link semantics, section counts and hashes, and a root binding every manifest field before opening a destination; integrity bypasses, truncated bundles, legacy v1, and future schemas fail closed
 - the Python console URL importer is disabled unless explicitly enabled and allowlisted
 
 See [the privacy model](docs/public/privacy-model.md) for the complete data-flow description.
@@ -52,6 +53,12 @@ Gigabrain enforces the following security controls:
 - **Release isolation**: public releases are built from an explicit file allowlist into a fresh, single-commit repository
 
 Security controls reduce risk; they do not prove that every remembered statement is true or safe to disclose. Review recalls and exports before using them in consequential workflows.
+
+Handoff v2 is a transfer artifact rather than a backup. It excludes embeddings,
+world-model entities and beliefs, checkpoints/claim proposals/receipts, the
+review queue, native and host sync cursors, transcripts, and wiki projections.
+Source events are carried only as evidence and are never replayed into the
+destination event ledger.
 
 ### Unsafe development bypass
 

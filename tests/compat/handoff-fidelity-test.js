@@ -18,6 +18,7 @@ import { DatabaseSync } from "node:sqlite";
 import { appendEvent, ensureEventStore } from "../../lib/core/event-store.js";
 import { ensureHostMemoryStore, linkMemorySource } from "../../lib/core/host-memory-sync.js";
 import { ensureProjectionStore, upsertCurrentMemory } from "../../lib/core/projection-store.js";
+import { hashNormalized, normalizeContent } from "../../lib/core/policy.js";
 import {
   importContractModule,
   requireCallable,
@@ -51,7 +52,7 @@ const canonicalize = (value) => {
 const sectionKey = (name, row) => {
   if (name === "memories") return String(row.memory_id || "");
   if (name === "source_links") {
-    return [row.memory_id, row.source_host, row.source_kind, row.source_path, row.source_line, row.content_hash]
+    return [row.memory_id, row.source_host, row.source_path, row.source_line]
       .map((value) => String(value ?? "")).join("\u0000");
   }
   return [row.memory_id, row.timestamp, row.event_id, row.action]
@@ -67,11 +68,10 @@ const oracleSectionHash = (name, records = []) => sha256(JSON.stringify({
   records: canonicalSection(name, records),
 }));
 
-const oracleRoot = (order, sections) => sha256(JSON.stringify(order.map((name) => ({
-  count: Number(sections[name].count),
-  name,
-  sha256: String(sections[name].sha256),
-}))));
+const oracleRoot = (manifest) => {
+  const { root_sha256, ...bound } = manifest;
+  return sha256(JSON.stringify(canonicalize(bound)));
+};
 
 const oracleLegacyV1Hash = (records = []) => sha256(JSON.stringify([...records]
   .sort((left, right) => binaryCompare(String(left.memory_id || ""), String(right.memory_id || "")))
@@ -86,7 +86,11 @@ const resealV2 = (bundle) => {
     count: bundle[name].length,
     sha256: oracleSectionHash(name, bundle[name]),
   }]));
-  bundle.manifest.root_sha256 = oracleRoot(order, bundle.manifest.sections);
+  bundle.manifest.memory_count = bundle.memories.length;
+  bundle.manifest.source_link_count = bundle.source_links.length;
+  bundle.manifest.event_count = Array.isArray(bundle.events) ? bundle.events.length : 0;
+  bundle.manifest.events_included = Array.isArray(bundle.events);
+  bundle.manifest.root_sha256 = oracleRoot(bundle.manifest);
   return bundle;
 };
 
@@ -124,12 +128,13 @@ const insertPagedRows = (db, start, end) => {
     for (let index = start; index < end; index += 1) {
       const suffix = String(index).padStart(5, "0");
       const content = `Synthetic paginated Handoff memory ${suffix}.`;
+      const normalized = normalizeContent(content);
       const timestamp = `2026-08-20T${String(Math.floor(index / 3600) % 24).padStart(2, "0")}:${String(Math.floor(index / 60) % 60).padStart(2, "0")}:${String(index % 60).padStart(2, "0")}.000Z`;
       insert.run(
         `handoff-v2-memory-${suffix}`,
         content,
-        content.toLowerCase(),
-        sha256(content.toLowerCase()),
+        normalized,
+        hashNormalized(normalized),
         timestamp,
         timestamp,
         `2026-07-${String((index % 28) + 1).padStart(2, "0")}T00:00:00.000Z`,
@@ -164,7 +169,7 @@ const seedSource = (db) => {
     linkMemorySource(db, {
       content_hash: sha256(`Synthetic Handoff v2 memory ${index}.`),
       memory_id: memoryId,
-      source_host: "synthetic-host",
+      source_host: "codex",
       source_kind: "native_memory",
       source_line: index + 1,
       source_path: `/synthetic/memory-${index}.md`,
@@ -210,7 +215,7 @@ const assertCanonicalManifest = (bundle) => {
     assert.equal(bundle.manifest.sections[name].sha256, oracleSectionHash(name, bundle[name]));
     assert.deepEqual(bundle[name], canonicalSection(name, bundle[name]), `${name} must be canonically ordered`);
   }
-  assert.equal(bundle.manifest.root_sha256, oracleRoot(bundle.manifest.section_order, bundle.manifest.sections));
+  assert.equal(bundle.manifest.root_sha256, oracleRoot(bundle.manifest));
 };
 
 const smallBundle = (bundle, memoryCount = 2) => {
@@ -346,12 +351,17 @@ export async function run() {
       const badRoot = clone(compact);
       badRoot.manifest.root_sha256 = "0".repeat(64);
       assertRejectedWithoutWrites({ bundle: badRoot, importBundle: importHandoffBundle, label: "root-mismatch", root });
+      const unsealedEventLimitChange = clone(compact);
+      unsealedEventLimitChange.manifest.event_limit_per_memory = 1999;
+      assertRejectedWithoutWrites({
+        bundle: unsealedEventLimitChange,
+        importBundle: importHandoffBundle,
+        label: "manifest-event-limit-root-binding",
+        root,
+      });
       const reorderedManifest = clone(compact);
       reorderedManifest.manifest.section_order.reverse();
-      reorderedManifest.manifest.root_sha256 = oracleRoot(
-        reorderedManifest.manifest.section_order,
-        reorderedManifest.manifest.sections,
-      );
+      reorderedManifest.manifest.root_sha256 = oracleRoot(reorderedManifest.manifest);
       assertRejectedWithoutWrites({
         bundle: reorderedManifest,
         importBundle: importHandoffBundle,
@@ -363,6 +373,105 @@ export async function run() {
       malformedLink.source_links[0].source_host = "";
       resealV2(malformedLink);
       assertRejectedWithoutWrites({ bundle: malformedLink, importBundle: importHandoffBundle, label: "malformed-link", root });
+
+      for (const [field, value] of [
+        ["source_host", "unsupported-handoff-host"],
+        ["source_kind", "unsupported_handoff_kind"],
+        ["sync_policy", "unsupported_handoff_policy"],
+      ]) {
+        const unsupported = clone(compact);
+        unsupported.source_links[0][field] = value;
+        resealV2(unsupported);
+        assertRejectedWithoutWrites({
+          bundle: unsupported,
+          importBundle: importHandoffBundle,
+          label: `unsupported-${field}`,
+          root,
+          pattern: /source|host|kind|policy|unsupported/i,
+        });
+      }
+
+      const collidingLink = clone(compact);
+      collidingLink.source_links.push({
+        ...clone(collidingLink.source_links[0]),
+        content_hash: "f".repeat(64),
+        source_kind: "manual_import",
+      });
+      resealV2(collidingLink);
+      assertRejectedWithoutWrites({ bundle: collidingLink, importBundle: importHandoffBundle, label: "source-link-pk-collision", root });
+
+      const nullPath = clone(compact);
+      nullPath.source_links[0].source_path = null;
+      resealV2(nullPath);
+      assertRejectedWithoutWrites({ bundle: nullPath, importBundle: importHandoffBundle, label: "noncanonical-null-source-path", root });
+
+      const extraSourceLinkKeyBundle = clone(compact);
+      extraSourceLinkKeyBundle.source_links[0].extra = "unsupported";
+      resealV2(extraSourceLinkKeyBundle);
+      assertRejectedWithoutWrites({
+        bundle: extraSourceLinkKeyBundle,
+        importBundle: importHandoffBundle,
+        label: "extra-source-link-key",
+        root,
+      });
+
+      const nonStringSourceLinkIdBundle = clone(compact);
+      const originalLinkedMemoryId = nonStringSourceLinkIdBundle.source_links[0].memory_id;
+      nonStringSourceLinkIdBundle.memories.find((memory) => memory.memory_id === originalLinkedMemoryId).memory_id = "123";
+      nonStringSourceLinkIdBundle.source_links[0].memory_id = 123;
+      for (const event of nonStringSourceLinkIdBundle.events) {
+        if (event.memory_id === originalLinkedMemoryId) event.memory_id = "123";
+      }
+      resealV2(nonStringSourceLinkIdBundle);
+      assertRejectedWithoutWrites({
+        bundle: nonStringSourceLinkIdBundle,
+        importBundle: importHandoffBundle,
+        label: "non-string-source-link-memory-id",
+        root,
+      });
+
+      const invalidMemoryScopeBundle = clone(compact);
+      invalidMemoryScopeBundle.memories[0].scope = "bad scope";
+      resealV2(invalidMemoryScopeBundle);
+      const invalidMemoryCases = [
+        ["scope", invalidMemoryScopeBundle],
+        ["status", (() => { const value = clone(compact); value.memories[0].status = "ACTIVE"; return resealV2(value); })()],
+        ["type", (() => { const value = clone(compact); value.memories[0].type = "BOGUS"; return resealV2(value); })()],
+        ["memory-id", (() => { const value = clone(compact); value.memories[0].memory_id = ` ${value.memories[0].memory_id} `; return resealV2(value); })()],
+        ["source-line", (() => { const value = clone(compact); value.memories[0].source_line = 0; return resealV2(value); })()],
+        ["created-at", (() => { const value = clone(compact); value.memories[0].created_at = "2026-08-01"; return resealV2(value); })()],
+        ["normalized", (() => { const value = clone(compact); value.memories[0].normalized = "not canonical"; return resealV2(value); })()],
+        ["confidence", (() => { const value = clone(compact); value.memories[0].confidence = "0.9"; return resealV2(value); })()],
+        ["extra-key", (() => { const value = clone(compact); value.memories[0].extra = true; return resealV2(value); })()],
+        ["missing-key", (() => { const value = clone(compact); delete value.memories[0].source; return resealV2(value); })()],
+      ];
+      for (const [label, invalidMemory] of invalidMemoryCases) {
+        assertRejectedWithoutWrites({
+          bundle: invalidMemory,
+          importBundle: importHandoffBundle,
+          label: `invalid-memory-${label}`,
+          pattern: /handoff|memory|scope|status|canonical|date|field|key|normalized|confidence/i,
+          root,
+        });
+      }
+
+      for (const mutate of [
+        (value) => { value.manifest.scope = "project:tampered-scope"; },
+        (value) => { value.manifest.event_limit_per_memory = 2001; },
+        (value) => { value.manifest.memory_count += 1; },
+        (value) => { value.manifest.extra_field = true; },
+        (value) => { delete value.manifest.embedding_contract; },
+        (value) => { value.manifest.sections.extra = { count: 0, sha256: oracleSectionHash("extra", []) }; },
+        (value) => { delete value.manifest.sections.memories; },
+      ]) {
+        const invalidManifest = clone(compact);
+        mutate(invalidManifest);
+        invalidManifest.manifest.root_sha256 = oracleRoot(invalidManifest.manifest);
+        assertRejectedWithoutWrites({ bundle: invalidManifest, importBundle: importHandoffBundle, label: `manifest-${sha256(JSON.stringify(invalidManifest)).slice(0, 10)}`, root });
+      }
+      const extraBundleKey = clone(compact);
+      extraBundleKey.extra_section = [];
+      assertRejectedWithoutWrites({ bundle: extraBundleKey, importBundle: importHandoffBundle, label: "extra-bundle-key", root });
 
       for (const stage of ["after_current", "after_legacy", "after_fts", "after_event", "after_source_link"]) {
         const fixture = destinationFixture(root, `fault-${stage}`);
@@ -416,6 +525,18 @@ export async function run() {
         }),
         /cap|truncat|event/i,
       );
+      const legacySplitEvents = {
+        ...clone(legacyV1),
+        events: Array.from({ length: 2000 }, (_, index) => ({
+          event_id: `legacy-split-${index}`,
+          memory_id: legacyMemories[index % legacyMemories.length].memory_id,
+        })),
+        manifest: { ...legacyV1.manifest, event_count: 2000, events_included: true },
+      };
+      assert.doesNotThrow(
+        () => inspectLegacyV1Bundle(legacySplitEvents),
+        "legacy v1 event caps are per-memory, not aggregate",
+      );
       assertRejectedWithoutWrites({ bundle: legacyV1, importBundle: importHandoffBundle, label: "legacy-v1-import", root });
       assertRejectedWithoutWrites({
         bundle: { ...clone(compact), kind: "gigabrain.handoff-bundle/3.0", schema_version: "3.0" },
@@ -448,10 +569,21 @@ export async function run() {
       assert.equal(truncated.manifest.truncated, true, "reaching the exact evidence cap must fail closed");
       assert.equal(truncated.manifest.complete, false);
       assertRejectedWithoutWrites({ bundle: truncated, importBundle: importHandoffBundle, label: "truncated-v2-import", root });
+      const falselyComplete = clone(truncated);
+      falselyComplete.manifest.complete = true;
+      falselyComplete.manifest.truncated = false;
+      falselyComplete.manifest.root_sha256 = oracleRoot(falselyComplete.manifest);
+      assertRejectedWithoutWrites({ bundle: falselyComplete, importBundle: importHandoffBundle, label: "false-complete-v2-import", root });
       const compactPath = path.join(root, "handoff-v2-compact.json");
       const truncatedPath = path.join(root, "handoff-v2-truncated.json");
+      const invalidMemoryPath = path.join(root, "handoff-v2-invalid-memory.json");
+      const extraSourceLinkKeyPath = path.join(root, "handoff-v2-extra-source-link-key.json");
+      const nonStringSourceLinkIdPath = path.join(root, "handoff-v2-non-string-source-link-id.json");
       writeFileSync(compactPath, `${JSON.stringify(compact, null, 2)}\n`, { mode: 0o600 });
       writeFileSync(truncatedPath, `${JSON.stringify(truncated, null, 2)}\n`, { mode: 0o600 });
+      writeFileSync(invalidMemoryPath, `${JSON.stringify(invalidMemoryScopeBundle, null, 2)}\n`, { mode: 0o600 });
+      writeFileSync(extraSourceLinkKeyPath, `${JSON.stringify(extraSourceLinkKeyBundle, null, 2)}\n`, { mode: 0o600 });
+      writeFileSync(nonStringSourceLinkIdPath, `${JSON.stringify(nonStringSourceLinkIdBundle, null, 2)}\n`, { mode: 0o600 });
       source.close();
 
       const noEventsCompact = resealV2({
@@ -475,6 +607,23 @@ export async function run() {
       assert.equal(noEventsDb.prepare("SELECT COUNT(*) AS c FROM memory_events WHERE action LIKE 'source:%'").get().c, 0);
       noEventsDb.close();
 
+      const canonicalNullLink = clone(noEventsCompact);
+      canonicalNullLink.source_links[0].source_path = "";
+      canonicalNullLink.source_links[0].source_line = null;
+      resealV2(canonicalNullLink);
+      const canonicalNullFixture = destinationFixture(root, "canonical-null-link-import");
+      const canonicalNullDb = new DatabaseSync(canonicalNullFixture.dbPath);
+      const canonicalNullResult = importHandoffBundle({ bundle: canonicalNullLink, db: canonicalNullDb });
+      assert.equal(canonicalNullResult.imported_source_links, canonicalNullLink.source_links.length);
+      assert.deepEqual(
+        { ...canonicalNullDb.prepare("SELECT source_path, source_line FROM memory_source_links WHERE memory_id=?").get(canonicalNullLink.source_links[0].memory_id) },
+        { source_line: null, source_path: "" },
+      );
+      const canonicalNullRepeated = importHandoffBundle({ bundle: canonicalNullLink, db: canonicalNullDb });
+      assert.equal(canonicalNullRepeated.imported_source_links, 0);
+      assert.equal(canonicalNullDb.prepare("SELECT COUNT(*) AS c FROM memory_source_links WHERE memory_id=?").get(canonicalNullLink.source_links[0].memory_id).c, 1);
+      canonicalNullDb.close();
+
       const legacyPath = path.join(root, "legacy-v1.json");
       const malformedLegacyPath = path.join(root, "legacy-v1-malformed.json");
       writeFileSync(legacyPath, `${JSON.stringify(legacyV1, null, 2)}\n`, { mode: 0o600 });
@@ -482,7 +631,7 @@ export async function run() {
       const cli = cliConfig(root, "handoff-cli");
       const beforeInspect = snapshotTree(root);
       const inspect = spawnSync(process.execPath, [
-        path.join(repoRoot, "scripts", "gigabrainctl.js"), "handoff", "inspect", "--legacy-v1", "--in", legacyPath,
+        path.join(repoRoot, "scripts/gigabrainctl.js"), "handoff", "inspect", "--legacy-v1", "--in", legacyPath,
       ], { cwd: repoRoot, encoding: "utf8", timeout: 30_000 });
       assert.equal(inspect.status, 0, inspect.stderr);
       assert.equal(JSON.parse(inspect.stdout).inspect_only, true);
@@ -494,11 +643,14 @@ export async function run() {
         ["legacy-inspect-without-flag", ["handoff", "inspect", "--in", legacyPath]],
         ["malformed-legacy-inspect", ["handoff", "inspect", "--legacy-v1", "--in", malformedLegacyPath]],
         ["truncated-v2-import", ["handoff", "import", "--in", truncatedPath, "--config", cli.configPath]],
+        ["invalid-memory-v2-import", ["handoff", "import", "--in", invalidMemoryPath, "--config", cli.configPath]],
+        ["extra-source-link-key-v2-import", ["handoff", "import", "--in", extraSourceLinkKeyPath, "--config", cli.configPath]],
+        ["non-string-source-link-id-v2-import", ["handoff", "import", "--in", nonStringSourceLinkIdPath, "--config", cli.configPath]],
         ["integrity-bypass", ["handoff", "import", "--in", compactPath, "--config", cli.configPath, "--skip-integrity-check"]],
         ["passport-integrity-bypass", ["import-bundle", "--in", compactPath, "--config", cli.configPath, "--skip-integrity-check"]],
       ]) {
         const before = snapshotTree(root);
-        const result = spawnSync(process.execPath, [path.join(repoRoot, "scripts", "gigabrainctl.js"), ...args], {
+        const result = spawnSync(process.execPath, [path.join(repoRoot, "scripts/gigabrainctl.js"), ...args], {
           cwd: repoRoot,
           encoding: "utf8",
           timeout: 30_000,

@@ -26,3 +26,11 @@ Run `npx gigabrain-claude-setup --project-root /path/to/repo`, review `CLAUDE.md
 - Migrate stale standalone defaults (user store paths, recall order, project scope)
 - Refresh helper scripts and agent instruction blocks
 - Print the resolved config path, store root, and sharing mode
+
+## Legacy Handoff bundles
+
+Legacy v1 memory-passport bundles are inspect-only because they omit
+`valid_from` and cannot prove complete section pagination. Use
+`gigabrainctl handoff inspect --legacy-v1` for forensics and use physical database migration
+for authoritative upgrades. Do not route v1 through either
+`handoff import` or its deprecated `import-bundle` alias.

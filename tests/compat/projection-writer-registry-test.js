@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
@@ -21,7 +22,6 @@ import { appendClaimDecision, appendClaimProposal, getClaimProposal } from "../.
 import {
   BUNDLE_KIND,
   SCHEMA_VERSION,
-  computeContentHash,
   importPassportBundle,
 } from "../../lib/core/handoff-bundle.js";
 import { scanCloudInbox, syncHostMemories } from "../../lib/core/host-memory-sync.js";
@@ -70,6 +70,7 @@ const assertCurrentLegacyStatus = (db, memoryId, expected) => {
 };
 const writerConfig = (workspace) => {
   const config = normalizeConfig(makeConfigObject(workspace).plugins.entries.gigabrain.config);
+  config.lockPath = path.join(workspace, ".gigabrain-task11-native.lockdir");
   config.capture.rememberIntent.writeNative = false;
   config.maintenance.vacuum = false;
   config.native.enabled = false;
@@ -80,6 +81,7 @@ const writerConfig = (workspace) => {
 };
 
 const assertMemoryActionDomainEvents = ({ ensureProjectionStore, upsertCurrentMemory }) => {
+  const temp = makeTempWorkspace("task13-memory-action-lock-");
   const db = openDatabase(":memory:");
   try {
     ensureProjectionStore(db);
@@ -134,7 +136,8 @@ const assertMemoryActionDomainEvents = ({ ensureProjectionStore, upsertCurrentMe
       config: {
         capture: { rememberIntent: { writeNative: false } },
         compat: { writeMode: "full" },
-        runtime: { cleanupVersion: "v0.11-test", paths: {} },
+        lockPath: path.join(temp.root, "native.lockdir"),
+        runtime: { cleanupVersion: "v0.11-test", paths: { memoryRoot: temp.memoryRoot } },
       },
       db,
       event: { agentId: "main", scope: "shared", sessionKey: "task11-replacement" },
@@ -156,6 +159,7 @@ const assertMemoryActionDomainEvents = ({ ensureProjectionStore, upsertCurrentMe
     );
   } finally {
     db.close();
+    rmSync(temp.root, { force: true, recursive: true });
   }
 };
 
@@ -1392,10 +1396,11 @@ const assertOpenClawImportWriter = () => {
 
 const passportBundleFixture = (label) => {
   const temp = makeTempWorkspace(`task11-handoff-${label}-`);
-  const memories = [1, 2].map((index) => projectionMemory(
-    `handoff-b1-${index}`,
-    `Handoff B1 imported memory ${index} remains projection-atomic.`,
-    {
+  const memories = [1, 2].map((index) => {
+    const base = projectionMemory(
+      `handoff-b1-${index}`,
+      `Handoff B1 imported memory ${index} remains projection-atomic.`,
+      {
       source: "handoff_source",
       source_agent: "codex",
       source_host: "codex",
@@ -1404,26 +1409,101 @@ const passportBundleFixture = (label) => {
       source_path: `/synthetic/handoff-${index}.md`,
       source_line: index,
       sync_policy: "read_only",
-    },
-  ));
+      },
+    );
+    const normalized = normalizeContent(base.content);
+    return {
+      memory_id: base.memory_id,
+      type: base.type,
+      content: base.content,
+      normalized,
+      normalized_hash: createHash("sha256").update(normalized).digest("hex"),
+      source: base.source,
+      source_agent: base.source_agent,
+      source_session: null,
+      source_layer: base.source_layer,
+      source_path: base.source_path,
+      source_line: base.source_line,
+      source_host: base.source_host,
+      source_kind: base.source_kind,
+      sync_policy: base.sync_policy,
+      confidence: base.confidence,
+      scope: base.scope,
+      status: base.status,
+      value_score: null,
+      value_label: null,
+      created_at: base.created_at,
+      updated_at: base.updated_at,
+      archived_at: null,
+      last_reviewed_at: null,
+      tags: [],
+      superseded_by: null,
+      content_time: null,
+      valid_until: null,
+      valid_from: "2026-08-26T10:00:00.000Z",
+    };
+  });
+  const sourceLinks = memories.map((memory) => ({
+    content_hash: memory.memory_id,
+    memory_id: memory.memory_id,
+    source_host: "codex",
+    source_kind: "native_memory",
+    source_line: memory.source_line,
+    source_path: memory.source_path,
+    sync_policy: "read_only",
+  }));
+  const canonicalize = (value) => {
+    if (Array.isArray(value)) return value.map(canonicalize);
+    if (!value || typeof value !== "object") return value;
+    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]));
+  };
+  const sectionKey = (name, row) => name === "memories"
+    ? String(row.memory_id || "")
+    : [row.memory_id, row.source_host, row.source_path, row.source_line]
+      .map((value) => String(value ?? "")).join("\u0000");
+  const sectionHash = (name, rows) => createHash("sha256").update(JSON.stringify({
+    name,
+    records: [...rows].map(canonicalize).sort((left, right) => (
+      sectionKey(name, left) < sectionKey(name, right) ? -1 : sectionKey(name, left) > sectionKey(name, right) ? 1 : 0
+    )),
+  })).digest("hex");
+  const sectionOrder = ["memories", "source_links"];
+  const sections = {
+    memories: { count: memories.length, sha256: sectionHash("memories", memories) },
+    source_links: { count: sourceLinks.length, sha256: sectionHash("source_links", sourceLinks) },
+  };
+  const manifest = {
+    complete: true,
+    embedding_contract: "re-embed-on-import",
+    embeddings_included: false,
+    event_count: 0,
+    event_limit_per_memory: null,
+    events_included: false,
+    excluded_state: [
+      "embeddings",
+      "world_model_entities_and_beliefs",
+      "checkpoints_claim_proposals_and_receipts",
+      "review_queue",
+      "native_and_host_sync_cursors",
+      "transcripts_and_wiki",
+    ],
+    memory_count: memories.length,
+    scope: null,
+    section_order: sectionOrder,
+    sections,
+    source_events_replayed: 0,
+    source_link_count: sourceLinks.length,
+    truncated: false,
+    world_model_included: false,
+  };
+  manifest.root_sha256 = createHash("sha256").update(JSON.stringify(canonicalize(manifest))).digest("hex");
   const bundle = {
     kind: BUNDLE_KIND,
     schema_version: SCHEMA_VERSION,
     generated_at: "2026-08-26T16:00:00.000Z",
-    manifest: {
-      content_hash: computeContentHash(memories),
-      memory_count: memories.length,
-    },
+    manifest,
     memories,
-    source_links: memories.map((memory) => ({
-      content_hash: memory.memory_id,
-      memory_id: memory.memory_id,
-      source_host: "codex",
-      source_kind: "native_memory",
-      source_line: memory.source_line,
-      source_path: memory.source_path,
-      sync_policy: "read_only",
-    })),
+    source_links: sourceLinks,
     events: null,
   };
   return { bundle, db: openDb(temp.dbPath), temp };

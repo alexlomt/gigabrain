@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { fork, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   existsSync,
@@ -13,7 +13,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { isMainThread, parentPort, Worker, workerData } from "node:worker_threads";
+import { fileURLToPath } from "node:url";
 
 import {
   appendCheckpointEpisode,
@@ -24,8 +24,10 @@ import {
   listClaimProposals,
   listCheckpointEpisodes,
 } from "../../lib/core/control-plane.js";
+import { captureFromEvent } from "../../lib/core/capture-service.js";
 import { migrateLegacyCheckpoints } from "../../lib/core/checkpoint-migration.js";
 import { createStandaloneCodexConfig } from "../../lib/core/codex-project.js";
+import { normalizeConfig } from "../../lib/core/config.js";
 import {
   bootstrapStandaloneStore,
   runCheckpoint,
@@ -77,53 +79,76 @@ const checkpointInput = ({ checkpointId, scope, sessionId }) => ({
   summary: "Synthetic concurrent checkpoint governance fixture.",
 });
 
-const workerBarrier = () => {
-  const buffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 2);
-  return { buffer, state: new Int32Array(buffer) };
-};
-
-const waitForWorker = (worker) => new Promise((resolve, reject) => {
-  let message = null;
-  worker.once("message", (value) => { message = value; });
-  worker.once("error", reject);
-  worker.once("exit", (code) => {
-    if (code !== 0) reject(new Error(`checkpoint worker exited ${code}`));
-    else resolve(message);
+const runChildRace = async (payloads) => {
+  const orderDir = payloads.some((payload) => payload.kind === "capture-checkpoint-race")
+    ? mkdtempSync(path.join(tmpdir(), "gigabrain-task13-lock-order-"))
+    : "";
+  const children = [];
+  const bounded = (promise, label, timeoutMs = 30_000) => new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+    promise.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (error) => { clearTimeout(timer); reject(error); },
+    );
   });
-});
-
-const releaseWhenReady = async (workers, state, timeoutMs = 15_000) => {
-  const deadline = Date.now() + timeoutMs;
-  while (Atomics.load(state, 0) < workers.length && Date.now() < deadline) {
-    Atomics.wait(state, 0, Atomics.load(state, 0), 100);
+  try {
+    const states = payloads.map((payload) => {
+      const childEnv = { ...process.env };
+      delete childEnv.NODE_V8_COVERAGE;
+      childEnv.GIGABRAIN_TASK13_CHILD_PAYLOAD = Buffer.from(JSON.stringify({
+        ...payload,
+        orderDir,
+      })).toString("base64url");
+      const child = fork(fileURLToPath(import.meta.url), [], {
+        cwd: repoRoot,
+        env: childEnv,
+        execArgv: [],
+        stdio: ["ignore", "ignore", "pipe", "ipc"],
+      });
+      children.push(child);
+      let stderr = "";
+      child.stderr?.on("data", (chunk) => { stderr += String(chunk); });
+      let readyResolve;
+      let resultResolve;
+      let resultReject;
+      let receivedResult = false;
+      const ready = new Promise((resolve) => { readyResolve = resolve; });
+      const result = new Promise((resolve, reject) => { resultResolve = resolve; resultReject = reject; });
+      child.on("message", (message) => {
+        if (message?.type === "ready") readyResolve();
+        if (message?.type === "result") {
+          receivedResult = true;
+          resultResolve(message.value);
+        }
+      });
+      child.once("error", resultReject);
+      child.once("exit", (code) => {
+        if (code !== 0) resultReject(new Error(`checkpoint child exited ${code}: ${stderr.trim()}`));
+        else if (!receivedResult) resultReject(new Error("checkpoint child exited without a result"));
+      });
+      return { child, ready, result };
+    });
+    await Promise.all(states.map((state, index) => bounded(state.ready, `checkpoint child ${index} readiness`)));
+    for (const state of states) state.child.send({ type: "go" });
+    return await Promise.all(states.map((state, index) => bounded(state.result, `checkpoint child ${index} result`)));
+  } finally {
+    for (const child of children) {
+      if (child.connected) child.disconnect();
+      if (child.exitCode === null && child.signalCode === null) child.kill("SIGTERM");
+    }
+    if (orderDir) rmSync(orderDir, { force: true, recursive: true });
   }
-  if (Atomics.load(state, 0) !== workers.length) {
-    await Promise.allSettled(workers.map((worker) => worker.terminate()));
-    throw new Error(`checkpoint workers did not reach readiness barrier within ${timeoutMs}ms`);
-  }
-  Atomics.store(state, 1, 1);
-  Atomics.notify(state, 1, workers.length);
 };
 
 const runRace = async (payloads) => {
-  const barrier = workerBarrier();
-  const workers = payloads.map((payload) => new Worker(new URL(import.meta.url), {
-    workerData: { ...payload, barrier: barrier.buffer },
-  }));
-  const results = workers.map(waitForWorker);
-  await releaseWhenReady(workers, barrier.state);
-  return Promise.all(results);
+  return runChildRace(payloads);
 };
 
-const workerMain = () => {
-  const barrier = new Int32Array(workerData.barrier);
-  Atomics.add(barrier, 0, 1);
-  Atomics.notify(barrier, 0);
-  Atomics.wait(barrier, 1, 0, 30_000);
-  if (workerData.kind === "direct-checkpoint-race") {
-    const db = openDatabase(workerData.dbPath);
+const workerMain = (data) => {
+  if (data.kind === "direct-checkpoint-race") {
+    const db = openDatabase(data.dbPath);
     try {
-      const result = appendCheckpointEpisode(db, checkpointInput(workerData));
+      const result = appendCheckpointEpisode(db, checkpointInput(data));
       return {
         checkpointId: result?.checkpoint?.checkpoint_id || null,
         deduplicated: result?.deduplicated === true,
@@ -135,16 +160,16 @@ const workerMain = () => {
       db.close();
     }
   }
-  if (workerData.kind === "public-checkpoint-race") {
+  if (data.kind === "public-checkpoint-race") {
     const result = runCheckpoint({
-      allowedScopes: [workerData.scope],
-      configPath: workerData.configPath,
-      durableCandidates: [`Public checkpoint candidate ${workerData.checkpointId} requires authenticated promotion.`],
-      evidence: [`test:public-run-checkpoint-race:${workerData.checkpointId}`],
-      scope: workerData.scope,
-      sessionId: workerData.sessionId,
-      sessionLabel: workerData.checkpointId,
-      summary: `Public runCheckpoint race fixture from ${workerData.checkpointId}.`,
+      allowedScopes: [data.scope],
+      configPath: data.configPath,
+      durableCandidates: [`Public checkpoint candidate ${data.checkpointId} requires authenticated promotion.`],
+      evidence: [`test:public-run-checkpoint-race:${data.checkpointId}`],
+      scope: data.scope,
+      sessionId: data.sessionId,
+      sessionLabel: data.checkpointId,
+      summary: `Public runCheckpoint race fixture from ${data.checkpointId}.`,
       timestamp: "2026-08-27T12:30:00.000Z",
     });
     return {
@@ -153,11 +178,76 @@ const workerMain = () => {
       ok: result.ok,
       proposalIds: result.proposal_ids,
       receiptId: result.receipt_id,
-      variant: workerData.checkpointId,
+      variant: data.checkpointId,
       writtenNative: result.written_native,
     };
   }
-  throw new Error(`unknown checkpoint worker kind: ${workerData.kind}`);
+  if (data.kind === "capture-checkpoint-race") {
+    const captureReadyPath = data.orderDir ? path.join(data.orderDir, "capture-ready") : "";
+    const checkpointEnteredPath = data.orderDir ? path.join(data.orderDir, "checkpoint-entered") : "";
+    const waitForMarker = (marker, label) => {
+      const deadline = Date.now() + 10_000;
+      while (!existsSync(marker) && Date.now() < deadline) {
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+      }
+      if (!existsSync(marker)) throw new Error(label);
+    };
+    if (data.role === "capture") {
+      const db = openDatabase(data.dbPath);
+      try {
+        const result = captureFromEvent({
+          config: data.config,
+          db,
+          event: {
+            __captureLlm: {
+              extract: () => {
+                writeFileSync(captureReadyPath, "ready\n", { mode: 0o600 });
+                waitForMarker(checkpointEnteredPath, "checkpoint did not enter ordered lock race");
+                Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 500);
+                return [{ content: data.captureContent, confidence: 0.95, type: "USER_FACT" }];
+              },
+            },
+            agentId: "codex",
+            messages: [{ role: "user", content: "remember this" }],
+            output: data.captureContent,
+            prompt: "remember this",
+            scope: data.scope,
+            sessionKey: "task13-lock-order-capture",
+          },
+          operationId: "task13-lock-order-capture",
+          refreshDerived: false,
+        });
+        return {
+          inserted: result.inserted,
+          nativePath: result.write_records?.[0]?.source_path || "",
+          nativeWritten: result.native_written,
+          ok: true,
+          role: "capture",
+        };
+      } finally {
+        db.close();
+      }
+    }
+    waitForMarker(captureReadyPath, "capture did not establish its database transaction");
+    writeFileSync(checkpointEnteredPath, "entered\n", { mode: 0o600 });
+    const result = runCheckpoint({
+      allowedScopes: [data.scope],
+      configPath: data.configPath,
+      durableCandidates: [data.checkpointCandidate],
+      scope: data.scope,
+      sessionId: "session:task13-lock-order-checkpoint",
+      summary: data.checkpointSummary,
+      timestamp: "2026-08-27T12:20:00.000Z",
+    });
+    return {
+      checkpointId: result.checkpoint_id,
+      nativePath: result.source_path,
+      nativeWritten: result.written_native,
+      ok: result.ok,
+      role: "checkpoint",
+    };
+  }
+  throw new Error(`unknown checkpoint worker kind: ${data.kind}`);
 };
 
 const assertRaceOutcome = (rows) => {
@@ -378,6 +468,71 @@ export async function run() {
       mkdirSync(path.dirname(configPath), { recursive: true });
       writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
       bootstrapStandaloneStore({ configPath });
+      const resolvedConfig = normalizeConfig(config);
+      const activeTransactionDb = openDatabase(path.join(storeRoot, "memory", "registry.sqlite"));
+      try {
+        activeTransactionDb.exec("BEGIN IMMEDIATE");
+        assert.throws(() => captureFromEvent({
+          config: resolvedConfig,
+          db: activeTransactionDb,
+          event: {
+            agentId: "codex",
+            messages: [{ role: "user", content: "remember this" }],
+            output: '<memory_note type="USER_FACT" confidence="0.95">An active transaction without the outer native lock must fail closed.</memory_note>',
+            prompt: "remember this",
+            scope: "project:lock-order",
+            sessionKey: "task13-active-transaction-guard",
+          },
+          refreshDerived: false,
+        }), /GIGABRAIN_NATIVE_LOCK_ORDER/);
+        assert.equal(activeTransactionDb.isTransaction, true);
+      } finally {
+        if (activeTransactionDb.isTransaction) activeTransactionDb.exec("ROLLBACK");
+        activeTransactionDb.close();
+      }
+      const lockOrderScope = "project:lock-order";
+      const captureContent = "Concurrent capture must commit without loss under the global database-to-native lock order.";
+      const checkpointSummary = "Concurrent checkpoint must commit without timing out behind capture.";
+      const checkpointCandidate = "Concurrent checkpoint candidate remains proposal-only after the lock-order race.";
+      const lockOrderRace = await runRace([
+        {
+          captureContent,
+          config: resolvedConfig,
+          configPath,
+          dbPath: path.join(storeRoot, "memory", "registry.sqlite"),
+          kind: "capture-checkpoint-race",
+          role: "capture",
+          scope: lockOrderScope,
+        },
+        {
+          checkpointCandidate,
+          checkpointSummary,
+          configPath,
+          kind: "capture-checkpoint-race",
+          role: "checkpoint",
+          scope: lockOrderScope,
+        },
+      ]);
+      assert.equal(lockOrderRace.every((row) => row?.ok === true), true, "capture/checkpoint race must finish without timeout");
+      assert.deepEqual(lockOrderRace.map((row) => row.role).sort(), ["capture", "checkpoint"]);
+      assert.equal(lockOrderRace.find((row) => row.role === "capture")?.inserted, 1);
+      assert.equal(lockOrderRace.find((row) => row.role === "capture")?.nativeWritten, 1);
+      assert.equal(lockOrderRace.find((row) => row.role === "checkpoint")?.nativeWritten, true);
+      const lockOrderDb = openDatabase(path.join(storeRoot, "memory", "registry.sqlite"));
+      try {
+        assert.equal(lockOrderDb.prepare("SELECT COUNT(*) AS c FROM memory_current WHERE content=?").get(captureContent).c, 1);
+        assert.equal(lockOrderDb.prepare("SELECT COUNT(*) AS c FROM memory_checkpoints WHERE scope=? AND session_id=?")
+          .get(lockOrderScope, "session:task13-lock-order-checkpoint").c, 1);
+      } finally {
+        lockOrderDb.close();
+      }
+      const lockOrderNativePath = lockOrderRace.find((row) => row.role === "capture")?.nativePath
+        || lockOrderRace.find((row) => row.role === "checkpoint")?.nativePath;
+      const lockOrderNative = readFileSync(lockOrderNativePath, "utf8");
+      assert.match(lockOrderNative, new RegExp(captureContent.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+      assert.match(lockOrderNative, new RegExp(checkpointSummary.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+      assert.match(lockOrderNative, new RegExp(checkpointCandidate.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+
       const publicScope = "project:public-race";
       const publicSession = "session:public-run-checkpoint-race";
       const publicRace = await runRace(["worker-a", "worker-b"].map((checkpointId) => ({
@@ -450,6 +605,82 @@ export async function run() {
       assert.equal(mainThreadCheckpoint.ok, true, "exported run must directly execute the public checkpoint boundary");
       assert.equal(mainThreadCheckpoint.scope, "project:main-thread");
 
+      const nativeBeforeFailedCheckpoint = readFileSync(nativePath);
+      const nativeModeBeforeFailedCheckpoint = lstatSync(nativePath).mode & 0o777;
+      assert.throws(() => runCheckpoint({
+        allowedScopes: ["project:main-thread"],
+        configPath,
+        durableCandidates: ["This candidate must be removed by native compensation."],
+        faultInjector: (stage) => { if (stage === "after_checkpoint") throw new Error("synthetic public checkpoint failure"); },
+        scope: "project:main-thread",
+        sessionId: "session:public-failed-checkpoint",
+        summary: "This native checkpoint block must be compensated exactly.",
+        timestamp: "2026-08-27T12:50:00.000Z",
+      }), /synthetic public checkpoint failure/);
+      assert.deepEqual(
+        readFileSync(nativePath),
+        nativeBeforeFailedCheckpoint,
+        "a post-native database failure must restore the exact prior native bytes",
+      );
+      assert.equal(
+        lstatSync(nativePath).mode & 0o777,
+        nativeModeBeforeFailedCheckpoint,
+        "native compensation must restore the prior file mode",
+      );
+      const compensatedDb = openDatabase(publicDbPath);
+      try {
+        assert.equal(
+          compensatedDb.prepare("SELECT COUNT(*) AS c FROM memory_checkpoints WHERE scope=? AND session_id=?")
+            .get("project:main-thread", "session:public-failed-checkpoint").c,
+          0,
+        );
+      } finally {
+        compensatedDb.close();
+      }
+
+      for (const [stage, sessionId, failureText] of [
+        ["before_checkpoint_hydration", "session:public-hydration-failure", "synthetic checkpoint hydration failure"],
+        ["before_checkpoint_outer_commit", "session:public-outer-commit-failure", "synthetic checkpoint outer commit failure"],
+      ]) {
+        const before = readFileSync(nativePath);
+        assert.throws(() => runCheckpoint({
+          allowedScopes: ["project:main-thread"],
+          configPath,
+          durableCandidates: [`${stage} candidate must be compensated.`],
+          faultInjector: (value) => { if (value === stage) throw new Error(failureText); },
+          scope: "project:main-thread",
+          sessionId,
+          summary: `${stage} native block must be compensated.`,
+          timestamp: "2026-08-27T12:55:00.000Z",
+        }), new RegExp(failureText));
+        assert.deepEqual(readFileSync(nativePath), before);
+        const failedDb = openDatabase(publicDbPath);
+        try {
+          assert.equal(failedDb.prepare("SELECT COUNT(*) AS c FROM memory_checkpoints WHERE session_id=?").get(sessionId).c, 0);
+        } finally {
+          failedDb.close();
+        }
+      }
+
+      const postCommitSession = "session:public-post-commit-failure";
+      const postCommitSummary = "A post-commit injected failure must not compensate committed native bytes.";
+      assert.throws(() => runCheckpoint({
+        allowedScopes: ["project:main-thread"],
+        configPath,
+        faultInjector: (value) => { if (value === "after_checkpoint_outer_commit") throw new Error("synthetic post-commit failure"); },
+        scope: "project:main-thread",
+        sessionId: postCommitSession,
+        summary: postCommitSummary,
+        timestamp: "2026-08-27T12:56:00.000Z",
+      }), /synthetic post-commit failure/);
+      const postCommitDb = openDatabase(publicDbPath);
+      try {
+        assert.equal(postCommitDb.prepare("SELECT COUNT(*) AS c FROM memory_checkpoints WHERE session_id=?").get(postCommitSession).c, 1);
+      } finally {
+        postCommitDb.close();
+      }
+      assert.match(readFileSync(nativePath, "utf8"), new RegExp(postCommitSummary.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+
       const quotedConfigPath = path.join(root, "open claw's quoted config", "openclaw.json");
       mkdirSync(path.dirname(quotedConfigPath), { recursive: true });
       writeFileSync(quotedConfigPath, "{}\n", { mode: 0o600 });
@@ -476,12 +707,20 @@ export async function run() {
   });
 }
 
-if (!isMainThread && workerData?.kind) {
-  try {
-    parentPort.postMessage(workerMain());
-  } catch (error) {
-    parentPort.postMessage({ error: String(error?.message || error), ok: false });
-  }
-} else if (isMainThread) {
+const childPayload = String(process.env.GIGABRAIN_TASK13_CHILD_PAYLOAD || '');
+if (childPayload) {
+  const data = JSON.parse(Buffer.from(childPayload, 'base64url').toString('utf8'));
+  process.send?.({ type: 'ready' });
+  process.once('message', (message) => {
+    if (message?.type !== 'go') return;
+    let value;
+    try {
+      value = workerMain(data);
+    } catch (error) {
+      value = { error: String(error?.message || error), ok: false };
+    }
+    process.send?.({ type: 'result', value }, () => process.disconnect?.());
+  });
+} else {
   runDirect(import.meta.url, run);
 }

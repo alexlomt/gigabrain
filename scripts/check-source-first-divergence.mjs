@@ -43,6 +43,7 @@ const UPSTREAM_NON_RUNTIME_DISPOSITIONS = new Map([
   ["tests/memory_api_security_test.py", "private_dev_only"],
   ["tests/run-all.js", "private_dev_only"],
   ["tests/unit-config-test.js", "private_dev_only"],
+  ["tests/unit-control-plane-test.js", "private_dev_only"],
   ["tests/unit-git-wiki-test.js", "private_dev_only"],
   ["tests/unit-lifecycle-hooks-test.js", "private_dev_only"],
   ["tests/unit-pii-scanner-test.js", "private_dev_only"],

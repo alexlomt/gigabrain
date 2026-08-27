@@ -80,7 +80,12 @@ export async function run() {
     const registry = policy.WRITER_REGISTRY;
     const discovered = discoverWriterEntrypoints({ repoRoot });
     assert.equal(governedWriterRegistryGate(discovered), true);
-    assert.equal(discovered.length, 183, "all shipped entrypoints remain in the discovery inventory");
+    assert.equal(discovered.length, 186, "all shipped entrypoints remain in the discovery inventory");
+    assert.equal(
+      discovered.find((entry) => entry.sourcePath === "lib/core/handoff-bundle.js" && entry.symbol === "importHandoffBundle")?.operation,
+      "internal.handoff.import",
+      "the canonical Handoff v2 importer must remain a governed writer",
+    );
     assert.equal(
       new Set(discovered.filter((entry) => entry.access === "write").map((entry) => entry.canonicalOperation || entry.operation)).size,
       75,

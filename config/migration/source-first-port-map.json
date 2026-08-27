@@ -52,6 +52,20 @@
       "targetPath": ".npmignore"
     },
     {
+      "changeType": "modified",
+      "contentSha256": "aabe5be2afd5d793b3e9a83440df71ed4f9d689d368189acd27249ec3f0044b1",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-handoff-fidelity"
+      },
+      "ownerTasks": [
+        "13"
+      ],
+      "reason": "Task 13 documents fully bound Handoff v2 manifests, strict source-link semantics, legacy handling, and excluded state.",
+      "targetMode": "100644",
+      "targetPath": "SECURITY.md"
+    },
+    {
       "changeType": "added",
       "contentSha256": "9d4971e7629f2ec1b8a2610638cec62b26a1ffb454e01889089367ae5ae0b27a",
       "disposition": "operator_only",
@@ -88,6 +102,7 @@
       },
       "ownerTasks": [
         "12",
+        "13",
         "2A",
         "2B",
         "3",
@@ -97,13 +112,13 @@
         "8",
         "9"
       ],
-      "reason": "Source-first evidence plus promoted Task 12 snapshot, setup, real daily executor, isolation, and durable receipt ownership.",
+      "reason": "Source-first evidence through promoted Task 13 checkpoint and Handoff v2 contracts, retaining prior task ownership.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-port-map.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "589a15dbce3bcd90c2b2a445647660a624d8b6afba7be8dc11c1de7513efd2b8",
+      "contentSha256": "57803f4789f32e25a1aad5e471a8e41948be9ed638d2b587844b4ddb86a51c5c",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -121,7 +136,7 @@
         "9",
         "13"
       ],
-      "reason": "Source-first registry adds the two governed Task 13 RED contracts while retaining combined Task 12 and CI evidence.",
+      "reason": "Source-first registry promotes the two Task 13 contracts to passing executable gates with actual-diff relevance evidence.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -197,36 +212,66 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "d1c6f24f43eeca88a4dbe4d5983b488e4a84c71b13ff02ddda243a27319c95fb",
+      "contentSha256": "e21428060e58a3db7d1d74fc82c177cf0a853197476448c2e8d523b2952a9c00",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "upstream-adoption"
       },
       "ownerTasks": [
         "12",
+        "13",
         "2A",
         "2B",
         "3",
         "5"
       ],
-      "reason": "Task 12 removes two deliberately adapted upstream tests from the byte-identity allowlist and classifies them as private development diffs.",
+      "reason": "Task 13 removes the deliberately adapted control-plane unit fixture from upstream byte identity while preserving prior Task 12 allowlist classifications.",
       "targetMode": "100644",
       "targetPath": "config/migration/upstream-source-allowlist.json"
     },
     {
       "changeType": "modified",
-      "contentSha256": "8a0293c7d702d44041438072613850d83ab72cd262d4676c6fdf5c0e50af7cbf",
+      "contentSha256": "7e57c8ad81d20f8af091930bc0754eef321b7163b73bd47b319fb31228281196",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-config-schema-parity"
+        "registrationId": "compat-checkpoint-concurrency"
       },
       "ownerTasks": [
+        "13"
+      ],
+      "reason": "Task 13 documents global native-to-database ordering, active-transaction rejection, atomic checkpoints, and compensation.",
+      "targetMode": "100644",
+      "targetPath": "docs/checkpoint-control-plane.md"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "6373e52db69467e286f2448cea2a02c6efba7c2791fdeaaba2ab202167be92de",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-handoff-fidelity"
+      },
+      "ownerTasks": [
+        "13",
         "4",
         "9"
       ],
-      "reason": "Canonical Task 4 configuration retained while Task 9D documents loopback-only review and the hard 20-row ceiling.",
+      "reason": "Task 13 documents fully bound Handoff v2 manifests, strict source-link semantics, legacy handling, and excluded state.",
       "targetMode": "100644",
       "targetPath": "docs/configuration.md"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "4870fc7c20e5742ca0871c1a5a8996313f9b5132e9c7388e6b94af6425993037",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-handoff-fidelity"
+      },
+      "ownerTasks": [
+        "13"
+      ],
+      "reason": "Task 13 documents fully bound Handoff v2 manifests, strict source-link semantics, legacy handling, and excluded state.",
+      "targetMode": "100644",
+      "targetPath": "docs/handoff-record.md"
     },
     {
       "changeType": "added",
@@ -255,6 +300,20 @@
       "reason": "Audited release and package provenance for the clean compatibility base.",
       "targetMode": "100644",
       "targetPath": "docs/migration/v0.11-base-provenance.md"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "0c64281190f1a98d7e3822dee50bb468fa7614f238449209683de45e4ccc49db",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-handoff-fidelity"
+      },
+      "ownerTasks": [
+        "13"
+      ],
+      "reason": "Task 13 documents fully bound Handoff v2 manifests, strict source-link semantics, legacy handling, and excluded state.",
+      "targetMode": "100644",
+      "targetPath": "docs/upgrading.md"
     },
     {
       "changeType": "added",
@@ -484,16 +543,17 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "c760588c8ca3a27a17ec12393d07ccec529e50802fd62106ef3be71468b42f62",
+      "contentSha256": "238b67bb73500d0f5a64d3545ff9496e383dfd386f7dd0dd8b22d0bd9a353819",
       "disposition": "compat_module",
       "gate": {
         "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
         "11",
+        "13",
         "9"
       ],
-      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
+      "reason": "Task 13 wraps default queue-review mutation batches in the global native-to-database lock order while preserving Task 11 writer atomicity.",
       "targetMode": "100644",
       "targetPath": "lib/compat/queue-review-service.js"
     },
@@ -542,18 +602,19 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "41370e24fe2f4d45513d3d15e038d6ecaeada6d84a5de710f867dcb722f56223",
+      "contentSha256": "2dfd4fa17f987cadd4c20aac2e6b99d24ef2088636c9d1e3d31ae30e274d7561",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-write-mode-gate"
       },
       "ownerTasks": [
         "10",
+        "12",
+        "13",
         "5",
-        "6",
-        "12"
+        "6"
       ],
-      "reason": "Task 12 classifies the fail-closed snapshot command while preserving the complete full-mode writer registry.",
+      "reason": "Task 13 registers the canonical Handoff v2 importer as a governed writer while retaining the complete compatibility policy.",
       "targetMode": "100644",
       "targetPath": "lib/compat/write-policy.js"
     },
@@ -601,18 +662,19 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "61316737ecdd3274a6e5f9d844ead12bd3d415f354c80a531b6ee17de2291a7c",
+      "contentSha256": "2faf257f3cac49b66c24da35b080ade20b0e8b324a7d18f277010453e736c73a",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-projection-writer-registry"
+        "registrationId": "compat-checkpoint-concurrency"
       },
       "ownerTasks": [
         "11",
+        "13",
         "4",
         "5",
         "7"
       ],
-      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
+      "reason": "Task 13 enforces the global native-to-database order at capture entry, including active-transaction fail-closed behavior.",
       "targetMode": "100644",
       "targetPath": "lib/core/capture-service.js"
     },
@@ -621,12 +683,13 @@
       "contentSha256": "2a06759dbfea5092891f41b0ae91c957528c3ba765da7969fc9c8dfe98553aab",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-checkpoint-promotion-isolation"
+        "registrationId": "compat-checkpoint-concurrency"
       },
       "ownerTasks": [
+        "13",
         "6"
       ],
-      "reason": "Task 6 excludes typed structured checkpoints from legacy checkpoint import.",
+      "reason": "Task 13 verifies deterministic proposal-free legacy checkpoint migration and zero-write dry-run behavior.",
       "targetMode": "100644",
       "targetPath": "lib/core/checkpoint-migration.js"
     },
@@ -646,16 +709,17 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "69a1167a0a44b8c276b32a4107930e748d5f4b8e9535910aed0f367e1c20f2b5",
+      "contentSha256": "3c0dbcee02e77430baeb631c1c5761359c8a4ee831aa009d3af692775b78c1d0",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-projection-writer-registry"
+        "registrationId": "compat-checkpoint-concurrency"
       },
       "ownerTasks": [
         "11",
+        "13",
         "5"
       ],
-      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
+      "reason": "Task 13 keeps checkpoint and claim-acceptance native locks through complete hydration and final database commit or rollback compensation.",
       "targetMode": "100644",
       "targetPath": "lib/core/codex-service.js"
     },
@@ -677,17 +741,18 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "96db5ff4bcbd48b82c1de8e58bc7142c41037aeccca63b1a0c434f2c5809cf47",
+      "contentSha256": "2c3448006d6d9bb3c9336a2022a833f02931e17e8efd39ecbd6fe3dd8a93eefa",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-projection-writer-registry"
+        "registrationId": "compat-checkpoint-concurrency"
       },
       "ownerTasks": [
         "11",
+        "13",
         "5",
         "6"
       ],
-      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
+      "reason": "Task 13 hydrates complete checkpoint results before transaction release and retains atomic dedup/savepoint governance.",
       "targetMode": "100644",
       "targetPath": "lib/core/control-plane.js"
     },
@@ -707,32 +772,34 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "fd2d5ccf2b64069a4be875f2d129f0ef96b031f5580ec2918c66ddd346e318bf",
+      "contentSha256": "40c4f8875e76941c65746aaf7c5528449dcdd432a961b0a06b44d74e8f938e79",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-projection-writer-registry"
+        "registrationId": "compat-handoff-fidelity"
       },
       "ownerTasks": [
         "11",
+        "13",
         "2B"
       ],
-      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
+      "reason": "Task 13 implements exact Handoff v2 schema, strict canonical memory/source rows with no ID coercion before writes, whole-manifest roots, PK-aligned links, per-memory caps, and zero-write rejection.",
       "targetMode": "100644",
       "targetPath": "lib/core/handoff-bundle.js"
     },
     {
       "changeType": "modified",
-      "contentSha256": "3cfc99bb895c4a1ebc1a430c7db8c7605b84c047a78499e9e5a22f7603231cd0",
+      "contentSha256": "ce09d9f0f82f811a216a9c8e252bdc7e724cd9c74304a531400e2ac2f1fd06e6",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-projection-writer-registry"
+        "registrationId": "compat-handoff-fidelity"
       },
       "ownerTasks": [
         "11",
+        "13",
         "4",
         "5"
       ],
-      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
+      "reason": "Task 13 preserves canonical null source lines and exact source-link primary-key fidelity during Handoff import.",
       "targetMode": "100644",
       "targetPath": "lib/core/host-memory-sync.js"
     },
@@ -766,6 +833,20 @@
     },
     {
       "changeType": "modified",
+      "contentSha256": "959d3e58f0cbed2f8c22be950ebb84e9b1aa16403bd02d40cb95b3c25df51b60",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-checkpoint-concurrency"
+      },
+      "ownerTasks": [
+        "13"
+      ],
+      "reason": "Task 13 retains quote-safe lifecycle failure logging under the hardened checkpoint contract.",
+      "targetMode": "100644",
+      "targetPath": "lib/core/lifecycle-hooks.js"
+    },
+    {
+      "changeType": "modified",
       "contentSha256": "ff9d3464a77e27127bec5c211b4935d51e92bcd763993de3d1a85850def16ffa",
       "disposition": "core_patch",
       "gate": {
@@ -784,17 +865,18 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "7380b2aab35af42a3e01ff820cad23ffddbf273ad7a0b2017f538db5f1aba13a",
+      "contentSha256": "5f8239b4e802cf6007c63443c52af272c3c5f4ef48b8c071bd4ed640c92a6adc",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
         "11",
+        "13",
         "4",
         "5"
       ],
-      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
+      "reason": "Task 13 wraps native-writing replacement actions in the global native-to-database lock order while preserving Task 11 writer atomicity.",
       "targetMode": "100644",
       "targetPath": "lib/core/memory-actions.js"
     },
@@ -814,16 +896,17 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "a3e5afe1dbdaa4a3b976938b2fdc102630b8ed4ba5858aa6bdbe96093dceea2c",
+      "contentSha256": "de41b27d137ee47df8e4aeb16dc60c137f1457ca41b6d7499afc7e1d5cbe79c0",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-write-mode-gate"
       },
       "ownerTasks": [
+        "13",
         "5",
         "6"
       ],
-      "reason": "Task 5 compatibility behavior retained while Task 6 adds governed native-memory semantics.",
+      "reason": "Task 13 exposes the production native-lock ownership predicate consumed by guarded capture and memory-action transaction paths.",
       "targetMode": "100644",
       "targetPath": "lib/core/native-memory.js"
     },
@@ -1293,19 +1376,20 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "46f76f991fed32334408e4311501e05779de9e4c7ae746acbd383bb2463624c1",
+      "contentSha256": "f4a5b270e15a54495a883957f0a6506501f1a49ea6dc8d429df44e9a174cdfe0",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
       },
       "ownerTasks": [
         "12",
+        "13",
         "2A",
         "3",
         "4",
         "5"
       ],
-      "reason": "Task 12 keeps adapted upstream tests private-dev classified instead of falsely retaining byte-identity ownership.",
+      "reason": "Source-first guard retains runtime core strictness while explicitly classifying the reviewed Task 13 control-plane unit adaptation as private development.",
       "targetMode": "100644",
       "targetPath": "scripts/check-source-first-divergence.mjs"
     },
@@ -1325,20 +1409,21 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "b31d2b74af4eb7325c3c8e2418fa7d268bbdd710c36b5433c3052e995bb8ed2a",
+      "contentSha256": "6ead130792836199c0d99be38220c0208aa2286dc201f907b7e12b0a774f9f19",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-nightly-order"
+        "registrationId": "compat-handoff-fidelity"
       },
       "ownerTasks": [
         "10",
         "11",
+        "12",
+        "13",
         "5",
         "6",
-        "9",
-        "12"
+        "9"
       ],
-      "reason": "Task 12 routes snapshot, nightly, maintain, dry-run, and isolated shadow execution through governed fail-closed entrypoints.",
+      "reason": "Task 13 retains fail-closed Handoff v2 export, inspect, and import CLI routes with pre-config validation.",
       "targetMode": "100755",
       "targetPath": "scripts/gigabrainctl.js"
     },
@@ -1487,7 +1572,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "a5a04e3d28ffc2f75237c8ca95193ab820bed56eea8de77cff6dc1424d8c0f01",
+      "contentSha256": "ccda69167f5b6032e15c2249681b7d38a9efbfe2bcf1e07456e38556ce7f5a93",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-checkpoint-concurrency"
@@ -1495,7 +1580,7 @@
       "ownerTasks": [
         "13"
       ],
-      "reason": "Task 13 RED contract for direct and public checkpoint races, savepoint rollback, scope/ref authorization, promotion, migration dry-run, and quote-safe lifecycle logging.",
+      "reason": "Passing Task 13 contract for deterministic lock-order races, active-transaction guards, hydration/commit faults, compensation, scope, and promotion.",
       "targetMode": "100644",
       "targetPath": "tests/compat/checkpoint-concurrency-test.js"
     },
@@ -1603,7 +1688,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "b0fcd04a3623e3924b4d2099b216039be83d8a87bd56b3bd92f5c7da3379364e",
+      "contentSha256": "ae0fae846c71bc2d0d4b18fbcff22301beda41acb0ab941cbf0afafd3b4f3fd1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1622,7 +1707,7 @@
         "9",
         "13"
       ],
-      "reason": "Expected-failure ownership contains the two Task 13 RED contracts and the two planned Task 14 migration contracts.",
+      "reason": "Expected-failure ownership removes only the two completed Task 13 contracts and retains both planned Task 14 contracts.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1658,7 +1743,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "60fe041a171fb55580bda86b612d65993ed3709a06287f4fe6dc47ac2199c638",
+      "contentSha256": "6d76490df427ea943bd3ad2718d53b685ec22603784264145e725bf9d0d66ef4",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-handoff-fidelity"
@@ -1666,7 +1751,7 @@
       "ownerTasks": [
         "13"
       ],
-      "reason": "Task 13 RED contract for independent canonical oracles, >10k pagination, all-section integrity, idempotency/fault rollback, exact cap handling, CLI zero-write rejection, and legacy inspect-only behavior.",
+      "reason": "Passing Task 13 contract for rooted invalid-memory/source keys and types across library/CLI zero-write rejection, manifest integrity, PK/null fidelity, caps, and legacy inspection.",
       "targetMode": "100644",
       "targetPath": "tests/compat/handoff-fidelity-test.js"
     },
@@ -1862,15 +1947,16 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "fdfc2f6dd04f2e34b757621bdbd62bea06056172e0c1c70ca5284459fe3fb32e",
+      "contentSha256": "2734cc2cda327309204c97f8689fdeafc1d1b6dcb1497ed0655970b61b180faa",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-projection-writer-registry"
       },
       "ownerTasks": [
-        "11"
+        "11",
+        "13"
       ],
-      "reason": "Passing Task 11 contract for centralized Node projection writers and rollback-window legacy-drop blocking.",
+      "reason": "Task 11 writer registry remains passing with Task 13 lock-order integration and a complete independent canonical Handoff v2 fixture oracle.",
       "targetMode": "100644",
       "targetPath": "tests/compat/projection-writer-registry-test.js"
     },
@@ -2049,18 +2135,19 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "55dbdc131bf1467962f1fb044c5680e5c0a9cee40ac789a37054fe6f4b944648",
+      "contentSha256": "205b8c0c7698a899e2c389fe7720bd971d97a0f9d67aba37170a315945e47dd1",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-write-mode-gate"
       },
       "ownerTasks": [
         "10",
+        "12",
+        "13",
         "5",
-        "6",
-        "12"
+        "6"
       ],
-      "reason": "Passing writer-registry contract includes the governed Task 12 snapshot entrypoint and maintain/nightly routing.",
+      "reason": "Task 13 updates the exact shipped-entrypoint inventory and asserts canonical Handoff v2 writer governance.",
       "targetMode": "100644",
       "targetPath": "tests/compat/write-mode-gate-test.js"
     },
@@ -2108,18 +2195,18 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "7dddec5c98caec39721f76944df5b7d73f6f2cef782dcc144250daa817418c53",
+      "contentSha256": "5e73b2bc6a359b807dc0a93b3e4ce3c2280e4a4801f99d0a1a64bfd38683ad34",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
       },
       "ownerTasks": [
+        "13",
         "2B",
         "4",
-        "5",
-        "13"
+        "5"
       ],
-      "reason": "Full inventory contract binds canonical Task 13 RED ownership alongside prior governed inventory assertions.",
+      "reason": "Full inventory contract verifies completed Task 13 checkpoint/Handoff gates are absent from XFAILs and registered as pass with null signatures.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory-contract-test.js"
     },
@@ -2614,7 +2701,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "fc167da8955b5b456601560dc750285eb60d2ec0680aa470b0e4e7428dd5011b",
+      "contentSha256": "df6d2071ee17ae09fc3b1c13482c321ec5378b839eabcb86c16eac1433e3c6df",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2633,7 +2720,7 @@
         "9",
         "13"
       ],
-      "reason": "Source-first policy contract updates the combined candidate count for the two Task 13 RED additions.",
+      "reason": "Source-first policy contract verifies the 131-entry allowlist and exact private-development classification for the adapted Task 13 control-plane unit fixture.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },
@@ -2706,6 +2793,20 @@
       "reason": "Canonical configuration-family count updated for the reviewed Task 4 schema.",
       "targetMode": "100644",
       "targetPath": "tests/unit-config-test.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "d5db14b2dba48580fcddd3f9329bef364557cdd2ff54b990793cf3ac4e348d8f",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-checkpoint-concurrency"
+      },
+      "ownerTasks": [
+        "13"
+      ],
+      "reason": "Task 13 compatibility fixture preserves parent lineage and pagination while using a distinct stable follow-up session ID.",
+      "targetMode": "100644",
+      "targetPath": "tests/unit-control-plane-test.js"
     },
     {
       "changeType": "added",
@@ -2964,15 +3065,16 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "27aea13ba183d21e8d21998cb817f18b4dc911ef6884dff9853c58de19a171c9",
+      "contentSha256": "6c0cb2436b2e9a2e70c133e6c3018f8f42a90c7e2ba1f24912657010345810b4",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "restored-unit-passport-bundle"
       },
       "ownerTasks": [
+        "13",
         "2B"
       ],
-      "reason": "Scanner-clean restored compatibility assertion or its private test infrastructure.",
+      "reason": "Restored compatibility test now binds the public Handoff v2 identity while retaining the legacy v1 content-hash oracle.",
       "targetMode": "100644",
       "targetPath": "tests/unit-passport-bundle-test.js"
     },

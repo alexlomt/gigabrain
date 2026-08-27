@@ -25,7 +25,12 @@ import { ensureVaultStore, syncVaultMemory } from '../lib/core/vault-sync.js';
 import { ensureTranscriptStore, harvestTranscripts, transcriptStatus } from '../lib/core/transcript-harvester.js';
 import { projectWiki, reconcileWiki, resolveWikiConfig } from '../lib/core/wiki-project.js';
 import { buildMemoryPassport, writeMemoryPassport } from '../lib/core/handoff-record.js';
-import { exportPassportBundle, importPassportBundle } from '../lib/core/handoff-bundle.js';
+import {
+  exportHandoffBundle,
+  importHandoffBundle,
+  inspectLegacyV1Bundle,
+  validateBundleShape,
+} from '../lib/core/handoff-bundle.js';
 import { captureSnapshotMetrics } from '../lib/core/metrics.js';
 import { orchestrateRecall } from '../lib/core/orchestrator.js';
 import { captureFromEvent } from '../lib/core/capture-service.js';
@@ -82,9 +87,9 @@ Commands:
   wiki         Git-versioned LLM-wiki projection of the ledger (project|reconcile|status; human edits round-trip + win arbitration)
   sync-hosts   Sync local host memories into the cross-agent memory bus
   import-openclaw Import a legacy OpenClaw/Gigabrain registry.sqlite with provenance
-  handoff      Generate a static Memory Audit report and safe Handoff Records (alias: passport, deprecated)
-  export-bundle  Export a portable, re-importable memory bundle (versioned + integrity-hashed)
-  import-bundle  Import a memory bundle into this store (verifies integrity, rebuilds world model)
+  handoff      Audit/Handoff Records, plus Handoff v2 export|inspect|import
+  export-bundle  Deprecated alias for handoff export
+  import-bundle  Deprecated alias for handoff import
 
 Examples:
   node scripts/gigabrainctl.js init
@@ -552,7 +557,13 @@ const resolveCliWriteOperation = () => {
     audit: 'cli.audit',
     control: subcommand === 'apply' ? 'cli.control_apply' : '',
     'export-bundle': 'cli.export_bundle',
-    handoff: 'cli.handoff',
+    handoff: subcommand === 'import'
+      ? 'cli.import_bundle'
+      : subcommand === 'export'
+        ? 'cli.export_bundle'
+        : subcommand === 'inspect'
+          ? ''
+          : 'cli.handoff',
     passport: 'cli.handoff',
     'import-bundle': 'cli.import_bundle',
     'import-openclaw': 'cli.import_openclaw',
@@ -2826,6 +2837,19 @@ Examples:
   node scripts/gigabrainctl.js handoff --config ~/.gigabrain/config.json --scope profile:user --output-dir ./handoff-record
 `;
 
+const HANDOFF_TRANSFER_HELP = `Gigabrain Handoff v2 transfer
+
+Usage:
+  node scripts/gigabrainctl.js handoff export --config <path> --out <bundle.json> [--include-events]
+  node scripts/gigabrainctl.js handoff inspect --in <bundle.json>
+  node scripts/gigabrainctl.js handoff inspect --legacy-v1 --in <legacy.json>
+  node scripts/gigabrainctl.js handoff import --config <path> --in <bundle.json>
+
+Legacy v1 bundles are inspect-only. Import requires exact, complete
+gigabrain.handoff-bundle/2.0 integrity and never replays carried source events.
+The old export-bundle/import-bundle commands remain deprecated aliases.
+`;
+
 const commandPassport = async () => {
   const passportFlags = flags;
   if (passportFlags.includes('--help') || passportFlags.includes('-h')) {
@@ -2887,16 +2911,21 @@ const commandExportBundle = async () => {
     const count = db.prepare('SELECT COUNT(*) AS c FROM memory_current').get()?.c || 0;
     if (Number(count) === 0) materializeProjectionFromMemories(db);
     const outPath = path.resolve(readFlag('--out', './memory-bundle.json'));
-    const bundle = exportPassportBundle({
+    const bundle = exportHandoffBundle({
       db,
       scope: readFlag('--scope', ''),
       includeEvents: readBool('--include-events', false),
+      pageSize: Number(readFlag('--page-size', '1000') || 1000),
+      eventLimitPerMemory: Number(readFlag('--event-limit-per-memory', '2000') || 2000),
     });
+    if (bundle.manifest.complete !== true || bundle.manifest.truncated !== false) {
+      throw new Error('handoff export reached the source-event evidence cap; no artifact was written');
+    }
     ensureDir(path.dirname(outPath));
-    fs.writeFileSync(outPath, `${JSON.stringify(bundle, null, 2)}\n`, 'utf8');
+    atomicWriteFileSync(outPath, `${JSON.stringify(bundle, null, 2)}\n`, { mode: 0o600 });
     console.log(JSON.stringify({
       ok: true,
-      action: 'export_bundle',
+      action: 'handoff_export',
       configPath,
       dbPath,
       outPath,
@@ -2907,22 +2936,54 @@ const commandExportBundle = async () => {
   }
 };
 
-const commandImportBundle = async () => {
+const readHandoffInput = () => {
   const inFlag = readFlag('--in', '');
-  if (!inFlag) {
-    throw new Error('import-bundle requires --in /path/to/memory-bundle.json');
-  }
+  if (!inFlag) throw new Error('handoff requires --in /path/to/handoff-bundle.json');
   const inPath = path.resolve(inFlag);
-  const bundle = JSON.parse(fs.readFileSync(inPath, 'utf8'));
+  return { bundle: JSON.parse(fs.readFileSync(inPath, 'utf8')), inPath };
+};
+
+const commandInspectBundle = async () => {
+  if (readBool('--skip-integrity-check', false)) {
+    throw new Error('handoff integrity checks cannot be bypassed');
+  }
+  const { bundle, inPath } = readHandoffInput();
+  if (readBool('--legacy-v1', false)) {
+    console.log(JSON.stringify({ ...inspectLegacyV1Bundle(bundle), in_path: inPath }, null, 2));
+    return;
+  }
+  const validated = validateBundleShape(bundle, { requireComplete: false });
+  console.log(JSON.stringify({
+    ok: true,
+    action: 'handoff_inspect',
+    importable: bundle.manifest.complete === true && bundle.manifest.truncated === false,
+    inspect_only: false,
+    in_path: inPath,
+    kind: bundle.kind,
+    schema_version: bundle.schema_version,
+    root_sha256: validated.root,
+    manifest: bundle.manifest,
+  }, null, 2));
+};
+
+const commandImportBundle = async () => {
+  if (readBool('--skip-integrity-check', false)) {
+    throw new Error('handoff integrity checks cannot be bypassed');
+  }
+  if (readBool('--legacy-v1', false)) {
+    throw new Error('legacy v1 handoff bundles are inspect-only; use physical database migration');
+  }
+  const { bundle, inPath } = readHandoffInput();
+  // Validate before config resolution or destination-directory creation.
+  validateBundleShape(bundle, { requireComplete: true });
   const { configPath, config, dbPath } = loadConfigAndDbPath();
   ensureDir(path.dirname(dbPath));
   const db = openDatabase(dbPath);
   try {
-    const result = importPassportBundle({
+    const result = importHandoffBundle({
       db,
       bundle,
-      skipIntegrityCheck: readBool('--skip-integrity-check', false),
-      runId: readFlag('--run-id', `import-bundle-${new Date().toISOString()}`),
+      runId: readFlag('--run-id', `handoff-import-${new Date().toISOString()}`),
     });
     // The bundle carries memories only; beliefs/entities are derived state and
     // must be re-projected from the imported rows (see handoff-bundle.js).
@@ -2932,7 +2993,7 @@ const commandImportBundle = async () => {
     }
     console.log(JSON.stringify({
       ok: true,
-      action: 'import_bundle',
+      action: 'handoff_import',
       configPath,
       dbPath,
       inPath,
@@ -2942,6 +3003,19 @@ const commandImportBundle = async () => {
   } finally {
     db.close();
   }
+};
+
+const commandHandoff = async () => {
+  const subcommand = String(flags[0] || '').trim().toLowerCase();
+  if (['export', 'inspect', 'import'].includes(subcommand)
+    && (flags.includes('--help') || flags.includes('-h'))) {
+    console.log(HANDOFF_TRANSFER_HELP.trim());
+    return;
+  }
+  if (subcommand === 'export') return commandExportBundle();
+  if (subcommand === 'inspect') return commandInspectBundle();
+  if (subcommand === 'import') return commandImportBundle();
+  return commandPassport();
 };
 
 const INIT_HELP = `Gigabrain init
@@ -3107,7 +3181,7 @@ const main = async () => {
     return;
   }
   if (command === 'handoff') {
-    await commandPassport();
+    await commandHandoff();
     return;
   }
   if (command === 'passport') {
