@@ -38,6 +38,15 @@ for (const [label, requiredPath] of [
 }
 
 const realMap = JSON.parse(readFileSync(mapPath, "utf8"));
+const realRegistry = JSON.parse(readFileSync(
+  path.join(repoRoot, "config/migration/source-first-test-registry.json"),
+  "utf8",
+));
+const task11WriterRegistration = realRegistry.entries.find((row) => row.id === "compat-projection-writer-registry");
+const task11WriterEvidence = new Map(task11WriterRegistration.relevanceEvidence.map((row) => [row.targetPath, row]));
+assert.equal([...task11WriterEvidence.values()].filter((row) => row.mode === "writer_exercised").length, 15);
+assert.equal(task11WriterEvidence.get("lib/core/belief-arbitration.js")?.symbol, "consolidateBeliefRows");
+assert.equal(task11WriterEvidence.get("lib/core/wiki-project.js")?.symbol, "reconcileWiki");
 const assertMemoryApiSealing = () => {
   const memoryApiSource = readFileSync("memory_api/app.py", "utf8");
   const memoryApiReadme = readFileSync("memory_api/README.md", "utf8");

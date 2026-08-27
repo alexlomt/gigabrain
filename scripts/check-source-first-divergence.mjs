@@ -1605,7 +1605,7 @@ function validateActiveGates(map, registry, headByPath, head) {
         executedTests.set(executionKey, execution);
       }
       if (
-        evidence.mode === "import"
+        ["import", "writer_exercised"].includes(evidence.mode)
         && !hasUnambiguousExecutedTargetSymbol(
           execution.coverage,
           evidence.targetPath,

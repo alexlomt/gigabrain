@@ -739,9 +739,9 @@
           "targetPath": "lib/core/audit-service.js"
         },
         {
-          "binding": "resolveArbiterSettings",
+          "binding": "consolidateBeliefRows",
           "mode": "writer_exercised",
-          "symbol": "resolveArbiterSettings",
+          "symbol": "consolidateBeliefRows",
           "targetPath": "lib/core/belief-arbitration.js"
         },
         {
@@ -811,9 +811,9 @@
           "targetPath": "lib/core/transcript-harvester.js"
         },
         {
-          "binding": "projectWiki",
+          "binding": "reconcileWiki",
           "mode": "writer_exercised",
-          "symbol": "projectWiki",
+          "symbol": "reconcileWiki",
           "targetPath": "lib/core/wiki-project.js"
         },
         {
@@ -1362,7 +1362,7 @@
       ],
       "runner": "python",
       "testPath": "tests/memory_api_projection_test.py",
-      "testSha256": "f24a2c29b7d50007ac97b5fbc4b8b3bd3a6fd1946b1b5fd3285bc24534f0ce91"
+      "testSha256": "1a100ffe92954b0b90e53ebbd4afe5d1677bef3034769180c59a83d4eef3c196"
     },
     {
       "coveredPaths": [
@@ -2076,7 +2076,7 @@
       ],
       "runner": "node",
       "testPath": "tests/source-first-divergence-test.js",
-      "testSha256": "04b7396fddfaa1bbe3d7000e01bd5dd96e2d748c2a78eee4e5ace40bb743aa5f"
+      "testSha256": "a9a35e96c74c62174996f8d0623fa3b6aafc1f435d4347acd0097ef1e2f93127"
     },
     {
       "coveredPaths": [
@@ -2089,7 +2089,7 @@
       "ownerSourceFirstTaskId": "1",
       "runner": "node",
       "testPath": "tests/source-first-divergence-test.js",
-      "testSha256": "04b7396fddfaa1bbe3d7000e01bd5dd96e2d748c2a78eee4e5ace40bb743aa5f"
+      "testSha256": "a9a35e96c74c62174996f8d0623fa3b6aafc1f435d4347acd0097ef1e2f93127"
     },
     {
       "coveredPaths": [
@@ -2149,6 +2149,6 @@
     }
   ],
   "entryCount": 96,
-  "manifestSha256": "1e62e164c9622f678a878c670b898c5efd28aaf58042199c6b9286f11bcba666",
+  "manifestSha256": "e400bfe0c860fbeac947525d0c515a5b0c3161d3487d250f35aff178f327a590",
   "schemaVersion": 1
 }
