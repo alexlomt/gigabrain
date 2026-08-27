@@ -289,3 +289,126 @@ exit 0: unit-memory-actions-test.js: ok
 
 Round A1 is committed separately; its immutable SHA is recorded in the parent
 handoff response.
+
+---
+
+## Fix round A2 — decision-bound receipts and run-independent recovery
+
+### RED evidence
+
+The new receipt-binding regressions failed before production changes:
+
+```text
+timeout 360 node tests/compat/projection-writer-registry-test.js
+exit 1: COMPAT_EXPECTED_PROJECTION_WRITER_REGISTRY missing centralized projection authority
+```
+
+The RED cases changed reviewer/model output and generated fresh retry run IDs.
+They required receipt lookup before any model call, original committed decision
+reconstruction, and external completion without new memory events/timestamps.
+Existing recovery still consulted the reviewer first and maintenance recovery
+depended on the original run-derived operation ID.
+
+### Implementation
+
+#### Queue decision receipts
+
+- Default queue decisions append a separate content-free
+  `queue_review_decision_receipt` operation-summary event in the same DB batch.
+- The receipt is bound directly to the stable queue-row identity and records the
+  original decision, confidence, reason, scope/type, loser/winner IDs, and result
+  status—never candidate content.
+- Retry loads per-row receipts before any reviewer/model call, reconstructs the
+  original decision, skips already-applied DB rows, and rewrites external queue
+  completion. Newly appended rows are reviewed independently; their presence
+  cannot invalidate an older row receipt.
+- Default batch identity is a fixed hash of receipt-missing stable queue-row
+  identities, never `runId`.
+
+#### Audit receipts
+
+- Audit row events carry a stable `audit_receipt_id` derived from review version
+  plus fixed schema version and are inherently bound to `memory_id`.
+- Completed receipts are loaded before classification/LLM review. Retry with a
+  changed model/config skips model execution and reconstructs the committed
+  action/review from the row event, `memory_quality_reviews`, and current row.
+- Default DB operation identity derives from the stable audit receipt, not run
+  timestamp.
+
+#### Maintenance receipts
+
+- Each maintenance row event carries content-free `maintenance_stage` and a
+  stable `completion_id` derived from stage, memory ID, matched memory ID, and
+  fixed version.
+- Missing row JSONL evidence is discovered by stable stage/event identity across
+  fresh run IDs and appended once by `event_id`.
+- Auto-resolve queue retry finds the original stable pair receipt, reconstructs
+  `resolved_auto`, and completes/prunes the queue without repeating archive,
+  timestamps, or events.
+
+### Exact assertions added
+
+- Queue retry returns changed model output but reviewer call count remains one;
+  external completion uses the original archived decision and receipt fields.
+- Audit first commits an LLM `archive`; retry supplies `keep` from a changed
+  model, but no second model call occurs and output remains `archive`.
+- Maintenance exact-dedupe and auto-resolve retries use new timestamped run IDs
+  with no explicit operation ID; state/timestamps and one event remain exact.
+
+### GREEN evidence
+
+Fresh final verification reran the complete writer-A suite:
+
+```text
+node --check <owned writer files and executable registry>
+exit 0
+
+git diff --check -- <owned writer files and executable registry>
+exit 0
+
+timeout 120 node tests/compat/memory-api-projection-test.js
+exit 0: memory-api-projection-test.js: ok
+
+timeout 360 node tests/compat/projection-writer-registry-test.js
+exit 0: projection-writer-registry-test.js: ok
+
+timeout 180 node tests/unit-capture-service-test.js
+exit 0
+
+timeout 180 node tests/integration-audit-maintenance-test.js
+exit 0: integration-audit-maintenance-test.js: ok
+
+timeout 120 node tests/unit-native-promotion-test.js
+exit 0: unit-native-promotion-test.js: ok
+
+timeout 180 node tests/unit-queue-review-service-test.js
+exit 0: unit-queue-review-service-test.js: ok
+
+timeout 180 node tests/compat/queue-review-service-test.js
+exit 0: queue-review-service-test.js: ok
+
+timeout 180 node tests/compat/nightly-review-integration-test.js
+exit 0: nightly-review-integration-test.js: ok
+
+timeout 180 node tests/regression-native-promotion-reconcile-test.js
+exit 0: regression-native-promotion-reconcile-test.js: ok
+
+timeout 180 node tests/unit-memory-actions-test.js
+exit 0: unit-memory-actions-test.js: ok
+```
+
+### Self-review
+
+- Receipts are append-only SQLite evidence used solely to resume an external
+  write; this remains an idempotent completion protocol, not cross-filesystem
+  atomicity.
+- Queue receipt lookup is per stable row identity, so concurrent append does not
+  cause a completed row to be re-reviewed.
+- Audit retry authority is the committed event/review row, never fresh model
+  output or changed model configuration.
+- Maintenance recovery may backfill any missing row-event JSONL evidence for the
+  same stable stage; `event_id` prevents duplicates.
+- No Task 12 ordering or out-of-scope writer files were changed.
+
+Round A2 is committed separately; its immutable SHA is recorded in the parent
+handoff response.

@@ -496,16 +496,22 @@ const assertAuditCompletionRetry = async () => {
   const args = {
     config,
     dbPath: temp.dbPath,
+    llm: { enabled: true, maxScore: 1, minScore: 0, model: "model-v1", provider: "injected" },
     mode: "apply",
-    operationId: "audit:task11-completion",
+    reviewer: async () => ({ confidence: 0.99, decision: "archive", ok: true, canonical_hint: "" }),
     reviewVersion: "rv-task11-audit-completion",
-    runId: "task11-audit-completion",
+    runId: "task11-audit-completion-first-fresh-run-id",
     ...paths,
   };
   try {
+    let reviewerCalls = 0;
     let failCompletion = true;
     await assert.rejects(() => runAudit({
       ...args,
+      reviewer: async () => {
+        reviewerCalls += 1;
+        return { confidence: 0.99, decision: "archive", ok: true, canonical_hint: "" };
+      },
       completionFaultInjector: (stage) => {
         if (stage === "before_audit_output" && failCompletion) {
           failCompletion = false;
@@ -517,13 +523,22 @@ const assertAuditCompletionRetry = async () => {
     let rowBefore;
     try {
       rowBefore = committed.prepare("SELECT status, value_score, value_label, updated_at, last_reviewed_at FROM memory_current WHERE memory_id=?").get(memoryId);
+      assert.equal(rowBefore.status, "archived", "first LLM override must be the committed audit action");
       assert.equal(rowEvents(committed, memoryId).length, 1);
       assert.equal(existsSync(paths.out), false);
     } finally {
       committed.close();
     }
 
-    await runAudit(args);
+    await runAudit({
+      ...args,
+      llm: { ...args.llm, model: "model-v2" },
+      runId: "task11-audit-completion-retry-new-timestamped-run-id",
+      reviewer: async () => {
+        reviewerCalls += 1;
+        return { confidence: 0.99, decision: "keep", ok: true, canonical_hint: "changed output" };
+      },
+    });
     const retried = openDb(temp.dbPath);
     try {
       assert.deepEqual(
@@ -532,6 +547,9 @@ const assertAuditCompletionRetry = async () => {
       );
       assert.equal(rowEvents(retried, memoryId).length, 1);
       assert.equal(existsSync(paths.out), true, "audit retry must resume external output completion");
+      const completedRows = readFileSync(paths.out, "utf8").trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+      assert.deepEqual(completedRows.map((row) => row.action), ["archive"], "audit retry must reconstruct the committed model override");
+      assert.equal(reviewerCalls, 1, "audit receipt must be checked before changed model output is requested");
     } finally {
       retried.close();
     }
@@ -636,9 +654,8 @@ const assertMaintenanceWriter = () => {
       config: completion.config,
       dbPath: completion.temp.dbPath,
       dryRun: false,
-      operationId: "maintenance:task11-completion",
       reviewVersion: "rv-task11-maintenance-completion",
-      runId: "task11-maintenance-completion",
+      runId: "task11-maintenance-completion-first-fresh-run-id",
     };
     assert.throws(() => runMaintenance(args), /maintenance external completion failure/);
     const committed = openDb(completion.temp.dbPath);
@@ -649,12 +666,18 @@ const assertMaintenanceWriter = () => {
         WHERE memory_id IN (?, ?) AND status='archived'
       `).get(...completion.ids);
       assert.equal(Boolean(archivedBefore?.memory_id), true);
-      assert.equal(rowEvents(committed, archivedBefore.memory_id).length, 1);
+      const events = rowEvents(committed, archivedBefore.memory_id);
+      assert.equal(events.length, 1);
+      assert.match(String(events[0].payload.completion_id || ""), /exact_dedupe/);
     } finally {
       committed.close();
     }
 
-    runMaintenance({ ...args, completionFaultInjector: null });
+    runMaintenance({
+      ...args,
+      completionFaultInjector: null,
+      runId: "task11-maintenance-completion-retry-new-timestamped-run-id",
+    });
     const retried = openDb(completion.temp.dbPath);
     try {
       assert.deepEqual(
@@ -708,9 +731,8 @@ const assertMaintenanceAutoResolveCompletionRetry = () => {
     config,
     dbPath: temp.dbPath,
     dryRun: false,
-    operationId: "maintenance:auto-resolve-completion",
     reviewVersion: "rv-task11-maintenance-auto",
-    runId: "task11-maintenance-auto",
+    runId: "task11-maintenance-auto-first-fresh-run-id",
   };
   try {
     let failCompletion = true;
@@ -728,13 +750,15 @@ const assertMaintenanceAutoResolveCompletionRetry = () => {
     try {
       rowBefore = committed.prepare("SELECT status, updated_at, last_reviewed_at FROM memory_current WHERE memory_id=?").get(loserId);
       assert.equal(rowBefore.status, "archived");
-      assert.deepEqual(rowEvents(committed, loserId).map((row) => row.action), ["auto_resolve_dedupe"]);
+      const events = rowEvents(committed, loserId);
+      assert.deepEqual(events.map((row) => row.action), ["auto_resolve_dedupe"]);
+      assert.match(String(events[0].payload.completion_id || ""), /auto_resolve_dedupe/);
       assert.equal(JSON.parse(readFileSync(queuePath, "utf8")).status, "pending");
     } finally {
       committed.close();
     }
 
-    runMaintenance(args);
+    runMaintenance({ ...args, runId: "task11-maintenance-auto-retry-new-timestamped-run-id" });
     const retried = openDb(temp.dbPath);
     try {
       assert.deepEqual(
@@ -943,7 +967,11 @@ const assertQueueReviewWriter = async () => {
 
   const completion = queueReviewFixture("completion");
   try {
-    const operationId = "queue-review:task11-completion";
+    let reviewerCalls = 0;
+    const originalReviewer = async () => {
+      reviewerCalls += 1;
+      return { confidence: 0.96, decision: "archive_loser", reason: "original reviewed duplicate" };
+    };
     let failCompletion = true;
     await assert.rejects(() => reviewQueuedCandidates({
       clock: () => Date.parse("2026-08-26T12:00:00.000Z"),
@@ -955,22 +983,44 @@ const assertQueueReviewWriter = async () => {
       },
       config: completion.config,
       db: completion.db,
-      operationId,
-      reviewer,
-      runId: "task11-queue-completion",
+      reviewer: originalReviewer,
+      runId: "task11-queue-completion-first",
     }), /queue external completion failure/);
     const committed = completion.db.prepare("SELECT status, superseded_by, updated_at, last_reviewed_at FROM memory_current WHERE memory_id=?").get(completion.loserId);
     assert.equal(committed.status, "archived");
-    assert.equal(rowEvents(completion.db, completion.loserId).length, 1);
+    const committedEvents = rowEvents(completion.db, completion.loserId);
+    assert.equal(committedEvents.length, 1);
+    const decisionReceipt = JSON.parse(completion.db.prepare(`
+      SELECT payload FROM memory_events
+      WHERE action='queue_review_decision_receipt'
+      ORDER BY rowid DESC LIMIT 1
+    `).get().payload);
+    assert.deepEqual({
+      decision: decisionReceipt.review_decision,
+      loser_id: decisionReceipt.loser_id,
+      queue_row_id: decisionReceipt.queue_row_id,
+      reason: decisionReceipt.review_reason,
+      result_status: decisionReceipt.result_status,
+      winner_id: decisionReceipt.winner_id,
+    }, {
+      decision: "archive_loser",
+      loser_id: completion.loserId,
+      queue_row_id: "queue-row-completion",
+      reason: "original reviewed duplicate",
+      result_status: "archived",
+      winner_id: completion.winnerId,
+    }, "queue receipt must preserve the content-free committed decision");
     assert.equal(JSON.parse(readFileSync(completion.queuePath, "utf8")).status, "pending");
 
     const retried = await reviewQueuedCandidates({
       clock: () => Date.parse("2026-08-26T12:00:00.000Z"),
       config: completion.config,
       db: completion.db,
-      operationId,
-      reviewer,
-      runId: "task11-queue-completion",
+      reviewer: async () => {
+        reviewerCalls += 1;
+        return { confidence: 0.99, decision: "keep_both", reason: "changed model output must be ignored" };
+      },
+      runId: "task11-queue-completion-retry-with-fresh-run-id",
     });
     assert.equal(retried.mutatedRows, 1);
     assert.deepEqual(
@@ -980,6 +1030,7 @@ const assertQueueReviewWriter = async () => {
     );
     assert.equal(rowEvents(completion.db, completion.loserId).length, 1);
     assert.equal(JSON.parse(readFileSync(completion.queuePath, "utf8")).status, "resolved_auto");
+    assert.equal(reviewerCalls, 1, "queue retry must consult the receipt before any reviewer/model call");
   } finally {
     completion.db.close();
     rmSync(completion.temp.root, { force: true, recursive: true });
