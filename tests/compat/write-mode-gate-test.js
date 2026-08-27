@@ -75,12 +75,11 @@ export async function run() {
   const runtime = await importContractModule("lib/compat/openclaw-memory-runtime.js", EXPECTED_SIGNATURE);
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
     const assertWriteAllowed = requireCallable(policy, "assertWriteAllowed");
-    const assertWriterRegistryComplete = governedWriterRegistryGate;
     const discoverWriterEntrypoints = requireCallable(policy, "discoverWriterEntrypoints");
     const captureNative = requireCallable(runtime, "captureNativeExplicitRemember");
     const registry = policy.WRITER_REGISTRY;
     const discovered = discoverWriterEntrypoints({ repoRoot });
-    assert.equal(assertWriterRegistryComplete(discovered), true);
+    assert.equal(governedWriterRegistryGate(discovered), true);
     assert.equal(discovered.length, 183, "all shipped entrypoints remain in the discovery inventory");
     assert.equal(
       new Set(discovered.filter((entry) => entry.access === "write").map((entry) => entry.canonicalOperation || entry.operation)).size,
@@ -152,7 +151,7 @@ export async function run() {
       writeFileSync(path.join(discoveryRoot, "scripts", "future-writer.js"), "import { writeFileSync } from 'node:fs'; writeFileSync('state', 'changed');\n");
       const future = discoverWriterEntrypoints({ repoRoot: discoveryRoot });
       assert.equal(future.some((entry) => entry.operation === "package.future-writer"), true);
-      assert.throws(() => assertWriterRegistryComplete(future), /GIGABRAIN_UNCLASSIFIED_WRITER/);
+      assert.throws(() => governedWriterRegistryGate(future), /GIGABRAIN_UNCLASSIFIED_WRITER/);
       writeFileSync(path.join(discoveryRoot, "scripts", "gigabrainctl.js"), `
         import { writeFileSync } from "node:fs";
         const command = "future";
@@ -170,7 +169,7 @@ export async function run() {
         true,
         "nested CLI writers must be derived from branch behavior, not only the declaration map",
       );
-      assert.throws(() => assertWriterRegistryComplete(nestedFuture), /GIGABRAIN_UNGUARDED_WRITER/);
+      assert.throws(() => governedWriterRegistryGate(nestedFuture), /GIGABRAIN_UNGUARDED_WRITER/);
 
       mkdirSync(path.join(discoveryRoot, "lib", "core"), { recursive: true });
       writeFileSync(path.join(discoveryRoot, "lib", "core", "domain-state.js"), `
@@ -258,7 +257,7 @@ export async function run() {
         "write",
         "explicitly mapped writers must propagate through import aliases into nested call sites",
       );
-      assert.equal(assertWriterRegistryComplete(explicitMapDiscovery), true);
+      assert.equal(governedWriterRegistryGate(explicitMapDiscovery), true);
 
       const missingGuardRoot = path.join(discoveryRoot, "missing-guard");
       mkdirSync(path.join(missingGuardRoot, "scripts"), { recursive: true });
@@ -277,7 +276,7 @@ export async function run() {
         "vault inbox must remain behaviorally discovered after its guard mapping is removed",
       );
       assert.throws(
-        () => assertWriterRegistryComplete(missingGuardDiscovery),
+        () => governedWriterRegistryGate(missingGuardDiscovery),
         /GIGABRAIN_UNGUARDED_WRITER/,
         "a dotted registry classification must not conceal a missing pre-work guard link",
       );
@@ -318,7 +317,7 @@ export async function run() {
           `${fixture.operation} must remain behaviorally discovered after its fallback guard is removed`,
         );
         assert.throws(
-          () => assertWriterRegistryComplete(changedDiscovery),
+          () => governedWriterRegistryGate(changedDiscovery),
           /GIGABRAIN_UNGUARDED_WRITER/,
           `removing the ${fixture.operation} fallback guard must fail completeness`,
         );
@@ -361,7 +360,7 @@ export async function run() {
         "read",
         "explicit default-read branches must not become writer false positives",
       );
-      assert.equal(assertWriterRegistryComplete(fallbackDiscovery), true);
+      assert.equal(governedWriterRegistryGate(fallbackDiscovery), true);
     } finally {
       rmSync(discoveryRoot, { recursive: true, force: true });
     }
