@@ -143,7 +143,9 @@
     },
     {
       "coveredPaths": [
+        "docs/checkpoint-control-plane.md",
         "lib/core/checkpoint-migration.js",
+        "lib/core/codex-service.js",
         "lib/core/control-plane.js",
         "lib/core/lifecycle-hooks.js",
         "tests/compat/checkpoint-concurrency-test.js"
@@ -154,10 +156,23 @@
       "ownerSourceFirstTaskId": "13",
       "relevanceEvidence": [
         {
+          "binding": "checkpointDocs",
+          "mode": "read",
+          "targetPath": "docs/checkpoint-control-plane.md"
+        },
+        {
           "binding": "migrateLegacyCheckpoints",
           "mode": "import",
+          "resultBinding": "dryResult",
           "symbol": "migrateLegacyCheckpoints",
           "targetPath": "lib/core/checkpoint-migration.js"
+        },
+        {
+          "binding": "runCheckpoint",
+          "mode": "import",
+          "resultBinding": "mainThreadCheckpoint",
+          "symbol": "runCheckpoint",
+          "targetPath": "lib/core/codex-service.js"
         },
         {
           "binding": "appendCheckpointEpisode",
@@ -168,13 +183,14 @@
         {
           "binding": "buildSessionHookCommand",
           "mode": "import",
+          "resultBinding": "hook",
           "symbol": "buildSessionHookCommand",
           "targetPath": "lib/core/lifecycle-hooks.js"
         }
       ],
       "runner": "node",
       "testPath": "tests/compat/checkpoint-concurrency-test.js",
-      "testSha256": "a516a7669878ca23ad6485719b955e3db90e8eaae83f9fdfe75c5f7e2955a1ef"
+      "testSha256": "a5a04e3d28ffc2f75237c8ca95193ab820bed56eea8de77cff6dc1424d8c0f01"
     },
     {
       "coveredPaths": [
@@ -343,7 +359,12 @@
     },
     {
       "coveredPaths": [
+        "SECURITY.md",
+        "docs/configuration.md",
+        "docs/handoff-record.md",
+        "docs/upgrading.md",
         "lib/core/handoff-bundle.js",
+        "scripts/gigabrainctl.js",
         "tests/compat/handoff-fidelity-test.js"
       ],
       "expectedOutcome": "xfail",
@@ -352,15 +373,41 @@
       "ownerSourceFirstTaskId": "13",
       "relevanceEvidence": [
         {
-          "binding": "exportPassportBundle",
+          "binding": "securitySource",
+          "mode": "read",
+          "targetPath": "SECURITY.md"
+        },
+        {
+          "binding": "configurationDocs",
+          "mode": "read",
+          "targetPath": "docs/configuration.md"
+        },
+        {
+          "binding": "handoffDocs",
+          "mode": "read",
+          "targetPath": "docs/handoff-record.md"
+        },
+        {
+          "binding": "upgradingDocs",
+          "mode": "read",
+          "targetPath": "docs/upgrading.md"
+        },
+        {
+          "binding": "exportHandoffBundle",
           "mode": "import",
-          "symbol": "exportPassportBundle",
+          "resultBinding": "bundle",
+          "symbol": "exportHandoffBundle",
           "targetPath": "lib/core/handoff-bundle.js"
+        },
+        {
+          "binding": "gigabrainCtlSource",
+          "mode": "read",
+          "targetPath": "scripts/gigabrainctl.js"
         }
       ],
       "runner": "node",
       "testPath": "tests/compat/handoff-fidelity-test.js",
-      "testSha256": "f0d5e9ed9891791306f9ef1fd197045036b08944e8832809c2b801f4aad7d1d4"
+      "testSha256": "60fe041a171fb55580bda86b612d65993ed3709a06287f4fe6dc47ac2199c638"
     },
     {
       "coveredPaths": [
@@ -2334,6 +2381,6 @@
     }
   ],
   "entryCount": 103,
-  "manifestSha256": "e8ac8176dce99984ae9c76c5a38e844c6770cfffb9dba7f8c474abadcaf14465",
+  "manifestSha256": "1c1cac36fbd388351c81864cbb1779f1e1f3eeeedbb1978eb674214a4fb77363",
   "schemaVersion": 1
 }

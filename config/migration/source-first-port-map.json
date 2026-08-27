@@ -102,7 +102,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "fa2d316ec4e5a93f46a97270e9de8ccbb9e3713c26b8c59a36fcc9a92569dbdf",
+      "contentSha256": "eb20ff0bed0a1389aa2f89a29f9025132feefc0d6f98894ca90cb0ef69e1c737",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1486,7 +1486,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "a516a7669878ca23ad6485719b955e3db90e8eaae83f9fdfe75c5f7e2955a1ef",
+      "contentSha256": "a5a04e3d28ffc2f75237c8ca95193ab820bed56eea8de77cff6dc1424d8c0f01",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-checkpoint-concurrency"
@@ -1494,7 +1494,7 @@
       "ownerTasks": [
         "13"
       ],
-      "reason": "Task 13 RED contract for atomic scope-session checkpoint governance, proposal isolation, zero-write legacy dry-run, and lifecycle failure logging.",
+      "reason": "Task 13 RED contract for direct and public checkpoint races, savepoint rollback, scope/ref authorization, promotion, migration dry-run, and quote-safe lifecycle logging.",
       "targetMode": "100644",
       "targetPath": "tests/compat/checkpoint-concurrency-test.js"
     },
@@ -1657,7 +1657,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "f0d5e9ed9891791306f9ef1fd197045036b08944e8832809c2b801f4aad7d1d4",
+      "contentSha256": "60fe041a171fb55580bda86b612d65993ed3709a06287f4fe6dc47ac2199c638",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-handoff-fidelity"
@@ -1665,7 +1665,7 @@
       "ownerTasks": [
         "13"
       ],
-      "reason": "Task 13 RED contract for canonical Handoff v2 pagination, section roots, zero-write rejection, and evidence-only source events.",
+      "reason": "Task 13 RED contract for independent canonical oracles, >10k pagination, all-section integrity, idempotency/fault rollback, exact cap handling, CLI zero-write rejection, and legacy inspect-only behavior.",
       "targetMode": "100644",
       "targetPath": "tests/compat/handoff-fidelity-test.js"
     },
