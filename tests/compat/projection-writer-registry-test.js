@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -11,8 +12,11 @@ import path from "node:path";
 
 import { reviewQueuedCandidates } from "../../lib/compat/queue-review-service.js";
 import { runAudit, runAuditRestore } from "../../lib/core/audit-service.js";
+import { consolidateBeliefRows, resolveArbiterSettings } from "../../lib/core/belief-arbitration.js";
 import { captureFromEvent } from "../../lib/core/capture-service.js";
+import { runClaimDecide, runClaimPropose } from "../../lib/core/codex-service.js";
 import { normalizeConfig } from "../../lib/core/config.js";
+import { appendClaimDecision, appendClaimProposal, getClaimProposal } from "../../lib/core/control-plane.js";
 import {
   BUNDLE_KIND,
   SCHEMA_VERSION,
@@ -25,7 +29,11 @@ import { applyMemoryActions } from "../../lib/core/memory-actions.js";
 import { promoteNativeChunks } from "../../lib/core/native-promotion.js";
 import { ensureNativeStore } from "../../lib/core/native-sync.js";
 import { importOpenClawRegistry } from "../../lib/core/openclaw-import.js";
+import { upsertCurrentMemory } from "../../lib/core/projection-store.js";
 import { openDatabase } from "../../lib/core/sqlite.js";
+import { harvestTranscripts } from "../../lib/core/transcript-harvester.js";
+import { projectArbitrationBeliefRows } from "../../lib/core/world-model.js";
+import { HUMAN_WIKI_HOST, STATE_FILE, projectWiki, reconcileWiki } from "../../lib/core/wiki-project.js";
 import { makeConfigObject, makeTempWorkspace, openDb, seedMemoryCurrent } from "../helpers.js";
 import { importContractModule, requireCallable, runBehaviorContract, runDirect } from "./contract-test-helpers.js";
 
@@ -1573,6 +1581,575 @@ export const runTask11WriterB1 = () => {
   assertMalformedCloudInboxSourceIsolation();
 };
 
+const beliefIntentFixture = (label) => {
+  const temp = makeTempWorkspace(`task11-belief-b2-${label}-`);
+  const db = openDb(temp.dbPath);
+  const specs = [
+    ["belief-location-winner", "Alex lives in London.", "human_wiki", "person:alex", "person.location", "London"],
+    ["belief-location-loser", "Alex lives in Paris.", "transcript", "person:alex", "person.location", "Paris"],
+    ["belief-port-winner", "The API listens on port 443.", "human_wiki", "service:api", "service.port", "443"],
+    ["belief-port-loser", "The API listens on port 80.", "transcript", "service:api", "service.port", "80"],
+  ];
+  for (const [memoryId, content, sourceHost] of specs) {
+    const sourceKind = sourceHost === "transcript" ? "chat_history_hint" : "human_edit";
+    upsertCurrentMemory(db, projectionMemory(memoryId, content, {
+      source_agent: sourceHost,
+      source_host: sourceHost,
+      source_kind: sourceKind,
+      source_layer: "host_memory",
+    }));
+  }
+  clearEvents(db);
+  const rows = specs.map(([memoryId, content, sourceHost, entityId, slot, value], index) => ({
+    belief_id: `belief-row-${index + 1}`,
+    confidence: sourceHost === "human_wiki" ? 0.99 : 0.3,
+    content,
+    created_at: `2026-08-26T1${index}:00:00.000Z`,
+    entity_id: entityId,
+    payload: { claim_slot: slot, claim_value: value, scope: "shared" },
+    source_agent: sourceHost,
+    source_host: sourceHost,
+    source_kind: sourceHost === "transcript" ? "chat_history_hint" : "human_edit",
+    source_memory_id: memoryId,
+    type: "USER_FACT",
+  }));
+  return { db, rows, temp };
+};
+
+const assertBeliefArbitrationWriter = () => {
+  const success = beliefIntentFixture("success");
+  try {
+    const result = consolidateBeliefRows(success.rows, {
+      db: success.db,
+      operationId: "task11-belief-two-intents",
+      settings: resolveArbiterSettings({}),
+    });
+    assert.equal(result.verdicts.length, 2, "two independent intent groups must resolve");
+    for (const [loser, winner] of [
+      ["belief-location-loser", "belief-location-winner"],
+      ["belief-port-loser", "belief-port-winner"],
+    ]) {
+      assertCurrentLegacyStatus(success.db, loser, { status: "superseded", superseded_by: winner });
+      const events = rowEvents(success.db, loser).filter((row) => row.payload.projection_event_kind === "row");
+      assert.deepEqual(events.map((row) => row.action), ["arbiter:supersede"]);
+      assert.equal(events[0].payload.operation_id, "task11-belief-two-intents");
+    }
+  } finally {
+    success.db.close();
+    rmSync(success.temp.root, { force: true, recursive: true });
+  }
+
+  for (const boundary of ["top", "caller-owned"]) {
+    const failed = beliefIntentFixture(`failure-${boundary}`);
+    try {
+      if (boundary === "caller-owned") failed.db.exec("BEGIN IMMEDIATE");
+      let eventsSeen = 0;
+      assert.throws(() => consolidateBeliefRows(failed.rows, {
+        db: failed.db,
+        faultInjector: (stage) => {
+          if (stage === "after_event" && ++eventsSeen === 4) throw new Error(`belief ${boundary} nth event failure`);
+        },
+        operationId: `task11-belief-${boundary}`,
+        settings: resolveArbiterSettings({}),
+      }), new RegExp(`belief ${boundary} nth event failure`));
+      assertCurrentLegacyStatus(failed.db, "belief-location-loser", { status: "active", superseded_by: null });
+      assertCurrentLegacyStatus(failed.db, "belief-port-loser", { status: "active", superseded_by: null });
+      assert.equal(countEvents(failed.db), 0, "Nth verdict fault must roll back every intent and event");
+      if (boundary === "caller-owned") assert.equal(failed.db.isTransaction, true);
+    } finally {
+      if (failed.db.isTransaction) failed.db.exec("ROLLBACK");
+      failed.db.close();
+      rmSync(failed.temp.root, { force: true, recursive: true });
+    }
+  }
+};
+
+const controlPlaneDecisionFixture = (label) => {
+  const temp = makeTempWorkspace(`task11-control-b2-${label}-`);
+  const db = openDb(temp.dbPath);
+  const proposal = appendClaimProposal(db, {
+    claimType: "DECISION",
+    content: `Control-plane B2 proposal ${label} remains append-only and atomic.`,
+    evidenceClass: "project_decision",
+    evidenceRefs: [`fixture:${label}`],
+    proposalId: `control-proposal-${label}`,
+    scope: "project:task11",
+    sourceAgent: "codex",
+    sourceHost: "codex",
+  });
+  return { db, proposal, temp };
+};
+
+const assertControlPlaneWriter = () => {
+  const success = controlPlaneDecisionFixture("success");
+  try {
+    const decision = appendClaimDecision(success.db, {
+      action: "accepted",
+      actorHost: "codex",
+      actorId: "owner",
+      allowedScopes: ["project:task11"],
+      memoryId: "control-memory-success",
+      operationId: "task11-control-decision-stable",
+      proposalId: success.proposal.proposal_id,
+      reason: "Reviewed control-plane decision.",
+    });
+    assert.equal(decision.action, "accepted");
+    const event = success.db.prepare(`
+      SELECT payload FROM memory_claim_proposal_events
+      WHERE proposal_id=? AND action='accepted'
+    `).get(success.proposal.proposal_id);
+    assert.equal(JSON.parse(event.payload).operation_id, "task11-control-decision-stable");
+  } finally {
+    success.db.close();
+    rmSync(success.temp.root, { force: true, recursive: true });
+  }
+
+  for (const boundary of ["top", "caller-owned"]) {
+    const failed = controlPlaneDecisionFixture(`failure-${boundary}`);
+    try {
+      const before = {
+        events: countRows(failed.db, "memory_claim_proposal_events"),
+        receipts: countRows(failed.db, "memory_receipts"),
+      };
+      if (boundary === "caller-owned") failed.db.exec("BEGIN IMMEDIATE");
+      assert.throws(() => appendClaimDecision(failed.db, {
+        action: "accepted",
+        actorHost: "codex",
+        actorId: "owner",
+        allowedScopes: ["project:task11"],
+        faultInjector: (stage) => {
+          if (stage === "after_claim_decision") throw new Error(`control ${boundary} decision failure`);
+        },
+        memoryId: `control-memory-${boundary}`,
+        operationId: `task11-control-${boundary}`,
+        proposalId: failed.proposal.proposal_id,
+        reason: "Synthetic terminal fault.",
+      }), new RegExp(`control ${boundary} decision failure`));
+      assert.equal(getClaimProposal(failed.db, failed.proposal.proposal_id).status, "proposed");
+      assert.deepEqual({
+        events: countRows(failed.db, "memory_claim_proposal_events"),
+        receipts: countRows(failed.db, "memory_receipts"),
+      }, before);
+      if (boundary === "caller-owned") assert.equal(failed.db.isTransaction, true);
+    } finally {
+      if (failed.db.isTransaction) failed.db.exec("ROLLBACK");
+      failed.db.close();
+      rmSync(failed.temp.root, { force: true, recursive: true });
+    }
+  }
+
+  const restricted = openDatabase(":memory:");
+  try {
+    assert.throws(() => appendClaimProposal(restricted, {
+      claimType: "CONTEXT",
+      content: "Restricted proposal must initialize no tables.",
+      evidenceClass: "agent_inference",
+      scope: "project:task11",
+      sourceAgent: "codex",
+      sourceHost: "codex",
+      writeMode: "native_only",
+    }), /write|mode|blocked/i);
+    assert.equal(Number(restricted.prepare("SELECT COUNT(*) AS c FROM sqlite_master WHERE type='table'").get().c), 0);
+  } finally {
+    restricted.close();
+  }
+};
+
+const codexClaimFixture = (label) => {
+  const temp = makeTempWorkspace(`task11-codex-b2-${label}-`);
+  const config = writerConfig(temp.workspace);
+  config.dedupe.semanticEnabled = false;
+  const scope = "project:task11";
+  const common = {
+    allowedScopes: [scope],
+    config,
+    scope,
+    workspaceRoot: temp.workspace,
+  };
+  const proposed = runClaimPropose({
+    ...common,
+    claimType: "DECISION",
+    content: `Codex B2 accepted claim ${label} must commit with its terminal proposal decision.`,
+    evidenceClass: "project_decision",
+    evidenceRefs: [`fixture:${label}`],
+    sourceAgent: "codex",
+    sourceHost: "codex",
+  });
+  return { common, config, proposed, scope, temp };
+};
+
+const assertCodexClaimWriter = () => {
+  for (const stage of ["after_event", "after_claim_decision"]) {
+    const fixture = codexClaimFixture(stage);
+    const proposalId = fixture.proposed.proposal.proposal_id;
+    const decide = (faultInjector = null) => runClaimDecide({
+      ...fixture.common,
+      action: "accepted",
+      actorHost: "codex",
+      actorId: "reviewer",
+      authorization: { authority: "reviewer", memoryScopes: [fixture.scope] },
+      faultInjector,
+      operationId: `task11-codex-${stage}`,
+      proposalId,
+      reason: "Reviewed against the B2 transaction contract.",
+    });
+    try {
+      assert.throws(() => decide((observed) => {
+        if (observed === stage) throw new Error(`codex synthetic ${stage}`);
+      }), new RegExp(`codex synthetic ${stage}`));
+      const db = openDatabase(fixture.config.runtime.paths.registryPath);
+      try {
+        assert.equal(getClaimProposal(db, proposalId).status, "proposed", `${stage} must leave proposal open`);
+        assert.equal(
+          Number(db.prepare("SELECT COUNT(*) AS c FROM memory_current WHERE content LIKE '%Codex B2 accepted claim%'").get().c),
+          0,
+          `${stage} must roll back accepted memory`,
+        );
+        assert.equal(countEvents(db), 0, `${stage} must roll back the memory row event`);
+      } finally {
+        db.close();
+      }
+
+      const accepted = decide();
+      assert.equal(accepted.action, "accepted");
+      assert.equal(accepted.memory.recallable, true);
+      const verified = openDatabase(fixture.config.runtime.paths.registryPath);
+      try {
+        assert.equal(getClaimProposal(verified, proposalId).status, "accepted");
+        const memoryEvents = rowEvents(verified, accepted.memory_id)
+          .filter((row) => row.payload.projection_event_kind === "row");
+        assert.deepEqual(memoryEvents.map((row) => row.action), ["capture_inserted"]);
+        assert.equal(memoryEvents[0].payload.operation_id, `task11-codex-${stage}`);
+        const terminal = verified.prepare(`
+          SELECT payload FROM memory_claim_proposal_events
+          WHERE proposal_id=? AND action='accepted'
+        `).get(proposalId);
+        assert.equal(JSON.parse(terminal.payload).operation_id, `task11-codex-${stage}`);
+      } finally {
+        verified.close();
+      }
+    } finally {
+      rmSync(fixture.temp.root, { force: true, recursive: true });
+    }
+  }
+};
+
+const transcriptFixture = (label, { conflict = false } = {}) => {
+  const temp = makeTempWorkspace(`task11-transcript-b2-${label}-`);
+  const rollout = path.join(temp.root, "home", ".codex", "sessions", label, "rollout.jsonl");
+  mkdirSync(path.dirname(rollout), { recursive: true });
+  writeFileSync(rollout, `${JSON.stringify({
+    type: "message",
+    role: "user",
+    content: conflict
+      ? "I live in Vienna now, actually."
+      : `Transcript B2 source ${label} contains one durable synthetic preference.`,
+  })}\n`, "utf8");
+  const config = writerConfig(temp.workspace);
+  config.llm.provider = "none";
+  config.native.transcripts = {
+    enabled: true,
+    globs: [rollout],
+    maxFiles: 5,
+    maxTurns: 20,
+  };
+  const db = openDb(temp.dbPath);
+  if (conflict) {
+    upsertCurrentMemory(db, projectionMemory("transcript-deliberate-berlin", "I live in Berlin.", {
+      confidence: 0.95,
+      scope: "profile:main",
+      source_agent: "codex",
+      source_host: "codex",
+      source_kind: "native_memory",
+      source_layer: "host_memory",
+    }));
+    clearEvents(db);
+  }
+  const event = {
+    __captureLlm: {
+      extract: (text) => [{ content: String(text), confidence: 0.7, type: "USER_FACT" }],
+    },
+  };
+  return { config, db, event, rollout, temp };
+};
+
+const invokeTranscript = (fixture, options = {}) => harvestTranscripts({
+  arbitrate: false,
+  config: fixture.config,
+  db: fixture.db,
+  event: fixture.event,
+  incremental: true,
+  scope: "profile:main",
+  ...options,
+});
+
+const assertTranscriptWriter = () => {
+  const success = transcriptFixture("success");
+  try {
+    const result = invokeTranscript(success);
+    assert.equal(result.ok, true);
+    assert.equal(result.inserted_count, 1);
+    assert.equal(countRows(success.db, "memory_source_links"), 1);
+    assert.equal(countRows(success.db, "memory_transcript_sync_cursor"), 1);
+    const current = success.db.prepare(`
+      SELECT memory_id, content, status, source_host, source_kind, source_path
+      FROM memory_current WHERE source_kind='chat_history_hint'
+    `).get();
+    const legacy = success.db.prepare(`
+      SELECT id AS memory_id, content, status, source_host, source_kind, source_path
+      FROM memories WHERE id=?
+    `).get(current.memory_id);
+    assert.deepEqual({ ...legacy }, { ...current });
+    const events = rowEvents(success.db, current.memory_id)
+      .filter((row) => row.payload.projection_event_kind === "row");
+    assert.deepEqual(events.map((row) => row.action), ["transcript_harvest_inserted"]);
+    assert.equal(events[0].payload.operation_id, result.sources[0].operation_id);
+    const retry = invokeTranscript(success);
+    assert.equal(retry.files_unchanged, 1);
+    assert.equal(countEvents(success.db), 1);
+  } finally {
+    success.db.close();
+    rmSync(success.temp.root, { force: true, recursive: true });
+  }
+
+  for (const [boundary, stage] of [["top", "after_cursor"], ["caller-owned", "after_event"]]) {
+    const failed = transcriptFixture(`failure-${boundary}`);
+    try {
+      if (boundary === "caller-owned") failed.db.exec("BEGIN IMMEDIATE");
+      const result = invokeTranscript(failed, {
+        faultInjector: (observed) => {
+          if (observed === stage) throw new Error(`transcript ${boundary} ${stage}`);
+        },
+      });
+      assert.equal(result.ok, false);
+      assert.equal(result.inserted_count, 0);
+      assert.equal(result.facts_extracted, 0);
+      assert.equal(result.sources[0].status, "error");
+      assert.equal(countRows(failed.db, "memory_current"), 0);
+      assert.equal(countRows(failed.db, "memories"), 0);
+      assert.equal(countRows(failed.db, "memory_source_links"), 0);
+      assert.equal(countRows(failed.db, "memory_transcript_sync_cursor"), 0);
+      assert.equal(countEvents(failed.db), 0);
+      if (boundary === "caller-owned") assert.equal(failed.db.isTransaction, true);
+    } finally {
+      if (failed.db.isTransaction) failed.db.exec("ROLLBACK");
+      failed.db.close();
+      rmSync(failed.temp.root, { force: true, recursive: true });
+    }
+  }
+
+  const arbitration = transcriptFixture("arbitration-failure", { conflict: true });
+  try {
+    let eventWrites = 0;
+    const failed = invokeTranscript(arbitration, {
+      arbitrate: true,
+      faultInjector: (stage) => {
+        if (stage === "after_event" && ++eventWrites === 2) throw new Error("transcript arbitration event failure");
+      },
+      projectBeliefRows: projectArbitrationBeliefRows,
+    });
+    assert.equal(failed.ok, false);
+    assert.equal(failed.sources[0].status, "error");
+    assertCurrentLegacyStatus(arbitration.db, "transcript-deliberate-berlin", { status: "active", superseded_by: null });
+    assert.equal(
+      Number(arbitration.db.prepare("SELECT COUNT(*) AS c FROM memory_current WHERE source_kind='chat_history_hint'").get().c),
+      0,
+    );
+    assert.equal(countRows(arbitration.db, "memory_source_links"), 0);
+    assert.equal(countRows(arbitration.db, "memory_transcript_sync_cursor"), 0);
+    assert.equal(countEvents(arbitration.db), 0);
+  } finally {
+    arbitration.db.close();
+    rmSync(arbitration.temp.root, { force: true, recursive: true });
+  }
+
+  for (const mode of ["disabled", "restricted"]) {
+    const fixture = transcriptFixture(`zero-${mode}`);
+    fixture.db.close();
+    const db = openDatabase(":memory:");
+    let extractorCalls = 0;
+    try {
+      const config = {
+        ...fixture.config,
+        compat: { ...fixture.config.compat, writeMode: mode === "restricted" ? "native_only" : "full" },
+        native: {
+          ...fixture.config.native,
+          transcripts: { ...fixture.config.native.transcripts, enabled: mode !== "disabled" },
+        },
+      };
+      const invoke = () => harvestTranscripts({
+        config,
+        db,
+        event: { __captureLlm: { extract: () => { extractorCalls += 1; return []; } } },
+      });
+      if (mode === "restricted") assert.throws(invoke, /write|mode|blocked/i);
+      else assert.equal(invoke().skipped_reason, "disabled");
+      assert.equal(extractorCalls, 0);
+      assert.equal(Number(db.prepare("SELECT COUNT(*) AS c FROM sqlite_master WHERE type='table'").get().c), 0);
+    } finally {
+      db.close();
+      rmSync(fixture.temp.root, { force: true, recursive: true });
+    }
+  }
+};
+
+const wikiHumanCommit = (dir, message) => {
+  const env = {
+    ...process.env,
+    GIT_AUTHOR_EMAIL: "operator@example.test",
+    GIT_AUTHOR_NAME: "Synthetic Operator",
+    GIT_COMMITTER_EMAIL: "operator@example.test",
+    GIT_COMMITTER_NAME: "Synthetic Operator",
+  };
+  execFileSync("git", ["-C", dir, "add", "-A"], { env, stdio: "ignore" });
+  execFileSync("git", ["-C", dir, "commit", "--quiet", "-m", message], { env, stdio: "ignore" });
+  return execFileSync("git", ["-C", dir, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+};
+
+const wikiReconcileFixture = (label) => {
+  const temp = makeTempWorkspace(`task11-wiki-b2-${label}-`);
+  const wikiDir = path.join(temp.root, "wiki");
+  const config = writerConfig(temp.workspace);
+  config.native.wiki = { enabled: true, dir: wikiDir };
+  const db = openDb(temp.dbPath);
+  const agentContent = `The ${label} service runs in Examplebury.`;
+  const humanContent = `The ${label} service runs in Synthville.`;
+  upsertCurrentMemory(db, projectionMemory(`wiki-agent-${label}`, agentContent, {
+    source_agent: "codex",
+    source_host: "codex",
+    source_kind: "native_memory",
+    source_layer: "host_memory",
+  }));
+  const projected = projectWiki({ db, config });
+  const filePath = path.join(wikiDir, "entities", "shared.md");
+  const body = readFileSync(filePath, "utf8").replace(`- ${agentContent}`, `- ${humanContent}`);
+  writeFileSync(filePath, body, "utf8");
+  const humanHead = wikiHumanCommit(wikiDir, `operator: correct ${label}`);
+  clearEvents(db);
+  return {
+    agentId: `wiki-agent-${label}`,
+    config,
+    db,
+    humanContent,
+    humanHead,
+    projected,
+    statePath: path.join(wikiDir, STATE_FILE),
+    temp,
+    wikiDir,
+  };
+};
+
+const assertWikiWriter = () => {
+  for (const boundary of ["top", "caller-owned"]) {
+    const failed = wikiReconcileFixture(`failure-${boundary}`);
+    try {
+      const stateBefore = readFileSync(failed.statePath, "utf8");
+      if (boundary === "caller-owned") failed.db.exec("BEGIN IMMEDIATE");
+      let rowEventsSeen = 0;
+      assert.throws(() => reconcileWiki({
+        config: failed.config,
+        db: failed.db,
+        faultInjector: (stage) => {
+          if (stage === "after_event" && ++rowEventsSeen === 2) throw new Error(`wiki ${boundary} nth row event`);
+        },
+      }), new RegExp(`wiki ${boundary} nth row event`));
+      assertCurrentLegacyStatus(failed.db, failed.agentId, { status: "active", superseded_by: null });
+      assert.equal(
+        Number(failed.db.prepare("SELECT COUNT(*) AS c FROM memory_current WHERE source_host=?").get(HUMAN_WIKI_HOST).c),
+        0,
+      );
+      assert.equal(countEvents(failed.db), 0);
+      assert.equal(countRows(failed.db, "memory_wiki_reconcile_receipts"), 0);
+      assert.equal(readFileSync(failed.statePath, "utf8"), stateBefore);
+      if (boundary === "caller-owned") assert.equal(failed.db.isTransaction, true);
+    } finally {
+      if (failed.db.isTransaction) failed.db.exec("ROLLBACK");
+      failed.db.close();
+      rmSync(failed.temp.root, { force: true, recursive: true });
+    }
+  }
+
+  const completion = wikiReconcileFixture("completion-retry");
+  try {
+    const stateBefore = readFileSync(completion.statePath, "utf8");
+    assert.throws(() => reconcileWiki({
+      completionFaultInjector: (stage) => {
+        if (stage === "before_wiki_state_completion") throw new Error("wiki external completion failure");
+      },
+      config: completion.config,
+      db: completion.db,
+    }), /wiki external completion failure/);
+    const human = completion.db.prepare(`
+      SELECT memory_id, content, status, updated_at FROM memory_current WHERE source_host=?
+    `).get(HUMAN_WIKI_HOST);
+    assert.equal(human.content, completion.humanContent);
+    assert.equal(human.status, "active");
+    assertCurrentLegacyStatus(completion.db, completion.agentId, { status: "superseded", superseded_by: human.memory_id });
+    const humanEvents = rowEvents(completion.db, human.memory_id)
+      .filter((row) => row.payload.projection_event_kind === "row");
+    const agentEvents = rowEvents(completion.db, completion.agentId)
+      .filter((row) => row.payload.projection_event_kind === "row");
+    assert.deepEqual(humanEvents.map((row) => row.action), ["wiki_reconcile_ingested"]);
+    assert.deepEqual(agentEvents.map((row) => row.action), ["wiki_reconcile_superseded"]);
+    assert.equal(countRows(completion.db, "memory_wiki_reconcile_receipts"), 1);
+    const receipt = completion.db.prepare("SELECT operation_id, head_sha FROM memory_wiki_reconcile_receipts").get();
+    assert.equal(receipt.head_sha, completion.humanHead);
+    assert.equal(humanEvents[0].payload.operation_id, receipt.operation_id);
+    assert.equal(agentEvents[0].payload.operation_id, receipt.operation_id);
+    assert.equal(readFileSync(completion.statePath, "utf8"), stateBefore, "failed external completion must leave file retryable");
+    const beforeRetry = {
+      events: countEvents(completion.db),
+      humanUpdated: human.updated_at,
+      receipts: countRows(completion.db, "memory_wiki_reconcile_receipts"),
+    };
+
+    const resumed = reconcileWiki({
+      config: completion.config,
+      db: completion.db,
+      faultInjector: () => { throw new Error("wiki retry repeated DB decision"); },
+    });
+    assert.equal(resumed.resumed, true);
+    assert.equal(JSON.parse(readFileSync(completion.statePath, "utf8")).generatedSha, completion.humanHead);
+    const afterHuman = completion.db.prepare("SELECT updated_at FROM memory_current WHERE memory_id=?").get(human.memory_id);
+    assert.deepEqual({
+      events: countEvents(completion.db),
+      humanUpdated: afterHuman.updated_at,
+      receipts: countRows(completion.db, "memory_wiki_reconcile_receipts"),
+    }, beforeRetry);
+  } finally {
+    completion.db.close();
+    rmSync(completion.temp.root, { force: true, recursive: true });
+  }
+
+  for (const mode of ["disabled", "read-only"]) {
+    const temp = makeTempWorkspace(`task11-wiki-zero-${mode}-`);
+    const db = openDatabase(":memory:");
+    const wikiDir = path.join(temp.root, "wiki");
+    const config = {
+      compat: { writeMode: mode === "read-only" ? "read_only" : "full" },
+      native: { wiki: { enabled: mode !== "disabled", dir: wikiDir } },
+    };
+    try {
+      const invoke = () => reconcileWiki({ config, db });
+      if (mode === "read-only") assert.throws(invoke, /write|mode|blocked/i);
+      else assert.equal(invoke().enabled, false);
+      assert.equal(Number(db.prepare("SELECT COUNT(*) AS c FROM sqlite_master WHERE type='table'").get().c), 0);
+      assert.equal(existsSync(wikiDir), false);
+    } finally {
+      db.close();
+      rmSync(temp.root, { force: true, recursive: true });
+    }
+  }
+};
+
+export const runTask11WriterB2 = () => {
+  assertBeliefArbitrationWriter();
+  assertControlPlaneWriter();
+  assertCodexClaimWriter();
+  assertTranscriptWriter();
+  assertWikiWriter();
+};
+
 const countEvents = (db) => Number(db.prepare("SELECT COUNT(*) AS c FROM memory_events").get()?.c || 0);
 
 export async function run() {
@@ -1600,6 +2177,7 @@ export async function run() {
     assertNativePromotionWriter({ withProjectionMutationBatch });
     await assertQueueReviewWriter();
     runTask11WriterB1();
+    runTask11WriterB2();
     const paths = [
       ...readdirSync(path.join(repoRoot, "lib", "core"), { withFileTypes: true })
         .filter((entry) => entry.isFile() && entry.name.endsWith(".js"))
