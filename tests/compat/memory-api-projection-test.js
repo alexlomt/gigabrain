@@ -153,6 +153,7 @@ export async function run() {
         valid_until: "2026-09-26T14:30:00+02:00",
       }), {
         event: { action: "domain:canonicalized", component: "synthetic" },
+        now: "2026-08-26T12:30:00.000Z",
         operationId: "canonical-upsert",
       });
       assert.deepEqual({
@@ -195,6 +196,54 @@ export async function run() {
         db.prepare("SELECT action, timestamp FROM memory_events WHERE memory_id='canonical'").all().map((row) => ({ ...row })),
         [{ action: "domain:canonicalized", timestamp: "2026-08-26T12:30:00.000Z" }],
         "a caller domain event must be the sole row event and use canonical UTC",
+      );
+
+      const futureIngestStarted = Date.now();
+      const futureClock = upsertCurrentMemory(db, memory("future-ingest-clock", {
+        content: "Future caller metadata must not move the trusted ingest clock",
+        content_time: "2998-01-01T00:00:00+01:00",
+        updated_at: "2999-01-01T00:00:00+01:00",
+        valid_from: null,
+      }), { operationId: "future-ingest-clock" });
+      const futureIngestFinished = Date.now();
+      assert.equal(futureClock.updated_at, "2998-12-31T23:00:00.000Z", "caller updated_at remains canonical persisted data");
+      for (const [field, value] of [["content_time", futureClock.content_time], ["valid_from", futureClock.valid_from]]) {
+        const time = Date.parse(value);
+        assert.equal(
+          time >= futureIngestStarted && time <= futureIngestFinished,
+          true,
+          `future caller updated_at must not let ${field} escape the wall-clock clamp`,
+        );
+      }
+      const futureEventTime = Date.parse(db.prepare("SELECT timestamp FROM memory_events WHERE memory_id='future-ingest-clock'").get().timestamp);
+      assert.equal(
+        futureEventTime >= futureIngestStarted && futureEventTime <= futureIngestFinished,
+        true,
+        "future caller updated_at must not move the transaction/event ingest clock",
+      );
+
+      const historicalIngestStarted = Date.now();
+      const historicalClock = upsertCurrentMemory(db, memory("historical-ingest-clock", {
+        content: "A legitimate historical content time may follow its stored update timestamp",
+        content_time: "2001-02-03T04:05:06+01:00",
+        updated_at: "2000-01-02T03:04:05+01:00",
+        valid_from: null,
+      }), { operationId: "historical-ingest-clock" });
+      const historicalIngestFinished = Date.now();
+      assert.deepEqual({
+        content_time: historicalClock.content_time,
+        updated_at: historicalClock.updated_at,
+        valid_from: historicalClock.valid_from,
+      }, {
+        content_time: "2001-02-03T03:05:06.000Z",
+        updated_at: "2000-01-02T02:04:05.000Z",
+        valid_from: "2001-02-03T03:05:06.000Z",
+      }, "historical updated_at must not clamp a later content_time that is still before ingest");
+      const historicalEventTime = Date.parse(db.prepare("SELECT timestamp FROM memory_events WHERE memory_id='historical-ingest-clock'").get().timestamp);
+      assert.equal(
+        historicalEventTime >= historicalIngestStarted && historicalEventTime <= historicalIngestFinished,
+        true,
+        "historical updated_at must not move the transaction/event ingest clock backward",
       );
 
       const noopInput = memory("true-noop", {

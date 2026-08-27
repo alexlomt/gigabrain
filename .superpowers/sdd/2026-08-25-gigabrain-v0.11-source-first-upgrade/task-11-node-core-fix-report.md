@@ -120,3 +120,76 @@ exit 0
 
 This report is committed atomically with the owned implementation and tests.
 The immutable commit SHA is recorded in the parent handoff response.
+
+---
+
+## Round 1B — trusted ingest clock
+
+### RED evidence
+
+Two public `upsertCurrentMemory` regressions were added before the fix. The
+focused contract failed with its stable signature:
+
+```text
+timeout 120 node tests/compat/memory-api-projection-test.js
+exit 1: COMPAT_EXPECTED_MEMORY_API_PROJECTION missing projection sync contract
+```
+
+The narrow real-database reproduction exposed both incorrect clock decisions:
+
+```json
+{
+  "future": {
+    "content_time": "2997-12-31T23:00:00.000Z",
+    "updated_at": "2998-12-31T23:00:00.000Z"
+  },
+  "historical": {
+    "content_time": "2000-01-02T02:04:05.000Z",
+    "updated_at": "2000-01-02T02:04:05.000Z"
+  }
+}
+```
+
+The future caller timestamp permitted future content instead of clamping it to
+ingest time. The historical caller timestamp incorrectly pulled a legitimate
+later historical `content_time` backward to `updated_at`.
+
+### Fix
+
+`upsertCurrentMemory` no longer derives the transaction ingest clock from
+caller-controlled `memory.updated_at`. The batch now uses actual wall time by
+default, or the explicit trusted `options.now` override used by deterministic
+tests and migrations. `updated_at` remains canonical caller data in the stored
+current and legacy rows.
+
+### GREEN evidence
+
+Fresh bounded verification:
+
+```text
+node --check lib/core/projection-store.js \
+  && node --check tests/compat/memory-api-projection-test.js
+exit 0
+
+git diff --check -- lib/core/projection-store.js \
+  tests/compat/memory-api-projection-test.js
+exit 0
+
+timeout 120 node tests/compat/memory-api-projection-test.js
+exit 0: memory-api-projection-test.js: ok
+
+timeout 120 node tests/compat/projection-writer-registry-test.js
+exit 0: projection-writer-registry-test.js: ok
+
+timeout 120 node tests/unit-projection-store-test.js
+exit 0
+
+timeout 120 node tests/unit-bitemporal-test.js
+exit 0: bi-temporal completion (U12): all assertions passed
+
+timeout 120 node tests/unit-memory-actions-test.js
+exit 0: unit-memory-actions-test.js: ok
+```
+
+Round 1B is committed separately; its immutable SHA is recorded in the parent
+handoff response.
