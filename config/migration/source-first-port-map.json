@@ -102,7 +102,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "4509e1b07238dedf0245a17f4f71a17f13b198e3b11fd8d2d4b1ded5f6a2b0ca",
+      "contentSha256": "fa2d316ec4e5a93f46a97270e9de8ccbb9e3713c26b8c59a36fcc9a92569dbdf",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -117,9 +117,10 @@
         "5",
         "6",
         "8",
-        "9"
+        "9",
+        "13"
       ],
-      "reason": "Source-first registry with passing Task 12 maintenance evidence and the corrected private-test allowlist policy.",
+      "reason": "Source-first registry adds the two governed Task 13 RED contracts while retaining combined Task 12 and CI evidence.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -1485,6 +1486,20 @@
     },
     {
       "changeType": "added",
+      "contentSha256": "a516a7669878ca23ad6485719b955e3db90e8eaae83f9fdfe75c5f7e2955a1ef",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-checkpoint-concurrency"
+      },
+      "ownerTasks": [
+        "13"
+      ],
+      "reason": "Task 13 RED contract for atomic scope-session checkpoint governance, proposal isolation, zero-write legacy dry-run, and lifecycle failure logging.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/checkpoint-concurrency-test.js"
+    },
+    {
+      "changeType": "added",
       "contentSha256": "c618e10426f34d834a71ac44eba6a14db723b98a93f802759ee559b926698e48",
       "disposition": "private_dev_only",
       "gate": {
@@ -1587,7 +1602,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "ae0fae846c71bc2d0d4b18fbcff22301beda41acb0ab941cbf0afafd3b4f3fd1",
+      "contentSha256": "b0fcd04a3623e3924b4d2099b216039be83d8a87bd56b3bd92f5c7da3379364e",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1603,9 +1618,10 @@
         "6",
         "7",
         "8",
-        "9"
+        "9",
+        "13"
       ],
-      "reason": "Expected-failure ownership now retains only the two planned Task 14 migration contracts after Task 12 promotion.",
+      "reason": "Expected-failure ownership contains the two Task 13 RED contracts and the two planned Task 14 migration contracts.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
@@ -1638,6 +1654,20 @@
       "reason": "Passing Task 10 contract for deterministic generated files, exact counts, manual-folder preservation, permissions, freshness, and no-op builds.",
       "targetMode": "100644",
       "targetPath": "tests/compat/generated-surface-test.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "f0d5e9ed9891791306f9ef1fd197045036b08944e8832809c2b801f4aad7d1d4",
+      "disposition": "private_dev_only",
+      "gate": {
+        "registrationId": "compat-handoff-fidelity"
+      },
+      "ownerTasks": [
+        "13"
+      ],
+      "reason": "Task 13 RED contract for canonical Handoff v2 pagination, section roots, zero-write rejection, and evidence-only source events.",
+      "targetMode": "100644",
+      "targetPath": "tests/compat/handoff-fidelity-test.js"
     },
     {
       "changeType": "added",
@@ -2077,7 +2107,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "e7236c44aeff1840e2e99d57cbdef515e566d57099bb6d17ad206a34eb925286",
+      "contentSha256": "7dddec5c98caec39721f76944df5b7d73f6f2cef782dcc144250daa817418c53",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -2085,15 +2115,16 @@
       "ownerTasks": [
         "2B",
         "4",
-        "5"
+        "5",
+        "13"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Full inventory contract binds canonical Task 13 RED ownership alongside prior governed inventory assertions.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory-contract-test.js"
     },
     {
       "changeType": "added",
-      "contentSha256": "7107f7b039c7a1eb9dc2b42168608d73173e6cce828cbabc3be17b4ed06259e2",
+      "contentSha256": "fe158d3243c504a960dae304b3c0e98c61f113f44490d645b7b03002a10663a0",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -2108,9 +2139,10 @@
         "5",
         "7",
         "8",
-        "9"
+        "9",
+        "13"
       ],
-      "reason": "Compatibility inventory including all three exact Task 12 fail-closed RED contracts.",
+      "reason": "Compatibility inventory includes both exact Task 13 RED contracts with governed XFAIL ownership.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory.js"
     },
@@ -2581,7 +2613,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "75c43407b9df3f605aa29122ab73944a580e42b8435d5ab7383be7f41ce41f0c",
+      "contentSha256": "fc167da8955b5b456601560dc750285eb60d2ec0680aa470b0e4e7428dd5011b",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2597,9 +2629,10 @@
         "5",
         "6",
         "8",
-        "9"
+        "9",
+        "13"
       ],
-      "reason": "Source-first policy contract updates the Task 12 candidate and byte-identity allowlist counts.",
+      "reason": "Source-first policy contract updates the combined candidate count for the two Task 13 RED additions.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },

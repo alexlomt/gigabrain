@@ -144,6 +144,41 @@
     {
       "coveredPaths": [
         "lib/core/checkpoint-migration.js",
+        "lib/core/control-plane.js",
+        "lib/core/lifecycle-hooks.js",
+        "tests/compat/checkpoint-concurrency-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_CHECKPOINT_CONCURRENCY missing atomic scope-session checkpoint governance",
+      "id": "compat-checkpoint-concurrency",
+      "ownerSourceFirstTaskId": "13",
+      "relevanceEvidence": [
+        {
+          "binding": "migrateLegacyCheckpoints",
+          "mode": "import",
+          "symbol": "migrateLegacyCheckpoints",
+          "targetPath": "lib/core/checkpoint-migration.js"
+        },
+        {
+          "binding": "appendCheckpointEpisode",
+          "mode": "import",
+          "symbol": "appendCheckpointEpisode",
+          "targetPath": "lib/core/control-plane.js"
+        },
+        {
+          "binding": "buildSessionHookCommand",
+          "mode": "import",
+          "symbol": "buildSessionHookCommand",
+          "targetPath": "lib/core/lifecycle-hooks.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/compat/checkpoint-concurrency-test.js",
+      "testSha256": "a516a7669878ca23ad6485719b955e3db90e8eaae83f9fdfe75c5f7e2955a1ef"
+    },
+    {
+      "coveredPaths": [
+        "lib/core/checkpoint-migration.js",
         "tests/compat/checkpoint-promotion-isolation-test.js"
       ],
       "expectedOutcome": "pass",
@@ -305,6 +340,27 @@
       "runner": "node",
       "testPath": "tests/compat/generated-surface-test.js",
       "testSha256": "70085cbe462c88b6c7e2fa5c0d04f01d6b9b48d9150359c5f46ecb07c154446c"
+    },
+    {
+      "coveredPaths": [
+        "lib/core/handoff-bundle.js",
+        "tests/compat/handoff-fidelity-test.js"
+      ],
+      "expectedOutcome": "xfail",
+      "expectedSignature": "COMPAT_EXPECTED_HANDOFF_V2_FIDELITY missing canonical zero-write Handoff v2 contract",
+      "id": "compat-handoff-fidelity",
+      "ownerSourceFirstTaskId": "13",
+      "relevanceEvidence": [
+        {
+          "binding": "exportPassportBundle",
+          "mode": "import",
+          "symbol": "exportPassportBundle",
+          "targetPath": "lib/core/handoff-bundle.js"
+        }
+      ],
+      "runner": "node",
+      "testPath": "tests/compat/handoff-fidelity-test.js",
+      "testSha256": "f0d5e9ed9891791306f9ef1fd197045036b08944e8832809c2b801f4aad7d1d4"
     },
     {
       "coveredPaths": [
@@ -1394,7 +1450,7 @@
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
       "testPath": "tests/full-test-inventory-contract-test.js",
-      "testSha256": "e7236c44aeff1840e2e99d57cbdef515e566d57099bb6d17ad206a34eb925286"
+      "testSha256": "7dddec5c98caec39721f76944df5b7d73f6f2cef782dcc144250daa817418c53"
     },
     {
       "coveredPaths": [
@@ -2205,7 +2261,7 @@
       ],
       "runner": "node",
       "testPath": "tests/source-first-divergence-test.js",
-      "testSha256": "75c43407b9df3f605aa29122ab73944a580e42b8435d5ab7383be7f41ce41f0c"
+      "testSha256": "fc167da8955b5b456601560dc750285eb60d2ec0680aa470b0e4e7428dd5011b"
     },
     {
       "coveredPaths": [
@@ -2277,7 +2333,7 @@
       "testSha256": "4cfb4d8c9030b9a093717fb1daf7b5ee2be0e0e639de60fb8690461209493e0c"
     }
   ],
-  "entryCount": 101,
-  "manifestSha256": "2c35982560dfaa5792ea8aab20ca0b408b0cccf3f9a3806cf9a316289a8c9eb1",
+  "entryCount": 103,
+  "manifestSha256": "e8ac8176dce99984ae9c76c5a38e844c6770cfffb9dba7f8c474abadcaf14465",
   "schemaVersion": 1
 }

@@ -30,8 +30,10 @@ const RESTORE_STATES = new Set([
   "upstream_replaced",
 ]);
 const CANONICAL_EXPECTED_FAILURE_OWNERS = new Map([
+  ["compat/checkpoint-concurrency-test.js", "13"],
   ["compat/entity-taxonomy-test.js", "8"],
   ["compat/generated-surface-test.js", "10"],
+  ["compat/handoff-fidelity-test.js", "13"],
   ["compat/observational-diagnostics-test.js", "5"],
   ["compat/full-registry-migration-test.js", "14"],
   ["compat/rollback-restore-test.js", "14"],
@@ -39,8 +41,10 @@ const CANONICAL_EXPECTED_FAILURE_OWNERS = new Map([
   ["compat/world-model-shadow-test.js", "8"],
 ]);
 const CANONICAL_COMPATIBILITY_OWNERS = new Map([
+  ["compat/checkpoint-concurrency-test.js", "13"],
   ["compat/entity-taxonomy-test.js", "8"],
   ["compat/generated-surface-test.js", "10"],
+  ["compat/handoff-fidelity-test.js", "13"],
   ["compat/observational-diagnostics-test.js", "5"],
   ["compat/session-brief-scope-test.js", "8"],
   ["compat/setup-generated-surface-test.js", "10"],
@@ -154,6 +158,7 @@ const COMPATIBILITY_TESTS = [
   ["compat/auto-capture-queue-test.js", "9"],
   ["compat/auto-capture-worker-test.js", "9"],
   ["compat/backup-restore-test.js", "12"],
+  ["compat/checkpoint-concurrency-test.js", "13"],
   ["compat/memory-llm-client-test.js", "9"],
   ["compat/checkpoint-promotion-isolation-test.js", "6"],
   ["compat/config-schema-parity-test.js", "4"],
@@ -162,6 +167,7 @@ const COMPATIBILITY_TESTS = [
   ["compat/entity-taxonomy-test.js", "8"],
   ["compat/full-registry-migration-test.js", "14"],
   ["compat/generated-surface-test.js", "10"],
+  ["compat/handoff-fidelity-test.js", "13"],
   ["compat/memory-api-projection-test.js", "11"],
   ["compat/native-lock-concurrency-test.js", "6"],
   ["compat/native-metadata-promotion-test.js", "6"],
