@@ -207,6 +207,7 @@ const testPrivateArtifactClasses = () => {
     'bench/frontier/run-synthetic-answerer.js',
     'bench/longmemeval/models/frozen-contract.json',
     'bench/longmemeval/results/private.json',
+    'config/migration/private.json',
     'docs/audits/private.md',
     'docs/benchmarks/frontier-results-private.md',
     'docs/brainstorms/private.md',
@@ -234,6 +235,22 @@ const testPrivateArtifactClasses = () => {
     } finally {
       fs.rmSync(root, { force: true, recursive: true });
     }
+  }
+
+  const publicSchema = 'config/migration/gigabrain-schema-0.11-compat-v1.json';
+  const manifest = baseManifest({
+    files: ['LICENSE', 'index.js', 'package.json', 'public-release-manifest.json', publicSchema],
+  });
+  const { root } = createRepository({ manifest });
+  try {
+    write(root, publicSchema, '{"contract":"gigabrain-schema-0.11-compat-v1"}\n');
+    assert.equal(
+      checkPublicMirror({ root, checkNpm: false, checkHistory: false }).ok,
+      true,
+      'the exact reviewed compatibility schema must be public while other config artifacts stay private',
+    );
+  } finally {
+    fs.rmSync(root, { force: true, recursive: true });
   }
 };
 
@@ -514,7 +531,7 @@ const testReleaseManifestStaysNarrow = () => {
       packageFiles: manifest.npm.packageFiles.length,
       repositoryFiles: manifest.repository.files.length,
     },
-    { npmFiles: 128, packageFiles: 56, repositoryFiles: 179 },
+    { npmFiles: 132, packageFiles: 58, repositoryFiles: 183 },
     'reviewed public inventories must remain exact and deliberately narrow',
   );
   for (const required of [
@@ -522,10 +539,12 @@ const testReleaseManifestStaysNarrow = () => {
     '.github/workflows/codeql.yml',
     '.github/workflows/pii-scan.yml',
     '.github/workflows/public-mirror.yml',
+    'config/migration/gigabrain-schema-0.11-compat-v1.json',
     'scripts/build-public-mirror.mjs',
     'scripts/audit-github-surface.mjs',
     'scripts/check-no-pii.mjs',
     'scripts/check-public-mirror.mjs',
+    'scripts/migrate-v0.11-compat.js',
     'scripts/package-smoke.js',
     'tests/run-all.js',
     'memory_api/requirements-prod-py310-linux-x86_64.lock',
@@ -555,6 +574,7 @@ const testReleaseManifestStaysNarrow = () => {
     'source-private identifier hashes and fixture approvals must not enter the public repository',
   );
   for (const required of [
+    'config/migration/gigabrain-schema-0.11-compat-v1.json',
     'memory_api/.env.example',
     'memory_api/README.md',
     'memory_api/app.py',
@@ -562,6 +582,7 @@ const testReleaseManifestStaysNarrow = () => {
     'memory_api/requirements-prod-py310-linux-x86_64.lock',
     'memory_api/static/index.html',
     'memory_api/wheelhouse-py310-linux-x86_64.manifest.json',
+    'scripts/migrate-v0.11-compat.js',
   ]) assert.ok(manifest.npm.files.includes(required), `missing npm runtime file: ${required}`);
   assert.equal(manifest.npm.files.includes('memory_api/requirements-dev.lock'), false);
   assert.equal(manifest.repository.files.includes('memory_api/requirements-dev.lock'), true);
@@ -651,7 +672,11 @@ const testReleaseManifestStaysNarrow = () => {
     /^tests\/fixtures\//u,
     /^tests\/.*(?:a[5-8]|frontier|longmemeval|structured-memory-envelope|versioned-evidence)/u,
   ];
+  const reviewedPrivateClassExceptions = new Set([
+    'config/migration/gigabrain-schema-0.11-compat-v1.json',
+  ]);
   for (const file of manifest.repository.files) {
+    if (reviewedPrivateClassExceptions.has(file)) continue;
     assert.equal(
       prohibitedRepositoryPatterns.some((pattern) => pattern.test(file)),
       false,

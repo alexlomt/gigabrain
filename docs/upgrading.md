@@ -34,3 +34,17 @@ Legacy v1 memory-passport bundles are inspect-only because they omit
 `gigabrainctl handoff inspect --legacy-v1` for forensics and use physical database migration
 for authoritative upgrades. Do not route v1 through either
 `handoff import` or its deprecated `import-bundle` alias.
+
+## v0.11 compatibility migration
+
+Run `scripts/migrate-v0.11-compat.js` only against a protected candidate clone.
+`--schema-only` applies the committed `gigabrain-schema-0.11-compat-v1`
+manifest and creates an engine-consistent pre-migration backup. `--audit`,
+`--reconcile-legacy-projection`, and `--reconcile-normalized-hashes` are
+separate, content-free receipted phases. Restore writes to a new file and never
+overwrites the source, backup, or an existing destination.
+
+There is deliberately no production-apply mode. Candidate mutators remain
+blocked until their protected phase artifacts match the candidate database,
+release identity, schema checksum, and source cohort. `legacy-drop` remains
+blocked throughout this release regardless of receipts.

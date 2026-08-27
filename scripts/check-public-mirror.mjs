@@ -524,8 +524,13 @@ const internalLinkFindings = (
   return findings;
 };
 
+const PUBLIC_RUNTIME_PRIVATE_EXCEPTIONS = new Set([
+  'config/migration/gigabrain-schema-0.11-compat-v1.json',
+]);
+
 const isPrivateArtifactPath = (relativePath) => {
   const normalized = normalizeDisplayPath(relativePath);
+  if (PUBLIC_RUNTIME_PRIVATE_EXCEPTIONS.has(normalized)) return false;
   if (PRIVATE_PREFIXES.some((prefix) => normalized.startsWith(prefix))) return true;
   if (PRIVATE_PATH_PATTERNS.some((pattern) => pattern.test(normalized))) return true;
   const segments = normalized.toLowerCase().split('/');

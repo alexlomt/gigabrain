@@ -192,18 +192,26 @@ const captureLogicalState = (dbOrPath, shape = null) => {
     const tableRoots = {};
     const columnRoots = {};
     for (const tableName of tableNames) {
-      const allColumns = db.prepare(`PRAGMA table_xinfo(${quoteIdentifier(tableName)})`).all()
-        .map((row) => String(row.name));
+      const columnInfo = db.prepare(`PRAGMA table_xinfo(${quoteIdentifier(tableName)})`).all();
+      const allColumns = columnInfo.map((row) => String(row.name));
       const columns = shape?.columnsByTable?.[tableName] || allColumns;
       assert.equal(columns.every((column) => allColumns.includes(column)), true, `old columns missing from ${tableName}`);
       columnsByTable[tableName] = columns;
       if (columns.length === 0) continue;
-      const select = columns.flatMap((column, index) => [
-        `typeof(${quoteIdentifier(column)}) AS ${quoteIdentifier(`__type_${index}`)}`,
-        `${quoteIdentifier(column)} AS ${quoteIdentifier(`__value_${index}`)}`,
-      ]).join(", ");
+      const infoByName = new Map(columnInfo.map((row) => [String(row.name), row]));
+      const select = columns.flatMap((column, index) => Number(infoByName.get(column)?.hidden || 0) > 0
+        ? [`'hidden' AS ${quoteIdentifier(`__type_${index}`)}`, `NULL AS ${quoteIdentifier(`__value_${index}`)}`]
+        : [
+          `typeof(${quoteIdentifier(column)}) AS ${quoteIdentifier(`__type_${index}`)}`,
+          `${quoteIdentifier(column)} AS ${quoteIdentifier(`__value_${index}`)}`,
+        ]).join(", ");
       const encodedRows = db.prepare(`SELECT ${select} FROM ${quoteIdentifier(tableName)}`).all().map((row) => (
-        columns.map((column, index) => [column, typedValue(row[`__type_${index}`], row[`__value_${index}`])])
+        columns.map((column, index) => [
+          column,
+          Number(infoByName.get(column)?.hidden || 0) > 0
+            ? ["hidden", String(infoByName.get(column).hidden)]
+            : typedValue(row[`__type_${index}`], row[`__value_${index}`]),
+        ])
       ));
       encodedRows.sort((left, right) => binaryCompare(canonicalJson(left), canonicalJson(right)));
       tableRoots[tableName] = sha256(canonicalJson(encodedRows));
@@ -626,7 +634,9 @@ const snapshotFiles = (root) => readdirSync(root).sort(binaryCompare).map((name)
 
 export async function run() {
   assert.equal(existsSync(registryShapePath), true, "content-free v0.7 registry shape must exist");
-  const registryShape = validateRegistryShape(JSON.parse(readFileSync(registryShapePath, "utf8")));
+  const registryShapeSource = readFileSync(path.join(repoRoot, "config/migration/registry-shape-v0.7-custom.json"), "utf8");
+  assert.match(registryShapeSource, /gigabrain-registry-shape-v0\.7-custom\/1/);
+  const registryShape = validateRegistryShape(JSON.parse(registryShapeSource));
   assert.deepEqual([NON_BMP_ORDER_MARKER, BMP_ORDER_MARKER].sort(binaryCompare), [BMP_ORDER_MARKER, NON_BMP_ORDER_MARKER]);
   assert.notDeepEqual([NON_BMP_ORDER_MARKER, BMP_ORDER_MARKER].sort(), [BMP_ORDER_MARKER, NON_BMP_ORDER_MARKER]);
   const fixturePreflightRoot = mkdtempSync(path.join(tmpdir(), "gigabrain-task14-shape-preflight-"));
@@ -654,7 +664,9 @@ export async function run() {
     const reconcileNormalizedHashes = requireCallable(migration, "reconcileNormalizedHashes");
     const auditRegistryPair = requireCallable(audit, "auditRegistryPair");
     assert.equal(existsSync(manifestPath), true, "reviewed schema manifest must exist");
-    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    const manifestSource = readFileSync(path.join(repoRoot, "config/migration/gigabrain-schema-0.11-compat-v1.json"), "utf8");
+    assert.match(manifestSource, /gigabrain-schema-0\.11-compat-v1/);
+    const manifest = JSON.parse(manifestSource);
     validateManifest(manifest);
     for (const [label, mutate] of [
       ["duplicate-object", (value) => value.objects.splice(1, 0, structuredClone(value.objects[0]))],
@@ -1070,6 +1082,7 @@ export async function run() {
         const faultReceiptPath = path.join(rollbackRoot, `${mode}.receipt.json`);
         assert.throws(() => reconcile({
           dbPath: rollbackDbPath,
+          liveDbPath: livePath,
           receiptPath: faultReceiptPath,
           runDir: rollbackRoot,
           faultInjector: (observedStage) => {
@@ -1105,11 +1118,12 @@ export async function run() {
           const recoveryReceiptPath = path.join(recoveryRoot, `${mode}.receipt.json`);
           assert.throws(() => reconcile({
             dbPath: recoveryDbPath,
+            liveDbPath: livePath,
             receiptPath: recoveryReceiptPath,
             runDir: recoveryRoot,
             faultInjector: (observed) => { if (observed === stage) throw new Error(`synthetic ${stage}`); },
           }), new RegExp(`synthetic ${stage}`));
-          const recovered = reconcile({ dbPath: recoveryDbPath, receiptPath: recoveryReceiptPath, runDir: recoveryRoot });
+          const recovered = reconcile({ dbPath: recoveryDbPath, liveDbPath: livePath, receiptPath: recoveryReceiptPath, runDir: recoveryRoot });
           assert.equal(recovered.corrected, 0, `${mode} retry must recover committed state rather than reapply`);
           assertReconcileReceipt({
             path: recoveryReceiptPath,
@@ -1122,7 +1136,7 @@ export async function run() {
           assert.equal(recoveryDb.prepare("SELECT COUNT(*) AS c FROM memory_events WHERE action=?").get(eventAction).c, 2);
           recoveryDb.close();
           const recoveredInventory = snapshotFiles(recoveryRoot);
-          reconcile({ dbPath: recoveryDbPath, receiptPath: recoveryReceiptPath, runDir: recoveryRoot });
+          reconcile({ dbPath: recoveryDbPath, liveDbPath: livePath, receiptPath: recoveryReceiptPath, runDir: recoveryRoot });
           assert.deepEqual(snapshotFiles(recoveryRoot), recoveredInventory, `${stage} exact recovery inventory`);
         }
       }

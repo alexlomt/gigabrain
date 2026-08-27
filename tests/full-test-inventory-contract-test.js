@@ -116,11 +116,11 @@ export async function run() {
   assert.equal(portMap.candidateChanges.find((row) => row.targetPath === registryShape)?.ownerTasks.includes("14"), true);
   for (const file of task14Contracts) {
     assert.equal(inventory.NORMAL_TEST_DESCRIPTORS.find((row) => row.file === file)?.ownerTask, "14");
-    assert.equal(expectedFailures.entries.find((row) => row.test === file)?.ownerTask, "14");
-    assert.equal(
-      sourceRegistry.entries.find((row) => row.testPath === `tests/${file}`)?.ownerSourceFirstTaskId,
-      "14",
-    );
+    assert.equal(expectedFailures.entries.find((row) => row.test === file), undefined);
+    const registration = sourceRegistry.entries.find((row) => row.testPath === `tests/${file}`);
+    assert.equal(registration?.ownerSourceFirstTaskId, "14");
+    assert.equal(registration?.expectedOutcome, "pass");
+    assert.equal(registration?.expectedSignature, null);
     const candidate = portMap.candidateChanges.find((row) => row.targetPath === `tests/${file}`);
     assert.equal(candidate?.ownerTasks.includes("14"), true);
     assert.equal(candidate?.ownerTasks.includes("4"), false);

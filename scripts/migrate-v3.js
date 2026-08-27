@@ -18,6 +18,7 @@ import {
 import { ensureNativeStore, syncNativeMemory } from '../lib/core/native-sync.js';
 import { ensurePersonStore, rebuildEntityMentions } from '../lib/core/person-service.js';
 import { assertWriteAllowed, resolveWriteMode } from '../lib/compat/write-policy.js';
+import { assertConfiguredCandidateOperation } from '../lib/compat/candidate-safety-guard.js';
 
 const args = process.argv.slice(2);
 
@@ -179,6 +180,7 @@ const main = () => {
   }
   const migrated = mapLegacyToV3(pluginConfig);
   const dbPath = path.resolve(readFlag('--db', migrated.runtime.paths.registryPath));
+  if (apply) assertConfiguredCandidateOperation({ operation: 'migrate-v3.apply', config: migrated, registryPath: dbPath });
   const rollbackMetaPath = path.resolve(readFlag('--rollback-meta', path.join(migrated.runtime.paths.outputDir, 'gigabrain-v3-rollback-meta.json')));
 
   const preview = {

@@ -22,7 +22,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "fb8e8c40064a391985e836e77ee7c6c6a18571918ad7a80d6e69607357503b79",
+      "contentSha256": "821e147afc1494c4af02ef97a4acec1304c942e38628cbdfca5379e0596e0d07",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-packed-entry"
@@ -82,6 +82,20 @@
     },
     {
       "changeType": "added",
+      "contentSha256": "042ce694c086014369b85d9a2bcf1f6a73385fe6afa5a670e8a004546f73cc82",
+      "disposition": "operator_only",
+      "gate": {
+        "registrationId": "compat-full-registry-migration"
+      },
+      "ownerTasks": [
+        "14"
+      ],
+      "reason": "Exact Task 14 additive schema manifest and stable compatibility identity.",
+      "targetMode": "100644",
+      "targetPath": "config/migration/gigabrain-schema-0.11-compat-v1.json"
+    },
+    {
+      "changeType": "added",
       "contentSha256": "9d3c204ccfc3ce43166784c81ecf54c9ab7ac412717aff7b12cb203a6b88de4d",
       "disposition": "private_dev_only",
       "gate": {
@@ -128,13 +142,13 @@
         "9",
         "14"
       ],
-      "reason": "Source-first evidence through Task 13 GREEN plus active Task 14 RED-only classifications.",
+      "reason": "Source-first evidence through completed Task 14 migration and candidate-safety gates.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-port-map.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "6b9fe23b114c92b3e8c35d9596f2e9a900bf3b678f7a013aed06a2ba75af0b00",
+      "contentSha256": "78d2d68612c52a80113b282b94879110ea36ae628c0f5f53db29c526e871604b",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -153,7 +167,7 @@
         "13",
         "14"
       ],
-      "reason": "Source-first registry preserves Task 13 GREEN gates and adds the three governed Task 14 RED contracts.",
+      "reason": "Source-first registry promotes all three Task 14 contracts to passing gates while preserving Task 13 GREEN.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -320,15 +334,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "0c64281190f1a98d7e3822dee50bb468fa7614f238449209683de45e4ccc49db",
+      "contentSha256": "fbd46369dcd883a1caf5f3ad4f230fe7dad7b91176b0fe1d5cfa208342d1363f",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-handoff-fidelity"
       },
       "ownerTasks": [
-        "13"
+        "13",
+        "14"
       ],
-      "reason": "Task 13 documents fully bound Handoff v2 manifests, strict source-link semantics, legacy handling, and excluded state.",
+      "reason": "Documented candidate-only Task 14 migration, receipts, restore, and permanent legacy-drop block.",
       "targetMode": "100644",
       "targetPath": "docs/upgrading.md"
     },
@@ -390,31 +405,33 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "85882a1d1d7bfb33ce2689d0c882c0511e461a9513e698e7657d294910fbfef4",
+      "contentSha256": "48426ca9a2580cff00587503bf54436131d361c52e04226e7992c323b293901e",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-auto-capture-policy"
+        "registrationId": "compat-candidate-safety-guard"
       },
       "ownerTasks": [
         "5",
-        "9"
+        "9",
+        "14"
       ],
-      "reason": "Task 5 observational entry retained while Task 9A adds only the bounded enqueue-only auto-capture hook.",
+      "reason": "Task 14 candidate guard integration, exercised before mutating startup/runtime boundaries.",
       "targetMode": "100644",
       "targetPath": "index.js"
     },
     {
       "changeType": "modified",
-      "contentSha256": "8131d23430b725263f86be75a51296284e914434156832091c0c75561d4b5a49",
+      "contentSha256": "ae6af6d523576472ae4f9ae6a977ebbfc3b9e3e2921cbaf5baa7429b3b1795a1",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-auto-capture-policy"
+        "registrationId": "compat-candidate-safety-guard"
       },
       "ownerTasks": [
         "5",
-        "9"
+        "9",
+        "14"
       ],
-      "reason": "Task 5 observational entry retained while Task 9A adds only the bounded enqueue-only auto-capture hook.",
+      "reason": "Task 14 candidate guard integration, exercised before mutating startup/runtime boundaries.",
       "targetMode": "100644",
       "targetPath": "index.ts"
     },
@@ -462,6 +479,20 @@
     },
     {
       "changeType": "added",
+      "contentSha256": "68199497a00fc9d4118ad65dc0bfc74da54892966223d288505f51cc6490d5d3",
+      "disposition": "compat_module",
+      "gate": {
+        "registrationId": "compat-candidate-safety-guard"
+      },
+      "ownerTasks": [
+        "14"
+      ],
+      "reason": "Receipt-bound candidate mutation guard with protected phase-artifact validation.",
+      "targetMode": "100644",
+      "targetPath": "lib/compat/candidate-safety-guard.js"
+    },
+    {
+      "changeType": "added",
       "contentSha256": "d39cac8656f8cce6f0be640d9d67495f9b7fd2a23902a3e4c2cbc65304e07bea",
       "disposition": "core_patch",
       "gate": {
@@ -487,6 +518,20 @@
       "reason": "Task 9C provides the bounded stateless loopback-only Ollama JSON client and rejects recursive OpenClaw or remote providers.",
       "targetMode": "100644",
       "targetPath": "lib/compat/memory-llm-client.js"
+    },
+    {
+      "changeType": "added",
+      "contentSha256": "f5c916c32896731ec911f26267fef16ba81656bd1e199a48028d0e0177958a42",
+      "disposition": "compat_module",
+      "gate": {
+        "registrationId": "compat-rollback-restore"
+      },
+      "ownerTasks": [
+        "14"
+      ],
+      "reason": "Content-free typed registry audit plus engine-consistent backup and verified restore.",
+      "targetMode": "100644",
+      "targetPath": "lib/compat/migration-audit.js"
     },
     {
       "changeType": "added",
@@ -775,15 +820,16 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "203636ef63d26bde2eed646aa251cc7b3a46a00afad9f6e221bf774a6ecd94d8",
+      "contentSha256": "f79fbc0146bf3825cdc9f10742877f6c8203a061fe712180475bf0d2bc4f9475",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-embedding-identity"
+        "registrationId": "compat-candidate-safety-guard"
       },
       "ownerTasks": [
-        "7"
+        "7",
+        "14"
       ],
-      "reason": "Task 7 enforces exact Qwen cache identity, vector validity, and provenance binding.",
+      "reason": "Task 14 candidate guard integration, exercised before mutating startup/runtime boundaries.",
       "targetMode": "100644",
       "targetPath": "lib/core/embedding-service.js"
     },
@@ -805,18 +851,19 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "ce09d9f0f82f811a216a9c8e252bdc7e724cd9c74304a531400e2ac2f1fd06e6",
+      "contentSha256": "437522f1c72a29409d761ada71514434acf37cdbf523ee1466278bc9f0ac06a5",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-handoff-fidelity"
+        "registrationId": "compat-candidate-safety-guard"
       },
       "ownerTasks": [
         "11",
         "13",
         "4",
-        "5"
+        "5",
+        "14"
       ],
-      "reason": "Task 13 preserves canonical null source lines and exact source-link primary-key fidelity during Handoff import.",
+      "reason": "Task 14 candidate guard integration, exercised before mutating startup/runtime boundaries.",
       "targetMode": "100644",
       "targetPath": "lib/core/host-memory-sync.js"
     },
@@ -864,19 +911,20 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "ff9d3464a77e27127bec5c211b4935d51e92bcd763993de3d1a85850def16ffa",
+      "contentSha256": "e6b488ab1dfa361985b8d2e140d2176605aa7169a2c5c26029d5b0cc3316af85",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-nightly-order"
+        "registrationId": "compat-candidate-safety-guard"
       },
       "ownerTasks": [
         "10",
         "11",
         "4",
         "5",
-        "12"
+        "12",
+        "14"
       ],
-      "reason": "Task 12 verified snapshots and the real fail-closed 24-stage normal/shadow pipeline with durable transition receipts.",
+      "reason": "Task 14 candidate guard integration, exercised before mutating startup/runtime boundaries.",
       "targetMode": "100644",
       "targetPath": "lib/core/maintenance-service.js"
     },
@@ -929,16 +977,17 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "57551d23274a35b08df902b270a53497c6f2bec6aade61abccf052c25076978f",
+      "contentSha256": "b15631079fd93b545abcdf5e908cf01d12f778b96333e44bc79a6da01f0c5168",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-projection-writer-registry"
+        "registrationId": "compat-candidate-safety-guard"
       },
       "ownerTasks": [
         "11",
-        "6"
+        "6",
+        "14"
       ],
-      "reason": "Task 11 centralized projection writer exercised by the full transactional writer registry contract.",
+      "reason": "Task 14 candidate guard integration, exercised before mutating startup/runtime boundaries.",
       "targetMode": "100644",
       "targetPath": "lib/core/native-promotion.js"
     },
@@ -1105,16 +1154,17 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "132b5fb03a62b892eb98a6d8cacdbfdcc13f2eec2fa9525fa9dcba0bd89cda3c",
+      "contentSha256": "cbe9952b521420c4f1208c296e4ee1aa2c055a94f8ee52fa085c58ccc83b9a21",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-observational-core-patches"
+        "registrationId": "compat-candidate-safety-guard"
       },
       "ownerTasks": [
         "5",
-        "8"
+        "8",
+        "14"
       ],
-      "reason": "Task 5 observational behavior retained while Task 8 excludes vault projection, refreshes eligible native state, and marks already-protected entities for stable repeated rebuilds.",
+      "reason": "Task 14 candidate guard integration, exercised before mutating startup/runtime boundaries.",
       "targetMode": "100644",
       "targetPath": "lib/core/world-model.js"
     },
@@ -1270,7 +1320,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "6ce87ebbdb681cc1cab5a99c2bc44362a740a29d39b7e8b8eefa67ee54807aba",
+      "contentSha256": "5367ea27e60924889297ac3d6209884873839b745f035ab1efed621fc1e88925",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-auto-capture-worker"
@@ -1288,7 +1338,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "4bba6e889b84cccfaff9883b38dedaffcd03e343eeb65da1bd2c0f4956e8dfa4",
+      "contentSha256": "b54b3351e2626cf0cf41b75bf64bd5ebdd4df36a2602e4e0a0baf8a98068c20c",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-auto-capture-worker"
@@ -1297,9 +1347,10 @@
         "10",
         "2B",
         "5",
-        "9"
+        "9",
+        "14"
       ],
-      "reason": "Public source and npm inventories explicitly ship both Task 10 operator-surface modules and their runtime dependencies.",
+      "reason": "Narrow public/runtime allowlist additions for Task 14 guard, audit, and migration CLI.",
       "targetMode": "100644",
       "targetPath": "public-release-manifest.json"
     },
@@ -1378,7 +1429,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "943f78992ccf65d2c3449d282a6dc7046d2beebc7397dd53767a4828f7ff3fa1",
+      "contentSha256": "bd435b816aac678fef0568957a3058064ab726e7d4f87ac0c6a6baa8c721d143",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-shipping-core-evidence"
@@ -1426,10 +1477,10 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "6ead130792836199c0d99be38220c0208aa2286dc201f907b7e12b0a774f9f19",
+      "contentSha256": "edd6a7fc7818b5f65472ae603e55f06043075e5ebddd67635994202f5a4a02d9",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-handoff-fidelity"
+        "registrationId": "compat-candidate-safety-guard"
       },
       "ownerTasks": [
         "10",
@@ -1438,9 +1489,10 @@
         "13",
         "5",
         "6",
-        "9"
+        "9",
+        "14"
       ],
-      "reason": "Task 13 retains fail-closed Handoff v2 export, inspect, and import CLI routes with pre-config validation.",
+      "reason": "Task 14 candidate guard integration, exercised before mutating startup/runtime boundaries.",
       "targetMode": "100755",
       "targetPath": "scripts/gigabrainctl.js"
     },
@@ -1459,16 +1511,31 @@
       "targetPath": "scripts/harmonize-memory.js"
     },
     {
-      "changeType": "modified",
-      "contentSha256": "14808c4471501c224273e06653330373a8bcad802cc9d26e1d8b1d213197424a",
-      "disposition": "core_patch",
+      "changeType": "added",
+      "contentSha256": "e3db2c13aea20d2571ff54eff872c73d6bb984e10ffbca40f9bc168baa7e1e35",
+      "disposition": "compat_module",
       "gate": {
-        "registrationId": "compat-write-mode-gate"
+        "registrationId": "compat-full-registry-migration"
       },
       "ownerTasks": [
-        "5"
+        "14"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Manifest-driven candidate-only schema migration and separately receipted reconciliation CLI.",
+      "targetMode": "100755",
+      "targetPath": "scripts/migrate-v0.11-compat.js"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "849bc28a962368daaa4013ff3e30d1666490f7cb2971dfb50a94922ec3b72c94",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-candidate-safety-guard"
+      },
+      "ownerTasks": [
+        "5",
+        "14"
+      ],
+      "reason": "Task 14 candidate guard integration, exercised before mutating startup/runtime boundaries.",
       "targetMode": "100755",
       "targetPath": "scripts/migrate-v3.js"
     },
@@ -1516,17 +1583,18 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "057cb8a36a5cf284c619008453701be9b300375466a0243bb36cef57e4f4c860",
+      "contentSha256": "9ab57959d9a2ab6ef490c0d40a61b4d23398fbceb1df27ec6470fb281ad14354",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-setup-dry-run"
+        "registrationId": "compat-candidate-safety-guard"
       },
       "ownerTasks": [
         "4",
         "5",
-        "12"
+        "12",
+        "14"
       ],
-      "reason": "Task 12 makes setup plan/dry-run observational, apply explicit, fresh bootstrap schema-only, and existing databases immutable-read-only.",
+      "reason": "Task 14 candidate guard integration, exercised before mutating startup/runtime boundaries.",
       "targetMode": "100644",
       "targetPath": "scripts/setup-first-run.js"
     },
@@ -1589,7 +1657,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "1e47e3672eb27f2e9a27303b8847ffcd5ad86bb404b4518dc478160cf5cb033b",
+      "contentSha256": "eba4ef94543277b3acb8504ad084c9765d2f0742bcde9d37925d4da143c20044",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-candidate-safety-guard"
@@ -1597,7 +1665,7 @@
       "ownerTasks": [
         "14"
       ],
-      "reason": "Task 14 RED-only contract for receipt-phase binding across mutating entrypoints, protected receipt identity, and observational read access.",
+      "reason": "Task 14 candidate guard integration, exercised before mutating startup/runtime boundaries.",
       "targetMode": "100644",
       "targetPath": "tests/compat/candidate-safety-guard-test.js"
     },
@@ -1719,7 +1787,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "8fa3df5cfa8746fdd682db38b74502361ed79e3109a73ee34a64198ef85efdd8",
+      "contentSha256": "4804f946da7206f59df62ae86b90095a0e3630483a96a02454238e550154bf4e",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -1739,13 +1807,13 @@
         "13",
         "14"
       ],
-      "reason": "Expected-failure ownership contains only the three governed Task 14 RED signatures.",
+      "reason": "Expected-failure inventory is empty after Task 13 and Task 14 GREEN completion.",
       "targetMode": "100644",
       "targetPath": "tests/compat/expected-failures.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "54e5bb11fad9eb1550fba1ccb0876ef7df651e12777891b57ca926562f78e200",
+      "contentSha256": "8ceabee74e390a6aeaf45d0848090de2ee56e586ca1c4b31163c210daeb59346",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-full-registry-migration"
@@ -2036,7 +2104,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "fbd51c2c25c0ddea0c0a97435ca95a465f4832acd48968177d6042f65ef4129d",
+      "contentSha256": "09f372a4c74649ceecd3052524c0426ead41177d08c9ed8cb8ff31c713dcc1f7",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-rollback-restore"
@@ -2227,7 +2295,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "0261ff5ff211cc63d897075501167d623ec2e2443f4bf2acc2a74f4857c289fb",
+      "contentSha256": "3f1f5a2149ddfc28234186ad04fbbf2a0f7dd01ead7963eb020308dc9696b690",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "full-test-inventory"
@@ -2239,7 +2307,7 @@
         "5",
         "14"
       ],
-      "reason": "Full inventory preserves Task 13 GREEN and binds all three Task 14 RED owners/signatures.",
+      "reason": "Inventory contract verifies Task 13 and Task 14 gates are passing and absent from XFAILs.",
       "targetMode": "100644",
       "targetPath": "tests/full-test-inventory-contract-test.js"
     },
@@ -2735,7 +2803,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "d939911effffabba0951156f852c262e4c508a3ff70730c47fe830d5537e2379",
+      "contentSha256": "dc8d9f11e9c0a0d5958bf39edb66aeb63b4bb496824027cc60e2b0ce0733c75e",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2755,7 +2823,7 @@
         "13",
         "14"
       ],
-      "reason": "Source-first policy seals the two additional active Task 14 RED rows on the Task 13 GREEN map.",
+      "reason": "Source-first policy seals the four actual Task 14 production artifact rows.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },
@@ -3157,7 +3225,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "28eae433a6190743001bfa8ff25cf4d6326ee5d93e6a72ce5a7edbc6cd9e67ba",
+      "contentSha256": "45bc620272f66faa193b2a26f9a83b3a21dab746e21e64a203c8f2676a436bac",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "npm-pack-schema"

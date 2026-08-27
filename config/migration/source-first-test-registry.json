@@ -143,15 +143,85 @@
     },
     {
       "coveredPaths": [
+        "index.js",
+        "index.ts",
+        "lib/compat/candidate-safety-guard.js",
+        "lib/core/embedding-service.js",
+        "lib/core/host-memory-sync.js",
+        "lib/core/maintenance-service.js",
+        "lib/core/native-promotion.js",
+        "lib/core/world-model.js",
+        "scripts/gigabrainctl.js",
+        "scripts/migrate-v3.js",
+        "scripts/setup-first-run.js",
         "tests/compat/candidate-safety-guard-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_CANDIDATE_SAFETY_GUARD missing receipt-bound candidate mutation guard",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-candidate-safety-guard",
       "ownerSourceFirstTaskId": "14",
+      "relevanceEvidence": [
+        {
+          "binding": "builtEntrySource",
+          "mode": "read",
+          "targetPath": "index.js"
+        },
+        {
+          "binding": "sourceEntry",
+          "mode": "read",
+          "targetPath": "index.ts"
+        },
+        {
+          "binding": "assertCandidateOperationAllowed",
+          "mode": "import",
+          "resultBinding": "result",
+          "symbol": "assertCandidateOperationAllowed",
+          "targetPath": "lib/compat/candidate-safety-guard.js"
+        },
+        {
+          "binding": "embeddingSource",
+          "mode": "read",
+          "targetPath": "lib/core/embedding-service.js"
+        },
+        {
+          "binding": "hostSyncSource",
+          "mode": "read",
+          "targetPath": "lib/core/host-memory-sync.js"
+        },
+        {
+          "binding": "maintenanceSource",
+          "mode": "read",
+          "targetPath": "lib/core/maintenance-service.js"
+        },
+        {
+          "binding": "nativePromotionSource",
+          "mode": "read",
+          "targetPath": "lib/core/native-promotion.js"
+        },
+        {
+          "binding": "worldModelSource",
+          "mode": "read",
+          "targetPath": "lib/core/world-model.js"
+        },
+        {
+          "binding": "gigabrainCtlSource",
+          "mode": "read",
+          "targetPath": "scripts/gigabrainctl.js"
+        },
+        {
+          "binding": "migrateV3Source",
+          "mode": "read",
+          "targetPath": "scripts/migrate-v3.js"
+        },
+        {
+          "binding": "setupSource",
+          "mode": "read",
+          "targetPath": "scripts/setup-first-run.js"
+        }
+      ],
       "runner": "node",
       "testPath": "tests/compat/candidate-safety-guard-test.js",
-      "testSha256": "1e47e3672eb27f2e9a27303b8847ffcd5ad86bb404b4518dc478160cf5cb033b"
+      "testSha256": "eba4ef94543277b3acb8504ad084c9765d2f0742bcde9d37925d4da143c20044"
     },
     {
       "coveredPaths": [
@@ -347,16 +417,37 @@
     },
     {
       "coveredPaths": [
+        "config/migration/gigabrain-schema-0.11-compat-v1.json",
         "config/migration/registry-shape-v0.7-custom.json",
+        "scripts/migrate-v0.11-compat.js",
         "tests/compat/full-registry-migration-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_FULL_MIGRATION missing source-first registry migration receipt",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-full-registry-migration",
       "ownerSourceFirstTaskId": "14",
+      "relevanceEvidence": [
+        {
+          "binding": "manifestSource",
+          "mode": "read",
+          "targetPath": "config/migration/gigabrain-schema-0.11-compat-v1.json"
+        },
+        {
+          "binding": "registryShapeSource",
+          "mode": "read",
+          "targetPath": "config/migration/registry-shape-v0.7-custom.json"
+        },
+        {
+          "binding": "migrateCandidateDatabase",
+          "mode": "import",
+          "resultBinding": "recovered",
+          "symbol": "migrateCandidateDatabase",
+          "targetPath": "scripts/migrate-v0.11-compat.js"
+        }
+      ],
       "runner": "node",
       "testPath": "tests/compat/full-registry-migration-test.js",
-      "testSha256": "54e5bb11fad9eb1550fba1ccb0876ef7df651e12777891b57ca926562f78e200"
+      "testSha256": "8ceabee74e390a6aeaf45d0848090de2ee56e586ca1c4b31163c210daeb59346"
     },
     {
       "coveredPaths": [
@@ -1088,15 +1179,25 @@
     },
     {
       "coveredPaths": [
+        "lib/compat/migration-audit.js",
         "tests/compat/rollback-restore-test.js"
       ],
-      "expectedOutcome": "xfail",
-      "expectedSignature": "COMPAT_EXPECTED_ROLLBACK_RESTORE missing verified rollback restoration",
+      "expectedOutcome": "pass",
+      "expectedSignature": null,
       "id": "compat-rollback-restore",
       "ownerSourceFirstTaskId": "14",
+      "relevanceEvidence": [
+        {
+          "binding": "createConsistentBackup",
+          "mode": "import",
+          "resultBinding": "backupReceipt",
+          "symbol": "createConsistentBackup",
+          "targetPath": "lib/compat/migration-audit.js"
+        }
+      ],
       "runner": "node",
       "testPath": "tests/compat/rollback-restore-test.js",
-      "testSha256": "fbd51c2c25c0ddea0c0a97435ca95a465f4832acd48968177d6042f65ef4129d"
+      "testSha256": "09f372a4c74649ceecd3052524c0426ead41177d08c9ed8cb8ff31c713dcc1f7"
     },
     {
       "coveredPaths": [
@@ -1526,7 +1627,7 @@
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
       "testPath": "tests/full-test-inventory-contract-test.js",
-      "testSha256": "0261ff5ff211cc63d897075501167d623ec2e2443f4bf2acc2a74f4857c289fb"
+      "testSha256": "3f1f5a2149ddfc28234186ad04fbbf2a0f7dd01ead7963eb020308dc9696b690"
     },
     {
       "coveredPaths": [
@@ -2337,7 +2438,7 @@
       ],
       "runner": "node",
       "testPath": "tests/source-first-divergence-test.js",
-      "testSha256": "d939911effffabba0951156f852c262e4c508a3ff70730c47fe830d5537e2379"
+      "testSha256": "dc8d9f11e9c0a0d5958bf39edb66aeb63b4bb496824027cc60e2b0ce0733c75e"
     },
     {
       "coveredPaths": [
@@ -2350,7 +2451,7 @@
       "ownerSourceFirstTaskId": "1",
       "runner": "node",
       "testPath": "tests/source-first-divergence-test.js",
-      "testSha256": "31fe02facf4303001827fdc447d4b6a451cad24856c8be4bb484760ac9167410"
+      "testSha256": "dc8d9f11e9c0a0d5958bf39edb66aeb63b4bb496824027cc60e2b0ce0733c75e"
     },
     {
       "coveredPaths": [
@@ -2410,6 +2511,6 @@
     }
   ],
   "entryCount": 104,
-  "manifestSha256": "84f749b7834054f866637449a72675a51624fc31baec4fb32fb1ef8f0a3764bc",
+  "manifestSha256": "d263c7897e4ec1e40b610a5edbf8b82ce0d2bf01a195979a03fcd0788e1c69ad",
   "schemaVersion": 1
 }

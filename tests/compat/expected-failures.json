@@ -1,20 +1,4 @@
 {
-  "entries": [
-    {
-      "ownerTask": "14",
-      "signature": "COMPAT_EXPECTED_CANDIDATE_SAFETY_GUARD missing receipt-bound candidate mutation guard",
-      "test": "compat/candidate-safety-guard-test.js"
-    },
-    {
-      "ownerTask": "14",
-      "signature": "COMPAT_EXPECTED_FULL_MIGRATION missing source-first registry migration receipt",
-      "test": "compat/full-registry-migration-test.js"
-    },
-    {
-      "ownerTask": "14",
-      "signature": "COMPAT_EXPECTED_ROLLBACK_RESTORE missing verified rollback restoration",
-      "test": "compat/rollback-restore-test.js"
-    }
-  ],
+  "entries": [],
   "schemaVersion": 1
 }

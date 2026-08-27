@@ -6,6 +6,7 @@ import {
   registerOpenClawCompatibility,
 } from './lib/compat/openclaw-adapter.js';
 import { createAutoCaptureHook } from './lib/compat/auto-capture-policy.js';
+import { assertConfiguredCandidateOperation } from './lib/compat/candidate-safety-guard.js';
 import { deriveScopeFromWorkspaceDir } from './lib/compat/scope-policy.js';
 
 
@@ -54,6 +55,7 @@ const gigabrainPlugin = {
       api.logger?.info?.('[gigabrain] disabled by config');
       return;
     }
+    assertConfiguredCandidateOperation({ operation: 'plugin.register', config });
     registerOpenClawCompatibility(api, config);
     const autoCapture = (config       )?.capture?.autoCapture;
     if ((config       )?.capture?.enabled !== false && autoCapture?.enabled === true && autoCapture?.mode !== 'off') {

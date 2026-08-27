@@ -1,0 +1,347 @@
+{
+  "columns": [
+    {
+      "definition": "TEXT",
+      "disposition": "existing_validate_backfill_created_at",
+      "name": "valid_from",
+      "table": "memory_current"
+    },
+    {
+      "definition": "TEXT",
+      "disposition": "additive_nullable",
+      "name": "model_fingerprint",
+      "table": "memory_embeddings"
+    },
+    {
+      "definition": "TEXT",
+      "disposition": "existing_validate",
+      "name": "agent_id",
+      "table": "memory_events"
+    },
+    {
+      "definition": "TEXT",
+      "disposition": "existing_validate",
+      "name": "memory_type",
+      "table": "memory_native_chunks"
+    },
+    {
+      "definition": "TEXT NOT NULL DEFAULT 'legacy_unclassified'",
+      "disposition": "additive_default",
+      "name": "origin_kind",
+      "table": "memory_native_chunks"
+    }
+  ],
+  "manifestSha256": "c3b844c0a0207de0be5014d9fa29935816e5cd4d2aa2ce4aede505e37f3ff293",
+  "objects": [
+    {
+      "disposition": "additive",
+      "name": "idx_memory_checkpoint_items_checkpoint",
+      "sql": "CREATE INDEX idx_memory_checkpoint_items_checkpoint\n      ON memory_checkpoint_items(checkpoint_id, kind, position)",
+      "sqlSha256": "e40bcfc400e45e1657034dd26912af8a02bd84729f65ff615b70814efbe7620c",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_checkpoints_agent_time",
+      "sql": "CREATE INDEX idx_memory_checkpoints_agent_time\n      ON memory_checkpoints(source_agent, created_at DESC)",
+      "sqlSha256": "e67e1a35d5b0d539ef61f0518c25e68c70904a0b05bdbfcd80adb8ac887cf0f2",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_checkpoints_scope_session_unique",
+      "sql": "CREATE UNIQUE INDEX idx_memory_checkpoints_scope_session_unique ON memory_checkpoints(scope, session_id)",
+      "sqlSha256": "11b4c229774bec62d8a8208d93ef74aa4e0ecfaf41e9fb6e379301d03e93f315",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_checkpoints_scope_time",
+      "sql": "CREATE INDEX idx_memory_checkpoints_scope_time\n      ON memory_checkpoints(scope, created_at DESC, checkpoint_id DESC)",
+      "sqlSha256": "6ae8c2e8293083ca114417800d3f19ae39c9c28ac3de19e9791deb4624367ddd",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_checkpoints_session",
+      "sql": "CREATE INDEX idx_memory_checkpoints_session\n      ON memory_checkpoints(session_id, created_at ASC)",
+      "sqlSha256": "57cbe2f04ce15b429b8e382344ee4cdf1140635d8352b8bd4428dd85adc897ff",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_claim_events_one_terminal",
+      "sql": "CREATE UNIQUE INDEX idx_memory_claim_events_one_terminal\n      ON memory_claim_proposal_events(proposal_id)\n      WHERE action IN ('accepted', 'rejected', 'superseded')",
+      "sqlSha256": "1f920c86fb682b5b00d120ba0a9ab394b4b02aca4c230bf320c083093b2b5886",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_claim_events_proposal_time",
+      "sql": "CREATE INDEX idx_memory_claim_events_proposal_time\n      ON memory_claim_proposal_events(proposal_id, created_at ASC, event_id ASC)",
+      "sqlSha256": "43305d3ccaeb5a59ce7272ceef6ef131c0393bdb1a425fca7bc875208fecd63a",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_claim_proposals_checkpoint",
+      "sql": "CREATE INDEX idx_memory_claim_proposals_checkpoint\n      ON memory_claim_proposals(checkpoint_id, created_at ASC)",
+      "sqlSha256": "ec4c372d8425ad2a805f0bec8df3e07739dcc0dac4cee2dd176d40aee164c5be",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_claim_proposals_scope_time",
+      "sql": "CREATE INDEX idx_memory_claim_proposals_scope_time\n      ON memory_claim_proposals(scope, created_at DESC, proposal_id DESC)",
+      "sqlSha256": "187ac9756b51d782889fcc3f251b3236add276c964fc8dbd387b1781e0c3517c",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_cloud_inbox_state_host",
+      "sql": "CREATE INDEX idx_memory_cloud_inbox_state_host\n      ON memory_cloud_inbox_state(source_host)",
+      "sqlSha256": "4fbf6dd0f158f589b8f25b6604bf78dddc56a1bb1bfb233c06a5b4e536a6ffe6",
+      "type": "index"
+    },
+    {
+      "disposition": "existing_validate",
+      "name": "idx_memory_console_metadata_concept_pinned",
+      "sql": "CREATE INDEX idx_memory_console_metadata_concept_pinned\n      ON memory_console_metadata(concept, pinned, memory_id)",
+      "sqlSha256": "f16b25264e6b1176c30e8abe0496546660b5d4f05a4293dbc4a5b597f2c32b35",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_embeddings_identity",
+      "sql": "CREATE INDEX idx_memory_embeddings_identity ON memory_embeddings(model, dims, model_fingerprint)",
+      "sqlSha256": "d9c4648d40ed6c152b9598a922d3935befc70eb91274da37ceedc86b6925f81f",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_host_sync_cursor_host",
+      "sql": "CREATE INDEX idx_memory_host_sync_cursor_host\n      ON memory_host_sync_cursor(source_host)",
+      "sqlSha256": "4a3abaeecf858e01b2cd2d84cd7fdca32b7b467e0a5134e8278a013682ca88aa",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_host_sync_runs_host_time",
+      "sql": "CREATE INDEX idx_memory_host_sync_runs_host_time\n      ON memory_host_sync_runs(source_host, synced_at DESC)",
+      "sqlSha256": "99d9a59451e61e9f5e4d9b2480c80b449494e8393a43d147d3e8d408287de997",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_native_chunks_origin_status",
+      "sql": "CREATE INDEX idx_memory_native_chunks_origin_status ON memory_native_chunks(origin_kind, status)",
+      "sqlSha256": "203ad57c43df75cf8fdbf35ec793a41ad628e438ea53edbb4704eb52e6b846c2",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_receipts_scope_time",
+      "sql": "CREATE INDEX idx_memory_receipts_scope_time\n      ON memory_receipts(scope, created_at DESC, receipt_id DESC)",
+      "sqlSha256": "303ee1995c420321b0e9d502358b4c8b2fbb875a576ef157d1f31f44231d625b",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_receipts_session",
+      "sql": "CREATE INDEX idx_memory_receipts_session\n      ON memory_receipts(session_id, created_at ASC)",
+      "sqlSha256": "411ad6442798b2102e57f0e8fbe4e963a9e81e74f003e2f25ce3f219f9da2e85",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_source_links_host_status",
+      "sql": "CREATE INDEX idx_memory_source_links_host_status\n      ON memory_source_links(source_host, status)",
+      "sqlSha256": "3d5663d22d26f315be9fea385be93e4e43b5def2102d4ffb2e60a6f797eebb9c",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_source_links_memory",
+      "sql": "CREATE INDEX idx_memory_source_links_memory\n      ON memory_source_links(memory_id)",
+      "sqlSha256": "7ed2622fa5bbd4a60ce40e3d35199f5b04aa6fc59c116afba97a533c5dcaa041",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "idx_memory_transcript_cursor_host",
+      "sql": "CREATE INDEX idx_memory_transcript_cursor_host\n      ON memory_transcript_sync_cursor(source_host)",
+      "sqlSha256": "1095edf1105410817d0f820babcfe709fa4fb92a7bc5e52304a7ee80f3fd16fb",
+      "type": "index"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_checkpoint_items",
+      "sql": "CREATE TABLE memory_checkpoint_items (\n      item_id TEXT PRIMARY KEY,\n      checkpoint_id TEXT NOT NULL,\n      kind TEXT NOT NULL,\n      position INTEGER NOT NULL,\n      content TEXT NOT NULL,\n      evidence_refs TEXT NOT NULL DEFAULT '[]',\n      payload TEXT NOT NULL DEFAULT '{}',\n      record_hash TEXT NOT NULL UNIQUE,\n      FOREIGN KEY (checkpoint_id) REFERENCES memory_checkpoints(checkpoint_id),\n      UNIQUE (checkpoint_id, kind, position),\n      CHECK (length(trim(content)) > 0)\n    )",
+      "sqlSha256": "39411dd018e9627d554118bd5ecdb11a3ea26921998c6a980ce1b25494c2f25e",
+      "type": "table"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_checkpoint_items_immutable_delete",
+      "sql": "CREATE TRIGGER \"memory_checkpoint_items_immutable_delete\"\n    BEFORE DELETE ON \"memory_checkpoint_items\"\n    BEGIN\n      SELECT RAISE(ABORT, 'memory_checkpoint_items is append-only');\n    END",
+      "sqlSha256": "8918bc3a87712b05591afbb4bd36cbbdf5a6ed5d725ac5488c6b474ff5e4a5c4",
+      "type": "trigger"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_checkpoint_items_immutable_update",
+      "sql": "CREATE TRIGGER \"memory_checkpoint_items_immutable_update\"\n    BEFORE UPDATE ON \"memory_checkpoint_items\"\n    BEGIN\n      SELECT RAISE(ABORT, 'memory_checkpoint_items is append-only');\n    END",
+      "sqlSha256": "a12c66bde8997913e3d2f15b489145d5a80cc96c6ad42082068ce507249c231c",
+      "type": "trigger"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_checkpoints",
+      "sql": "CREATE TABLE memory_checkpoints (\n      checkpoint_id TEXT PRIMARY KEY,\n      schema_version TEXT NOT NULL,\n      created_at TEXT NOT NULL,\n      session_id TEXT NOT NULL,\n      parent_checkpoint_id TEXT,\n      scope TEXT NOT NULL,\n      source_agent TEXT NOT NULL,\n      source_client TEXT NOT NULL,\n      source_host TEXT NOT NULL,\n      repo_root TEXT NOT NULL DEFAULT '',\n      repo_branch TEXT NOT NULL DEFAULT '',\n      repo_commit TEXT NOT NULL DEFAULT '',\n      repo_dirty INTEGER NOT NULL DEFAULT 0 CHECK (repo_dirty IN (0, 1)),\n      summary TEXT NOT NULL DEFAULT '',\n      outcome_status TEXT NOT NULL DEFAULT 'completed',\n      source_path TEXT NOT NULL DEFAULT '',\n      source_line INTEGER,\n      source_kind TEXT NOT NULL DEFAULT 'daily_note',\n      legacy_untyped INTEGER NOT NULL DEFAULT 0 CHECK (legacy_untyped IN (0, 1)),\n      payload TEXT NOT NULL DEFAULT '{}',\n      record_hash TEXT NOT NULL UNIQUE,\n      CHECK (length(trim(checkpoint_id)) > 0),\n      CHECK (length(trim(session_id)) > 0),\n      CHECK (length(trim(scope)) > 0),\n      CHECK (length(trim(source_agent)) > 0),\n      CHECK (length(trim(source_client)) > 0),\n      CHECK (length(trim(source_host)) > 0)\n    )",
+      "sqlSha256": "0bbc5cb7b9882e0d9360f0d50b84c7930eacec63c461bab87f48c2c4a23f40ff",
+      "type": "table"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_checkpoints_immutable_delete",
+      "sql": "CREATE TRIGGER \"memory_checkpoints_immutable_delete\"\n    BEFORE DELETE ON \"memory_checkpoints\"\n    BEGIN\n      SELECT RAISE(ABORT, 'memory_checkpoints is append-only');\n    END",
+      "sqlSha256": "a5841e021f4a00622d749325ded42490dbffffcd321457934f9c991c6af35757",
+      "type": "trigger"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_checkpoints_immutable_update",
+      "sql": "CREATE TRIGGER \"memory_checkpoints_immutable_update\"\n    BEFORE UPDATE ON \"memory_checkpoints\"\n    BEGIN\n      SELECT RAISE(ABORT, 'memory_checkpoints is append-only');\n    END",
+      "sqlSha256": "709d6093cc0fcb71360c7c86bfe972be8421a8786e4448fa4566483d10ca4e97",
+      "type": "trigger"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_claim_proposal_events",
+      "sql": "CREATE TABLE memory_claim_proposal_events (\n      event_id TEXT PRIMARY KEY,\n      proposal_id TEXT NOT NULL,\n      created_at TEXT NOT NULL,\n      action TEXT NOT NULL,\n      actor_id TEXT NOT NULL,\n      actor_host TEXT NOT NULL,\n      reason TEXT NOT NULL DEFAULT '',\n      memory_id TEXT,\n      receipt_id TEXT,\n      payload TEXT NOT NULL DEFAULT '{}',\n      record_hash TEXT NOT NULL UNIQUE,\n      FOREIGN KEY (proposal_id) REFERENCES memory_claim_proposals(proposal_id),\n      CHECK (length(trim(actor_id)) > 0),\n      CHECK (length(trim(actor_host)) > 0)\n    )",
+      "sqlSha256": "04d365182dd73077cba7a3ddd19c2a7066a57cac337776d38c34b14bbaef3f16",
+      "type": "table"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_claim_proposal_events_immutable_delete",
+      "sql": "CREATE TRIGGER \"memory_claim_proposal_events_immutable_delete\"\n    BEFORE DELETE ON \"memory_claim_proposal_events\"\n    BEGIN\n      SELECT RAISE(ABORT, 'memory_claim_proposal_events is append-only');\n    END",
+      "sqlSha256": "1af2ac828bf7563e1d2006f51a7998066da2e6590c9ac5595a2e5c2d7da2325e",
+      "type": "trigger"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_claim_proposal_events_immutable_update",
+      "sql": "CREATE TRIGGER \"memory_claim_proposal_events_immutable_update\"\n    BEFORE UPDATE ON \"memory_claim_proposal_events\"\n    BEGIN\n      SELECT RAISE(ABORT, 'memory_claim_proposal_events is append-only');\n    END",
+      "sqlSha256": "5befac6af0c74448496b96ba8cfc47ac161451097a327fb812b9682665d8d977",
+      "type": "trigger"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_claim_proposals",
+      "sql": "CREATE TABLE memory_claim_proposals (\n      proposal_id TEXT PRIMARY KEY,\n      schema_version TEXT NOT NULL,\n      created_at TEXT NOT NULL,\n      checkpoint_id TEXT,\n      checkpoint_item_id TEXT,\n      scope TEXT NOT NULL,\n      claim_type TEXT NOT NULL,\n      content TEXT NOT NULL,\n      evidence_class TEXT NOT NULL,\n      evidence_refs TEXT NOT NULL DEFAULT '[]',\n      source_agent TEXT NOT NULL,\n      source_host TEXT NOT NULL,\n      ancestry_cluster TEXT NOT NULL,\n      confidence REAL,\n      valid_from TEXT,\n      valid_until TEXT,\n      payload TEXT NOT NULL DEFAULT '{}',\n      record_hash TEXT NOT NULL UNIQUE,\n      FOREIGN KEY (checkpoint_id) REFERENCES memory_checkpoints(checkpoint_id),\n      FOREIGN KEY (checkpoint_item_id) REFERENCES memory_checkpoint_items(item_id),\n      CHECK (length(trim(scope)) > 0),\n      CHECK (length(trim(source_agent)) > 0),\n      CHECK (length(trim(source_host)) > 0),\n      CHECK (length(trim(content)) > 0)\n    )",
+      "sqlSha256": "b8e9beb494e1799b1f6e8ac1a1d588b85257cc4fda288c72f927723dc6f66a5f",
+      "type": "table"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_claim_proposals_immutable_delete",
+      "sql": "CREATE TRIGGER \"memory_claim_proposals_immutable_delete\"\n    BEFORE DELETE ON \"memory_claim_proposals\"\n    BEGIN\n      SELECT RAISE(ABORT, 'memory_claim_proposals is append-only');\n    END",
+      "sqlSha256": "6fa850924e1a7107aea2c04c17caed583a3b115489985df495d00a73eb900c82",
+      "type": "trigger"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_claim_proposals_immutable_update",
+      "sql": "CREATE TRIGGER \"memory_claim_proposals_immutable_update\"\n    BEFORE UPDATE ON \"memory_claim_proposals\"\n    BEGIN\n      SELECT RAISE(ABORT, 'memory_claim_proposals is append-only');\n    END",
+      "sqlSha256": "9ffc980115b5872c75f69a69e51fa07d44a68b61f5aad2af2af543bad9c61ceb",
+      "type": "trigger"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_cloud_inbox_state",
+      "sql": "CREATE TABLE memory_cloud_inbox_state (\n      source_host TEXT NOT NULL,\n      source_path TEXT NOT NULL,\n      vendor TEXT NOT NULL,\n      last_export_mtime_ms INTEGER NOT NULL,\n      last_scanned_at TEXT NOT NULL,\n      fact_count INTEGER NOT NULL DEFAULT 0,\n      PRIMARY KEY(source_host, source_path)\n    )",
+      "sqlSha256": "b640b52b2232e228c031e13083501b77215bf7beadecbf6edf803768bff778c4",
+      "type": "table"
+    },
+    {
+      "disposition": "existing_validate",
+      "name": "memory_console_metadata",
+      "sql": "CREATE TABLE memory_console_metadata (\n      memory_id TEXT PRIMARY KEY,\n      concept TEXT,\n      source_message_id TEXT,\n      last_injected_at TEXT,\n      last_confirmed_at TEXT,\n      ttl_days INTEGER CHECK (ttl_days IS NULL OR ttl_days >= 0),\n      pinned INTEGER NOT NULL DEFAULT 0 CHECK (pinned IN (0, 1)),\n      review_version TEXT,\n      review_reason TEXT,\n      FOREIGN KEY (memory_id) REFERENCES memory_current(memory_id) ON DELETE CASCADE\n    )",
+      "sqlSha256": "7eba53a742252bbe6c735a091ea458485500eaab9af27996cbb03d40e11afcb3",
+      "type": "table"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_host_sync_cursor",
+      "sql": "CREATE TABLE memory_host_sync_cursor (\n      source_path TEXT PRIMARY KEY,\n      source_host TEXT NOT NULL,\n      mtime_ms INTEGER NOT NULL,\n      size_bytes INTEGER NOT NULL,\n      hash TEXT NOT NULL,\n      last_synced_at TEXT NOT NULL\n    )",
+      "sqlSha256": "4dc4df7392e62cf85ad82607d5bf4ccc002bef92147b06a96fdf7d44316f230b",
+      "type": "table"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_host_sync_runs",
+      "sql": "CREATE TABLE memory_host_sync_runs (\n      run_id TEXT PRIMARY KEY,\n      source_host TEXT NOT NULL,\n      source_kind TEXT NOT NULL,\n      sync_policy TEXT NOT NULL,\n      source_path TEXT NOT NULL,\n      status TEXT NOT NULL,\n      indexed_count INTEGER NOT NULL DEFAULT 0,\n      linked_count INTEGER NOT NULL DEFAULT 0,\n      skipped_count INTEGER NOT NULL DEFAULT 0,\n      error TEXT,\n      synced_at TEXT NOT NULL\n    )",
+      "sqlSha256": "b5707a694af751b3798c1e68b9158a77d3baca915d54bc99edb3a621e43ad6f0",
+      "type": "table"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_host_trust",
+      "sql": "CREATE TABLE memory_host_trust (\n      host TEXT PRIMARY KEY,\n      delta REAL NOT NULL DEFAULT 0,\n      target REAL NOT NULL DEFAULT 0,\n      evidence TEXT,\n      computed_at TEXT,\n      input_fingerprint TEXT\n    )",
+      "sqlSha256": "9a3b4790667bd8f65f992dac3afce76a60d022456f4080a6e53af1d2a3213d17",
+      "type": "table"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_native_chunk_embeddings",
+      "sql": "CREATE TABLE memory_native_chunk_embeddings (\n      chunk_id    TEXT PRIMARY KEY,\n      model       TEXT NOT NULL DEFAULT 'bge-m3',\n      embedding   BLOB NOT NULL,\n      dims        INTEGER NOT NULL,\n      computed_at TEXT NOT NULL\n    )",
+      "sqlSha256": "5c08c1c0be115d6b7a7685ba65a764393e2885277660e40f35162168ec9f67cd",
+      "type": "table"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_receipts",
+      "sql": "CREATE TABLE memory_receipts (\n      receipt_id TEXT PRIMARY KEY,\n      schema_version TEXT NOT NULL,\n      created_at TEXT NOT NULL,\n      receipt_type TEXT NOT NULL,\n      status TEXT NOT NULL,\n      scope TEXT NOT NULL,\n      actor_id TEXT NOT NULL,\n      actor_host TEXT NOT NULL,\n      session_id TEXT,\n      policy_version TEXT NOT NULL,\n      ledger_snapshot TEXT NOT NULL,\n      input_refs TEXT NOT NULL DEFAULT '[]',\n      output_refs TEXT NOT NULL DEFAULT '[]',\n      evidence_refs TEXT NOT NULL DEFAULT '[]',\n      summary TEXT NOT NULL DEFAULT '',\n      payload TEXT NOT NULL DEFAULT '{}',\n      receipt_hash TEXT NOT NULL UNIQUE,\n      CHECK (length(trim(receipt_type)) > 0),\n      CHECK (length(trim(status)) > 0),\n      CHECK (length(trim(scope)) > 0),\n      CHECK (length(trim(actor_id)) > 0),\n      CHECK (length(trim(actor_host)) > 0)\n    )",
+      "sqlSha256": "9e8f5b6d9255505cd7707cb021ea7f165c0d6d8dd5b08fab2b4ee9928a856119",
+      "type": "table"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_receipts_immutable_delete",
+      "sql": "CREATE TRIGGER \"memory_receipts_immutable_delete\"\n    BEFORE DELETE ON \"memory_receipts\"\n    BEGIN\n      SELECT RAISE(ABORT, 'memory_receipts is append-only');\n    END",
+      "sqlSha256": "0e144e62d71451beffeaec82dcb4e66c29b490d6263bebf63a270895f518ff76",
+      "type": "trigger"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_receipts_immutable_update",
+      "sql": "CREATE TRIGGER \"memory_receipts_immutable_update\"\n    BEFORE UPDATE ON \"memory_receipts\"\n    BEGIN\n      SELECT RAISE(ABORT, 'memory_receipts is append-only');\n    END",
+      "sqlSha256": "e670e3ea1828525b240d48b835f3a37a0992e45335e4d4f1170ef75cc1d21852",
+      "type": "trigger"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_schema_migrations",
+      "sql": "CREATE TABLE memory_schema_migrations (\n  migration_id TEXT PRIMARY KEY,\n  status TEXT NOT NULL,\n  receipt_hash TEXT NOT NULL,\n  schema_hash TEXT NOT NULL,\n  receipt_json TEXT NOT NULL\n)",
+      "sqlSha256": "38fc6cf04ab93c0e0393fc9667e1fad20bf31215a061537bba4b1c434000ca4f",
+      "type": "table"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_source_links",
+      "sql": "CREATE TABLE memory_source_links (\n      memory_id TEXT NOT NULL,\n      source_host TEXT NOT NULL,\n      source_kind TEXT NOT NULL,\n      source_path TEXT NOT NULL,\n      source_line INTEGER,\n      sync_policy TEXT NOT NULL,\n      content_hash TEXT NOT NULL,\n      first_seen_at TEXT NOT NULL,\n      last_seen_at TEXT NOT NULL,\n      status TEXT NOT NULL DEFAULT 'active',\n      PRIMARY KEY(memory_id, source_host, source_path, source_line)\n    )",
+      "sqlSha256": "88d51104bfb00a6a615eda22dd1c5d3949142c05aa162663d4540a948297f228",
+      "type": "table"
+    },
+    {
+      "disposition": "additive",
+      "name": "memory_transcript_sync_cursor",
+      "sql": "CREATE TABLE memory_transcript_sync_cursor (\n      source_path TEXT PRIMARY KEY,\n      source_host TEXT NOT NULL,\n      byte_offset INTEGER NOT NULL DEFAULT 0,\n      inode TEXT NOT NULL DEFAULT '',\n      size_bytes INTEGER NOT NULL DEFAULT 0,\n      mtime_ms INTEGER NOT NULL DEFAULT 0,\n      turns_seen INTEGER NOT NULL DEFAULT 0,\n      facts_seen INTEGER NOT NULL DEFAULT 0,\n      last_synced_at TEXT NOT NULL\n    )",
+      "sqlSha256": "daa242095955f6fbb8599e6b06c69764dce89c402b432b9519fc40fa520f2ca8",
+      "type": "table"
+    }
+  ],
+  "schemaId": "gigabrain-schema-0.11-compat-v1",
+  "schemaVersion": 1
+}

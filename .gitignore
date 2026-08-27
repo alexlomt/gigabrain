@@ -30,6 +30,7 @@ config/*
 !config/migration/
 config/migration/*
 !config/migration/registry-shape-v0.7-custom.json
+!config/migration/gigabrain-schema-0.11-compat-v1.json
 !config/migration/deployed-test-inventory.json
 !config/migration/retirement-evidence-attestation.json
 !config/migration/source-first-port-map.json

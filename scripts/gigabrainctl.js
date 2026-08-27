@@ -41,6 +41,7 @@ import { atomicWriteFileSync, readFileIfExistsSync } from '../lib/core/safe-fs.j
 import { migrateLegacyCheckpoints } from '../lib/core/checkpoint-migration.js';
 import { classifyNativeOrigins } from '../lib/core/native-sync.js';
 import { assertEntrypointAllowed, assertWriteAllowed, resolveWriteMode } from '../lib/compat/write-policy.js';
+import { assertConfiguredCandidateOperation, classifyCandidateOperation } from '../lib/compat/candidate-safety-guard.js';
 import { reviewQueuedCandidates } from '../lib/compat/queue-review-service.js';
 import { buildGeneratedSurface, inspectGeneratedSurface } from '../lib/operator/generated-surface.js';
 import { refreshGeneratedSurfaceAfterMutation } from '../lib/operator/surface-refresh-service.js';
@@ -601,16 +602,18 @@ const resolveCliAccessPlan = () => {
   });
 };
 
-const assertCliAccessPlanAllowed = ({ config, accessPlan } = {}) => {
+const assertCliAccessPlanAllowed = ({ config, accessPlan, registryPath = '' } = {}) => {
   const mode = resolveWriteMode(config);
   if (accessPlan?.access === 'write') {
+    const candidateOperation = classifyCandidateOperation({ entrypoint: 'gigabrainctl', argv: [command, ...flags] }).operation;
+    assertConfiguredCandidateOperation({ operation: candidateOperation, config, registryPath });
     return assertWriteAllowed({ mode, operation: accessPlan.operation });
   }
   return Object.freeze({ access: 'read', allowedModes: ['read_only', 'native_only', 'full'], mode });
 };
 
 const openCliDatabase = ({ config, dbPath, accessPlan, requiredTables = [] } = {}) => {
-  assertCliAccessPlanAllowed({ config, accessPlan });
+  assertCliAccessPlanAllowed({ config, accessPlan, registryPath: dbPath });
   if (accessPlan?.access === 'write') {
     ensureDir(path.dirname(dbPath));
     try { fs.chmodSync(path.dirname(dbPath), 0o700); } catch { /* best-effort */ }
@@ -674,14 +677,14 @@ const loadConfigAndDbPath = () => {
     mode: mode || undefined,
   });
   const accessPlan = resolveCliAccessPlan();
+  const dbPath = path.resolve(readFlag('--db', loaded.config.runtime.paths.registryPath));
   if (accessPlan.access === 'write') {
-    assertCliAccessPlanAllowed({ config: loaded.config, accessPlan });
+    assertCliAccessPlanAllowed({ config: loaded.config, accessPlan, registryPath: dbPath });
   } else if (command === 'inventory') {
     assertEntrypointAllowed({ mode: resolveWriteMode(loaded.config), operation: 'cli.inventory' });
   } else {
-    assertCliAccessPlanAllowed({ config: loaded.config, accessPlan });
+    assertCliAccessPlanAllowed({ config: loaded.config, accessPlan, registryPath: dbPath });
   }
-  const dbPath = path.resolve(readFlag('--db', loaded.config.runtime.paths.registryPath));
   // Fresh-install UX: node:sqlite's DatabaseSync throws a raw "unable to open
   // database file" when the registry's parent dir is missing. Ensure it exists
   // centrally so every command behaves like the sibling commands (sync-hosts,
@@ -2036,6 +2039,7 @@ const commandNightly = async () => {
     return;
   }
   const { configPath, config, dbPath } = loadNightlyConfigObservational();
+  assertConfiguredCandidateOperation({ operation: 'maintenance.mutate', config, registryPath: dbPath });
   assertWriteAllowed({ mode: resolveWriteMode(config), operation: 'cli.nightly' });
   const runId = readFlag('--run-id', '');
   const lock = acquireNightlyLock({

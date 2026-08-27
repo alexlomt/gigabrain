@@ -112,20 +112,45 @@ const writeReceipt = (receiptPath, receipt) => {
   chmodSync(receiptPath, 0o600);
 };
 
-const writeRelease = (releasePath, overrides = {}) => {
-  writeFileSync(releasePath, canonicalJson({
+const writeRelease = (releaseRoot, overrides = {}) => {
+  mkdirSync(path.join(releaseRoot, "lib"), { recursive: true, mode: 0o700 });
+  const payloadPath = path.join(releaseRoot, "lib", "fixture.js");
+  writeFileSync(payloadPath, "export const fixture = true;\n", { mode: 0o644 });
+  chmodSync(payloadPath, 0o644);
+  const manifest = {
+    entries: [{
+      mode: "100644",
+      relative_path: "lib/fixture.js",
+      sha256: sha256(readFileSync(payloadPath)),
+      type: "file",
+    }],
+    schema_id: "gigabrain-release-manifest.1",
+  };
+  const manifestBytes = canonicalJson(manifest);
+  const manifestHash = sha256(manifestBytes);
+  const release = {
     code_sha: CODE_SHA,
+    dependency_root: sha256("candidate-dependencies"),
+    immutable_tag: "v0.11.0-openclaw.1-rc.1",
+    local_integrity_root: sha256("candidate-local-integrity"),
+    manifest_sha256: manifestHash,
+    package_version: "0.11.0-openclaw.1",
+    payload_root: manifestHash,
     schema_checksum: SCHEMA_CHECKSUM,
     schema_id: SCHEMA_ID,
-    source_cohort_identity: SOURCE_COHORT_IDENTITY,
+    upstream_version: "0.11.0",
     ...overrides,
-  }), { mode: 0o600 });
+  };
+  writeFileSync(path.join(releaseRoot, "RELEASE.manifest.json"), manifestBytes, { mode: 0o444 });
+  writeFileSync(path.join(releaseRoot, "RELEASE.json"), canonicalJson(release), { mode: 0o444 });
+  chmodSync(path.join(releaseRoot, "RELEASE.manifest.json"), 0o444);
+  chmodSync(path.join(releaseRoot, "RELEASE.json"), 0o444);
+  return release;
 };
 
 const writeConfig = ({ configPath, receiptPath, registryPath, workspaceRoot }) => {
   writeFileSync(configPath, canonicalJson({
     plugins: { entries: { gigabrain: { enabled: true, config: {
-      candidateSafety: { receiptPath },
       capture: { enabled: false },
       compat: { writeMode: "full" },
       enabled: true,
@@ -195,6 +220,26 @@ export async function run() {
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
     const assertCandidateOperationAllowed = requireCallable(guard, "assertCandidateOperationAllowed");
     const classifyCandidateOperation = requireCallable(guard, "classifyCandidateOperation");
+    const builtEntrySource = readFileSync(path.join(repoRoot, "index.js"), "utf8");
+    const sourceEntry = readFileSync(path.join(repoRoot, "index.ts"), "utf8");
+    const embeddingSource = readFileSync(path.join(repoRoot, "lib/core/embedding-service.js"), "utf8");
+    const hostSyncSource = readFileSync(path.join(repoRoot, "lib/core/host-memory-sync.js"), "utf8");
+    const maintenanceSource = readFileSync(path.join(repoRoot, "lib/core/maintenance-service.js"), "utf8");
+    const nativePromotionSource = readFileSync(path.join(repoRoot, "lib/core/native-promotion.js"), "utf8");
+    const worldModelSource = readFileSync(path.join(repoRoot, "lib/core/world-model.js"), "utf8");
+    const gigabrainCtlSource = readFileSync(path.join(repoRoot, "scripts/gigabrainctl.js"), "utf8");
+    const migrateV3Source = readFileSync(path.join(repoRoot, "scripts/migrate-v3.js"), "utf8");
+    const setupSource = readFileSync(path.join(repoRoot, "scripts/setup-first-run.js"), "utf8");
+    assert.match(builtEntrySource, /candidate-safety-guard/);
+    assert.match(sourceEntry, /candidate-safety-guard/);
+    assert.match(embeddingSource, /assertConfiguredCandidateOperation/);
+    assert.match(hostSyncSource, /assertConfiguredCandidateOperation/);
+    assert.match(maintenanceSource, /assertConfiguredCandidateOperation/);
+    assert.match(nativePromotionSource, /assertConfiguredCandidateOperation/);
+    assert.match(worldModelSource, /assertConfiguredCandidateOperation/);
+    assert.match(gigabrainCtlSource, /assertConfiguredCandidateOperation/);
+    assert.match(migrateV3Source, /assertConfiguredCandidateOperation/);
+    assert.match(setupSource, /assertConfiguredCandidateOperation/);
 
     const root = mkdtempSync(path.join(tmpdir(), "gigabrain-task14-guard-"));
     chmodSync(root, 0o700);
@@ -211,8 +256,13 @@ export async function run() {
         dev: statSync(registryPath).dev,
         ino: statSync(registryPath).ino,
       };
-      const releasePath = path.join(root, "RELEASE.json");
-      writeRelease(releasePath);
+      const releaseRoot = path.join(root, "release");
+      const canonicalRelease = writeRelease(releaseRoot);
+      assert.deepEqual(Object.keys(canonicalRelease), [
+        "code_sha", "dependency_root", "immutable_tag", "local_integrity_root", "manifest_sha256",
+        "package_version", "payload_root", "schema_checksum", "schema_id", "upstream_version",
+      ]);
+      assert.equal(lstatSync(path.join(releaseRoot, "RELEASE.json")).mode & 0o777, 0o444);
       const missingReceiptPath = path.join(root, "missing-candidate.receipt.json");
       const validReceiptPath = path.join(root, "candidate.receipt.json");
       writeReceipt(validReceiptPath, buildReceipt({ artifactRoot: root, registryPath }));
@@ -234,7 +284,7 @@ export async function run() {
           operation,
           receiptPath: missingReceiptPath,
           registryPath,
-          releasePath,
+          releaseRoot,
         });
         assert.equal(result.allowed, true);
         assert.equal(result.access, "read");
@@ -246,7 +296,7 @@ export async function run() {
           operation,
           receiptPath: missingReceiptPath,
           registryPath,
-          releasePath,
+          releaseRoot,
         }), requiredPhases[0]);
         for (const missingPhase of requiredPhases) {
           const wrongPhasePath = path.join(root, `wrong-${operation.replaceAll(".", "-")}-${missingPhase}.json`);
@@ -260,7 +310,7 @@ export async function run() {
             operation,
             receiptPath: wrongPhasePath,
             registryPath,
-            releasePath,
+            releaseRoot,
           }), missingPhase);
         }
         const exactPhasePath = path.join(root, `valid-${operation.replaceAll(".", "-")}.json`);
@@ -270,7 +320,7 @@ export async function run() {
           operation,
           receiptPath: exactPhasePath,
           registryPath,
-          releasePath,
+          releaseRoot,
         });
         assert.equal(allowed.allowed, true);
         assert.deepEqual(allowed.requiredPhases, requiredPhases);
@@ -305,19 +355,19 @@ export async function run() {
       const artifactBytes = readFileSync(artifactRecord.path);
       writeFileSync(artifactRecord.path, Buffer.concat([artifactBytes, Buffer.from("tampered")]), { mode: 0o600 });
       assertGuardFailure(() => assertCandidateOperationAllowed({
-        now: FIXED_NOW, operation: "plugin.register", receiptPath: validReceiptPath, registryPath, releasePath,
+        now: FIXED_NOW, operation: "plugin.register", receiptPath: validReceiptPath, registryPath, releaseRoot,
       }));
       writeFileSync(artifactRecord.path, artifactBytes, { mode: 0o600 });
       chmodSync(artifactRecord.path, 0o644);
       assertGuardFailure(() => assertCandidateOperationAllowed({
-        now: FIXED_NOW, operation: "plugin.register", receiptPath: validReceiptPath, registryPath, releasePath,
+        now: FIXED_NOW, operation: "plugin.register", receiptPath: validReceiptPath, registryPath, releaseRoot,
       }));
       chmodSync(artifactRecord.path, 0o600);
       const artifactHardlink = path.join(root, `phase-hardlink-${artifactPhase}.json`);
       linkSync(artifactRecord.path, artifactHardlink);
       try {
         assertGuardFailure(() => assertCandidateOperationAllowed({
-          now: FIXED_NOW, operation: "plugin.register", receiptPath: validReceiptPath, registryPath, releasePath,
+          now: FIXED_NOW, operation: "plugin.register", receiptPath: validReceiptPath, registryPath, releaseRoot,
         }));
       } finally {
         unlinkSync(artifactHardlink);
@@ -345,7 +395,7 @@ export async function run() {
         const invalidReceiptPath = path.join(root, `candidate-semantic-${label}.json`);
         writeReceipt(invalidReceiptPath, sealReceipt(invalidReceiptBody));
         assertGuardFailure(() => assertCandidateOperationAllowed({
-          now: FIXED_NOW, operation: "plugin.register", receiptPath: invalidReceiptPath, registryPath, releasePath,
+          now: FIXED_NOW, operation: "plugin.register", receiptPath: invalidReceiptPath, registryPath, releaseRoot,
         }));
       }
 
@@ -356,14 +406,14 @@ export async function run() {
         operation: "legacy.drop",
         receiptPath: legacyReceiptPath,
         registryPath,
-        releasePath,
+        releaseRoot,
       }), /LEGACY_DROP_BLOCKED_COMPAT/);
       assert.throws(() => assertCandidateOperationAllowed({
         now: FIXED_NOW,
         operation: "unknown.mutation",
         receiptPath: validReceiptPath,
         registryPath,
-        releasePath,
+        releaseRoot,
       }), /UNKNOWN.*OPERATION|OPERATION.*UNKNOWN/i);
       assert.throws(() => classifyCandidateOperation({ argv: ["unknown-mutator"], entrypoint: "gigabrainctl" }), /UNKNOWN|UNCLASSIFIED/i);
 
@@ -376,6 +426,23 @@ export async function run() {
         [{ argv: ["migrate", "legacy-drop"], entrypoint: "gigabrainctl" }, "legacy.drop"],
         [{ argv: ["maintain"], entrypoint: "gigabrainctl" }, "maintenance.mutate"],
         [{ argv: ["nightly"], entrypoint: "gigabrainctl" }, "maintenance.mutate"],
+        [{ argv: ["snapshot"], entrypoint: "gigabrainctl" }, "candidate.write"],
+        [{ argv: ["audit", "--mode", "apply"], entrypoint: "gigabrainctl" }, "candidate.write"],
+        [{ argv: ["watch"], entrypoint: "gigabrainctl" }, "candidate.write"],
+        [{ argv: ["control", "apply"], entrypoint: "gigabrainctl" }, "candidate.write"],
+        [{ argv: ["import-openclaw"], entrypoint: "gigabrainctl" }, "candidate.write"],
+        [{ argv: ["import-bundle"], entrypoint: "gigabrainctl" }, "candidate.write"],
+        [{ argv: ["export-bundle"], entrypoint: "gigabrainctl" }, "candidate.write"],
+        [{ argv: ["handoff"], entrypoint: "gigabrainctl" }, "candidate.write"],
+        [{ argv: ["handoff", "inspect", "--legacy-v1"], entrypoint: "gigabrainctl" }, "status.read"],
+        [{ argv: ["surface", "build"], entrypoint: "gigabrainctl" }, "candidate.write"],
+        [{ argv: ["synthesis", "build"], entrypoint: "gigabrainctl" }, "candidate.write"],
+        [{ argv: ["transcript", "sync"], entrypoint: "gigabrainctl" }, "candidate.write"],
+        [{ argv: ["vault", "sync"], entrypoint: "gigabrainctl" }, "candidate.write"],
+        [{ argv: ["vault", "inbox"], entrypoint: "gigabrainctl" }, "candidate.write"],
+        [{ argv: ["wiki", "project"], entrypoint: "gigabrainctl" }, "candidate.write"],
+        [{ argv: ["wiki", "reconcile"], entrypoint: "gigabrainctl" }, "candidate.write"],
+        [{ argv: ["migrate", "legacy-checkpoints"], entrypoint: "gigabrainctl" }, "candidate.write"],
         [{ argv: ["doctor"], entrypoint: "gigabrainctl" }, "doctor.read"],
         [{ argv: ["sync-hosts", "status"], entrypoint: "gigabrainctl" }, "status.read"],
       ];
@@ -394,7 +461,7 @@ export async function run() {
         operation: "setup.apply",
         receiptPath: tamperedPath,
         registryPath,
-        releasePath,
+        releaseRoot,
       }));
 
       const mismatchedRegistryPath = path.join(root, "config-mismatch.sqlite");
@@ -407,7 +474,7 @@ export async function run() {
         operation: "setup.apply",
         receiptPath: validReceiptPath,
         registryPath: mismatchedRegistryPath,
-        releasePath,
+        releaseRoot,
       }));
       for (const [label, receiptOverrides, releaseOverrides] of [
         ["wrong-code", { code_sha: "f".repeat(40) }, {}],
@@ -424,7 +491,7 @@ export async function run() {
           operation: "setup.apply",
           receiptPath: candidateReceiptPath,
           registryPath,
-          releasePath: candidateReleasePath,
+          releaseRoot: candidateReleasePath,
         }));
       }
 
@@ -439,7 +506,7 @@ export async function run() {
         operation: "setup.apply",
         receiptPath: wrongIdentityPath,
         registryPath,
-        releasePath,
+        releaseRoot,
       }));
 
       const registrySymlink = path.join(root, "candidate-symlink.sqlite");
@@ -447,23 +514,23 @@ export async function run() {
       try {
         assertGuardFailure(() => assertCandidateOperationAllowed({
           now: FIXED_NOW, operation: "setup.apply", receiptPath: validReceiptPath,
-          registryPath: registrySymlink, releasePath,
+          registryPath: registrySymlink, releaseRoot,
         }));
       } finally { unlinkSync(registrySymlink); }
       const registryHardlink = path.join(root, "candidate-hardlink.sqlite");
       linkSync(registryPath, registryHardlink);
       try {
         assertGuardFailure(() => assertCandidateOperationAllowed({
-          now: FIXED_NOW, operation: "setup.apply", receiptPath: validReceiptPath, registryPath, releasePath,
+          now: FIXED_NOW, operation: "setup.apply", receiptPath: validReceiptPath, registryPath, releaseRoot,
         }));
       } finally { unlinkSync(registryHardlink); }
       chmodSync(registryPath, 0o644);
       assertGuardFailure(() => assertCandidateOperationAllowed({
-        now: FIXED_NOW, operation: "setup.apply", receiptPath: validReceiptPath, registryPath, releasePath,
+        now: FIXED_NOW, operation: "setup.apply", receiptPath: validReceiptPath, registryPath, releaseRoot,
       }));
       chmodSync(registryPath, 0o600);
       assertGuardFailure(() => assertCandidateOperationAllowed({
-        now: FIXED_NOW, operation: "setup.apply", receiptPath: validReceiptPath, registryPath, releasePath,
+        now: FIXED_NOW, operation: "setup.apply", receiptPath: validReceiptPath, registryPath, releaseRoot,
         operatorUid: Number(process.getuid?.() || 0) + 1,
       }));
       const registryParentAlias = path.join(root, "registry-parent-alias");
@@ -471,7 +538,7 @@ export async function run() {
       try {
         assertGuardFailure(() => assertCandidateOperationAllowed({
           now: FIXED_NOW, operation: "setup.apply", receiptPath: validReceiptPath,
-          registryPath: path.join(registryParentAlias, path.basename(registryPath)), releasePath,
+          registryPath: path.join(registryParentAlias, path.basename(registryPath)), releaseRoot,
         }));
       } finally { unlinkSync(registryParentAlias); }
       const receiptedRegistrySaved = path.join(root, "receipted-candidate-saved.sqlite");
@@ -482,7 +549,7 @@ export async function run() {
       chmodSync(registryPath, 0o600);
       try {
         assertGuardFailure(() => assertCandidateOperationAllowed({
-          now: FIXED_NOW, operation: "setup.apply", receiptPath: validReceiptPath, registryPath, releasePath,
+          now: FIXED_NOW, operation: "setup.apply", receiptPath: validReceiptPath, registryPath, releaseRoot,
         }));
       } finally {
         unlinkSync(registryPath);
@@ -497,7 +564,7 @@ export async function run() {
         operation: "setup.apply",
         receiptPath: insecureModePath,
         registryPath,
-        releasePath,
+        releaseRoot,
       }));
       const hardlinkReceipt = path.join(root, "receipt-hardlink.json");
       linkSync(validReceiptPath, hardlinkReceipt);
@@ -507,7 +574,7 @@ export async function run() {
           operation: "setup.apply",
           receiptPath: validReceiptPath,
           registryPath,
-          releasePath,
+          releaseRoot,
         }));
       } finally {
         unlinkSync(hardlinkReceipt);
@@ -520,7 +587,7 @@ export async function run() {
           operation: "setup.apply",
           receiptPath: symlinkReceipt,
           registryPath,
-          releasePath,
+          releaseRoot,
         }));
       } finally {
         unlinkSync(symlinkReceipt);
@@ -531,7 +598,7 @@ export async function run() {
       const guardEnv = {
         GIGABRAIN_CANDIDATE_RECEIPT_PATH: missingReceiptPath,
         GIGABRAIN_CANDIDATE_REGISTRY_PATH: registryPath,
-        GIGABRAIN_RELEASE_PATH: releasePath,
+        GIGABRAIN_RELEASE_ROOT: releaseRoot,
       };
       const partialNightlyReceiptPath = path.join(root, "partial-nightly.receipt.json");
       writeReceipt(partialNightlyReceiptPath, buildReceipt({
@@ -563,6 +630,21 @@ export async function run() {
         assert.notEqual(result.status, 0, `${script} ${args.join(" ")} must be blocked`);
         assert.match(`${result.stderr}${result.stdout}`, expectedError);
         assert.deepEqual(snapshotTree(root), before, `${script} must guard before filesystem/DB writes`);
+      }
+
+      const validGuardEnv = {
+        ...guardEnv,
+        GIGABRAIN_CANDIDATE_RECEIPT_PATH: validReceiptPath,
+      };
+      for (const [script, args] of [
+        ["scripts/gigabrainctl.js", ["world", "rebuild", "--db", mismatchedRegistryPath, "--config", configPath]],
+        ["scripts/migrate-v3.js", ["--apply", "--db", mismatchedRegistryPath, "--config", configPath]],
+      ]) {
+        const before = snapshotTree(root);
+        const result = spawnNode(script, args, validGuardEnv);
+        assert.notEqual(result.status, 0);
+        assert.match(`${result.stderr}${result.stdout}`, /GIGABRAIN_CANDIDATE_IDENTITY_CONFIG_REGISTRY_MISMATCH/);
+        assert.deepEqual(snapshotTree(root), before, `${script} effective --db override must be guarded before writes`);
       }
 
       const boundaryConfig = JSON.parse(readFileSync(configPath, "utf8")).plugins.entries.gigabrain.config;
@@ -622,7 +704,6 @@ export async function run() {
       assert.deepEqual(snapshotTree(root), beforeRegister);
 
       const mismatchPluginConfig = structuredClone(api.config);
-      mismatchPluginConfig.candidateSafety.receiptPath = validReceiptPath;
       mismatchPluginConfig.runtime.paths.registryPath = mismatchedRegistryPath;
       api.config = mismatchPluginConfig;
       withCandidateEnvironment({ ...guardEnv, GIGABRAIN_CANDIDATE_RECEIPT_PATH: validReceiptPath }, () => {

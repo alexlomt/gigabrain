@@ -16,6 +16,7 @@ import { assertWriteAllowed, resolveWriteMode } from '../lib/compat/write-policy
 import { installSessionHook, resolveSessionSettingsPath } from '../lib/core/lifecycle-hooks.js';
 import { atomicWriteFileSync, readFileIfExistsSync } from '../lib/core/safe-fs.js';
 import { createAgentMemoryPolicyBody } from '../lib/core/agent-memory-policy.js';
+import { assertConfiguredCandidateOperation } from '../lib/compat/candidate-safety-guard.js';
 
 const HELP = `Gigabrain first-run setup
 
@@ -310,6 +311,7 @@ const main = () => {
   runtimePaths.memoryRoot = memoryRootRaw;
   runtimePaths.outputDir = outputDirRaw;
   runtimePaths.registryPath = registryPath;
+  if (apply) assertConfiguredCandidateOperation({ operation: 'setup.apply', config: gigabrainConfig, registryPath });
   if (!String(runtimePaths.reviewQueuePath || '').trim()) {
     runtimePaths.reviewQueuePath = 'output/memory-review-queue.jsonl';
   }
