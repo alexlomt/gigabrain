@@ -168,7 +168,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "3fb7ada6e4f94236b933da64785b93c92cac38e65afc9d18cae3e3f0674a8e48",
+      "contentSha256": "3958afdea0783eafa10726c283c7f33e2f7e970073c320fec643ef86c87669a5",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -1727,7 +1727,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "ccda69167f5b6032e15c2249681b7d38a9efbfe2bcf1e07456e38556ce7f5a93",
+      "contentSha256": "f6c248f0e291d2fa9121fa0e021c91b2ed9d8fbc5a1a5f67edd0fbb30ce1da88",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-checkpoint-concurrency"
