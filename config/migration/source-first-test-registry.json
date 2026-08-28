@@ -281,7 +281,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/checkpoint-concurrency-test.js",
-      "testSha256": "ccda69167f5b6032e15c2249681b7d38a9efbfe2bcf1e07456e38556ce7f5a93"
+      "testSha256": "f6c248f0e291d2fa9121fa0e021c91b2ed9d8fbc5a1a5f67edd0fbb30ce1da88"
     },
     {
       "coveredPaths": [
@@ -2511,6 +2511,6 @@
     }
   ],
   "entryCount": 104,
-  "manifestSha256": "d263c7897e4ec1e40b610a5edbf8b82ce0d2bf01a195979a03fcd0788e1c69ad",
+  "manifestSha256": "501ba576effdd406edf0f20594a4c399d104896b9ee12aeb42bd77afe78c96b0",
   "schemaVersion": 1
 }

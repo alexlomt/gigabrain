@@ -526,12 +526,17 @@ export async function run() {
       } finally {
         lockOrderDb.close();
       }
-      const lockOrderNativePath = lockOrderRace.find((row) => row.role === "capture")?.nativePath
-        || lockOrderRace.find((row) => row.role === "checkpoint")?.nativePath;
-      const lockOrderNative = readFileSync(lockOrderNativePath, "utf8");
-      assert.match(lockOrderNative, new RegExp(captureContent.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-      assert.match(lockOrderNative, new RegExp(checkpointSummary.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-      assert.match(lockOrderNative, new RegExp(checkpointCandidate.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+      const captureNative = readFileSync(
+        lockOrderRace.find((row) => row.role === "capture")?.nativePath,
+        "utf8",
+      );
+      const checkpointNative = readFileSync(
+        lockOrderRace.find((row) => row.role === "checkpoint")?.nativePath,
+        "utf8",
+      );
+      assert.match(captureNative, new RegExp(captureContent.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+      assert.match(checkpointNative, new RegExp(checkpointSummary.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+      assert.match(checkpointNative, new RegExp(checkpointCandidate.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 
       const publicScope = "project:public-race";
       const publicSession = "session:public-run-checkpoint-race";
