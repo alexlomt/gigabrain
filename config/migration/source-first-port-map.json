@@ -54,15 +54,34 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "aabe5be2afd5d793b3e9a83440df71ed4f9d689d368189acd27249ec3f0044b1",
+      "contentSha256": "03d8c54cb0498f796ea150cf6d4399f45e843cdd26b35d1db8f4538aa76a3704",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-handoff-fidelity"
+        "registrationId": "compat-config-schema-parity"
       },
       "ownerTasks": [
-        "13"
+        "4",
+        "5",
+        "15"
       ],
-      "reason": "Task 13 documents fully bound Handoff v2 manifests, strict source-link semantics, legacy handling, and excluded state.",
+      "reason": "Task 15 documents the gateway-authenticated OpenClaw HTTP surface and removes the retired private-token bypass contract.",
+      "targetMode": "100644",
+      "targetPath": "README.md"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "97e105fd2a3d64069416db61c7cdd457870a22435dd2cfba2e691856cc0cac5f",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-config-schema-parity"
+      },
+      "ownerTasks": [
+        "4",
+        "5",
+        "13",
+        "15"
+      ],
+      "reason": "Task 13 documents Handoff v2 security; Task 15 replaces the retired private-token bypass with the gateway-authenticated OpenClaw route boundary.",
       "targetMode": "100644",
       "targetPath": "SECURITY.md"
     },
@@ -149,7 +168,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "e985cc5aeb020a048f497109b5ac349fd04efc0defc47b88e5c5ccb9264b9cc2",
+      "contentSha256": "3fb7ada6e4f94236b933da64785b93c92cac38e65afc9d18cae3e3f0674a8e48",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -169,7 +188,7 @@
         "14",
         "15"
       ],
-      "reason": "Source-first registry preserves Task 14 GREEN and binds Task 15 canonical release provenance tests.",
+      "reason": "Source-first registry preserves Task 14 GREEN and binds Task 15 canonical release provenance and gateway-authentication tests.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -278,7 +297,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "6373e52db69467e286f2448cea2a02c6efba7c2791fdeaaba2ab202167be92de",
+      "contentSha256": "fd1cd19ec86faa39f79a9bdd51ca7c5c71e412908972b0877228b609e46fc356",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-handoff-fidelity"
@@ -333,6 +352,38 @@
       "reason": "Audited release and package provenance for the clean compatibility base.",
       "targetMode": "100644",
       "targetPath": "docs/migration/v0.11-base-provenance.md"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "c289c8e4345ea0f5335377967a42bc0478aefe3bfc50e211c6b87b8ca47d53d3",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-config-schema-parity"
+      },
+      "ownerTasks": [
+        "4",
+        "5",
+        "15"
+      ],
+      "reason": "Task 15 aligns the packaged privacy guidance with the gateway-authenticated OpenClaw HTTP boundary.",
+      "targetMode": "100644",
+      "targetPath": "docs/public/privacy-model.md"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "332872ffd407f30b133a3dd01b520662c44a9cb5bfa73067257da91dcd19e988",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-config-schema-parity"
+      },
+      "ownerTasks": [
+        "4",
+        "5",
+        "15"
+      ],
+      "reason": "Task 15 aligns the packaged security review with the gateway-authenticated OpenClaw HTTP boundary.",
+      "targetMode": "100644",
+      "targetPath": "docs/public/security-review.md"
     },
     {
       "changeType": "modified",
@@ -565,7 +616,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "68f34e9d05f1279387f13c854bfa4fef475adcafa9c782da3d4c63715cd2d4e0",
+      "contentSha256": "6484b9f8f149fb845aef4500a21b2a579ec266b3623a4ecb7a0ab166174b2922",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-shipping-core-evidence"
@@ -1705,7 +1756,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "b398fe4c5ba513233c506e64f8f702c25956a19f215242d34ed67fd05da91b6e",
+      "contentSha256": "491b232f816aefa01df4f0e7f814852ae0d28dc24b14d6aad7318b5e9a7ebe54",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-config-schema-parity"
@@ -1994,7 +2045,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "da674da29b8717d7113ebf3e148357997ac17aa5877dfee3fefe3972a676aec0",
+      "contentSha256": "3349c7c77c516f3428fc11d91d65a824a079127c835e8b34606ed8154867c61f",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-openclaw-memory-authorization"
@@ -2008,7 +2059,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "11a5ee7af67b4e01f7329ac222bf5d0669b9765cccc59524044c17aa12fb3034",
+      "contentSha256": "08f88abc51d7a983b8f6c533ac95c7add2921d2d212df88b8444245f4ef8bbf9",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-openclaw-memory-runtime"
@@ -2809,7 +2860,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "dc8d9f11e9c0a0d5958bf39edb66aeb63b4bb496824027cc60e2b0ce0733c75e",
+      "contentSha256": "4f0b54f6d44dfd837efe9b62d38664e41838b5661e0b93cf264a028abf0e1e33",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2827,9 +2878,10 @@
         "8",
         "9",
         "13",
-        "14"
+        "14",
+        "15"
       ],
-      "reason": "Source-first policy seals the four actual Task 14 production artifact rows.",
+      "reason": "Source-first policy seals the reviewed Task 14 production artifacts and the Task 15 gateway-auth documentation classifications.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },

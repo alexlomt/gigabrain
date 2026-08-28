@@ -42,8 +42,8 @@ See [the privacy model](docs/public/privacy-model.md) for the complete data-flow
 
 Gigabrain enforces the following security controls:
 
-- **Authentication**: data-bearing HTTP routes use token auth and fail closed; landing and health routes expose no memory data
-- **Timing-safe comparison**: All token checks use `crypto.timingSafeEqual` / `hmac.compare_digest`
+- **Authentication**: every OpenClaw `/gb` route requires gateway authentication; the deprecated generic-handler fallback registers no routes
+- **Timing-safe comparison**: standalone token checks use `crypto.timingSafeEqual` / `hmac.compare_digest`
 - **Scope enforcement**: scoped tokens cannot read unrelated project or user memories
 - **Input and output bounds**: request bodies, uploads, URL responses, PDF pages, extracted text, and rate-limit state have explicit limits
 - **Path and file guards**: document identifiers become fixed-size hashes; sensitive reads reject symlinks; generated artifacts use private, exclusive, atomic writes
@@ -60,9 +60,9 @@ review queue, native and host sync cursors, transcripts, and wiki projections.
 Source events are carried only as evidence and are never replayed into the
 destination event ledger.
 
-### Unsafe development bypass
+### OpenClaw gateway boundary
 
-The Node/OpenClaw integration recognizes `GB_ALLOW_NO_AUTH=1` only as an explicit local-development escape hatch when no API or gateway token is configured. In that state every `/gb` data route accepts unauthenticated requests and Gigabrain logs a prominent warning. Never use the bypass on a network-facing, shared, or long-lived process; configure a token instead. The optional Python console has no equivalent bypass.
+The Node/OpenClaw integration registers every `/gb` route through `registerHttpRoute` with `auth: "gateway"`. OpenClaw authenticates requests before invoking Gigabrain, and the plugin exposes no separate token or no-auth setting. Older hosts that expose only `registerHttpHandler` receive no Gigabrain HTTP routes. The optional Python console remains a separate token-authenticated service.
 
 ## Current review status
 

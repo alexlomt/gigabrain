@@ -217,27 +217,27 @@ All commands accept `--config <path>` and are also available as `npm run` script
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `GET` | `/gb` | No | Service landing response |
-| `GET` | `/gb/health` | No | Health check |
-| `POST` | `/gb/bench/recall` | Token | Recall result plus benchmark diagnostics |
-| `POST` | `/gb/control/apply` | Token | **Mutating:** apply an explicit memory action |
-| `GET` | `/gb/entities` | Token | List world-model entities |
-| `GET` | `/gb/entities/:id` | Token | Entity detail (`/gb/entities/detail?id=...` is also accepted) |
-| `GET` | `/gb/beliefs` | Token | List beliefs |
-| `GET` | `/gb/episodes` | Token | List episodes |
-| `GET` | `/gb/open-loops` | Token | List open loops |
-| `GET` | `/gb/contradictions` | Token | List contradiction-review items |
-| `GET` | `/gb/adjudications` | Token | List arbitration verdicts |
-| `GET` | `/gb/beliefs-as-of` | Token | Bi-temporal belief snapshot |
-| `GET` | `/gb/review-queue` | Token | Read-only review queue |
-| `GET` | `/gb/relationships` | Token | Relationship graph for an entity |
-| `GET` | `/gb/evolution` | Token | Entity evolution by claim slot |
-| `GET` | `/gb/memory/:id/timeline` | Token | Event timeline for a memory |
-| `POST` | `/gb/recall` | Token | Memory recall for a query |
-| `POST` | `/gb/recall/explain` | Token | Recall diagnostics and routing explanation |
-| `POST` | `/gb/suggestions` | Token | **Mutating:** validate and ingest structured suggestions |
+| `GET` | `/gb` | OpenClaw gateway | Service landing response |
+| `GET` | `/gb/health` | OpenClaw gateway | Health check |
+| `POST` | `/gb/bench/recall` | OpenClaw gateway | Recall result plus benchmark diagnostics |
+| `POST` | `/gb/control/apply` | OpenClaw gateway | **Mutating:** apply an explicit memory action |
+| `GET` | `/gb/entities` | OpenClaw gateway | List world-model entities |
+| `GET` | `/gb/entities/:id` | OpenClaw gateway | Entity detail (`/gb/entities/detail?id=...` is also accepted) |
+| `GET` | `/gb/beliefs` | OpenClaw gateway | List beliefs |
+| `GET` | `/gb/episodes` | OpenClaw gateway | List episodes |
+| `GET` | `/gb/open-loops` | OpenClaw gateway | List open loops |
+| `GET` | `/gb/contradictions` | OpenClaw gateway | List contradiction-review items |
+| `GET` | `/gb/adjudications` | OpenClaw gateway | List arbitration verdicts |
+| `GET` | `/gb/beliefs-as-of` | OpenClaw gateway | Bi-temporal belief snapshot |
+| `GET` | `/gb/review-queue` | OpenClaw gateway | Read-only review queue |
+| `GET` | `/gb/relationships` | OpenClaw gateway | Relationship graph for an entity |
+| `GET` | `/gb/evolution` | OpenClaw gateway | Entity evolution by claim slot |
+| `GET` | `/gb/memory/:id/timeline` | OpenClaw gateway | Event timeline for a memory |
+| `POST` | `/gb/recall` | OpenClaw gateway | Memory recall for a query |
+| `POST` | `/gb/recall/explain` | OpenClaw gateway | Recall diagnostics and routing explanation |
+| `POST` | `/gb/suggestions` | OpenClaw gateway | **Mutating:** validate and ingest structured suggestions |
 
-`/gb` and `/gb/health` return service status only. Every data route accepts `X-GB-Token`, `X-OpenClaw-Token`, or a Bearer token. A route denies access when its configuration has no token. The dangerous development setting `GB_ALLOW_NO_AUTH=1` can bypass Node route checks only when no token is configured. It prints a warning. Use this setting only in a disposable loopback environment. OpenClaw gateway authentication can add an outer layer.
+The plugin registers every route through `registerHttpRoute` with `auth: "gateway"`. OpenClaw authenticates the request before invoking Gigabrain; the plugin has no separate HTTP token or no-auth configuration. Hosts that expose only the deprecated generic HTTP-handler API receive no Gigabrain routes.
 
 ## Key subsystems
 
@@ -276,7 +276,7 @@ npm run audit:github-metadata -- --repo owner/repository     # Check a new remot
 
 ## Security
 
-- Node HTTP endpoints that carry data require a token by default. The code compares tokens with timing-safe logic. A Node token grants access to its configured store, where scope filters recall and queries. The optional FastAPI console isolates scoped tokens and conceals whether an ID exists. Limit `GB_ALLOW_NO_AUTH=1` to the development use described above.
+- Every Node/OpenClaw `/gb` endpoint requires OpenClaw gateway authentication before the plugin handler runs. The optional FastAPI console uses its own scoped-token boundary and conceals whether an inaccessible ID exists.
 - The optional web console listens on loopback as documented. It sets security headers and limits uploads. Extracted PDF text also has a size limit. URL import starts disabled.
 - Release checks run `npm audit` and `pip-audit` against dependencies. The [security review](docs/public/security-review.md) gives the date, result, and remaining risks.
 - An explicit allowlist creates the public mirror with a new single-commit history. The private engineering repository stays private.

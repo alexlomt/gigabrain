@@ -401,9 +401,9 @@ Host-memory setup and nightly import are also off by default. Manual/default mai
 
 ## Node HTTP authentication
 
-The OpenClaw plugin resolves its `/gb` route token from `runtime.apiToken`, the OpenClaw gateway token, or `GB_UI_TOKEN`, in that order. Without a token, data routes are not registered by default.
+The OpenClaw plugin registers every `/gb` route through `registerHttpRoute` with `auth: "gateway"`. OpenClaw authenticates the outer route before the Gigabrain handler runs, so the plugin schema has no separate HTTP token or no-auth option.
 
-`GB_ALLOW_NO_AUTH=1` is a dangerous development-only exception. When it is set and no token is configured, Node route-level authentication is bypassed and a warning is logged. Use it only for a disposable loopback process; never expose that mode to a LAN, tailnet, reverse proxy, or the public internet. The Python console always requires `GB_UI_TOKEN` or `GB_UI_SCOPE_TOKENS` and does not honor this bypass.
+Older OpenClaw hosts that expose only the deprecated `registerHttpHandler` API receive no Gigabrain HTTP routes. This fallback fails closed because it cannot express gateway authentication. The standalone Python console remains separate and requires `GB_UI_TOKEN` or `GB_UI_SCOPE_TOKENS` for its data-bearing endpoints.
 
 ## Remote bridge
 

@@ -11,6 +11,8 @@ import {
   runBehaviorContract,
   runDirect,
 } from "./contract-test-helpers.js";
+import { ensureEventStore } from "../../lib/core/event-store.js";
+import { GIGABRAIN_HTTP_ROUTES } from "../../lib/core/http-routes.js";
 import { ensureProjectionStore, upsertCurrentMemory } from "../../lib/core/projection-store.js";
 
 export const OWNER_TASK = "5";
@@ -59,6 +61,22 @@ const snapshot = (fixture) => ({
   vault: treeHash(fixture.vault),
 });
 
+const makeHttpResponse = () => ({
+  body: "",
+  headers: {},
+  headersSent: false,
+  statusCode: 200,
+  writeHead(statusCode, headers = {}) {
+    this.statusCode = statusCode;
+    this.headers = headers;
+    this.headersSent = true;
+  },
+  end(body = "") {
+    this.body += String(body);
+    this.headersSent = true;
+  },
+});
+
 const makeFixture = () => {
   const root = mkdtempSync(path.join(tmpdir(), "gigabrain-task5-runtime-"));
   const workspace = path.join(root, "workspace");
@@ -78,6 +96,7 @@ const makeFixture = () => {
   writeFileSync(path.join(vault, "note.md"), "# Vault fixture\n");
   const db = new DatabaseSync(dbPath);
   ensureProjectionStore(db);
+  ensureEventStore(db);
   upsertCurrentMemory(db, {
     memory_id: "main-memory",
     type: "DECISION",
@@ -194,6 +213,60 @@ export async function run() {
       assert.match(injected.prependContext, /Synthetic harbour memory/);
       assert.deepEqual(snapshot(fixture), beforeManager, "status, search, get, doctor-read and first recall must be observational");
       assert.equal(typeof resolved.manager.sync, "undefined", "the adapter must not expose an implicit sync seam");
+
+      const httpRoutes = [];
+      register({
+        registerMemoryCapability() {},
+        registerCli() {},
+        registerHttpRoute: (route) => httpRoutes.push(route),
+        on() {},
+        logger: { info() {}, warn() {}, error() {} },
+      }, fixture.config);
+      assert.deepEqual(
+        httpRoutes.map(({ path, match }) => ({ path, match })),
+        GIGABRAIN_HTTP_ROUTES,
+        "schema-valid config without private token keys must register every Gigabrain route",
+      );
+      assert.equal(
+        httpRoutes.every((route) => route.auth === "gateway"),
+        true,
+        "every registered route must delegate authentication to the OpenClaw gateway",
+      );
+      const timelineRoute = httpRoutes.find((route) => route.path === "/gb/memory/");
+      const authenticatedWrapperResponse = makeHttpResponse();
+      await timelineRoute.handler({
+        headers: {},
+        method: "GET",
+        socket: { remoteAddress: "127.0.0.1" },
+        url: "/gb/memory/main-memory/timeline",
+      }, authenticatedWrapperResponse);
+      assert.equal(
+        authenticatedWrapperResponse.statusCode,
+        200,
+        "a host-authenticated route wrapper must not require a redundant private Gigabrain token",
+      );
+      assert.equal(JSON.parse(authenticatedWrapperResponse.body).memory_id, "main-memory");
+
+      const legacyFallbackRegistrations = [];
+      register({
+        registerMemoryCapability() {},
+        registerCli() {},
+        registerHttpHandler: (handler) => legacyFallbackRegistrations.push(handler),
+        on() {},
+        logger: { info() {}, warn() {}, error() {} },
+      }, {
+        ...fixture.config,
+        runtime: {
+          ...fixture.config.runtime,
+          allowNoAuth: true,
+          apiToken: "legacy-non-schema-token",
+        },
+      });
+      assert.deepEqual(
+        legacyFallbackRegistrations,
+        [],
+        "deprecated host fallback must fail closed even when legacy non-schema auth fields are injected",
+      );
     } finally {
       rmSync(fixture.root, { recursive: true, force: true });
     }
