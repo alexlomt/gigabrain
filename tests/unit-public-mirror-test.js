@@ -110,6 +110,18 @@ const expectClasses = (callback, expectedClasses) => {
   });
 };
 
+const assertPackageTransformPhase = ({ packageJson, manifest }) => {
+  const omittedScripts = manifest.transforms.packageJson.omitScripts;
+  const presentScripts = omittedScripts.filter((scriptName) => (
+    Object.hasOwn(packageJson.scripts, scriptName)
+  ));
+  assert.ok(
+    presentScripts.length === 0 || presentScripts.length === omittedScripts.length,
+    'package transform is partially applied',
+  );
+  return presentScripts.length === 0 ? 'public' : 'source';
+};
+
 const testValidSyntheticRepositoryAndSafePack = () => {
   const marker = 'prepack-marker.txt';
   const packageJson = {
@@ -410,6 +422,58 @@ const testCoordinatorBuildsFreshCandidate = () => {
   }
 };
 
+const testCurrentPackageTransformBuildsFreshCandidate = () => {
+  const checkerPath = 'scripts/check-public-mirror.mjs';
+  const parserPath = 'scripts/npm-pack-inventory.mjs';
+  const safeFsPath = 'lib/core/safe-fs.js';
+  const files = ['LICENSE', safeFsPath, checkerPath, parserPath, 'index.js', 'package.json', 'public-release-manifest.json'];
+  const sourcePackage = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  const sourceManifest = validateManifest(JSON.parse(fs.readFileSync(
+    new URL('../public-release-manifest.json', import.meta.url),
+    'utf8',
+  )));
+  const manifest = baseManifest({
+    files,
+    requiredFiles: ['LICENSE', safeFsPath, checkerPath, parserPath, 'package.json', 'public-release-manifest.json'],
+    omitScripts: sourceManifest.transforms.packageJson.omitScripts,
+    setScripts: sourceManifest.transforms.packageJson.setScripts,
+  });
+  const packageJson = {
+    name: '@synthetic/public-mirror-fixture',
+    version: '1.0.0',
+    type: 'module',
+    files: ['index.js'],
+    scripts: sourcePackage.scripts,
+  };
+  const { root } = createRepository({ manifest, packageJson });
+  const destination = path.join(testTempRoot, `gigabrain-current-transform-${crypto.randomUUID()}`);
+  try {
+    write(root, checkerPath, fs.readFileSync(new URL('../scripts/check-public-mirror.mjs', import.meta.url)));
+    write(root, parserPath, fs.readFileSync(new URL('../scripts/npm-pack-inventory.mjs', import.meta.url)));
+    write(root, safeFsPath, fs.readFileSync(new URL('../lib/core/safe-fs.js', import.meta.url)));
+    runCommand('git', ['add', checkerPath, parserPath, safeFsPath], root);
+    runCommand('git', ['commit', '-qm', 'bind current package transform'], root);
+    buildPublicMirror({
+      source: root,
+      destination,
+      commitDate: '2026-01-01T00:00:00.000Z',
+    });
+    const publicPackage = JSON.parse(fs.readFileSync(path.join(destination, 'package.json'), 'utf8'));
+    for (const privateScript of [
+      'test:full',
+      'test:inventory',
+      'test:release-live',
+      'test:source-first',
+    ]) {
+      assert.equal(Object.hasOwn(publicPackage.scripts, privateScript), false);
+    }
+    assert.equal(publicPackage.scripts.test, 'node scripts/package-smoke.js');
+  } finally {
+    fs.rmSync(root, { force: true, recursive: true });
+    fs.rmSync(destination, { force: true, recursive: true });
+  }
+};
+
 const testCoordinatorRejectsPartialPackageTransform = () => {
   const checkerPath = 'scripts/check-public-mirror.mjs';
   const parserPath = 'scripts/npm-pack-inventory.mjs';
@@ -520,6 +584,33 @@ const testCoordinatorRejectsSymlinkedSourceComponent = () => {
   }
 };
 
+const testPackageTransformPhaseContract = () => {
+  const manifest = validateManifest(JSON.parse(fs.readFileSync(
+    new URL('../public-release-manifest.json', import.meta.url),
+    'utf8',
+  )));
+  const currentPackage = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  const sourcePackage = structuredClone(currentPackage);
+  for (const scriptName of manifest.transforms.packageJson.omitScripts) {
+    sourcePackage.scripts[scriptName] ||= `node private/${scriptName}.js`;
+  }
+  assert.equal(assertPackageTransformPhase({ packageJson: sourcePackage, manifest }), 'source');
+
+  const publicPackage = structuredClone(currentPackage);
+  for (const scriptName of manifest.transforms.packageJson.omitScripts) {
+    delete publicPackage.scripts[scriptName];
+  }
+  assert.equal(assertPackageTransformPhase({ packageJson: publicPackage, manifest }), 'public');
+
+  const mixedPackage = structuredClone(publicPackage);
+  const firstOmitted = manifest.transforms.packageJson.omitScripts[0];
+  mixedPackage.scripts[firstOmitted] = sourcePackage.scripts[firstOmitted];
+  assert.throws(
+    () => assertPackageTransformPhase({ packageJson: mixedPackage, manifest }),
+    /package transform is partially applied/u,
+  );
+};
+
 const testReleaseManifestStaysNarrow = () => {
   const manifest = validateManifest(JSON.parse(fs.readFileSync(
     new URL('../public-release-manifest.json', import.meta.url),
@@ -604,27 +695,16 @@ const testReleaseManifestStaysNarrow = () => {
     false,
     'the public package must retain its GitHub metadata audit command',
   );
-  for (const scriptName of [
-    'build:public-mirror',
-    'check:pii',
-    'check:public-mirror',
-    'eval:deep-recall',
-    'release:initial-public-mirror',
-    'release:public-mirror',
-    'test:gates',
-    'test:integration',
-    'test:performance',
-    'test:public-mirror',
-    'test:regression',
-    'test:release',
-    'test:release-live',
-    'test:unit',
-  ]) {
-    assert.ok(
-      manifest.transforms.packageJson.omitScripts.includes(scriptName),
-      `missing public package-script omission: ${scriptName}`,
-    );
-  }
+  assert.deepEqual(
+    manifest.transforms.packageJson.omitScripts,
+    [
+      'test:full',
+      'test:inventory',
+      'test:release-live',
+      'test:source-first',
+    ],
+    'the transform must exactly name current source scripts removed from the public mirror',
+  );
   assert.equal(
     manifest.transforms.packageJson.setScripts.test,
     'node scripts/package-smoke.js',
@@ -702,6 +782,11 @@ const testReleaseManifestStaysNarrow = () => {
 
   const packageJson = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   const packageLock = JSON.parse(fs.readFileSync(new URL('../package-lock.json', import.meta.url), 'utf8'));
+  assert.deepEqual(
+    packageJson.files,
+    manifest.npm.packageFiles,
+    'source package files must equal the canonical public package allowlist in exact order',
+  );
   assert.equal(
     packageLock.packages?.['']?.engines?.node,
     packageJson.engines?.node,
@@ -710,28 +795,8 @@ const testReleaseManifestStaysNarrow = () => {
   assert.equal(packageJson.devDependencies?.openclaw, '2026.7.1-2');
   assert.equal(packageLock.packages?.['']?.devDependencies?.openclaw, '2026.7.1-2');
   assert.equal(packageLock.packages?.['node_modules/openclaw']?.version, '2026.7.1-2');
-  for (const [scriptName, expectedValue] of [
-    ['release:public-mirror', 'node scripts/check-public-mirror.mjs'],
-    ['release:initial-public-mirror', 'node scripts/check-public-mirror.mjs --require-single-commit'],
-  ]) {
-    if (packageJson.scripts[scriptName] === undefined) {
-      assert.ok(
-        manifest.transforms.packageJson.omitScripts.includes(scriptName),
-        `public package may omit ${scriptName} only through the declared transform`,
-      );
-    } else {
-      assert.equal(packageJson.scripts[scriptName], expectedValue);
-    }
-  }
+  assertPackageTransformPhase({ packageJson, manifest });
   assert.equal(packageJson.scripts.prepack, 'node scripts/check-no-pii.mjs --quiet');
-  if (packageJson.scripts['test:release'] === undefined) {
-    assert.ok(
-      manifest.transforms.packageJson.omitScripts.includes('test:release'),
-      'public package may omit test:release only through the declared transform',
-    );
-  } else {
-    assert.match(packageJson.scripts['test:release'], /^npm test &&/u);
-  }
 };
 
 const testRunAllRejectsPartialOrMixedInventory = () => {
@@ -881,10 +946,12 @@ export const run = async () => {
   testMissingRequiredAndUnreviewedBinary();
   testBenchmarkEvidenceSchemaAndDigest();
   testCoordinatorBuildsFreshCandidate();
+  testCurrentPackageTransformBuildsFreshCandidate();
   testCoordinatorRejectsPartialPackageTransform();
   testCheckerRejectsUnappliedPackageTransform();
   testCoordinatorRejectsDestinationSymlinkIntoSource();
   testCoordinatorRejectsSymlinkedSourceComponent();
+  testPackageTransformPhaseContract();
   testReleaseManifestStaysNarrow();
   testRunAllRejectsPartialOrMixedInventory();
   testNpmInventoryDrift();

@@ -223,6 +223,9 @@ export async function run() {
       "worldModel.customSlotRules",
       "operatorRules.sessionBrief.excludePatterns",
     ]) assert.equal(schemaPaths.has(requiredPath), true, `required schema key missing: ${requiredPath}`);
+    for (const forbiddenPath of ["runtime.apiToken", "runtime.allowNoAuth"]) {
+      assert.equal(schemaPaths.has(forbiddenPath), false, `private HTTP auth field must not exist in plugin schema: ${forbiddenPath}`);
+    }
 
     const validate = await loadRealOpenClawValidator();
     const validateValue = (value) => validate({
@@ -237,9 +240,22 @@ export async function run() {
     }
     assert.equal(validateValue({ compat: { writeMode: "unsafe" } }).ok, false);
     assert.equal(validateValue({ recall: { embeddingModelFingerprint: "sha256:not-a-digest" } }).ok, false);
+    assert.equal(validateValue({ runtime: { apiToken: "synthetic-token" } }).ok, false);
+    assert.equal(validateValue({ runtime: { allowNoAuth: true } }).ok, false);
 
     const docs = readFileSync(path.join(repoRoot, "docs/configuration.md"), "utf8");
     assert.match(docs, /Configuration Reference/);
+    assert.match(docs, /registerHttpRoute[^\n]+auth: "gateway"/);
+    const readmeAuth = readFileSync(path.join(repoRoot, "README.md"), "utf8");
+    const securityAuth = readFileSync(path.join(repoRoot, "SECURITY.md"), "utf8");
+    const privacyModelAuth = readFileSync(path.join(repoRoot, "docs/public/privacy-model.md"), "utf8");
+    const securityReviewAuth = readFileSync(path.join(repoRoot, "docs/public/security-review.md"), "utf8");
+    const retiredAuthModel = /GB_ALLOW_NO_AUTH|runtime\.apiToken|runtime\.allowNoAuth|X-GB-Token|X-OpenClaw-Token/;
+    assert.doesNotMatch(readmeAuth, retiredAuthModel);
+    assert.doesNotMatch(securityAuth, retiredAuthModel);
+    assert.doesNotMatch(docs, retiredAuthModel);
+    assert.doesNotMatch(privacyModelAuth, retiredAuthModel);
+    assert.doesNotMatch(securityReviewAuth, retiredAuthModel);
     const examples = [...docs.matchAll(/```json\s*([\s\S]*?)```/g)].map((match) => JSON.parse(match[1]));
     assert.ok(examples.length >= 10, "configuration docs must retain executable JSON examples");
     for (const example of examples) assert.equal(validateValue(example).ok, true, "documentation JSON must validate");

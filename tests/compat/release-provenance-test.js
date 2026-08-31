@@ -1,6 +1,18 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import fs from "node:fs";
+import {
+  chmodSync,
+  linkSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -25,6 +37,41 @@ const canonicalize = (value) => Array.isArray(value)
     ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]))
     : value;
 const canonicalJson = (value) => `${JSON.stringify(canonicalize(value), null, 2)}\n`;
+
+const makeReleaseBinding = (immutableTag = "v0.11.0-openclaw.1-rc.7") => ({
+  code_sha: "0123456789abcdef0123456789abcdef01234567",
+  dependency_root: sha("canonical-dependencies"),
+  immutable_tag: immutableTag,
+  manifest_sha256: sha("canonical-payload"),
+  package_version: "0.11.0-openclaw.1",
+  payload_root: sha("canonical-payload"),
+  schema_checksum: sha("canonical-schema"),
+  schema_id: "gigabrain-schema-0.11-compat-v1",
+  upstream_version: "0.11.0",
+});
+
+const makeInstalledRelease = () => {
+  const root = mkdtempSync(path.join(tmpdir(), "gigabrain-task15-installed-release-"));
+  const files = new Map([
+    ["lib/_a.js", "export const underscore = true;\n"],
+    ["lib/-a.js", "export const dash = true;\n"],
+    ["lib/a.js", "export const lower = true;\n"],
+    ["lib/A.js", "export const upper = true;\n"],
+    ["lib/ä.js", "export const nonAscii = true;\n"],
+    ["scripts/run", "#!/usr/bin/env node\n"],
+    ["node_modules/example/index.js", "module.exports = true;\n"],
+    ["memory_api/.venv-v0.11-dev/probe.py", "dev_only = True\n"],
+    ["memory_api/.venv-v0.11-prod/lib/python3.10/site-packages/example.py", "installed = True\n"],
+    ["runtime/ignored.json", "{}\n"],
+  ]);
+  for (const [relativePath, body] of files) {
+    const absolutePath = path.join(root, relativePath);
+    mkdirSync(path.dirname(absolutePath), { recursive: true });
+    writeFileSync(absolutePath, body, { mode: relativePath === "scripts/run" ? 0o755 : 0o644 });
+    chmodSync(absolutePath, relativePath === "scripts/run" ? 0o755 : 0o644);
+  }
+  return { files, root };
+};
 
 const writeReleaseDocuments = (root, manifest, releaseOverrides = {}) => {
   const manifestBytes = canonicalJson(manifest);
@@ -74,6 +121,11 @@ const writeDependencyManifest = (root, manifest) => {
 const makeDependencyFixture = () => {
   const root = mkdtempSync(path.join(tmpdir(), "gigabrain-task11-dependencies-"));
   mkdirSync(path.join(root, "memory_api"), { recursive: true });
+  const nodeEntry = (packageName, byte) => ({
+    version: "1.2.3",
+    resolved: `https://registry.npmjs.org/${encodeURIComponent(packageName)}/-/${encodeURIComponent(packageName)}-1.2.3.tgz`,
+    integrity: `sha512-${Buffer.alloc(64, byte).toString("base64")}`,
+  });
   const packageLock = {
     name: "synthetic-release",
     version: "1.0.0",
@@ -86,10 +138,17 @@ const makeDependencyFixture = () => {
         resolved: "https://registry.npmjs.org/node-alpha/-/node-alpha-1.2.3.tgz",
         integrity: `sha512-${Buffer.alloc(64, 7).toString("base64")}`,
       },
+      "node_modules/-punctuation": nodeEntry("-punctuation", 8),
+      "node_modules/A-case": nodeEntry("A-case", 9),
+      "node_modules/_underscore": nodeEntry("_underscore", 10),
+      "node_modules/a-case": nodeEntry("a-case", 11),
+      "node_modules/ä-nonascii": nodeEntry("ä-nonascii", 12),
     },
   };
   writeFileSync(path.join(root, "package-lock.json"), canonicalJson(packageLock));
   const lockText = [
+    "_leading==0.1.0 \\",
+    `    --hash=sha256:${"c".repeat(64)}`,
     "alpha_py==1.0.0 \\",
     `    --hash=sha256:${"a".repeat(64)}`,
     "beta.pkg==2.0.0 \\",
@@ -99,6 +158,13 @@ const makeDependencyFixture = () => {
   const lockPath = path.join(root, "memory_api", "requirements-prod-py310-linux-x86_64.lock");
   writeFileSync(lockPath, lockText);
   const packages = [
+    {
+      filename: "_leading-0.1.0-py3-none-any.whl",
+      index: "https://pypi.org/simple",
+      name: "-leading",
+      sha256: "c".repeat(64),
+      version: "0.1.0",
+    },
     {
       filename: "alpha_py-1.0.0-py3-none-any.whl",
       index: "https://pypi.org/simple",
@@ -129,6 +195,7 @@ const makeDependencyFixture = () => {
     installedDistributions: [
       { name: "Beta_Pkg", version: "2.0.0" },
       { name: "alpha.py", version: "1.0.0" },
+      { name: "_leading", version: "0.1.0" },
     ],
     manifest,
     packageLock,
@@ -143,6 +210,423 @@ export async function run() {
     const serialize = requireCallable(provenance, "serializeReleaseProvenance");
     const attach = requireCallable(provenance, "attachReleaseProvenance");
     const computeDependencyRoot = requireCallable(provenance, "computeDependencyRoot");
+    const buildReleasePayloadManifest = requireCallable(provenance, "buildReleasePayloadManifest");
+    const serializeReleaseManifest = requireCallable(provenance, "serializeReleaseManifest");
+    const isExcludedReleasePayloadPath = requireCallable(provenance, "isExcludedReleasePayloadPath");
+    const computeLocalIntegrity = requireCallable(provenance, "computeLocalIntegrity");
+    const serializeLocalIntegrityManifest = requireCallable(provenance, "serializeLocalIntegrityManifest");
+    const verifyLocalIntegrity = requireCallable(provenance, "verifyLocalIntegrity");
+    const compareCanonicalUtf8 = requireCallable(provenance, "compareCanonicalUtf8");
+
+    assert.deepEqual(
+      ["ä", "A", "_", "-", "a"].sort(compareCanonicalUtf8),
+      ["-", "A", "_", "a", "ä"],
+      "cryptographic inventories must use canonical UTF-8 byte order across Node/ICU versions",
+    );
+
+    assert.equal(isExcludedReleasePayloadPath("memory_api/.venv-v0.11-prod"), true);
+    assert.equal(isExcludedReleasePayloadPath("memory_api/.venv-v0.11-prod/bin/python"), true);
+    assert.equal(isExcludedReleasePayloadPath("memory_api/.venv-v0.11-dev/bin/python"), false);
+    assert.equal(isExcludedReleasePayloadPath("other/.venv-v0.11-prod/bin/python"), false);
+    assert.equal(isExcludedReleasePayloadPath("memory_api/.venv-v0.11-prod-copy/bin/python"), false);
+
+    const installedRelease = makeInstalledRelease();
+    try {
+      const manifest = buildReleasePayloadManifest({ releaseRoot: installedRelease.root });
+      const expectedPayloadPaths = [
+        "lib/-a.js",
+        "lib/A.js",
+        "lib/_a.js",
+        "lib/a.js",
+        "lib/ä.js",
+        "memory_api/.venv-v0.11-dev/probe.py",
+        "scripts/run",
+      ];
+      assert.deepEqual(manifest, {
+        entries: expectedPayloadPaths.map((relativePath) => ({
+          mode: relativePath === "scripts/run" ? "100755" : "100644",
+          relative_path: relativePath,
+          sha256: sha(installedRelease.files.get(relativePath)),
+          type: "file",
+        })),
+        schema_id: "gigabrain-release-manifest.1",
+      });
+      const manifestBytes = serializeReleaseManifest(manifest);
+      assert.ok(Buffer.isBuffer(manifestBytes));
+      assert.equal(manifestBytes.toString("utf8"), canonicalJson(manifest));
+      assert.equal(
+        sha(manifestBytes),
+        "e97994736874f79bfd7f75c8e2ae0540ca20bae576109d9b6fdc281737ffb002",
+        "payload root must be byte-identical across Node 22/26 and ICU versions",
+      );
+      assert.throws(
+        () => serializeReleaseManifest({ ...manifest, extra: true }),
+        /GIGABRAIN_RELEASE_MANIFEST_INVALID/,
+        "manifest serializer must reject extra top-level keys",
+      );
+      assert.throws(
+        () => serializeReleaseManifest({
+          ...manifest,
+          entries: [{ ...manifest.entries[0], extra: true }, ...manifest.entries.slice(1)],
+        }),
+        /GIGABRAIN_RELEASE_MANIFEST_INVALID/,
+        "manifest serializer must reject extra entry keys",
+      );
+      assert.throws(
+        () => serializeReleaseManifest({ ...manifest, entries: [...manifest.entries].reverse() }),
+        /GIGABRAIN_RELEASE_MANIFEST_INVALID/,
+        "manifest serializer must reject noncanonical entry order",
+      );
+      assert.throws(
+        () => serializeReleaseManifest({ ...manifest, schema_id: "unreviewed-release-manifest.1" }),
+        /GIGABRAIN_RELEASE_MANIFEST_INVALID/,
+        "Task 15 intentionally admits only the reviewed release-manifest schema",
+      );
+      assert.deepEqual(
+        provenance.verifyReleasePayload({ manifest, manifestBytes, root: installedRelease.root }),
+        { files: expectedPayloadPaths.length, verified: true },
+      );
+
+      const acceptedLocal = computeLocalIntegrity({ releaseRoot: installedRelease.root });
+      assert.deepEqual(Object.keys(acceptedLocal), ["localIntegrityRoot", "manifest", "manifestBytes"]);
+      assert.ok(Buffer.isBuffer(acceptedLocal.manifestBytes));
+      assert.equal(sha(acceptedLocal.manifestBytes), acceptedLocal.localIntegrityRoot);
+      assert.equal(
+        acceptedLocal.localIntegrityRoot,
+        "1dc1a6efe1eed0385d86c1329411e66c1da2899c0580c89da5b7589039028b55",
+        "local root must be byte-identical across Node 22/26 and ICU versions",
+      );
+      assert.equal(acceptedLocal.manifestBytes.toString("utf8"), canonicalJson(acceptedLocal.manifest));
+      assert.equal(
+        serializeLocalIntegrityManifest(acceptedLocal.manifest).compare(acceptedLocal.manifestBytes),
+        0,
+      );
+      const expectedLocalPaths = [
+        "lib/-a.js",
+        "lib/A.js",
+        "lib/_a.js",
+        "lib/a.js",
+        "lib/ä.js",
+        "memory_api/.venv-v0.11-dev/probe.py",
+        "memory_api/.venv-v0.11-prod/lib/python3.10/site-packages/example.py",
+        "node_modules/example/index.js",
+        "runtime/ignored.json",
+        "scripts/run",
+      ];
+      assert.deepEqual(acceptedLocal.manifest, {
+        entries: expectedLocalPaths.map((relativePath) => ({
+          mode: relativePath === "scripts/run" ? "100755" : "100644",
+          relative_path: relativePath,
+          sha256: sha(installedRelease.files.get(relativePath)),
+          type: "file",
+        })),
+        schema_id: "gigabrain-local-integrity.1",
+      });
+      assert.deepEqual(
+        verifyLocalIntegrity({
+          manifest: acceptedLocal.manifest,
+          manifestBytes: acceptedLocal.manifestBytes,
+          releaseRoot: installedRelease.root,
+          expectedLocalIntegrityRoot: acceptedLocal.localIntegrityRoot,
+        }),
+        {
+          files: expectedLocalPaths.length,
+          localIntegrityRoot: acceptedLocal.localIntegrityRoot,
+          verified: true,
+        },
+      );
+      const malformedLocalManifests = [
+        { ...acceptedLocal.manifest, extra: true },
+        { ...acceptedLocal.manifest, schema_id: "gigabrain-local-integrity.2" },
+        {
+          ...acceptedLocal.manifest,
+          entries: [{ ...acceptedLocal.manifest.entries[0], extra: true }, ...acceptedLocal.manifest.entries.slice(1)],
+        },
+        { ...acceptedLocal.manifest, entries: [...acceptedLocal.manifest.entries].reverse() },
+        {
+          ...acceptedLocal.manifest,
+          entries: [acceptedLocal.manifest.entries[0], ...acceptedLocal.manifest.entries],
+        },
+        {
+          ...acceptedLocal.manifest,
+          entries: [{ ...acceptedLocal.manifest.entries[0], relative_path: "../escape" }, ...acceptedLocal.manifest.entries.slice(1)],
+        },
+        {
+          ...acceptedLocal.manifest,
+          entries: [{ ...acceptedLocal.manifest.entries[0], relative_path: "lib\\escape" }, ...acceptedLocal.manifest.entries.slice(1)],
+        },
+        {
+          ...acceptedLocal.manifest,
+          entries: [{ ...acceptedLocal.manifest.entries[0], relative_path: " lib/a.js" }, ...acceptedLocal.manifest.entries.slice(1)],
+        },
+        {
+          ...acceptedLocal.manifest,
+          entries: [{ ...acceptedLocal.manifest.entries[0], mode: "100600" }, ...acceptedLocal.manifest.entries.slice(1)],
+        },
+        {
+          ...acceptedLocal.manifest,
+          entries: [{ ...acceptedLocal.manifest.entries[0], type: "symlink" }, ...acceptedLocal.manifest.entries.slice(1)],
+        },
+        {
+          ...acceptedLocal.manifest,
+          entries: [{ ...acceptedLocal.manifest.entries[0], sha256: "0".repeat(63) }, ...acceptedLocal.manifest.entries.slice(1)],
+        },
+      ];
+      for (const malformed of malformedLocalManifests) {
+        assert.throws(
+          () => serializeLocalIntegrityManifest(malformed),
+          /GIGABRAIN_RELEASE_LOCAL_INTEGRITY_INVALID/,
+        );
+      }
+      assert.throws(
+        () => verifyLocalIntegrity({
+          manifest: acceptedLocal.manifest,
+          manifestBytes: Buffer.from(JSON.stringify(acceptedLocal.manifest)),
+          releaseRoot: installedRelease.root,
+        }),
+        /GIGABRAIN_RELEASE_LOCAL_INTEGRITY_INVALID/,
+        "external local manifest must use exact canonical bytes",
+      );
+      assert.throws(
+        () => verifyLocalIntegrity({
+          manifest: acceptedLocal.manifest,
+          manifestBytes: acceptedLocal.manifestBytes,
+          releaseRoot: installedRelease.root,
+          expectedLocalIntegrityRoot: "0".repeat(64),
+        }),
+        /GIGABRAIN_RELEASE_LOCAL_INTEGRITY_ROOT_MISMATCH/,
+      );
+      assert.ok(
+        acceptedLocal.manifest.entries.some(({ relative_path: relativePath }) => (
+          relativePath === "memory_api/.venv-v0.11-prod/lib/python3.10/site-packages/example.py"
+        )),
+        "production venv must be excluded from the reproducible payload but covered by local integrity",
+      );
+      assert.ok(
+        acceptedLocal.manifest.entries.some(({ relative_path: relativePath }) => relativePath.startsWith("node_modules/")),
+        "installed Node dependencies must be covered by local integrity",
+      );
+
+      writeFileSync(
+        path.join(installedRelease.root, "RELEASE.json"),
+        canonicalJson({ ...makeReleaseBinding(), local_integrity_root: acceptedLocal.localIntegrityRoot }),
+        { mode: 0o644 },
+      );
+      const rcLocal = computeLocalIntegrity({ releaseRoot: installedRelease.root });
+      writeFileSync(
+        path.join(installedRelease.root, "RELEASE.json"),
+        canonicalJson({
+          ...makeReleaseBinding("v0.11.0-openclaw.1"),
+          local_integrity_root: acceptedLocal.localIntegrityRoot,
+        }),
+        { mode: 0o644 },
+      );
+      const finalLocal = computeLocalIntegrity({ releaseRoot: installedRelease.root });
+      assert.deepEqual(finalLocal.manifest.entries, acceptedLocal.manifest.entries);
+      assert.equal(
+        finalLocal.localIntegrityRoot,
+        rcLocal.localIntegrityRoot,
+        "tag-only RC/final changes must not alter local integrity for a byte-identical tree",
+      );
+
+      const venvPath = path.join(
+        installedRelease.root,
+        "memory_api/.venv-v0.11-prod/lib/python3.10/site-packages/example.py",
+      );
+      writeFileSync(venvPath, "installed = False\n", { mode: 0o644 });
+      const tamperedPayload = buildReleasePayloadManifest({ releaseRoot: installedRelease.root });
+      const tamperedLocal = computeLocalIntegrity({ releaseRoot: installedRelease.root });
+      assert.deepEqual(tamperedPayload, manifest, "venv-local drift must not change the application payload");
+      assert.notEqual(tamperedLocal.localIntegrityRoot, acceptedLocal.localIntegrityRoot, "venv-local drift must change local integrity");
+      assert.throws(
+        () => verifyLocalIntegrity({
+          manifest: acceptedLocal.manifest,
+          manifestBytes: acceptedLocal.manifestBytes,
+          releaseRoot: installedRelease.root,
+          expectedLocalIntegrityRoot: acceptedLocal.localIntegrityRoot,
+        }),
+        /GIGABRAIN_RELEASE_LOCAL_INTEGRITY_ROOT_MISMATCH/,
+        "an external accepted manifest must fail against a drifted installed tree",
+      );
+    } finally {
+      rmSync(installedRelease.root, { recursive: true, force: true });
+    }
+
+    const rejectInstalledTree = (label, mutate, expected) => {
+      const candidate = makeInstalledRelease();
+      try {
+        mutate(candidate.root);
+        assert.throws(
+          () => buildReleasePayloadManifest({ releaseRoot: candidate.root }),
+          expected.payload,
+          `${label}: payload builder`,
+        );
+        assert.throws(
+          () => computeLocalIntegrity({ releaseRoot: candidate.root }),
+          expected.local,
+          `${label}: local integrity`,
+        );
+      } finally {
+        rmSync(candidate.root, { recursive: true, force: true });
+      }
+    };
+    rejectInstalledTree("hard-linked file", (root) => {
+      linkSync(path.join(root, "lib/a.js"), path.join(root, "lib/hardlink.js"));
+    }, {
+      payload: /GIGABRAIN_RELEASE_PAYLOAD_HARDLINK/,
+      local: /GIGABRAIN_RELEASE_LOCAL_INTEGRITY_HARDLINK/,
+    });
+    rejectInstalledTree("noncanonical mode", (root) => {
+      chmodSync(path.join(root, "lib/a.js"), 0o600);
+    }, {
+      payload: /GIGABRAIN_RELEASE_PAYLOAD_MODE/,
+      local: /GIGABRAIN_RELEASE_LOCAL_INTEGRITY_MODE/,
+    });
+    for (const unsafeMode of [0o4755, 0o2755, 0o1755]) {
+      rejectInstalledTree(`special permission bits ${unsafeMode.toString(8)}`, (root) => {
+        chmodSync(path.join(root, "lib/a.js"), unsafeMode);
+      }, {
+        payload: /GIGABRAIN_RELEASE_PAYLOAD_MODE/,
+        local: /GIGABRAIN_RELEASE_LOCAL_INTEGRITY_MODE/,
+      });
+    }
+    rejectInstalledTree("special filesystem object", (root) => {
+      execFileSync("/usr/bin/mkfifo", [path.join(root, "lib/release.fifo")]);
+    }, {
+      payload: /GIGABRAIN_RELEASE_PAYLOAD_TYPE/,
+      local: /GIGABRAIN_RELEASE_LOCAL_INTEGRITY_TYPE/,
+    });
+    rejectInstalledTree("unsafe relative filename", (root) => {
+      const unsafePath = path.join(root, "lib/trailing.js ");
+      writeFileSync(unsafePath, "unsafe\n", { mode: 0o644 });
+      chmodSync(unsafePath, 0o644);
+    }, {
+      payload: /GIGABRAIN_RELEASE_MANIFEST_INVALID/,
+      local: /GIGABRAIN_RELEASE_LOCAL_INTEGRITY_INVALID/,
+    });
+
+    const linkedVenv = makeInstalledRelease();
+    try {
+      const venvFile = path.join(
+        linkedVenv.root,
+        "memory_api/.venv-v0.11-prod/lib/python3.10/site-packages/example.py",
+      );
+      unlinkSync(venvFile);
+      symlinkSync(path.join(linkedVenv.root, "lib/a.js"), venvFile);
+      assert.doesNotThrow(
+        () => buildReleasePayloadManifest({ releaseRoot: linkedVenv.root }),
+        "reviewed production venv remains outside the reproducible payload",
+      );
+      assert.throws(
+        () => computeLocalIntegrity({ releaseRoot: linkedVenv.root }),
+        /GIGABRAIN_RELEASE_LOCAL_INTEGRITY_SYMLINK/,
+        "local integrity must reject links even inside payload-excluded installed dependencies",
+      );
+    } finally {
+      rmSync(linkedVenv.root, { recursive: true, force: true });
+    }
+
+    const linkedRoot = makeInstalledRelease();
+    const linkedRootPath = `${linkedRoot.root}-link`;
+    try {
+      const manifest = buildReleasePayloadManifest({ releaseRoot: linkedRoot.root });
+      const manifestBytes = serializeReleaseManifest(manifest);
+      symlinkSync(linkedRoot.root, linkedRootPath, "dir");
+      assert.throws(
+        () => provenance.verifyReleasePayload({ manifest, manifestBytes, root: linkedRootPath }),
+        /GIGABRAIN_RELEASE_PAYLOAD_SYMLINK/,
+        "the exported verifier must reject a symlink release root directly",
+      );
+    } finally {
+      rmSync(linkedRootPath, { force: true });
+      rmSync(linkedRoot.root, { recursive: true, force: true });
+    }
+
+    const fifoRelease = makeRelease();
+    try {
+      const releasePath = path.join(fifoRelease.root, "RELEASE.json");
+      unlinkSync(releasePath);
+      execFileSync("/usr/bin/mkfifo", [releasePath]);
+      const started = process.hrtime.bigint();
+      assert.throws(
+        () => load(fifoRelease.root),
+        /GIGABRAIN_RELEASE_PROVENANCE_INVALID/,
+        "open-first provenance reads must reject a FIFO without blocking",
+      );
+      const elapsedMs = Number(process.hrtime.bigint() - started) / 1_000_000;
+      assert.ok(elapsedMs < 1_000, `FIFO rejection exceeded the bound: ${elapsedMs}ms`);
+    } finally {
+      rmSync(fifoRelease.root, { recursive: true, force: true });
+    }
+
+    const growingRelease = makeRelease();
+    const growingReleasePath = path.join(growingRelease.root, "RELEASE.json");
+    const growingIdentity = fs.lstatSync(growingReleasePath);
+    const originalReadSync = fs.readSync;
+    let growthInjected = false;
+    let targetBytesRead = 0;
+    fs.readSync = function patchedReadSync(descriptor, ...args) {
+      const opened = fs.fstatSync(descriptor);
+      const isTarget = opened.dev === growingIdentity.dev && opened.ino === growingIdentity.ino;
+      if (isTarget && !growthInjected) {
+        growthInjected = true;
+        fs.appendFileSync(growingReleasePath, Buffer.alloc(512 * 1024, 0x20));
+      }
+      const bytesRead = originalReadSync.call(this, descriptor, ...args);
+      if (isTarget) targetBytesRead += bytesRead;
+      return bytesRead;
+    };
+    try {
+      assert.throws(
+        () => load(growingRelease.root),
+        /GIGABRAIN_RELEASE_PROVENANCE_INVALID/,
+        "a concurrently growing provenance file must fail at the byte cap",
+      );
+      assert.equal(growthInjected, true, "growth fault must execute");
+      assert.ok(
+        targetBytesRead <= (256 * 1024) + 1,
+        `bounded reader consumed ${targetBytesRead} bytes beyond its 256 KiB contract`,
+      );
+    } finally {
+      fs.readSync = originalReadSync;
+      rmSync(growingRelease.root, { recursive: true, force: true });
+    }
+
+    const assertReplacementRaceRejected = (operation, expected) => {
+      const candidate = makeInstalledRelease();
+      const target = path.join(candidate.root, "lib/a.js");
+      const replacement = path.join(candidate.root, "lib/a.js.replacement");
+      writeFileSync(replacement, "replacement inode\n", { mode: 0o644 });
+      chmodSync(replacement, 0o644);
+      const originalOpenSync = fs.openSync;
+      let replaced = false;
+      fs.openSync = function patchedOpenSync(filePath, ...args) {
+        if (!replaced && path.resolve(String(filePath)) === target) {
+          replaced = true;
+          fs.renameSync(replacement, target);
+        }
+        return originalOpenSync.call(this, filePath, ...args);
+      };
+      try {
+        assert.throws(
+          () => operation(candidate.root),
+          expected,
+          "inventory/path churn must fail closed around the opened descriptor snapshot",
+        );
+        assert.equal(replaced, true, "replacement race hook must execute");
+      } finally {
+        fs.openSync = originalOpenSync;
+        rmSync(candidate.root, { recursive: true, force: true });
+      }
+    };
+    assertReplacementRaceRejected(
+      (releaseRoot) => buildReleasePayloadManifest({ releaseRoot }),
+      /GIGABRAIN_RELEASE_PAYLOAD_(?:MISSING|UNSTABLE)/,
+    );
+    assertReplacementRaceRejected(
+      (releaseRoot) => computeLocalIntegrity({ releaseRoot }),
+      /GIGABRAIN_RELEASE_LOCAL_INTEGRITY_(?:MISSING|UNSTABLE)/,
+    );
 
     const dependencyFixture = makeDependencyFixture();
     try {
@@ -171,10 +655,15 @@ export async function run() {
         "dependencyRoot", "nodeRoot", "pythonRoot", "packageLockSha256",
         "pythonLockSha256", "wheelInventorySha256", "installedInventorySha256",
       ]) assert.match(first[field], /^[0-9a-f]{64}$/);
-      assert.equal(first.nodePackages, 1);
-      assert.equal(first.pythonDistributions, 2);
+      assert.equal(first.nodePackages, 6);
+      assert.equal(first.pythonDistributions, 3);
       assert.equal(first.pythonLockSha256, dependencyFixture.manifest.lockSha256);
       assert.equal(first.wheelInventorySha256, dependencyFixture.manifest.inventorySha256);
+      assert.equal(
+        first.dependencyRoot,
+        "3a8d7575e6fad9bb6e02808081c93b11c77453aad97bfaaf98827f9510d10870",
+        "dependency root must be byte-identical across Node 22/26 and ICU versions",
+      );
     } finally {
       rmSync(dependencyFixture.root, { recursive: true, force: true });
     }
@@ -209,7 +698,7 @@ export async function run() {
       writeDependencyManifest(candidate.root, candidate.manifest);
     }, /GIGABRAIN_RELEASE_DEPENDENCY_LOCK_HASH/);
     rejectDependency("wheel inventory hash drift", (candidate) => {
-      candidate.manifest.packages[0].sha256 = "c".repeat(64);
+      candidate.manifest.packages.find((entry) => entry.name === "alpha-py").sha256 = "d".repeat(64);
       writeDependencyManifest(candidate.root, candidate.manifest);
     }, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_HASH/);
     rejectDependency("wheel provenance drift", (candidate) => {
@@ -218,7 +707,7 @@ export async function run() {
       writeDependencyManifest(candidate.root, candidate.manifest);
     }, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_PROVENANCE/);
     rejectDependency("unauthorized wheel digest with recomputed inventory", (candidate) => {
-      candidate.manifest.packages[0].sha256 = "c".repeat(64);
+      candidate.manifest.packages.find((entry) => entry.name === "alpha-py").sha256 = "d".repeat(64);
       candidate.manifest.inventorySha256 = sha(JSON.stringify(candidate.manifest.packages));
       writeDependencyManifest(candidate.root, candidate.manifest);
     }, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_LOCK_HASH/);
@@ -247,7 +736,7 @@ export async function run() {
       writeDependencyManifest(candidate.root, candidate.manifest);
     }, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_PROVENANCE/);
     const rejectWheelFilename = (label, filename, expected) => rejectDependency(label, (candidate) => {
-      candidate.manifest.packages[0].filename = filename;
+      candidate.manifest.packages.find((entry) => entry.name === "alpha-py").filename = filename;
       candidate.manifest.inventorySha256 = sha(JSON.stringify(candidate.manifest.packages));
       writeDependencyManifest(candidate.root, candidate.manifest);
     }, expected);
@@ -292,8 +781,9 @@ export async function run() {
       ["aarch64 wheel", "alpha_py-1.0.0-cp310-cp310-manylinux_2_17_aarch64.whl"],
     ]) rejectWheelFilename(label, filename, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_TAG/);
     rejectDependency("lock and wheel set drift", (candidate) => {
-      candidate.manifest.packages[0].version = "1.0.1";
-      candidate.manifest.packages[0].filename = "alpha_py-1.0.1-py3-none-any.whl";
+      const alpha = candidate.manifest.packages.find((entry) => entry.name === "alpha-py");
+      alpha.version = "1.0.1";
+      alpha.filename = "alpha_py-1.0.1-py3-none-any.whl";
       candidate.manifest.inventorySha256 = sha(JSON.stringify(candidate.manifest.packages));
       writeDependencyManifest(candidate.root, candidate.manifest);
     }, /GIGABRAIN_RELEASE_DEPENDENCY_WHEEL_LOCK_HASH/);

@@ -11,6 +11,7 @@ import {
   runDirect,
 } from "./contract-test-helpers.js";
 import { appendEvent, ensureEventStore } from "../../lib/core/event-store.js";
+import { createMemoryHttpHandler } from "../../lib/core/http-routes.js";
 import { ensureNativeStore } from "../../lib/core/native-sync.js";
 import { ensurePersonStore } from "../../lib/core/person-service.js";
 import { ensureProjectionStore, upsertCurrentMemory } from "../../lib/core/projection-store.js";
@@ -141,6 +142,20 @@ const assertConcealed = async (promise) => {
   await assert.rejects(promise, (error) => error?.code === "GIGABRAIN_MEMORY_NOT_FOUND");
 };
 
+const makeHttpResponse = () => ({
+  body: "",
+  headersSent: false,
+  statusCode: 200,
+  writeHead(statusCode) {
+    this.statusCode = statusCode;
+    this.headersSent = true;
+  },
+  end(body = "") {
+    this.body += String(body);
+    this.headersSent = true;
+  },
+});
+
 export async function run() {
   const runtime = await importContractModule("lib/compat/openclaw-memory-runtime.js", EXPECTED_SIGNATURE);
   await runBehaviorContract(EXPECTED_SIGNATURE, async () => {
@@ -188,6 +203,22 @@ export async function run() {
         "utf8",
       );
       assert.match(contained.data, /Shared fact/);
+
+      const directHandler = createMemoryHttpHandler({
+        config: fixture.config,
+        dbPath: fixture.config.runtime.paths.registryPath,
+        logger: { info() {}, warn() {}, error() {} },
+        token: "",
+      });
+      const directResponse = makeHttpResponse();
+      assert.equal(await directHandler({
+        headers: {},
+        method: "GET",
+        socket: { remoteAddress: "127.0.0.1" },
+        url: "/gb/memory/main-memory/timeline",
+      }, directResponse), true);
+      assert.equal(directResponse.statusCode, 401, "a direct inner handler must remain closed without outer gateway auth");
+
       for (const params of [
         { relativePath: "/etc/passwd", authority: "operator-admin", transport: "loopback", pathSource: "cli" },
         { relativePath: "../outside.md", authority: "operator-admin", transport: "loopback", pathSource: "cli" },

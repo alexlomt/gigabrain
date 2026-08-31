@@ -281,7 +281,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/checkpoint-concurrency-test.js",
-      "testSha256": "ccda69167f5b6032e15c2249681b7d38a9efbfe2bcf1e07456e38556ce7f5a93"
+      "testSha256": "f6c248f0e291d2fa9121fa0e021c91b2ed9d8fbc5a1a5f67edd0fbb30ce1da88"
     },
     {
       "coveredPaths": [
@@ -307,8 +307,12 @@
     },
     {
       "coveredPaths": [
+        "README.md",
+        "SECURITY.md",
         "config/migration/task4-stage-paths.txt",
         "docs/configuration.md",
+        "docs/public/privacy-model.md",
+        "docs/public/security-review.md",
         "lib/core/config.js",
         "lib/core/host-memory-sync.js",
         "openclaw.plugin.json",
@@ -322,9 +326,29 @@
       "ownerSourceFirstTaskId": "4",
       "relevanceEvidence": [
         {
+          "binding": "readmeAuth",
+          "mode": "read",
+          "targetPath": "README.md"
+        },
+        {
+          "binding": "securityAuth",
+          "mode": "read",
+          "targetPath": "SECURITY.md"
+        },
+        {
           "binding": "docs",
           "mode": "read",
           "targetPath": "docs/configuration.md"
+        },
+        {
+          "binding": "privacyModelAuth",
+          "mode": "read",
+          "targetPath": "docs/public/privacy-model.md"
+        },
+        {
+          "binding": "securityReviewAuth",
+          "mode": "read",
+          "targetPath": "docs/public/security-review.md"
         },
         {
           "binding": "buildSchema",
@@ -352,7 +376,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/config-schema-parity-test.js",
-      "testSha256": "b398fe4c5ba513233c506e64f8f702c25956a19f215242d34ed67fd05da91b6e"
+      "testSha256": "491b232f816aefa01df4f0e7f814852ae0d28dc24b14d6aad7318b5e9a7ebe54"
     },
     {
       "coveredPaths": [
@@ -868,7 +892,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/openclaw-memory-authorization-test.js",
-      "testSha256": "da674da29b8717d7113ebf3e148357997ac17aa5877dfee3fefe3972a676aec0"
+      "testSha256": "3349c7c77c516f3428fc11d91d65a824a079127c835e8b34606ed8154867c61f"
     },
     {
       "coveredPaths": [
@@ -884,7 +908,7 @@
       "ownerSourceFirstTaskId": "5",
       "runner": "node",
       "testPath": "tests/compat/openclaw-memory-runtime-test.js",
-      "testSha256": "11a5ee7af67b4e01f7329ac222bf5d0669b9765cccc59524044c17aa12fb3034"
+      "testSha256": "08f88abc51d7a983b8f6c533ac95c7add2921d2d212df88b8444245f4ef8bbf9"
     },
     {
       "coveredPaths": [
@@ -1175,7 +1199,7 @@
       ],
       "runner": "node",
       "testPath": "tests/compat/release-provenance-test.js",
-      "testSha256": "9bb12b84a0d60b90b27ee0b028a2c58ba913f650275712933d5585f598ce36c2"
+      "testSha256": "3fa9ef4b0d6bf156cdb360d041ac01ebd48e5246290bcd4860d2748a60664852"
     },
     {
       "coveredPaths": [
@@ -2290,7 +2314,7 @@
       "ownerSourceFirstTaskId": "2B",
       "runner": "node",
       "testPath": "tests/unit-orchestrator-test.js",
-      "testSha256": "cb1df2d8e5d5eb242b7f901f91c0bcf6188d309cb2752134845373b99b4324d7"
+      "testSha256": "33f535d5a4356c4401eff9adf5357bc02ede532177e3b7dafc7d273d4713e9b0"
     },
     {
       "coveredPaths": [
@@ -2438,7 +2462,7 @@
       ],
       "runner": "node",
       "testPath": "tests/source-first-divergence-test.js",
-      "testSha256": "dc8d9f11e9c0a0d5958bf39edb66aeb63b4bb496824027cc60e2b0ce0733c75e"
+      "testSha256": "4f0b54f6d44dfd837efe9b62d38664e41838b5661e0b93cf264a028abf0e1e33"
     },
     {
       "coveredPaths": [
@@ -2451,7 +2475,7 @@
       "ownerSourceFirstTaskId": "1",
       "runner": "node",
       "testPath": "tests/source-first-divergence-test.js",
-      "testSha256": "dc8d9f11e9c0a0d5958bf39edb66aeb63b4bb496824027cc60e2b0ce0733c75e"
+      "testSha256": "4f0b54f6d44dfd837efe9b62d38664e41838b5661e0b93cf264a028abf0e1e33"
     },
     {
       "coveredPaths": [
@@ -2511,6 +2535,6 @@
     }
   ],
   "entryCount": 104,
-  "manifestSha256": "d263c7897e4ec1e40b610a5edbf8b82ce0d2bf01a195979a03fcd0788e1c69ad",
+  "manifestSha256": "2f311ae71518683e4af10247858926376a6036e45a3c991cf8562cc92d7df5de",
   "schemaVersion": 1
 }

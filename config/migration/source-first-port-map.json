@@ -54,15 +54,34 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "aabe5be2afd5d793b3e9a83440df71ed4f9d689d368189acd27249ec3f0044b1",
+      "contentSha256": "03d8c54cb0498f796ea150cf6d4399f45e843cdd26b35d1db8f4538aa76a3704",
       "disposition": "core_patch",
       "gate": {
-        "registrationId": "compat-handoff-fidelity"
+        "registrationId": "compat-config-schema-parity"
       },
       "ownerTasks": [
-        "13"
+        "4",
+        "5",
+        "15"
       ],
-      "reason": "Task 13 documents fully bound Handoff v2 manifests, strict source-link semantics, legacy handling, and excluded state.",
+      "reason": "Task 15 documents the gateway-authenticated OpenClaw HTTP surface and removes the retired private-token bypass contract.",
+      "targetMode": "100644",
+      "targetPath": "README.md"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "97e105fd2a3d64069416db61c7cdd457870a22435dd2cfba2e691856cc0cac5f",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-config-schema-parity"
+      },
+      "ownerTasks": [
+        "4",
+        "5",
+        "13",
+        "15"
+      ],
+      "reason": "Task 13 documents Handoff v2 security; Task 15 replaces the retired private-token bypass with the gateway-authenticated OpenClaw route boundary.",
       "targetMode": "100644",
       "targetPath": "SECURITY.md"
     },
@@ -140,15 +159,16 @@
         "6",
         "8",
         "9",
-        "14"
+        "14",
+        "15"
       ],
-      "reason": "Source-first evidence through completed Task 14 migration and candidate-safety gates.",
+      "reason": "Source-first evidence through Task 15 canonical immutable-release provenance and local-integrity gates.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-port-map.json"
     },
     {
       "changeType": "added",
-      "contentSha256": "78d2d68612c52a80113b282b94879110ea36ae628c0f5f53db29c526e871604b",
+      "contentSha256": "3958afdea0783eafa10726c283c7f33e2f7e970073c320fec643ef86c87669a5",
       "disposition": "operator_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -165,9 +185,10 @@
         "8",
         "9",
         "13",
-        "14"
+        "14",
+        "15"
       ],
-      "reason": "Source-first registry promotes all three Task 14 contracts to passing gates while preserving Task 13 GREEN.",
+      "reason": "Source-first registry preserves Task 14 GREEN and binds Task 15 canonical release provenance and gateway-authentication tests.",
       "targetMode": "100644",
       "targetPath": "config/migration/source-first-test-registry.json"
     },
@@ -276,7 +297,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "6373e52db69467e286f2448cea2a02c6efba7c2791fdeaaba2ab202167be92de",
+      "contentSha256": "fd1cd19ec86faa39f79a9bdd51ca7c5c71e412908972b0877228b609e46fc356",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-handoff-fidelity"
@@ -331,6 +352,38 @@
       "reason": "Audited release and package provenance for the clean compatibility base.",
       "targetMode": "100644",
       "targetPath": "docs/migration/v0.11-base-provenance.md"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "c289c8e4345ea0f5335377967a42bc0478aefe3bfc50e211c6b87b8ca47d53d3",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-config-schema-parity"
+      },
+      "ownerTasks": [
+        "4",
+        "5",
+        "15"
+      ],
+      "reason": "Task 15 aligns the packaged privacy guidance with the gateway-authenticated OpenClaw HTTP boundary.",
+      "targetMode": "100644",
+      "targetPath": "docs/public/privacy-model.md"
+    },
+    {
+      "changeType": "modified",
+      "contentSha256": "332872ffd407f30b133a3dd01b520662c44a9cb5bfa73067257da91dcd19e988",
+      "disposition": "core_patch",
+      "gate": {
+        "registrationId": "compat-config-schema-parity"
+      },
+      "ownerTasks": [
+        "4",
+        "5",
+        "15"
+      ],
+      "reason": "Task 15 aligns the packaged security review with the gateway-authenticated OpenClaw HTTP boundary.",
+      "targetMode": "100644",
+      "targetPath": "docs/public/security-review.md"
     },
     {
       "changeType": "modified",
@@ -563,7 +616,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "68f34e9d05f1279387f13c854bfa4fef475adcafa9c782da3d4c63715cd2d4e0",
+      "contentSha256": "6484b9f8f149fb845aef4500a21b2a579ec266b3623a4ecb7a0ab166174b2922",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-shipping-core-evidence"
@@ -621,15 +674,16 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "6fccc57fc930ceec21f4097e559c0db798170a687c1d052adeb5a2f3776aab60",
+      "contentSha256": "8988e64eb64807f94cae75ef4901c9778d00f431cac7d51e14514aa226a19f42",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-shipping-core-evidence"
       },
       "ownerTasks": [
-        "5"
+        "5",
+        "15"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Task 5 runtime provenance compatibility extended by Task 15 exact gigabrain-release-manifest.1 payload, dependency and local-integrity builders.",
       "targetMode": "100644",
       "targetPath": "lib/compat/release-provenance.js"
     },
@@ -1023,7 +1077,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "3fc2dacd80a4ccd7fecfcd348e4bbdbd99cb60307c9f45baceaed971eb398b06",
+      "contentSha256": "a810e1d071b70b8a530bde93ae6db84b5e29b916c004590801e12180b1cce8cc",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-observational-core-patches"
@@ -1320,7 +1374,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "5367ea27e60924889297ac3d6209884873839b745f035ab1efed621fc1e88925",
+      "contentSha256": "5bc9dedd28ea4780a3b1a996b48c226a1204dd5f1cb0b8752155cc5afe28bf29",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-auto-capture-worker"
@@ -1330,15 +1384,16 @@
         "11",
         "2B",
         "5",
-        "9"
+        "9",
+        "15"
       ],
-      "reason": "Task 11 pins OpenClaw 2026.7.1-2 as a development-only validator while retaining the Task 9 worker package contract.",
+      "reason": "Task 15 restores exact package/public allowlist ordering while preserving the Task 11 validator pin and Task 9 worker contract.",
       "targetMode": "100644",
       "targetPath": "package.json"
     },
     {
       "changeType": "modified",
-      "contentSha256": "b54b3351e2626cf0cf41b75bf64bd5ebdd4df36a2602e4e0a0baf8a98068c20c",
+      "contentSha256": "4e93d2ec4df55dbf0541bb14ccc889d7c4dcfa53da64ef58b0dc96f4e71fed70",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-auto-capture-worker"
@@ -1348,9 +1403,10 @@
         "2B",
         "5",
         "9",
-        "14"
+        "14",
+        "15"
       ],
-      "reason": "Narrow public/runtime allowlist additions for Task 14 guard, audit, and migration CLI.",
+      "reason": "Task 15 binds the public package transform to the exact current private source-script set while preserving the reviewed runtime allowlists.",
       "targetMode": "100644",
       "targetPath": "public-release-manifest.json"
     },
@@ -1671,7 +1727,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "ccda69167f5b6032e15c2249681b7d38a9efbfe2bcf1e07456e38556ce7f5a93",
+      "contentSha256": "f6c248f0e291d2fa9121fa0e021c91b2ed9d8fbc5a1a5f67edd0fbb30ce1da88",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-checkpoint-concurrency"
@@ -1700,7 +1756,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "b398fe4c5ba513233c506e64f8f702c25956a19f215242d34ed67fd05da91b6e",
+      "contentSha256": "491b232f816aefa01df4f0e7f814852ae0d28dc24b14d6aad7318b5e9a7ebe54",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-config-schema-parity"
@@ -1989,7 +2045,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "da674da29b8717d7113ebf3e148357997ac17aa5877dfee3fefe3972a676aec0",
+      "contentSha256": "3349c7c77c516f3428fc11d91d65a824a079127c835e8b34606ed8154867c61f",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-openclaw-memory-authorization"
@@ -2003,7 +2059,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "11a5ee7af67b4e01f7329ac222bf5d0669b9765cccc59524044c17aa12fb3034",
+      "contentSha256": "08f88abc51d7a983b8f6c533ac95c7add2921d2d212df88b8444245f4ef8bbf9",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-openclaw-memory-runtime"
@@ -2090,15 +2146,16 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "9bb12b84a0d60b90b27ee0b028a2c58ba913f650275712933d5585f598ce36c2",
+      "contentSha256": "3fa9ef4b0d6bf156cdb360d041ac01ebd48e5246290bcd4860d2748a60664852",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "compat-release-provenance"
       },
       "ownerTasks": [
-        "5"
+        "5",
+        "15"
       ],
-      "reason": "Task 5 fix round 1 closes reviewed observational, authority, writer, entity, flush and release-verifier gaps.",
+      "reason": "Task 5 runtime provenance contract extended with Task 15 cross-runtime exact-schema release and local-integrity evidence.",
       "targetMode": "100644",
       "targetPath": "tests/compat/release-provenance-test.js"
     },
@@ -2803,7 +2860,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "dc8d9f11e9c0a0d5958bf39edb66aeb63b4bb496824027cc60e2b0ce0733c75e",
+      "contentSha256": "4f0b54f6d44dfd837efe9b62d38664e41838b5661e0b93cf264a028abf0e1e33",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "source-first-policy"
@@ -2821,9 +2878,10 @@
         "8",
         "9",
         "13",
-        "14"
+        "14",
+        "15"
       ],
-      "reason": "Source-first policy seals the four actual Task 14 production artifact rows.",
+      "reason": "Source-first policy seals the reviewed Task 14 production artifacts and the Task 15 gateway-auth documentation classifications.",
       "targetMode": "100644",
       "targetPath": "tests/source-first-divergence-test.js"
     },
@@ -3139,7 +3197,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "cb1df2d8e5d5eb242b7f901f91c0bcf6188d309cb2752134845373b99b4324d7",
+      "contentSha256": "33f535d5a4356c4401eff9adf5357bc02ede532177e3b7dafc7d273d4713e9b0",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "restored-unit-orchestrator"
@@ -3225,7 +3283,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "45bc620272f66faa193b2a26f9a83b3a21dab746e21e64a203c8f2676a436bac",
+      "contentSha256": "b517868dd331212c9cb71ecc8df8853772b1503ad178edb14d35937d465cbf10",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "npm-pack-schema"
@@ -3233,9 +3291,10 @@
       "ownerTasks": [
         "11",
         "12",
-        "2B"
+        "2B",
+        "15"
       ],
-      "reason": "Private public-mirror contract binds the Task 11 validator pin, CI dependency ordering, production-only audit gate, and Task 12 full-history checkout requirement.",
+      "reason": "Private public-mirror contract adds Task 15 source/public phase coverage for total package-script transforms while retaining mixed-state rejection.",
       "targetMode": "100644",
       "targetPath": "tests/unit-public-mirror-test.js"
     },

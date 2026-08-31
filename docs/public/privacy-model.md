@@ -74,7 +74,7 @@ The release gate checks:
 - put TLS and a real OAuth authorization server in front of any network-facing remote MCP deployment; keep exact issuer, audience/resource, JWKS, Host, Origin, and memory-scope allowlists
 - never use remote MCP's `--allow-no-auth` development mode outside a loopback-only, disposable test
 - use separate scoped tokens where different clients should see different projects
-- never use the Node-only `GB_ALLOW_NO_AUTH=1` development bypass on a network-facing or persistent process
+- preserve OpenClaw gateway authentication for every Node `/gb` route; older generic-handler-only hosts intentionally receive no routes
 - review provider settings before enabling any cloud or remote feature
 - inspect and minimize Handoff Records and bundles before sharing them
 - delete or archive stale stores using your normal encrypted-backup policy
