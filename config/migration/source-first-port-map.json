@@ -1077,7 +1077,7 @@
     },
     {
       "changeType": "modified",
-      "contentSha256": "3fc2dacd80a4ccd7fecfcd348e4bbdbd99cb60307c9f45baceaed971eb398b06",
+      "contentSha256": "a810e1d071b70b8a530bde93ae6db84b5e29b916c004590801e12180b1cce8cc",
       "disposition": "core_patch",
       "gate": {
         "registrationId": "compat-observational-core-patches"
@@ -3197,7 +3197,7 @@
     },
     {
       "changeType": "added",
-      "contentSha256": "cb1df2d8e5d5eb242b7f901f91c0bcf6188d309cb2752134845373b99b4324d7",
+      "contentSha256": "33f535d5a4356c4401eff9adf5357bc02ede532177e3b7dafc7d273d4713e9b0",
       "disposition": "private_dev_only",
       "gate": {
         "registrationId": "restored-unit-orchestrator"
